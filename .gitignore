@@ -1,0 +1,44 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Data and experiment outputs
+dataset/
+results/
+experiment_results/
+checkpoints/
+logs/
+
+# Model/data artifacts
+*.pth
+*.pt
+*.ckpt
+*.npy
+*.npz
+*.csv
+*.xlsx
+*.xls
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Local docs/backup
+中间修改文档汇总/
+代码备份/
+代码备份1/
+代码备份2/
+后续/
+
+# OS
+.DS_Store
+Thumbs.db
