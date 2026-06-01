@@ -7,6 +7,7 @@ import argparse
 import flwr as fl
 from flwr.common import ndarrays_to_parameters
 
+from gaps_flower.strategy import CheckpointFedAvg, weighted_average
 from gaps_flower.task import create_model, get_parameters, make_config
 
 
@@ -19,13 +20,17 @@ def main() -> None:
     parser.add_argument("--server-address", default="0.0.0.0:8080")
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--min-clients", type=int, default=1)
+    parser.add_argument("--output-dir", default="results/flower_server")
     args = parser.parse_args()
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32)
     model = create_model(config)
-    initial_arrays, _keys = get_parameters(model)
+    initial_arrays, parameter_keys = get_parameters(model)
 
-    strategy = fl.server.strategy.FedAvg(
+    strategy = CheckpointFedAvg(
+        parameter_keys=parameter_keys,
+        reference_state=model.state_dict(),
+        output_dir=args.output_dir,
         fraction_fit=1.0,
         fraction_evaluate=1.0,
         min_fit_clients=args.min_clients,
@@ -33,6 +38,8 @@ def main() -> None:
         min_available_clients=args.min_clients,
         initial_parameters=ndarrays_to_parameters(initial_arrays),
         on_fit_config_fn=fit_config,
+        fit_metrics_aggregation_fn=weighted_average,
+        evaluate_metrics_aggregation_fn=weighted_average,
     )
 
     fl.server.start_server(
