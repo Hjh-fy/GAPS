@@ -21,6 +21,7 @@ def main() -> None:
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--min-clients", type=int, default=1)
     parser.add_argument("--output-dir", default="results/flower_server")
+    parser.add_argument("--run-name", default="flower_smoke")
     args = parser.parse_args()
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32)
@@ -31,6 +32,7 @@ def main() -> None:
         parameter_keys=parameter_keys,
         reference_state=model.state_dict(),
         output_dir=args.output_dir,
+        run_name=args.run_name,
         fraction_fit=1.0,
         fraction_evaluate=1.0,
         min_fit_clients=args.min_clients,

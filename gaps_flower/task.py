@@ -92,7 +92,7 @@ def make_client(client_id: int, model: torch.nn.Module, train_loader, config: FL
 
 
 def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int, dict]:
-    params, _mus, _counts, _features, _residual, _vars = gaps_client.train_one_round(
+    params, _mus, count_dict, _features, _residual, _vars = gaps_client.train_one_round(
         current_round=max(1, round_idx),
         global_protos=None,
         semantic_protos=None,
@@ -100,11 +100,24 @@ def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int,
     ordered = OrderedDict(params)
     arrays = [value.detach().cpu().numpy() for value in ordered.values()]
     num_examples = len(gaps_client.train_loader.dataset) if gaps_client.train_loader is not None else 0
-    return arrays, num_examples, {"num_examples": num_examples}
+    proto_examples = int(sum(count_dict.values())) if count_dict else 0
+    metrics = {
+        "client_id": int(gaps_client.client_id),
+        "num_examples": int(num_examples),
+        "proto_examples": int(proto_examples),
+        "local_epochs": int(gaps_client.config.LOCAL_EPOCHS),
+    }
+    return arrays, num_examples, metrics
 
 
-def evaluate(model: torch.nn.Module, test_loader, config: FLConfig) -> Tuple[float, int, dict]:
+def evaluate(model: torch.nn.Module, test_loader, config: FLConfig, client_id: int | None = None) -> Tuple[float, int, dict]:
     acc = evaluate_model(model, test_loader, torch.device(config.DEVICE))
     num_examples = len(test_loader.dataset)
     loss = float(1.0 - acc)
-    return loss, num_examples, {"accuracy": float(acc)}
+    metrics = {
+        "accuracy": float(acc),
+        "num_examples": int(num_examples),
+    }
+    if client_id is not None:
+        metrics["client_id"] = int(client_id)
+    return loss, num_examples, metrics

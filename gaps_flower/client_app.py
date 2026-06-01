@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import time
 
 import flwr as fl
 
@@ -27,19 +28,44 @@ class GapsFlowerClient(fl.client.NumPyClient):
         train_loader, test_loader = load_client_loaders(data_root, client_id, self.config)
         self.gaps_client = make_client(client_id, self.model, train_loader, self.config)
         self.test_loader = test_loader
+        train_samples = len(train_loader.dataset)
+        test_samples = len(test_loader.dataset)
+        print(
+            f"[GAPS client {client_id}] ready: train_samples={train_samples}, "
+            f"test_samples={test_samples}, device={device}, local_epochs={local_epochs}"
+        )
 
     def get_parameters(self, config):
         arrays, _keys = get_parameters(self.model)
         return arrays
 
     def fit(self, parameters, config):
+        start = time.perf_counter()
         set_parameters(self.model, parameters, self.parameter_keys)
         round_idx = int(config.get("server_round", 1)) if config else 1
-        return train_one_round(self.gaps_client, round_idx)
+        arrays, num_examples, metrics = train_one_round(self.gaps_client, round_idx)
+        elapsed = time.perf_counter() - start
+        metrics.update({
+            "fit_seconds": float(elapsed),
+            "round": int(round_idx),
+        })
+        print(
+            f"[GAPS client {self.client_id}] fit round={round_idx}, "
+            f"samples={num_examples}, seconds={elapsed:.2f}"
+        )
+        return arrays, num_examples, metrics
 
     def evaluate(self, parameters, config):
+        start = time.perf_counter()
         set_parameters(self.model, parameters, self.parameter_keys)
-        return evaluate(self.model, self.test_loader, self.config)
+        loss, num_examples, metrics = evaluate(self.model, self.test_loader, self.config, client_id=self.client_id)
+        elapsed = time.perf_counter() - start
+        metrics["evaluate_seconds"] = float(elapsed)
+        print(
+            f"[GAPS client {self.client_id}] evaluate samples={num_examples}, "
+            f"accuracy={metrics.get('accuracy', 0.0):.4f}, seconds={elapsed:.2f}"
+        )
+        return loss, num_examples, metrics
 
 
 def main() -> None:
