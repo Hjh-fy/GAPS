@@ -7,6 +7,7 @@ cloud-edge parameter exchange.
 
 from __future__ import annotations
 
+import json
 from collections import OrderedDict
 from pathlib import Path
 from typing import Iterable, List, Tuple
@@ -21,6 +22,26 @@ from utils import create_model_by_config, evaluate_model, set_random_seed
 
 
 NDArrays = List[np.ndarray]
+
+
+def serialize_counts(count_dict: dict) -> str:
+    """Serialize class-phase sample counts for Flower metrics."""
+    serializable = {}
+    for key, value in sorted(count_dict.items(), key=lambda item: tuple(item[0])):
+        cls, phase = key
+        serializable[f"{int(cls)},{int(phase)}"] = int(value)
+    return json.dumps(serializable, ensure_ascii=False, sort_keys=True)
+
+
+def summarize_feature_vector(feature: torch.Tensor) -> dict:
+    """Return scalar summary and JSON payload for a client feature mean."""
+    vec = feature.detach().cpu().float().view(-1)
+    return {
+        "feature_norm": float(torch.norm(vec, p=2).item()),
+        "feature_mean": float(vec.mean().item()),
+        "feature_std": float(vec.std(unbiased=False).item()),
+        "global_feature_json": json.dumps(vec.tolist(), ensure_ascii=False),
+    }
 
 
 def make_config(device: str = "cpu", local_epochs: int = 1, batch_size: int = 32) -> FLConfig:
@@ -92,7 +113,7 @@ def make_client(client_id: int, model: torch.nn.Module, train_loader, config: FL
 
 
 def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int, dict]:
-    params, _mus, count_dict, _features, _residual, _vars = gaps_client.train_one_round(
+    params, _mus, count_dict, global_feature, _residual, _vars = gaps_client.train_one_round(
         current_round=max(1, round_idx),
         global_protos=None,
         semantic_protos=None,
@@ -106,7 +127,9 @@ def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int,
         "num_examples": int(num_examples),
         "proto_examples": int(proto_examples),
         "local_epochs": int(gaps_client.config.LOCAL_EPOCHS),
+        "class_phase_counts_json": serialize_counts(count_dict or {}),
     }
+    metrics.update(summarize_feature_vector(global_feature))
     return arrays, num_examples, metrics
 
 
