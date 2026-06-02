@@ -495,7 +495,8 @@ class Client:
     def train_one_round(self, current_round: int, global_protos: Optional[Dict[Tuple[int, int], torch.Tensor]] = None,
                      semantic_protos: Optional[Dict[str, torch.Tensor]] = None
                      ) -> Tuple[Dict[str, torch.Tensor], Dict[Tuple[int, int], torch.Tensor],
-                                Dict[Tuple[int, int], int], torch.Tensor, Optional[torch.Tensor]]:
+                                Dict[Tuple[int, int], int], torch.Tensor, Optional[torch.Tensor],
+                                Dict[Tuple[int, int], torch.Tensor]]:
         """本地一轮训练
         
         1. 本地训练+对齐正则
@@ -506,7 +507,7 @@ class Client:
             semantic_protos: 全局语义原型，用于计算设备残差
             
         Returns:
-            模型参数, 加噪均值, 样本数, 特征统计量F_i, 设备残差估计值
+            模型参数, 加噪均值, 样本数, 特征统计量F_i, 设备残差估计值, 加噪方差
         """
         if self.train_loader is None:
             raise RuntimeError(f"Client {self.client_id}: train_loader not set")
