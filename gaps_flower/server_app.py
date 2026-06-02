@@ -28,6 +28,8 @@ def main() -> None:
                         help="是否保存 history.json 记录 (True/False)")
     parser.add_argument("--strategy", choices=DEFAULT_STRATEGIES, default="fedavg",
                         help="聚合策略: fedavg (Flower默认FedAvg) 或 gaps (GAPS自定义聚合)")
+    parser.add_argument("--proto-ema-alpha", type=float, default=0.8,
+                        help="语义原型 EMA 平滑系数 (仅 --strategy gaps 生效)")
     args = parser.parse_args()
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32)
@@ -52,7 +54,7 @@ def main() -> None:
     )
 
     if args.strategy == "gaps":
-        strategy = GapsStrategy(**strategy_kwargs)
+        strategy = GapsStrategy(proto_ema_alpha=args.proto_ema_alpha, **strategy_kwargs)
     else:
         strategy = CheckpointFedAvg(**strategy_kwargs)
 

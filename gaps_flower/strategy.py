@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections import OrderedDict
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import flwr as fl
 import numpy as np
@@ -290,14 +290,28 @@ class GapsStrategy(CheckpointFedAvg):
     将 Flower 客户端 Parameters 转为 state_dict，
     使用 GAPS 的 _aggregate_params_gaps 进行加权聚合，再转回 Flower Parameters。
 
-    与 FedAvg 的数学结果一致（均为按样本数加权平均），
-    但走 GAPS 代码路径，为后续接入选择性聚合、服务器端域适应等打下基础。
+    阶段 4.1：语义原型 EMA 聚合
+    - 每轮从 client 上传的 class-phase μ_cp / σ²_cp 做加权平均后，
+      通过 EMA 更新全局语义原型 semantic_protos
+    - 不依赖 Server 类（避免引入 val_loader/test_loader）
+    - 云端仅接收统计量，符合联邦学习隐私叙事
 
-    关键设计：
-    - 不依赖 Server 类（避免引入 val_loader/test_loader 等云端不持有的数据）
-    - 不依赖任何云端数据集，纯统计意义聚合
-    - aggregate_evaluate 仍复用父类 FedAvg 逻辑（评估不需要自定义）
+    Attributes:
+        proto_ema_alpha: 原型 EMA 平滑系数（默认 0.8）
+        semantic_protos: EMA 全局语义原型 μ^{sem}_cp
+        semantic_proto_vars: EMA 全局语义方差 σ²_cp
     """
+
+    def __init__(
+        self,
+        *,
+        proto_ema_alpha: float = 0.8,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.proto_ema_alpha = proto_ema_alpha
+        self.semantic_protos: Dict[str, torch.Tensor] = {}
+        self.semantic_proto_vars: Dict[str, torch.Tensor] = {}
 
     def aggregate_fit(
         self,
@@ -367,6 +381,12 @@ class GapsStrategy(CheckpointFedAvg):
                 if key != "global_feature_vector"
             }
             event["prototype_summary"] = proto_summary
+
+            # ── 阶段 4.1: EMA 语义原型更新 ──
+            self._update_semantic_protos(server_round)
+            semantic_path = self._save_semantic_protos(server_round)
+            event["semantic_protos"] = semantic_path
+
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
@@ -404,6 +424,89 @@ class GapsStrategy(CheckpointFedAvg):
                 if key in params:
                     agg_params[key] += weights[i] * params[key].float()
         return agg_params
+
+    def _update_semantic_protos(self, server_round: int) -> None:
+        """从已保存的 prototype_stats JSON 读取当轮加权原型，做 EMA 更新
+
+        数学公式:
+          μ^{sem}_t = α · μ^{sem}_{t-1}  +  (1 − α) · μ^{weighted}_t
+          σ²_t      = α · σ²_{t-1}       +  (1 − α) · σ²^{weighted}_t
+
+        其中 α = proto_ema_alpha，首轮直接初始化为 μ^{weighted}_1
+
+        Args:
+            server_round: 当前联邦轮次
+        """
+        proto_path = self.output_dir / f"prototype_stats_round_{server_round:03d}.json"
+        if not proto_path.exists():
+            return
+
+        data = json.loads(proto_path.read_text(encoding="utf-8"))
+        round_protos = data.get("global_prototypes", {})
+        round_vars = data.get("global_proto_vars", {})
+        alpha = self.proto_ema_alpha
+
+        if not self.semantic_protos:
+            # 首轮直接初始化
+            for key, vec in round_protos.items():
+                self.semantic_protos[key] = torch.tensor(vec, dtype=torch.float32)
+            for key, vec in round_vars.items():
+                self.semantic_proto_vars[key] = torch.tensor(vec, dtype=torch.float32)
+        else:
+            for key, vec in round_protos.items():
+                new_vec = torch.tensor(vec, dtype=torch.float32)
+                if key in self.semantic_protos:
+                    self.semantic_protos[key] = (
+                        alpha * self.semantic_protos[key] + (1.0 - alpha) * new_vec
+                    )
+                else:
+                    self.semantic_protos[key] = new_vec
+            for key, vec in round_vars.items():
+                new_vec = torch.tensor(vec, dtype=torch.float32)
+                if key in self.semantic_proto_vars:
+                    self.semantic_proto_vars[key] = (
+                        alpha * self.semantic_proto_vars[key] + (1.0 - alpha) * new_vec
+                    )
+                else:
+                    self.semantic_proto_vars[key] = new_vec
+
+    def _save_semantic_protos(self, server_round: int) -> str:
+        """保存 EMA 语义原型到独立 JSON 文件
+
+        Args:
+            server_round: 当前联邦轮次
+
+        Returns:
+            保存的文件路径
+        """
+        proto_serializable = {}
+        for key, tensor in self.semantic_protos.items():
+            proto_serializable[key] = tensor.detach().cpu().tolist()
+        var_serializable = {}
+        for key, tensor in self.semantic_proto_vars.items():
+            var_serializable[key] = tensor.detach().cpu().tolist()
+
+        payload = {
+            "run_name": self.run_name,
+            "round": int(server_round),
+            "proto_ema_alpha": self.proto_ema_alpha,
+            "num_semantic_protos": len(proto_serializable),
+            "num_semantic_proto_vars": len(var_serializable),
+            "semantic_protos": proto_serializable,
+            "semantic_proto_vars": var_serializable,
+        }
+        path = self.output_dir / f"semantic_protos_round_{server_round:03d}.json"
+        path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        latest = self.output_dir / "semantic_protos_latest.json"
+        latest.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[GAPS] Saved semantic protos (EMA α={self.proto_ema_alpha}): {path}")
+        return str(path)
 
 
 def weighted_average(metrics):
