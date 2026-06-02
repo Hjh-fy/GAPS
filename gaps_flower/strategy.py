@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 import flwr as fl
+import numpy as np
 import torch
-from flwr.common import EvaluateRes, FitRes, NDArrays, Parameters, parameters_to_ndarrays
+from flwr.common import EvaluateRes, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
 from flwr.server.client_proxy import ClientProxy
 
 
@@ -249,6 +251,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         event["fit_clients"] = len(results)
         event["fit_failures"] = len(failures)
         event["fit_metrics"] = dict(aggregated_metrics or {})
+        event["aggregation_method"] = "fedavg"
         if results:
             stats_path, global_summary, proto_path, proto_summary = self._collect_client_fit_stats(server_round, results)
             event["client_stats"] = stats_path
@@ -282,11 +285,125 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
 
 
 class GapsStrategy(CheckpointFedAvg):
-    """Placeholder GAPS strategy.
+    """GAPS 自定义聚合策略
 
-    It currently keeps the checkpoint/statistics FedAvg behavior while reserving
-    a stable CLI switch for later custom aggregation and server-side adaptation.
+    将 Flower 客户端 Parameters 转为 state_dict，
+    使用 GAPS 的 _aggregate_params_gaps 进行加权聚合，再转回 Flower Parameters。
+
+    与 FedAvg 的数学结果一致（均为按样本数加权平均），
+    但走 GAPS 代码路径，为后续接入选择性聚合、服务器端域适应等打下基础。
+
+    关键设计：
+    - 不依赖 Server 类（避免引入 val_loader/test_loader 等云端不持有的数据）
+    - 不依赖任何云端数据集，纯统计意义聚合
+    - aggregate_evaluate 仍复用父类 FedAvg 逻辑（评估不需要自定义）
     """
+
+    def aggregate_fit(
+        self,
+        server_round: int,
+        results: List[Tuple[ClientProxy, FitRes]],
+        failures: List[BaseException],
+    ) -> Tuple[Optional[Parameters], dict]:
+        if not results:
+            return None, {}
+
+        # ── 1. 每个客户端: Flower Parameters → state_dict(OrderedDict) ──
+        client_state_dicts: List[OrderedDict] = []
+        num_examples_list: List[int] = []
+        for _proxy, fit_res in results:
+            arrays = parameters_to_ndarrays(fit_res.parameters)
+            state = OrderedDict()
+            for key, arr in zip(self.parameter_keys, arrays):
+                ref = self.reference_state.get(key)
+                if ref is not None:
+                    state[key] = torch.tensor(arr, dtype=ref.dtype)
+                else:
+                    state[key] = torch.tensor(arr)
+            client_state_dicts.append(state)
+            num_examples_list.append(fit_res.num_examples)
+
+        # ── 2. 计算聚合权重 w_i = n_i / Σn_j ──
+        total_examples = sum(num_examples_list)
+        weights = torch.tensor(
+            [n / total_examples for n in num_examples_list],
+            dtype=torch.float32,
+        )
+
+        # ── 3. GAPS 加权参数聚合 ──
+        aggregated_state = self._aggregate_params_gaps(
+            client_state_dicts, weights
+        )
+
+        # ── 4. state_dict → Flower Parameters ──
+        aggregated_ndarrays: List[np.ndarray] = []
+        for key in self.parameter_keys:
+            agg_tensor = aggregated_state[key]
+            aggregated_ndarrays.append(agg_tensor.detach().cpu().numpy())
+        aggregated_parameters = ndarrays_to_parameters(aggregated_ndarrays)
+
+        # ── 5. 聚合 metrics（复用加权平均） ──
+        metrics_pairs = [
+            (fit_res.num_examples, fit_res.metrics)
+            for _, fit_res in results
+        ]
+        aggregated_metrics = weighted_average(metrics_pairs)
+
+        # ── 6. 记录 history + 保存统计 ──
+        event = self._round_event(server_round)
+        event["fit_clients"] = len(results)
+        event["fit_failures"] = len(failures)
+        event["fit_metrics"] = dict(aggregated_metrics or {})
+        event["aggregation_method"] = "gaps"
+        if results:
+            stats_path, global_summary, proto_path, proto_summary = (
+                self._collect_client_fit_stats(server_round, results)
+            )
+            event["client_stats"] = stats_path
+            event["prototype_stats"] = proto_path
+            event["global_feature_summary"] = {
+                key: value
+                for key, value in global_summary.items()
+                if key != "global_feature_vector"
+            }
+            event["prototype_summary"] = proto_summary
+        if aggregated_parameters is not None:
+            arrays = parameters_to_ndarrays(aggregated_parameters)
+            event["checkpoint"] = self._save_checkpoint(server_round, arrays)
+        self._write_history()
+        return aggregated_parameters, aggregated_metrics
+
+    @staticmethod
+    def _aggregate_params_gaps(
+        client_params: List[OrderedDict],
+        weights: torch.Tensor,
+    ) -> OrderedDict:
+        """GAPS 加权参数聚合
+
+        与 FedAvg 数学上等价（按样本数加权平均），
+        但走 GAPS 代码路径，后续可扩展为:
+          - 选择性聚合 (selective_weights)
+          - 可学习聚合 (learnable_aggregate)
+          - 原型解耦聚合 (prototype_decoupling)
+
+        Args:
+            client_params: 各客户端的 state_dict 列表
+            weights: 客户端聚合权重 (n_i / Σn_j)
+
+        Returns:
+            聚合后的 OrderedDict
+        """
+        reference_keys = list(client_params[0].keys())
+        agg_params = OrderedDict()
+        for key in reference_keys:
+            first_param = client_params[0][key]
+            agg_params[key] = torch.zeros_like(
+                first_param, dtype=torch.float32
+            )
+            for i, params in enumerate(client_params):
+                if key in params:
+                    agg_params[key] += weights[i] * params[key].float()
+        return agg_params
 
 
 def weighted_average(metrics):
