@@ -41,9 +41,9 @@ def main() -> None:
     parser.add_argument("--use-domain-adapt", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
                         help="是否启用服务端域适应 CORAL/MMD/对抗 (需 --server-val-data 和 --server-calib-data)")
     parser.add_argument("--server-val-data", type=str, default=None,
-                        help="服务端源域验证集目录 (含 features.npy, classification_labels.npy 等)")
+                        help="源域验证集目录: 源域 training client 的 calibration_features.npy (如 client_1,client_2)")
     parser.add_argument("--server-calib-data", type=str, default=None,
-                        help="服务端目标域校准集目录 (含 features.npy, classification_labels.npy 等)")
+                        help="目标域校准集目录: 目标域 test client 的 calibration_features.npy (如 client_3)")
     parser.add_argument("--domain-adapt-steps", type=int, default=30,
                         help="域适应优化步数 K")
     parser.add_argument("--domain-adapt-warmup", type=int, default=3,

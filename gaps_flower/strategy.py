@@ -892,42 +892,68 @@ class GapsStrategy(CheckpointFedAvg):
         """初始化服务端数据加载器 (val_loader, calib_loader)
 
         支持两种目录格式:
-          1. 客户端目录 (含 test_features.npy 等带前缀的文件)
-          2. 裸目录 (含 features.npy classification_labels.npy 等)
+          1. 单个客户端目录 (含 calibration_features.npy 等带前缀的文件)
+          2. 逗号分隔的多个目录，自动合并
+          3. 裸目录 (含 features.npy classification_labels.npy 等)
+
+        对应原单机模拟:
+          val_loader  ← 源域 training clients 的 calibration_features.npy (sensor 1-2)
+          calib_loader ← 目标域 test clients 的 calibration_features.npy (sensor 3-5)
+
+        注意: 两个数据加载器都使用 calibration_features.npy，
+        区别仅在于来自不同传感器组的客户端。
+        限制采样 500 个样本以避免服务端域适应耗时过长。
         """
         from pathlib import Path
         from federated_dataset import GasSensorWindowDataset
-        from torch.utils.data import DataLoader
+        from torch.utils.data import DataLoader, Subset
         import numpy as np
 
         batch_size = 32
 
-        def _load_from_dir(data_dir: str) -> DataLoader:
-            dp = Path(data_dir)
-            # 尝试带前缀的文件名 (客户端的 test_*.npy / calibration_*.npy)
-            for prefix in ("", "test_", "calibration_", "train_"):
-                feat_path = dp / f"{prefix}features.npy"
-                if feat_path.exists():
-                    break
-            else:
-                raise FileNotFoundError(
-                    f"在目录 {data_dir} 中找不到 features.npy"
-                )
-            cls_path = dp / f"{prefix}classification_labels.npy"
-            phase_path = dp / f"{prefix}phase_labels.npy"
-            if not cls_path.exists():
-                cls_path = dp / "classification_labels.npy"
-            features = np.load(feat_path)
-            cls_labels = np.load(cls_path)
-            phase_labels = (
-                np.load(phase_path, allow_pickle=True)
-                if phase_path.exists() else None
-            )
+        def _load_from_dirs(data_dirs_spec: str) -> DataLoader:
+            """从单个或多个目录加载 calibration 数据并合并
+
+            Args:
+                data_dirs_spec: 逗号分隔的目录路径或单个路径
+            """
+            dirs = [d.strip() for d in data_dirs_spec.split(",") if d.strip()]
+            all_features = []
+            all_cls_labels = []
+
+            for data_dir in dirs:
+                dp = Path(data_dir)
+                # 优先查找 calibration_*.npy，其次 test_*.npy，最后裸文件名
+                prefix = None
+                for candidate in ("calibration_", "test_", "train_", ""):
+                    feat_path = dp / f"{candidate}features.npy"
+                    if feat_path.exists():
+                        prefix = candidate
+                        break
+                if prefix is None:
+                    raise FileNotFoundError(
+                        f"在目录 {data_dir} 中找不到任何 features.npy"
+                    )
+
+                features = np.load(dp / f"{prefix}features.npy")
+                cls_path = dp / f"{prefix}classification_labels.npy"
+                if not cls_path.exists():
+                    cls_path = dp / "classification_labels.npy"
+                cls_labels = np.load(cls_path)
+
+                all_features.append(features)
+                all_cls_labels.append(cls_labels)
+                print(f"[GAPS]   + {data_dir} ({prefix}features.npy): "
+                      f"{len(features)} samples")
+
+            merged_features = np.concatenate(all_features, axis=0)
+            merged_cls_labels = np.concatenate(all_cls_labels, axis=0)
+
             dataset = GasSensorWindowDataset(
-                features=features,
-                regression_labels=np.zeros((len(features), 4), dtype=np.float32),
-                classification_labels=cls_labels,
-                phase_labels=phase_labels,
+                features=merged_features,
+                regression_labels=np.zeros((len(merged_features), 4), dtype=np.float32),
+                classification_labels=merged_cls_labels,
+                phase_labels=None,
                 normalize=False,
                 mean_std=None,
             )
@@ -935,23 +961,24 @@ class GapsStrategy(CheckpointFedAvg):
             indices = np.random.RandomState(42).choice(
                 len(dataset), size=sample_count, replace=False
             )
-            from torch.utils.data import Subset
-            subset = Subset(dataset, indices)
             return DataLoader(
-                subset, batch_size=batch_size, shuffle=True, num_workers=0
+                Subset(dataset, indices),
+                batch_size=batch_size, shuffle=True, num_workers=0,
             )
 
         if self.server_val_data:
-            self._val_loader = _load_from_dir(self.server_val_data)
-            print(f"[GAPS] Loaded server val data: {self.server_val_data} "
-                  f"({len(self._val_loader.dataset)} samples)")
+            print(f"[GAPS] Loading source-domain val data from: {self.server_val_data}")
+            self._val_loader = _load_from_dirs(self.server_val_data)
+            print(f"[GAPS]   → val_loader: {len(self._val_loader.dataset)} samples "
+                  f"(source domain, from calibration split)")
         else:
             self._val_loader = None
 
         if self.server_calib_data:
-            self._calib_loader = _load_from_dir(self.server_calib_data)
-            print(f"[GAPS] Loaded server calib data: {self.server_calib_data} "
-                  f"({len(self._calib_loader.dataset)} samples)")
+            print(f"[GAPS] Loading target-domain calib data from: {self.server_calib_data}")
+            self._calib_loader = _load_from_dirs(self.server_calib_data)
+            print(f"[GAPS]   → calib_loader: {len(self._calib_loader.dataset)} samples "
+                  f"(target domain, from calibration split)")
         else:
             self._calib_loader = None
 
