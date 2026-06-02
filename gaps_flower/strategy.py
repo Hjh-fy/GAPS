@@ -77,12 +77,30 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         except json.JSONDecodeError:
             return default
 
+    @staticmethod
+    def _prototype_summary(prototypes: dict) -> dict:
+        if not prototypes:
+            return {"num_global_prototypes": 0}
+        tensors = [torch.tensor(value, dtype=torch.float64) for value in prototypes.values()]
+        norms = [float(torch.norm(tensor, p=2).item()) for tensor in tensors]
+        dims = sorted({int(tensor.numel()) for tensor in tensors})
+        return {
+            "num_global_prototypes": len(prototypes),
+            "prototype_dims": dims,
+            "prototype_norm_mean": float(sum(norms) / len(norms)),
+            "prototype_norm_min": float(min(norms)),
+            "prototype_norm_max": float(max(norms)),
+        }
+
     def _collect_client_fit_stats(
         self, server_round: int, results: List[Tuple[ClientProxy, FitRes]]
-    ) -> tuple[str, dict]:
+    ) -> tuple[str, dict, str, dict]:
         clients = []
         weighted_feature = None
         weighted_examples = 0.0
+        proto_sums = {}
+        proto_counts = {}
+        client_proto_keys = {}
 
         for _proxy, fit_res in results:
             metrics = dict(fit_res.metrics or {})
@@ -90,6 +108,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             num_examples = int(metrics.get("num_examples", fit_res.num_examples))
             counts = self._parse_json_metric(metrics.get("class_phase_counts_json"), {})
             global_feature = self._parse_json_metric(metrics.get("global_feature_json"), [])
+            prototypes = self._parse_json_metric(metrics.get("prototype_json"), {})
 
             client_entry = {
                 "client_id": client_id,
@@ -101,6 +120,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "feature_mean": float(metrics.get("feature_mean", 0.0)),
                 "feature_std": float(metrics.get("feature_std", 0.0)),
                 "class_phase_counts": counts,
+                "prototype_count": int(metrics.get("prototype_count", len(prototypes))),
             }
             if global_feature:
                 client_entry["global_feature_dim"] = len(global_feature)
@@ -109,6 +129,18 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                     weighted_feature = torch.zeros_like(feature_tensor)
                 weighted_feature += feature_tensor * max(num_examples, 0)
                 weighted_examples += max(float(num_examples), 0.0)
+
+            client_proto_keys[str(client_id)] = sorted(prototypes.keys())
+            for key, vector in prototypes.items():
+                count = int(counts.get(key, 0))
+                if count <= 0:
+                    continue
+                tensor = torch.tensor(vector, dtype=torch.float64)
+                if key not in proto_sums:
+                    proto_sums[key] = torch.zeros_like(tensor)
+                    proto_counts[key] = 0
+                proto_sums[key] += tensor * count
+                proto_counts[key] += count
             clients.append(client_entry)
 
         global_summary = {}
@@ -122,16 +154,45 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "global_feature_vector": global_feature_mean.tolist(),
             }
 
-        payload = {
+        global_prototypes = {}
+        prototype_counts = {}
+        for key, proto_sum in sorted(proto_sums.items()):
+            count = proto_counts.get(key, 0)
+            if count <= 0:
+                continue
+            global_prototypes[key] = (proto_sum / count).tolist()
+            prototype_counts[key] = int(count)
+
+        client_stats_payload = {
             "run_name": self.run_name,
             "round": int(server_round),
             "clients": sorted(clients, key=lambda item: item["client_id"]),
             "global_summary": global_summary,
         }
-        path = self.output_dir / f"client_stats_round_{server_round:03d}.json"
-        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"[GAPS] Saved client stats: {path}")
-        return str(path), global_summary
+        client_stats_path = self.output_dir / f"client_stats_round_{server_round:03d}.json"
+        client_stats_path.write_text(
+            json.dumps(client_stats_payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[GAPS] Saved client stats: {client_stats_path}")
+
+        prototype_summary = self._prototype_summary(global_prototypes)
+        prototype_payload = {
+            "run_name": self.run_name,
+            "round": int(server_round),
+            "global_prototypes": global_prototypes,
+            "prototype_counts": prototype_counts,
+            "client_proto_keys": client_proto_keys,
+            "summary": prototype_summary,
+        }
+        prototype_stats_path = self.output_dir / f"prototype_stats_round_{server_round:03d}.json"
+        prototype_stats_path.write_text(
+            json.dumps(prototype_payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[GAPS] Saved prototype stats: {prototype_stats_path}")
+
+        return str(client_stats_path), global_summary, str(prototype_stats_path), prototype_summary
 
     def aggregate_fit(
         self,
@@ -147,11 +208,13 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         event["fit_failures"] = len(failures)
         event["fit_metrics"] = dict(aggregated_metrics or {})
         if results:
-            stats_path, global_summary = self._collect_client_fit_stats(server_round, results)
+            stats_path, global_summary, proto_path, proto_summary = self._collect_client_fit_stats(server_round, results)
             event["client_stats"] = stats_path
+            event["prototype_stats"] = proto_path
             event["global_feature_summary"] = {
                 key: value for key, value in global_summary.items() if key != "global_feature_vector"
             }
+            event["prototype_summary"] = proto_summary
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
@@ -193,6 +256,7 @@ def weighted_average(metrics):
         "round",
         "class_phase_counts_json",
         "global_feature_json",
+        "prototype_json",
     }
     keys = sorted({key for _, metric in metrics for key in metric.keys() if key not in skip_keys})
     aggregated = {}

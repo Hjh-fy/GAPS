@@ -33,6 +33,16 @@ def serialize_counts(count_dict: dict) -> str:
     return json.dumps(serializable, ensure_ascii=False, sort_keys=True)
 
 
+def serialize_tensor_dict(tensor_dict: dict) -> str:
+    """Serialize class-phase tensors as JSON lists for Flower metrics."""
+    serializable = {}
+    for key, value in sorted(tensor_dict.items(), key=lambda item: tuple(item[0])):
+        cls, phase = key
+        tensor = value.detach().cpu().float().view(-1)
+        serializable[f"{int(cls)},{int(phase)}"] = tensor.tolist()
+    return json.dumps(serializable, ensure_ascii=False, sort_keys=True)
+
+
 def summarize_feature_vector(feature: torch.Tensor) -> dict:
     """Return scalar summary and JSON payload for a client feature mean."""
     vec = feature.detach().cpu().float().view(-1)
@@ -113,7 +123,7 @@ def make_client(client_id: int, model: torch.nn.Module, train_loader, config: FL
 
 
 def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int, dict]:
-    params, _mus, count_dict, global_feature, _residual, _vars = gaps_client.train_one_round(
+    params, prototypes, count_dict, global_feature, _residual, _vars = gaps_client.train_one_round(
         current_round=max(1, round_idx),
         global_protos=None,
         semantic_protos=None,
@@ -128,6 +138,8 @@ def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int,
         "proto_examples": int(proto_examples),
         "local_epochs": int(gaps_client.config.LOCAL_EPOCHS),
         "class_phase_counts_json": serialize_counts(count_dict or {}),
+        "prototype_json": serialize_tensor_dict(prototypes or {}),
+        "prototype_count": int(len(prototypes or {})),
     }
     metrics.update(summarize_feature_vector(global_feature))
     return arrays, num_examples, metrics
