@@ -30,6 +30,14 @@ def main() -> None:
                         help="聚合策略: fedavg (Flower默认FedAvg) 或 gaps (GAPS自定义聚合)")
     parser.add_argument("--proto-ema-alpha", type=float, default=0.8,
                         help="语义原型 EMA 平滑系数 (仅 --strategy gaps 生效)")
+    parser.add_argument("--use-selective-agg", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
+                        help="是否启用选择性聚合 (仅 --strategy gaps 生效)")
+    parser.add_argument("--selective-warmup", type=int, default=3,
+                        help="选择性聚合预热轮数，前 N 轮使用标准 FedAvg")
+    parser.add_argument("--selective-min-scale", type=float, default=0.3,
+                        help="选择性聚合最小缩放因子，防止权重归零")
+    parser.add_argument("--use-proto-mmd", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
+                        help="是否计算原型级域漂移诊断 (仅 --strategy gaps 生效)")
     args = parser.parse_args()
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32)
@@ -54,7 +62,14 @@ def main() -> None:
     )
 
     if args.strategy == "gaps":
-        strategy = GapsStrategy(proto_ema_alpha=args.proto_ema_alpha, **strategy_kwargs)
+        strategy = GapsStrategy(
+            proto_ema_alpha=args.proto_ema_alpha,
+            use_selective_agg=args.use_selective_agg,
+            selective_warmup=args.selective_warmup,
+            selective_min_scale=args.selective_min_scale,
+            use_proto_mmd=args.use_proto_mmd,
+            **strategy_kwargs,
+        )
     else:
         strategy = CheckpointFedAvg(**strategy_kwargs)
 

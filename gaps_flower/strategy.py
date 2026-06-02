@@ -287,31 +287,41 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
 class GapsStrategy(CheckpointFedAvg):
     """GAPS 自定义聚合策略
 
-    将 Flower 客户端 Parameters 转为 state_dict，
-    使用 GAPS 的 _aggregate_params_gaps 进行加权聚合，再转回 Flower Parameters。
-
     阶段 4.1：语义原型 EMA 聚合
     - 每轮从 client 上传的 class-phase μ_cp / σ²_cp 做加权平均后，
       通过 EMA 更新全局语义原型 semantic_protos
-    - 不依赖 Server 类（避免引入 val_loader/test_loader）
-    - 云端仅接收统计量，符合联邦学习隐私叙事
 
-    Attributes:
-        proto_ema_alpha: 原型 EMA 平滑系数（默认 0.8）
-        semantic_protos: EMA 全局语义原型 μ^{sem}_cp
-        semantic_proto_vars: EMA 全局语义方差 σ²_cp
+    阶段 4.2：选择性聚合
+    - 计算每个 client 原型与 EMA 语义原型的余弦相似度
+    - 相似度低的 client 权重被压制（漂移过大）
+    - w'_i ∝ max(cos_sim_i, s_min) · n_i
+
+    阶段 4.3：原型级域适应诊断
+    - 计算 client-to-EMA 原型漂移 (L2)
+    - 计算 client-to-client 原型发散步 (pairwise L2)
+    - 纯诊断，不修改模型参数，用于观测域漂移趋势
+
+    不依赖任何云端原始数据，仅使用统计量。
     """
 
     def __init__(
         self,
         *,
         proto_ema_alpha: float = 0.8,
+        use_selective_agg: bool = True,
+        selective_warmup: int = 3,
+        selective_min_scale: float = 0.3,
+        use_proto_mmd: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.proto_ema_alpha = proto_ema_alpha
         self.semantic_protos: Dict[str, torch.Tensor] = {}
         self.semantic_proto_vars: Dict[str, torch.Tensor] = {}
+        self.use_selective_agg = use_selective_agg
+        self.selective_warmup = selective_warmup
+        self.selective_min_scale = selective_min_scale
+        self.use_proto_mmd = use_proto_mmd
 
     def aggregate_fit(
         self,
@@ -337,12 +347,27 @@ class GapsStrategy(CheckpointFedAvg):
             client_state_dicts.append(state)
             num_examples_list.append(fit_res.num_examples)
 
-        # ── 2. 计算聚合权重 w_i = n_i / Σn_j ──
+        # ── 2. 计算基础聚合权重 w_i = n_i / Σn_j ──
         total_examples = sum(num_examples_list)
-        weights = torch.tensor(
+        base_weights = torch.tensor(
             [n / total_examples for n in num_examples_list],
             dtype=torch.float32,
         )
+
+        # ── 阶段 4.2: 选择性聚合权重调整 ──
+        selective_info: dict = {"selective_active": False}
+        if self.use_selective_agg and self.semantic_protos and server_round > self.selective_warmup:
+            selective_weights, selective_info = self._compute_selective_weights(
+                results, base_weights, server_round
+            )
+            weights = selective_weights
+        else:
+            weights = base_weights
+            if self.use_selective_agg:
+                selective_info = {
+                    "selective_active": False,
+                    "reason": f"warmup (round {server_round} ≤ {self.selective_warmup})" if self.semantic_protos else "no semantic_protos yet",
+                }
 
         # ── 3. GAPS 加权参数聚合 ──
         aggregated_state = self._aggregate_params_gaps(
@@ -369,6 +394,7 @@ class GapsStrategy(CheckpointFedAvg):
         event["fit_failures"] = len(failures)
         event["fit_metrics"] = dict(aggregated_metrics or {})
         event["aggregation_method"] = "gaps"
+        event["selective_agg"] = selective_info
         if results:
             stats_path, global_summary, proto_path, proto_summary = (
                 self._collect_client_fit_stats(server_round, results)
@@ -387,11 +413,211 @@ class GapsStrategy(CheckpointFedAvg):
             semantic_path = self._save_semantic_protos(server_round)
             event["semantic_protos"] = semantic_path
 
+            # ── 阶段 4.3: 原型级域适应诊断 (MMD) ──
+            if self.use_proto_mmd and results:
+                mmd_path, mmd_summary = self._compute_proto_mmd_diagnostics(
+                    server_round, results
+                )
+                event["proto_mmd"] = mmd_path
+                event["proto_mmd_summary"] = mmd_summary
+
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
         self._write_history()
         return aggregated_parameters, aggregated_metrics
+
+    # ═══════════════════════════════════════════════════════════════
+    # 阶段 4.2: 选择性聚合
+    # ═══════════════════════════════════════════════════════════════
+
+    def _compute_selective_weights(
+        self,
+        results: List[Tuple[ClientProxy, FitRes]],
+        base_weights: torch.Tensor,
+        server_round: int,
+    ) -> Tuple[torch.Tensor, dict]:
+        """计算选择性聚合权重
+
+        数学公式:
+          s_i = (1/|K_i|) · Σ_{k∈K_i} cos(μ_{i,k}, μ^{sem}_k)
+          w'_i = max(s_i, s_min) · w_i
+          w' = w' / Σw'  (重归一化)
+
+        其中 K_i 是客户端 i 上传的所有 (cls,phase) 键集合
+
+        Args:
+            results: Flower fit results 列表
+            base_weights: 基础权重 (n_i / Σn_j)
+            server_round: 当前轮次
+
+        Returns:
+            (调整后权重, 诊断信息字典)
+        """
+        similarities: List[float] = []
+        client_ids: List[int] = []
+        per_key_details: Dict[str, Dict[str, float]] = {}
+
+        for _proxy, fit_res in results:
+            metrics = dict(fit_res.metrics or {})
+            cid = int(metrics.get("client_id", -1))
+            prototypes = self._parse_json_metric(metrics.get("prototype_json"), {})
+
+            sim_sum = 0.0
+            sim_count = 0
+            key_sims: Dict[str, float] = {}
+            for key, proto_vec in prototypes.items():
+                if key in self.semantic_protos:
+                    a = torch.tensor(proto_vec, dtype=torch.float32).unsqueeze(0)
+                    b = self.semantic_protos[key].unsqueeze(0)
+                    cos_sim = float(
+                        torch.nn.functional.cosine_similarity(a, b).item()
+                    )
+                    sim_sum += cos_sim
+                    sim_count += 1
+                    key_sims[key] = cos_sim
+
+            avg_sim = sim_sum / max(sim_count, 1)
+            scaled = max(avg_sim, self.selective_min_scale)
+            similarities.append(scaled)
+            client_ids.append(cid)
+            per_key_details[str(cid)] = {
+                "avg_cos_sim": avg_sim,
+                "scaled_cos_sim": scaled,
+                "n_keys": sim_count,
+                "per_key": key_sims,
+            }
+
+        sim_tensor = torch.tensor(similarities, dtype=torch.float32)
+        adjusted = base_weights * sim_tensor
+        adjusted = adjusted / adjusted.sum()
+
+        info = {
+            "selective_active": True,
+            "round": server_round,
+            "warmup": self.selective_warmup,
+            "min_scale": self.selective_min_scale,
+            "client_similarities": {
+                str(cid): float(s) for cid, s in zip(client_ids, similarities)
+            },
+            "per_key_details": per_key_details,
+        }
+        return adjusted, info
+
+    # ═══════════════════════════════════════════════════════════════
+    # 阶段 4.3: 原型级域适应诊断
+    # ═══════════════════════════════════════════════════════════════
+
+    def _compute_proto_mmd_diagnostics(
+        self, server_round: int, results: List[Tuple[ClientProxy, FitRes]]
+    ) -> Tuple[str, dict]:
+        """计算原型级域漂移诊断指标
+
+        两类指标 (均基于 L2 距离):
+          1. client-to-EMA 漂移: 每个 client 的 μ_{i,k} 与 μ^{sem}_k 的 L2 距离
+          2. client-to-client 发散: 不同 client 对同一 (cls,phase) 的 pairwise L2
+
+        这些指标纯诊断、不修改模型，用于观测：
+          - 哪些 client 漂移最大
+          - 哪些 (cls,phase) 跨 client 一致性最差
+
+        Args:
+            server_round: 当前轮次
+            results: Flower fit results 列表
+
+        Returns:
+            (保存路径, 摘要字典)
+        """
+        # 收集每个客户端按 key 组织的原型
+        client_protos: Dict[int, Dict[str, torch.Tensor]] = {}
+        for _proxy, fit_res in results:
+            metrics = dict(fit_res.metrics or {})
+            cid = int(metrics.get("client_id", -1))
+            prototypes = self._parse_json_metric(metrics.get("prototype_json"), {})
+            client_protos[cid] = {
+                key: torch.tensor(vec, dtype=torch.float32)
+                for key, vec in prototypes.items()
+            }
+
+        # ── 1. client-to-EMA 漂移 ──
+        drift_per_client: Dict[str, dict] = {}
+        drift_values: List[float] = []
+        for cid, protos in sorted(client_protos.items()):
+            key_drifts: Dict[str, float] = {}
+            for key, proto in protos.items():
+                if key in self.semantic_protos:
+                    key_drifts[key] = float(
+                        torch.norm(proto - self.semantic_protos[key], p=2).item()
+                    )
+            avg_drift = sum(key_drifts.values()) / max(len(key_drifts), 1)
+            drift_per_client[str(cid)] = {
+                "avg_l2_drift": avg_drift,
+                "n_keys": len(key_drifts),
+                "per_key": key_drifts,
+            }
+            drift_values.append(avg_drift)
+
+        # ── 2. client-to-client pairwise 发散 ──
+        all_keys = sorted(
+            {key for protos in client_protos.values() for key in protos}
+            if client_protos else set()
+        )
+        key_divergence: Dict[str, dict] = {}
+        divergence_values: List[float] = []
+        cid_list = sorted(client_protos.keys())
+        for key in all_keys:
+            vectors = []
+            for cid in cid_list:
+                if key in client_protos.get(cid, {}):
+                    vectors.append(client_protos[cid][key])
+            if len(vectors) < 2:
+                continue
+            pairwise_l2 = []
+            for i in range(len(vectors)):
+                for j in range(i + 1, len(vectors)):
+                    pairwise_l2.append(
+                        float(torch.norm(vectors[i] - vectors[j], p=2).item())
+                    )
+            avg_div = sum(pairwise_l2) / len(pairwise_l2)
+            key_divergence[key] = {
+                "avg_pairwise_l2": avg_div,
+                "max_pairwise_l2": max(pairwise_l2),
+                "n_clients": len(vectors),
+            }
+            divergence_values.append(avg_div)
+
+        summary = {
+            "mean_client_to_ema_drift": float(np.mean(drift_values)) if drift_values else 0.0,
+            "max_client_to_ema_drift": float(np.max(drift_values)) if drift_values else 0.0,
+            "mean_inter_client_divergence": float(np.mean(divergence_values)) if divergence_values else 0.0,
+            "max_inter_client_divergence": float(np.max(divergence_values)) if divergence_values else 0.0,
+            "n_drift_clients": len(drift_per_client),
+            "n_divergence_keys": len(key_divergence),
+        }
+
+        payload = {
+            "run_name": self.run_name,
+            "round": int(server_round),
+            "summary": summary,
+            "client_to_ema_drift": drift_per_client,
+            "inter_client_divergence": key_divergence,
+        }
+        path = self.output_dir / f"proto_mmd_round_{server_round:03d}.json"
+        path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        latest = self.output_dir / "proto_mmd_latest.json"
+        latest.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(f"[GAPS] Saved proto MMD diagnostics: {path}")
+        return str(path), summary
+
+    # ═══════════════════════════════════════════════════════════════
+    # 共享工具方法
+    # ═══════════════════════════════════════════════════════════════
 
     @staticmethod
     def _aggregate_params_gaps(
@@ -447,7 +673,6 @@ class GapsStrategy(CheckpointFedAvg):
         alpha = self.proto_ema_alpha
 
         if not self.semantic_protos:
-            # 首轮直接初始化
             for key, vec in round_protos.items():
                 self.semantic_protos[key] = torch.tensor(vec, dtype=torch.float32)
             for key, vec in round_vars.items():
