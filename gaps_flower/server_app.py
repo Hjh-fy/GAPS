@@ -38,6 +38,24 @@ def main() -> None:
                         help="选择性聚合最小缩放因子，防止权重归零")
     parser.add_argument("--use-proto-mmd", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
                         help="是否计算原型级域漂移诊断 (仅 --strategy gaps 生效)")
+    parser.add_argument("--use-domain-adapt", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
+                        help="是否启用服务端域适应 CORAL/MMD/对抗 (需 --server-val-data 和 --server-calib-data)")
+    parser.add_argument("--server-val-data", type=str, default=None,
+                        help="服务端源域验证集目录 (含 features.npy, classification_labels.npy 等)")
+    parser.add_argument("--server-calib-data", type=str, default=None,
+                        help="服务端目标域校准集目录 (含 features.npy, classification_labels.npy 等)")
+    parser.add_argument("--domain-adapt-steps", type=int, default=30,
+                        help="域适应优化步数 K")
+    parser.add_argument("--domain-adapt-warmup", type=int, default=3,
+                        help="域适应预热轮数")
+    parser.add_argument("--da-use-coral", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
+                        help="域适应是否启用 Deep CORAL 损失")
+    parser.add_argument("--da-use-mmd", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
+                        help="域适应是否启用 MMD 对齐损失")
+    parser.add_argument("--da-use-adversarial", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
+                        help="域适应是否启用对抗训练 (WGAN-GP + GRL)")
+    parser.add_argument("--da-device", type=str, default="cpu",
+                        help="域适应计算设备 (cpu 或 cuda)")
     args = parser.parse_args()
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32)
@@ -68,6 +86,15 @@ def main() -> None:
             selective_warmup=args.selective_warmup,
             selective_min_scale=args.selective_min_scale,
             use_proto_mmd=args.use_proto_mmd,
+            use_domain_adapt=args.use_domain_adapt,
+            server_val_data=args.server_val_data,
+            server_calib_data=args.server_calib_data,
+            domain_adapt_steps=args.domain_adapt_steps,
+            domain_adapt_warmup=args.domain_adapt_warmup,
+            da_use_coral=args.da_use_coral,
+            da_use_mmd=args.da_use_mmd,
+            da_use_adversarial=args.da_use_adversarial,
+            da_device=args.da_device,
             **strategy_kwargs,
         )
     else:

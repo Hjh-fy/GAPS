@@ -263,6 +263,15 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
+
+            # ── 阶段 4.4: 服务端域适应 ──
+            if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
+                da_path, da_summary = self._run_domain_adapt(
+                    server_round, aggregated_state, arrays
+                )
+                event["domain_adapt"] = da_path
+                event["domain_adapt_summary"] = da_summary
+
         self._write_history()
         return aggregated_parameters, aggregated_metrics
 
@@ -301,7 +310,10 @@ class GapsStrategy(CheckpointFedAvg):
     - 计算 client-to-client 原型发散步 (pairwise L2)
     - 纯诊断，不修改模型参数，用于观测域漂移趋势
 
-    不依赖任何云端原始数据，仅使用统计量。
+    阶段 4.4：服务端域适应 (CORAL + MMD + 对抗训练)
+    - 聚合后对全局模型做 K 步服务端优化
+    - 使用源域验证集 + 目标域校准集对齐特征分布
+    - 产出 domain-adapted checkpoint
     """
 
     def __init__(
@@ -312,6 +324,15 @@ class GapsStrategy(CheckpointFedAvg):
         selective_warmup: int = 3,
         selective_min_scale: float = 0.3,
         use_proto_mmd: bool = True,
+        use_domain_adapt: bool = False,
+        server_val_data: Optional[str] = None,
+        server_calib_data: Optional[str] = None,
+        domain_adapt_steps: int = 30,
+        domain_adapt_warmup: int = 3,
+        da_use_coral: bool = True,
+        da_use_mmd: bool = True,
+        da_use_adversarial: bool = False,
+        da_device: str = "cpu",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -322,6 +343,19 @@ class GapsStrategy(CheckpointFedAvg):
         self.selective_warmup = selective_warmup
         self.selective_min_scale = selective_min_scale
         self.use_proto_mmd = use_proto_mmd
+
+        self.use_domain_adapt = use_domain_adapt
+        self.server_val_data = server_val_data
+        self.server_calib_data = server_calib_data
+        self.domain_adapt_steps = domain_adapt_steps
+        self.domain_adapt_warmup = domain_adapt_warmup
+        self.da_use_coral = da_use_coral
+        self.da_use_mmd = da_use_mmd
+        self.da_use_adversarial = da_use_adversarial
+        self.da_device = da_device
+        self._da_trainer = None
+        self._val_loader = None
+        self._calib_loader = None
 
     def aggregate_fit(
         self,
@@ -732,6 +766,174 @@ class GapsStrategy(CheckpointFedAvg):
         )
         print(f"[GAPS] Saved semantic protos (EMA α={self.proto_ema_alpha}): {path}")
         return str(path)
+
+    # ═══════════════════════════════════════════════════════════════
+    # 阶段 4.4: 服务端域适应 (CORAL + MMD + 对抗)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _run_domain_adapt(
+        self, server_round: int, aggregated_state: OrderedDict, arrays: List[np.ndarray]
+    ) -> Tuple[str, dict]:
+        """在聚合后的全局模型上运行服务端域适应
+
+        Args:
+            server_round: 当前联邦轮次
+            aggregated_state: 聚合后的 state_dict (OrderedDict)
+            arrays: 聚合后的参数数组
+
+        Returns:
+            (adapted_checkpoint_path, diagnostics_summary)
+        """
+        from gaps_flower.domain_adaptation import ServerDomainAdaptation
+        import torch
+
+        # ── 1. 懒加载：构建域适应模型 + 数据加载器 ──
+        if self._da_trainer is None:
+            da_device = torch.device(
+                self.da_device if torch.cuda.is_available() else "cpu"
+            )
+            self._init_domain_adapt_loaders()
+
+            da_model = self._build_da_model(aggregated_state, da_device)
+            hyperparams = {
+                "USE_DEEP_CORAL": self.da_use_coral,
+                "USE_MMD_ALIGNMENT": self.da_use_mmd,
+                "USE_ADVERSARIAL_DOMAIN": self.da_use_adversarial,
+                "LAMBDA_DEEP_CORAL": 0.1,
+                "LAMBDA_GLOBAL_MMD": 0.5,
+                "LAMBDA_CLASS_MMD": 0.5,
+                "LAMBDA_PROTO_ANCHOR": 0.3,
+                "LAMBDA_ADV_DOMAIN": 0.1,
+                "SERVER_OPT_LR": 1e-4,
+                "HIDDEN_DIM2": 64,
+                "NUM_CLASSES": 4,
+                "MAX_VAL_BATCHES": 10,
+                "ADV_DOMAIN_LR": 0.001,
+                "ADV_CRITIC_ITERS": 3,
+                "ADV_GRADIENT_PENALTY": 10.0,
+                "ADV_CLASS_CONDITIONAL": True,
+                "CORAL_CLASS_CONDITIONAL": False,
+            }
+            self._da_trainer = ServerDomainAdaptation(
+                model=da_model,
+                val_loader=self._val_loader,
+                calib_loader=self._calib_loader,
+                semantic_protos=self.semantic_protos,
+                device=da_device,
+                hyperparams=hyperparams,
+            )
+        else:
+            da_device = self._da_trainer.device
+            da_model = self._build_da_model(aggregated_state, da_device)
+            self._da_trainer.model = da_model
+
+        # ── 2. 运行域适应优化 ──
+        adapted_model, diag = self._da_trainer.run_adaptation(
+            num_steps=self.domain_adapt_steps,
+        )
+
+        # ── 3. 保存 domain-adapted checkpoint ──
+        adapted_state = adapted_model.state_dict()
+        da_arrays = []
+        for key in self.parameter_keys:
+            da_arrays.append(adapted_state[key].detach().cpu().numpy())
+
+        ckpt = {
+            "round": int(server_round),
+            "model_state": {
+                key: value.detach().cpu().clone()
+                for key, value in adapted_state.items()
+            },
+            "parameter_keys": self.parameter_keys,
+            "run_name": self.run_name,
+            "adaptive": True,
+            "diagnostics": diag,
+        }
+        path = self.output_dir / f"server_round_{server_round:03d}_adapted.pth"
+        torch.save(ckpt, path)
+        latest = self.output_dir / "server_latest_adapted.pth"
+        torch.save(ckpt, latest)
+        print(f"[GAPS] Saved domain-adapted checkpoint: {path}")
+
+        # ── 4. 保存诊断文本 ──
+        diag_path = self.output_dir / f"domain_adapt_round_{server_round:03d}.json"
+        diag_path.write_text(
+            json.dumps(diag, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        latest_diag = self.output_dir / "domain_adapt_latest.json"
+        latest_diag.write_text(
+            json.dumps(diag, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+
+        return str(path), diag
+
+    def _build_da_model(
+        self, aggregated_state: OrderedDict, device: torch.device
+    ):
+        """根据聚合后的 state_dict 构建域适应模型
+
+        Args:
+            aggregated_state: 聚合后的 OrderedDict state
+            device: 计算设备
+
+        Returns:
+            加载了聚合权重的模型
+        """
+        from gaps_flower.task import create_model, make_config
+
+        config = make_config(device=str(device), local_epochs=1, batch_size=32)
+        model = create_model(config)
+        model.load_state_dict(aggregated_state, strict=False)
+        return model.to(device)
+
+    def _init_domain_adapt_loaders(self) -> None:
+        """初始化服务端数据加载器 (val_loader, calib_loader)
+
+        从 .npy 文件加载校准集和验证集数据。
+        """
+        from pathlib import Path
+        from federated_dataset import GasSensorWindowDataset
+        from torch.utils.data import DataLoader
+        import numpy as np
+
+        batch_size = 32
+
+        def _load_from_dir(data_dir: str) -> DataLoader:
+            dp = Path(data_dir)
+            features = np.load(dp / "features.npy")
+            cls_labels = np.load(dp / "classification_labels.npy")
+            phase_path = dp / "phase_labels.npy"
+            phase_labels = (
+                np.load(phase_path, allow_pickle=True)
+                if phase_path.exists() else None
+            )
+            dataset = GasSensorWindowDataset(
+                features=features,
+                regression_labels=np.zeros((len(features), 4), dtype=np.float32),
+                classification_labels=cls_labels,
+                phase_labels=phase_labels,
+                normalize=False,
+                mean_std=None,
+            )
+            return DataLoader(
+                dataset, batch_size=batch_size, shuffle=True, num_workers=0
+            )
+
+        if self.server_val_data:
+            self._val_loader = _load_from_dir(self.server_val_data)
+            print(f"[GAPS] Loaded server val data: {self.server_val_data} "
+                  f"({len(self._val_loader.dataset)} samples)")
+        else:
+            self._val_loader = None
+
+        if self.server_calib_data:
+            self._calib_loader = _load_from_dir(self.server_calib_data)
+            print(f"[GAPS] Loaded server calib data: {self.server_calib_data} "
+                  f"({len(self._calib_loader.dataset)} samples)")
+        else:
+            self._calib_loader = None
 
 
 def weighted_average(metrics):
