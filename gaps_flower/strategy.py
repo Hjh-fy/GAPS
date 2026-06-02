@@ -891,7 +891,9 @@ class GapsStrategy(CheckpointFedAvg):
     def _init_domain_adapt_loaders(self) -> None:
         """初始化服务端数据加载器 (val_loader, calib_loader)
 
-        从 .npy 文件加载校准集和验证集数据。
+        支持两种目录格式:
+          1. 客户端目录 (含 test_features.npy 等带前缀的文件)
+          2. 裸目录 (含 features.npy classification_labels.npy 等)
         """
         from pathlib import Path
         from federated_dataset import GasSensorWindowDataset
@@ -902,9 +904,21 @@ class GapsStrategy(CheckpointFedAvg):
 
         def _load_from_dir(data_dir: str) -> DataLoader:
             dp = Path(data_dir)
-            features = np.load(dp / "features.npy")
-            cls_labels = np.load(dp / "classification_labels.npy")
-            phase_path = dp / "phase_labels.npy"
+            # 尝试带前缀的文件名 (客户端的 test_*.npy / calibration_*.npy)
+            for prefix in ("", "test_", "calibration_", "train_"):
+                feat_path = dp / f"{prefix}features.npy"
+                if feat_path.exists():
+                    break
+            else:
+                raise FileNotFoundError(
+                    f"在目录 {data_dir} 中找不到 features.npy"
+                )
+            cls_path = dp / f"{prefix}classification_labels.npy"
+            phase_path = dp / f"{prefix}phase_labels.npy"
+            if not cls_path.exists():
+                cls_path = dp / "classification_labels.npy"
+            features = np.load(feat_path)
+            cls_labels = np.load(cls_path)
             phase_labels = (
                 np.load(phase_path, allow_pickle=True)
                 if phase_path.exists() else None
@@ -917,8 +931,14 @@ class GapsStrategy(CheckpointFedAvg):
                 normalize=False,
                 mean_std=None,
             )
+            sample_count = min(len(dataset), 500)
+            indices = np.random.RandomState(42).choice(
+                len(dataset), size=sample_count, replace=False
+            )
+            from torch.utils.data import Subset
+            subset = Subset(dataset, indices)
             return DataLoader(
-                dataset, batch_size=batch_size, shuffle=True, num_workers=0
+                subset, batch_size=batch_size, shuffle=True, num_workers=0
             )
 
         if self.server_val_data:
