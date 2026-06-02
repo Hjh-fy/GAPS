@@ -1,4 +1,4 @@
-﻿"""Flower strategies for GAPS cloud deployment runs."""
+"""Flower strategies for GAPS cloud deployment runs."""
 
 from __future__ import annotations
 
@@ -92,6 +92,21 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             "prototype_norm_max": float(max(norms)),
         }
 
+    @staticmethod
+    def _prototype_var_summary(proto_vars: dict) -> dict:
+        if not proto_vars:
+            return {"num_global_proto_vars": 0}
+        tensors = [torch.tensor(value, dtype=torch.float64) for value in proto_vars.values()]
+        means = [float(tensor.mean().item()) for tensor in tensors]
+        dims = sorted({int(tensor.numel()) for tensor in tensors})
+        return {
+            "num_global_proto_vars": len(proto_vars),
+            "prototype_var_dims": dims,
+            "prototype_var_mean_mean": float(sum(means) / len(means)),
+            "prototype_var_mean_min": float(min(means)),
+            "prototype_var_mean_max": float(max(means)),
+        }
+
     def _collect_client_fit_stats(
         self, server_round: int, results: List[Tuple[ClientProxy, FitRes]]
     ) -> tuple[str, dict, str, dict]:
@@ -100,6 +115,8 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         weighted_examples = 0.0
         proto_sums = {}
         proto_counts = {}
+        var_sums = {}
+        var_counts = {}
         client_proto_keys = {}
 
         for _proxy, fit_res in results:
@@ -109,6 +126,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             counts = self._parse_json_metric(metrics.get("class_phase_counts_json"), {})
             global_feature = self._parse_json_metric(metrics.get("global_feature_json"), [])
             prototypes = self._parse_json_metric(metrics.get("prototype_json"), {})
+            proto_vars = self._parse_json_metric(metrics.get("prototype_var_json"), {})
 
             client_entry = {
                 "client_id": client_id,
@@ -121,6 +139,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "feature_std": float(metrics.get("feature_std", 0.0)),
                 "class_phase_counts": counts,
                 "prototype_count": int(metrics.get("prototype_count", len(prototypes))),
+                "prototype_var_count": int(metrics.get("prototype_var_count", len(proto_vars))),
             }
             if global_feature:
                 client_entry["global_feature_dim"] = len(global_feature)
@@ -141,6 +160,16 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                     proto_counts[key] = 0
                 proto_sums[key] += tensor * count
                 proto_counts[key] += count
+            for key, vector in proto_vars.items():
+                count = int(counts.get(key, 0))
+                if count <= 0:
+                    continue
+                tensor = torch.tensor(vector, dtype=torch.float64)
+                if key not in var_sums:
+                    var_sums[key] = torch.zeros_like(tensor)
+                    var_counts[key] = 0
+                var_sums[key] += tensor * count
+                var_counts[key] += count
             clients.append(client_entry)
 
         global_summary = {}
@@ -163,6 +192,15 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             global_prototypes[key] = (proto_sum / count).tolist()
             prototype_counts[key] = int(count)
 
+        global_proto_vars = {}
+        prototype_var_counts = {}
+        for key, var_sum in sorted(var_sums.items()):
+            count = var_counts.get(key, 0)
+            if count <= 0:
+                continue
+            global_proto_vars[key] = (var_sum / count).tolist()
+            prototype_var_counts[key] = int(count)
+
         client_stats_payload = {
             "run_name": self.run_name,
             "round": int(server_round),
@@ -177,11 +215,15 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         print(f"[GAPS] Saved client stats: {client_stats_path}")
 
         prototype_summary = self._prototype_summary(global_prototypes)
+        var_summary = self._prototype_var_summary(global_proto_vars)
+        prototype_summary.update(var_summary)
         prototype_payload = {
             "run_name": self.run_name,
             "round": int(server_round),
             "global_prototypes": global_prototypes,
             "prototype_counts": prototype_counts,
+            "global_proto_vars": global_proto_vars,
+            "prototype_var_counts": prototype_var_counts,
             "client_proto_keys": client_proto_keys,
             "summary": prototype_summary,
         }
@@ -257,6 +299,7 @@ def weighted_average(metrics):
         "class_phase_counts_json",
         "global_feature_json",
         "prototype_json",
+        "prototype_var_json",
     }
     keys = sorted({key for _, metric in metrics for key in metric.keys() if key not in skip_keys})
     aggregated = {}

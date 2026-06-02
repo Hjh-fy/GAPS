@@ -1,4 +1,4 @@
-﻿"""Shared helpers for the minimal GAPS Flower deployment.
+"""Shared helpers for the minimal GAPS Flower deployment.
 
 This module intentionally keeps the first deployment path small: it reuses the
 existing model, dataset, and Client training code, while Flower handles only the
@@ -123,7 +123,7 @@ def make_client(client_id: int, model: torch.nn.Module, train_loader, config: FL
 
 
 def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int, dict]:
-    params, prototypes, count_dict, global_feature, _residual, _vars = gaps_client.train_one_round(
+    params, prototypes, count_dict, global_feature, _residual, proto_vars = gaps_client.train_one_round(
         current_round=max(1, round_idx),
         global_protos=None,
         semantic_protos=None,
@@ -140,6 +140,8 @@ def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int,
         "class_phase_counts_json": serialize_counts(count_dict or {}),
         "prototype_json": serialize_tensor_dict(prototypes or {}),
         "prototype_count": int(len(prototypes or {})),
+        "prototype_var_json": serialize_tensor_dict(proto_vars or {}),
+        "prototype_var_count": int(len(proto_vars or {})),
     }
     metrics.update(summarize_feature_vector(global_feature))
     return arrays, num_examples, metrics
