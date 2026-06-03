@@ -264,14 +264,6 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
 
-            # ── 阶段 4.4: 服务端域适应 ──
-            if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
-                da_path, da_summary = self._run_domain_adapt(
-                    server_round, aggregated_state, arrays
-                )
-                event["domain_adapt"] = da_path
-                event["domain_adapt_summary"] = da_summary
-
         self._write_history()
         return aggregated_parameters, aggregated_metrics
 
@@ -458,6 +450,14 @@ class GapsStrategy(CheckpointFedAvg):
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
+
+            # ── 阶段 4.4: 服务端域适应 ──
+            if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
+                da_path, da_summary = self._run_domain_adapt(
+                    server_round, aggregated_state, arrays
+                )
+                event["domain_adapt"] = da_path
+                event["domain_adapt_summary"] = da_summary
         self._write_history()
         return aggregated_parameters, aggregated_metrics
 

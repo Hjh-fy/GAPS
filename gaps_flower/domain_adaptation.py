@@ -144,7 +144,8 @@ class ServerDomainAdaptation:
                 except StopIteration:
                     source_iter = iter(self.val_loader)
                     batch = next(source_iter)
-                x, y_cls = batch[0].to(self.device), batch[1].to(self.device)
+                x = batch[0].to(self.device)
+                y_cls = batch[2].to(self.device)
                 logits, _, _ = self.model(x)
                 val_loss += F.cross_entropy(logits, y_cls)
                 val_batches += 1
@@ -152,10 +153,14 @@ class ServerDomainAdaptation:
                 val_loss = val_loss / val_batches
 
             # ── 2. 获取源域/目标域特征 ──
-            cls_feat_s, y_s = self._sample_features(source_iter)
+            cls_feat_s, y_s, source_iter = self._sample_features(
+                source_iter, self.val_loader
+            )
             cls_feat_t, y_t = None, None
             if target_iter is not None:
-                cls_feat_t, y_t = self._sample_features(target_iter, reset_on_exhaust=True)
+                cls_feat_t, y_t, target_iter = self._sample_features(
+                    target_iter, self.calib_loader, reset_on_exhaust=True
+                )
 
             # ── 3. CORAL 协方差对齐损失 ──
             coral_loss = torch.tensor(0.0, device=self.device)
@@ -221,29 +226,38 @@ class ServerDomainAdaptation:
     def _sample_features(
         self,
         data_iter,
+        data_loader: DataLoader,
         reset_on_exhaust: bool = False,
-    ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
+    ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], object]:
         """从数据迭代器采样一个批次，提取分类特征
 
+        当迭代器耗尽时，若 reset_on_exhaust=True 则从 data_loader 重建迭代器继续采样。
+
         Args:
-            data_iter: 数据迭代器
+            data_iter: 当前数据迭代器
+            data_loader: 原始 DataLoader，用于在耗尽时重建迭代器
             reset_on_exhaust: 耗尽时是否重新创建迭代器
 
         Returns:
-            (特征张量 (B,D), 标签张量 (B,)) 或 (None, None)
+            (特征张量 (B,D), 标签张量 (B,), 新的迭代器)
+            若无法获取数据则返回 (None, None, data_iter)
         """
         try:
             batch = next(data_iter)
         except StopIteration:
             if not reset_on_exhaust:
-                return None, None
-            # 无法自动重置外部迭代器，返回 None
-            return None, None
+                return None, None, data_iter
+            data_iter = iter(data_loader)
+            try:
+                batch = next(data_iter)
+            except StopIteration:
+                return None, None, data_iter
 
         x = batch[0].to(self.device)
-        y_cls = batch[1].to(self.device) if len(batch) >= 2 else None
+        # GasSensorWindowDataset 返回 (x, y_reg, y_cls)，分类标签在索引 2
+        y_cls = batch[2].to(self.device) if len(batch) >= 3 else None
         _, feat, _ = self.model(x)
-        return feat, y_cls
+        return feat, y_cls, data_iter
 
     def _compute_mmd_losses(
         self,
@@ -283,8 +297,8 @@ class ServerDomainAdaptation:
                 if src_mask.sum() > 1 and tgt_mask.sum() > 1:
                     c_mmd += compute_mmd(feat_s[src_mask], feat_t[tgt_mask]) ** 2
                     class_count += 1
-                    # 原型锚定
-                    proto_key = f"({c},0)"
+                    # 原型锚定: 匹配 Flower 版 semantic_protos 键格式 "cls,phase"
+                    proto_key = f"{c},0"
                     if proto_key in self.semantic_protos:
                         mu_sem = self.semantic_protos[proto_key]
                         mu_src = feat_s[src_mask].mean(dim=0)
