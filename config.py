@@ -163,6 +163,29 @@ class FLConfig:
     REG_TAIL_WEIGHT: float = 1.0         # 高浓度尾部样本权重，1.0 表示关闭
     REG_TAIL_THRESHOLD: float = 1.0      # 归一化浓度阈值，例如 0.8 表示每类高端 20%
     REG_TAIL_CLASSES: str = ""           # 为空表示所有类别；例如 "1" 表示仅 CO 高浓度加权
+    REG_OUTPUT_MODE: str = "sigmoid"     # sigmoid: 旧版有界输出; linear: 线性归一化输出
+    REG_RANGE_PENALTY: float = 0.0       # linear 模式下训练时的 [0,1] 越界惩罚权重
+    REG_RESPONSE_BRANCH: str = "dct"     # mainline: fixed low-frequency response-shape adapter
+    REG_DCT_K: int = 16                  # mainline R3aK16: DCT coefficients per sensor
+    REG_DCT_GAMMA_INIT: float = 0.0      # initial residual scale for DCT response adapter
+    REG_DCT_DROPOUT: float = 0.1         # dropout inside DCT response adapter
+    REG_MSCONV_CHANNELS: int = 16        # hidden channels per temporal scale for REG_RESPONSE_BRANCH=msconv
+    REG_MSCONV_KERNELS: str = "3,7,15,31"
+    REG_MSCONV_GAMMA_INIT: float = 0.0
+    REG_MSCONV_DROPOUT: float = 0.1
+    REG_TCN_ADAPTER: bool = False        # regression-specific residual adapter on shared TCN features
+    REG_TCN_ADAPTER_KERNEL: int = 3
+    REG_TCN_ADAPTER_GAMMA_INIT: float = 0.0
+    REG_TCN_ADAPTER_DROPOUT: float = 0.05
+    # 共享浓度主干 (Shared Concentration Trunk)
+    REG_USE_SHARED_TRUNK: bool = False    # 是否启用共享主干 + 类别残差头
+    REG_SHARED_TRUNK_DIM: int = 128       # 共享主干隐藏层维度
+    REG_GAS_EMB_DIM: int = 16             # 气体嵌入维度
+    REG_RESIDUAL_HEAD_DEPTH: int = 2      # 类别残差头深度 (1/2/3)
+    # 跨通道比率响应分支
+    USE_REG_RATIO_BRANCH: bool = False    # 启用跨通道比率特征
+    REG_RATIO_GAMMA_INIT: float = 0.0     # 比率分支残差缩放初始值
+    REG_RATIO_DROPOUT: float = 0.05       # 比率分支 Dropout
     
     # 回归头配置
     PERSONALIZED_REG: bool = True            # True + SHARE_REG=False → 完全个性化

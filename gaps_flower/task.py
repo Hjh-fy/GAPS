@@ -10,14 +10,14 @@ from __future__ import annotations
 import json
 from collections import OrderedDict
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import torch
 
 from client import Client
 from config import FLConfig
-from federated_dataset import create_client_full_test_loader, create_train_loader
+from federated_dataset import create_client_test_only_loader, create_train_loader
 from utils import create_model_by_config, evaluate_model, set_random_seed
 
 
@@ -54,13 +54,33 @@ def summarize_feature_vector(feature: torch.Tensor) -> dict:
     }
 
 
-def make_config(device: str = "cpu", local_epochs: int = 1, batch_size: int = 32) -> FLConfig:
-    """Create a conservative runtime config for cloud-edge smoke tests."""
+def make_config(
+    device: str = "cpu",
+    local_epochs: int = 1,
+    batch_size: int = 32,
+    profile: str = "smoke",
+) -> FLConfig:
+    """Create the runtime config used by Flower clients and the DA server.
+
+    Profiles
+    --------
+    smoke:
+        Minimal CE-only training for communication tests.
+    gaps_cls:
+        Classification deployment training.  It keeps regression disabled,
+        but enables global prototype alignment and device-residual statistics
+        once the server starts broadcasting semantic prototypes.
+    """
     config = FLConfig()
     config.DEVICE = device
     config.LOCAL_EPOCHS = local_epochs
     config.BATCH_SIZE = batch_size
+
+    # Always keep the Flower classification path independent from regression.
+    # Regression has a separate offline/FedAvg-style script path in this package.
     config.USE_REG_LOSS = False
+
+    # Conservative defaults: exact smoke-test behavior.
     config.USE_ALIGN = False
     config.USE_REPLAY_DISTILL = False
     config.USE_SERVER_OPT = False
@@ -73,9 +93,77 @@ def make_config(device: str = "cpu", local_epochs: int = 1, batch_size: int = 32
     config.USE_DEEP_CORAL = False
     config.USE_ADVERSARIAL_DOMAIN = False
     config.USE_MMD_ALIGNMENT = False
+
+    profile_key = str(profile or "smoke").lower()
+    if profile_key in {"gaps", "gaps_cls", "gaps_classification", "classification", "strong_cls"}:
+        # Match the single-machine classification client more closely: after
+        # round-1 prototype bootstrapping, local training uses global prototypes
+        # as an alignment regularizer.  Replay distillation is enabled by the
+        # Flower client through a local cache of the previously received server
+        # model, so no large previous-state payload needs to be broadcast.
+        config.USE_ALIGN = True
+        config.USE_CONTRASTIVE_ALIGN = True
+        config.USE_REPLAY_DISTILL = True
+        config.USE_PROTO_DECOUPLING = True
+        config.USE_SENSOR_AUG = False
+    elif profile_key != "smoke":
+        raise ValueError(f"Unsupported Flower runtime profile: {profile}")
+
     set_random_seed(config.SEED)
     return config
 
+
+
+
+def _parse_proto_key(key: str) -> Optional[Tuple[int, int]]:
+    """Parse Flower/legacy prototype keys into ``(class_id, phase_id)``."""
+    text = str(key).strip()
+    if not text:
+        return None
+    if text.startswith("(") and text.endswith(")"):
+        text = text[1:-1]
+    text = text.replace("_", ",")
+    parts = [p.strip() for p in text.split(",") if p.strip()]
+    if len(parts) < 2:
+        return None
+    try:
+        return int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+
+
+def deserialize_tensor_dict(
+    payload: str | None,
+    *,
+    device: str = "cpu",
+    key_style: str = "tuple",
+) -> Dict:
+    """Deserialize prototypes broadcast by the Flower server.
+
+    Args:
+        payload: JSON object whose keys are class-phase ids and values are
+            flattened feature vectors.
+        device: Destination device for tensors.
+        key_style: ``tuple`` for Client._compute_align_loss, or ``paren`` for
+            Client residual/statistics code expecting keys like ``"(0,1)"``.
+    """
+    if not payload:
+        return {}
+    try:
+        raw = json.loads(payload)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    out: Dict = {}
+    for key, value in raw.items():
+        parsed = _parse_proto_key(key)
+        if parsed is None:
+            continue
+        tensor = torch.tensor(value, dtype=torch.float32, device=device).view(-1)
+        if key_style == "paren":
+            out[f"({parsed[0]},{parsed[1]})"] = tensor
+        else:
+            out[parsed] = tensor
+    return out
 
 def create_model(config: FLConfig) -> torch.nn.Module:
     """Create the lightweight classification model used for first-link tests."""
@@ -103,6 +191,41 @@ def set_parameters(model: torch.nn.Module, parameters: Iterable[np.ndarray], key
     model.load_state_dict(new_state, strict=True)
 
 
+def parameters_to_state_dict(
+    parameters: Iterable[np.ndarray],
+    keys: List[str],
+    reference_state: Dict[str, torch.Tensor],
+) -> OrderedDict:
+    """Convert Flower ndarray parameters into a typed PyTorch state_dict.
+
+    This is used on the client to cache the previous server model for replay
+    distillation without changing the Flower wire protocol.
+    """
+    state = OrderedDict()
+    for key, value in zip(keys, parameters):
+        tensor = torch.tensor(value)
+        if key in reference_state:
+            tensor = tensor.to(dtype=reference_state[key].dtype)
+        state[key] = tensor.detach().cpu().clone()
+    return state
+
+
+def set_prev_model_from_state(gaps_client: Client, state_dict: Dict[str, torch.Tensor]) -> None:
+    """Install a previous-round model for feature replay distillation.
+
+    The original single-machine Client.set_prev_parameters creates a generic
+    model class.  In Flower we create the model through create_model_by_config so
+    that encoder options such as TCN normalization remain identical to the
+    current deployment model.
+    """
+    prev_model = create_model_by_config(gaps_client.config, with_reg_head=False).to(gaps_client.device)
+    prev_model.load_state_dict(state_dict, strict=False)
+    prev_model.eval()
+    for param in prev_model.parameters():
+        param.requires_grad = False
+    gaps_client.prev_model = prev_model
+
+
 def client_dir(data_root: str | Path, client_id: int) -> Path:
     return Path(data_root) / f"client_{client_id}"
 
@@ -110,8 +233,13 @@ def client_dir(data_root: str | Path, client_id: int) -> Path:
 def load_client_loaders(data_root: str | Path, client_id: int, config: FLConfig):
     """Load local train/test data for one edge client."""
     cdir = client_dir(data_root, client_id)
-    train_loader = create_train_loader(cdir, batch_size=config.BATCH_SIZE, shuffle=True)
-    test_loader = create_client_full_test_loader(cdir, batch_size=config.BATCH_SIZE)
+    train_loader = create_train_loader(
+        cdir,
+        batch_size=config.BATCH_SIZE,
+        shuffle=True,
+        normalize=False,
+    )
+    test_loader = create_client_test_only_loader(cdir, batch_size=config.BATCH_SIZE)
     return train_loader, test_loader
 
 
@@ -122,11 +250,23 @@ def make_client(client_id: int, model: torch.nn.Module, train_loader, config: FL
     return gaps_client
 
 
-def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int, dict]:
-    params, prototypes, count_dict, global_feature, _residual, proto_vars = gaps_client.train_one_round(
+def train_one_round(
+    gaps_client: Client,
+    round_idx: int,
+    fit_config: Optional[dict] = None,
+) -> Tuple[NDArrays, int, dict]:
+    fit_config = fit_config or {}
+    proto_payload = fit_config.get("semantic_protos_json") or fit_config.get("global_protos_json")
+    global_protos = deserialize_tensor_dict(
+        proto_payload, device=gaps_client.config.DEVICE, key_style="tuple"
+    )
+    semantic_protos = deserialize_tensor_dict(
+        proto_payload, device=gaps_client.config.DEVICE, key_style="paren"
+    )
+    params, prototypes, count_dict, global_feature, device_residual, proto_vars = gaps_client.train_one_round(
         current_round=max(1, round_idx),
-        global_protos=None,
-        semantic_protos=None,
+        global_protos=global_protos or None,
+        semantic_protos=semantic_protos or None,
     )
     ordered = OrderedDict(params)
     arrays = [value.detach().cpu().numpy() for value in ordered.values()]
@@ -142,7 +282,16 @@ def train_one_round(gaps_client: Client, round_idx: int) -> Tuple[NDArrays, int,
         "prototype_count": int(len(prototypes or {})),
         "prototype_var_json": serialize_tensor_dict(proto_vars or {}),
         "prototype_var_count": int(len(proto_vars or {})),
+        "received_global_prototypes": int(len(global_protos)),
+        "use_align": int(bool(gaps_client.config.USE_ALIGN and global_protos)),
+        "use_replay_distill": int(bool(gaps_client.config.USE_REPLAY_DISTILL and gaps_client.prev_model is not None)),
+        "has_prev_model": int(gaps_client.prev_model is not None),
+        "use_proto_decoupling": int(bool(gaps_client.config.USE_PROTO_DECOUPLING and semantic_protos)),
     }
+    if device_residual is not None:
+        vec = device_residual.detach().cpu().float().view(-1)
+        metrics["device_residual_json"] = json.dumps(vec.tolist(), ensure_ascii=False)
+        metrics["device_residual_norm"] = float(torch.norm(vec, p=2).item())
     metrics.update(summarize_feature_vector(global_feature))
     return arrays, num_examples, metrics
 

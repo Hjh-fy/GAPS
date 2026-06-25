@@ -3063,3 +3063,449 @@ raw MAE/RMSE will not change because QC does not repair predictions.
 accept-only MAE/RMSE should match the previous kept_MAE/kept_RMSE from the sweep.
 review_rate should be close to 10% for C3/C4 and 15% for C5.
 ```
+
+
+## 2026-06-10 回归头系统优化验证总结
+
+### Bug 发现与修复
+
+**P0: FedAvg 聚合键缺失**
+`get_regression_state_keys()` 缺少 `reg_ratio_adapter.` / `gas_embedding.` /
+`reg_shared_trunk.` / `reg_residual_heads.`，导致 T9/T10a 新模块本地训练后
+未参加 FedAvg 聚合。修复后 38 keys → 85 keys。
+
+**P1: ratio branch 部署链路不完整**
+`build_package.py` / `build_per_client_packages.py` / `specialist_calibration_fit.py` /
+`validate_deployment_packages.py` 未完整传递/校验 ratio 参数。已补齐 calibration、package、
+preflight validation 三段链路，并通过 dry-run 验证。
+
+### 消融实验最终结果
+
+| 实验 | 方向 | C5 CO route-correct RMSE | 判定 |
+|---|---|---|---|
+| R3aK16 (DCT K16) | 基线 | 40.84 | 当前最优 |
+| T9-fix | shared trunk | 52.46 (Bias +26.7) | 负面 |
+| T10a-fix | DCT+ratio | 39.74 (+1.1ppm) | C4/C5退化20%+ |
+| R3b | msconv16 | 67.38 | 跨域崩溃 |
+| S2 | TCN adapter | 44.88 | 不解决 |
+| T8a | linear output | 45.88 | 非瓶颈 |
+
+### 结论
+
+1. 当前最可靠：R3aK16 + per-class RegHead depth=4 + R4a-simple + QC
+2. DCT response branch (+8,641) 是唯一验证有效的模型侧增强
+3. 后续若需提升 raw 回归，应优先做严格门控的 target-side adaptation ablation，而不是继续堆共享/时序结构
+
+
+## 2026-06-10 regression head final decision after T9/T10a fix reruns
+
+Code review status:
+
+```text
+All regression-head related code fixes are in place and compile.
+
+Validated chain:
+client local training -> FedAvg aggregation -> server checkpoint -> target calibration/package ->
+DeployPredictor inference.
+```
+
+Resolved issues:
+
+```text
+P0:
+get_regression_state_keys missed four prefixes:
+- reg_ratio_adapter.
+- gas_embedding.
+- reg_shared_trunk.
+- reg_residual_heads.
+
+Impact:
+T9/T10a new modules could train locally but fail to participate in FedAvg.
+
+Status:
+Fixed and sanity-checked.
+
+P1:
+regression_server.py consistency checks had incomplete/mismatched new-field validation.
+
+Status:
+Fixed. Shared trunk and ratio branch fields are checked.
+
+P1:
+ratio branch deployment chain was incomplete.
+
+Status:
+Fixed. build_package, build_per_client_packages, specialist_calibration_fit, and
+validate_deployment_packages now carry/check ratio fields.
+```
+
+Code risks checked and excluded:
+
+```text
+model.py:
+- _apply_reg_response_branch stacks DCT + ratio correctly.
+- forward_reg branches are mutually exclusive:
+  proto_reg / shared_trunk / standard per-class heads.
+
+training:
+- train_regression_local unfreezes all new regression modules.
+
+deployment:
+- inference.py _apply_model_config maps the new model_config fields.
+- R4a package inference path remains separate and gated after QC.
+```
+
+T9-fix result:
+
+```text
+Shared concentration trunk remains negative after the FedAvg-key fix.
+
+Metric                         R3aK16      T9-fix      Change
+C3 raw_RMSE                    21.36       26.11       +22.2%
+C4 raw_RMSE                    17.21       22.05       +28.1%
+C5 raw_RMSE                    31.25       43.17       +38.1%
+C5 CO route-correct RMSE       40.84       52.46       +28.5%
+C5 CO route-correct Bias       +0.42       +26.72      severe positive bias
+
+Decision:
+Do not continue shared concentration trunk.
+It appears to learn an averaged concentration scale that is unsafe for CO on C5.
+```
+
+T10a-fix result:
+
+```text
+DCT K16 + cross-channel ratio does not pass the system-level acceptance criteria.
+
+Metric                         R3aK16      T10a-fix    Change
+C3 raw_RMSE                    21.36       21.95       +2.8%
+C4 raw_RMSE                    17.21       20.74       +20.5%
+C5 raw_RMSE                    31.25       38.16       +22.1%
+C5 CO route-correct RMSE       40.84       39.74       -2.7%
+
+Decision:
+Although C5 CO route-correct improves slightly, C4/C5 overall degradation is too large.
+Do not promote DCT+ratio.
+```
+
+Final regression-head direction table:
+
+```text
+Direction                         Result
+shared trunk (T9)                 rejected: broad degradation and C5 CO positive bias
+DCT+ratio (T10a)                  rejected: C4/C5 overall degradation
+msconv16 (R3b)                    rejected: C5 CO collapse
+TCN adapter (S2)                  rejected: C5 CO worsens
+linear output (T8a)               rejected: C5 CO worsens
+window stats (R2a/R2b)            rejected as mainline: poor complexity/benefit
+DCT K16 (R3aK16)                  retained: only model-side enhancement validated so far
+```
+
+Current best system:
+
+```text
+R3aK16
+- DCT K16 response branch
+- per-class RegHead depth=4
+- +8,641 neural parameters over depth-4 baseline
+
+Deployment layers:
+- R4a-simple(dct2, accept-only, cap30)
+- QC guardrail
+
+Current package-level metrics:
+- ALL RMSE = 22.27
+- ACCEPT RMSE = 13.83
+```
+
+Next work:
+
+```text
+Stop expanding regression-head architecture for now.
+
+Priority 1:
+Freeze R3aK16 + R4a-simple + QC as the enhanced candidate and prepare formal tables:
+- complexity table;
+- raw/accept/QC/random evidence table;
+- rejected ablation table;
+- package-level reproducibility commands.
+
+Priority 2:
+Regenerate or recover formal T5/T7 same-format package/CSV outputs for comparison.
+
+Priority 3:
+If further raw concentration improvement is required, test target-side adaptation only as a strict
+ablation:
+- low-rank / low-parameter;
+- target calibration internal gate;
+- split-seed stability;
+- fallback to R3aK16 + R4a-simple when unsafe.
+```
+
+## 2026-06-15 time-aware 主线候选收敛记录
+
+### 当前阶段结论
+
+当前阶段主线候选已经收敛，但不是最终永久定稿。后续重点不再是继续扩展新模型结构，而是补齐证据包、明确口径边界，并围绕 C5 CO 与 QC workpoint 做收尾验证。
+
+暂定主线：
+
+```text
+time_aware_60_170
++ window-level fullgrid
++ exp_improved.py 完整 GAPS 分类基座
++ R3aK16 regression
++ auto_v2_specialist
++ QC risk control
+```
+
+端到端流程：
+
+```text
+真实时间轴重采样
+-> 60-170s 响应区间滑窗
+-> window-level fullgrid 划分
+-> exp_improved.py 完整单机分类训练协议
+-> R3aK16 回归
+-> auto_v2 目标端校准
+-> QC 部署风险控制
+```
+
+### 为什么选 time_aware_60_170
+
+三套 time-aware crop 里，`time_aware_60_170` 综合最稳。
+
+与当前旧 final evidence raw 对比：
+
+```text
+Metric        time_aware_60_170 raw    old final raw
+C3 RMSE       26.61                  43.68
+C4 RMSE       20.52                  38.88
+C5 RMSE       47.78                  65.40
+```
+
+校准后与旧单机 window-level fullgrid baseline 对比：
+
+```text
+Metric        time_aware_60_170 calibrated    old single-machine baseline
+C3 RMSE       18.93                         20.66
+C4 RMSE       18.62                         18.77
+C5 RMSE       44.32                         36.21
+```
+
+判断：
+
+```text
+C3: 已追回并略优于旧 baseline
+C4: 基本追回
+C5: 仍是短板，尤其 CO 高浓度低估
+```
+
+QC accepted 结果：
+
+```text
+C3 accepted RMSE = 7.65
+C4 accepted RMSE = 6.70
+C5 accepted RMSE = 6.22
+```
+
+这些 QC 数值只能解释为低风险自动输出子集的部署可靠性，不能写成 raw regression 本身被 QC 改好了。
+
+### 关键边界
+
+第一，C5 CO 仍是主要困难点。
+
+已有诊断显示 C5 CO 高浓度明显低估：
+
+```text
+C5 CO calibrated route-correct
+150-200 ppm: RMSE 88.86, Bias -36.43
+200-250 ppm: RMSE 106.24, Bias -76.97
+```
+
+因此论文或报告里不能写成所有目标客户端浓度回归已经完全解决。更准确的表述是：
+
+```text
+C3/C4 已基本恢复到旧单机 baseline 附近，C5 尤其高浓度 CO 仍是主要困难点。
+```
+
+第二，QC 是部署风险控制，不是 raw 回归提升。
+
+建议固定表述：
+
+```text
+QC improves deployment reliability by selecting low-risk windows.
+QC 通过筛选低风险窗口提升部署自动输出的可靠性，而不是改变 raw 回归预测本身。
+```
+
+第三，统一 7:2:1 与 role-aware target 8:2 必须分开写。
+
+```text
+unified_7_2_1:
+用于和旧单机 window-level fullgrid baseline 直接对比。
+
+role_aware_target_8_2:
+用于更贴近目标域少样本校准与部署评估。
+target clients 不参与源域训练，因此 target train=70% 不是主链路必需数据。
+```
+
+两者不能混在一起不加说明。
+
+### role-aware 8:2 与 auto_v2 no-op 审计
+
+`role_aware_target_8_2` 的目标端结果显著更好，但需要注意其收益来源。
+
+Control 1 已完成：
+
+```text
+Protocol B split + Protocol A classifier checkpoint + same R3aK16/auto_v2/QC
+```
+
+结果：
+
+```text
+Client    Raw RMSE    Calibrated RMSE    QC accepted RMSE    QC coverage
+C3        18.59       18.59              6.90                0.490
+C4        15.98       15.98              6.07                0.494
+C5        27.36       27.04              8.40                0.490
+ALL       20.60       20.50              7.12                0.491
+```
+
+这几乎复现了原 Protocol B 的整体 RMSE，因此当前判断是：
+
+```text
+role-aware 8:2 的主要收益更可能来自 split/test distribution 和目标端 calibration/test 设计，
+不是 B 重新训练的分类基座本身。
+```
+
+auto_v2 no-op 审计结论：
+
+```text
+pred_ppm 在 DeployPredictor 中已经是 full/specialist neural calibration routing 后的输出。
+calibrated_ppm 只在 affine/bias/phase-affine 参数存在时才会进一步改变。
+```
+
+因此 B 中 `pred_ppm == calibrated_ppm` 不表示 auto_v2 完全没有生效。B 的 full/specialist routed output 相比 base R3aK16 有明显变化：
+
+```text
+Protocol B routed-vs-base mean abs diff
+C3 = 26.58 ppm
+C4 = 37.01 ppm
+C5 = 29.02 ppm
+```
+
+但 B 的 affine/bias 后处理没有再改变 routed output：
+
+```text
+calibrated-vs-routed mean abs diff = 0
+```
+
+后续正式表格应将以下字段分开：
+
+```text
+base_r3ak16_raw_ppm
+auto_v2_routed_pred_ppm
+calibrated_ppm
+qc_final_decision
+```
+
+否则 raw/calibrated 口径容易混淆。
+
+### QC workpoint 口径
+
+当前 coverage-aware sweep 的 conservative / balanced / high_coverage 只改变 accept 阈值，不改变 reject 阈值。
+
+实现口径：
+
+```text
+risk <= low_threshold  -> accept
+risk > high_threshold  -> reject
+otherwise              -> review
+```
+
+其中：
+
+```text
+low_threshold 随 workpoint 改变
+high_threshold 固定为 calibration risk 95 分位
+```
+
+所以：
+
+```text
+accepted RMSE 会随 workpoint 变化
+review rate 会随 workpoint 变化
+reject rate 不变
+Coverage + Review = 1 - Reject 不变
+Coverage + Review 的 RMSE/MAE/NRMSE_range 也不变
+```
+
+role-aware 8:2 的 Coverage+Review 汇总：
+
+```text
+Workpoint       Accept    Review    Coverage+Review    RMSE    MAE    NRMSE_range
+conservative    0.205     0.664     0.869              12.99   8.27   0.0758
+balanced        0.300     0.569     0.869              12.99   8.27   0.0758
+high_coverage   0.396     0.473     0.869              12.99   8.27   0.0758
+```
+
+解释：
+
+```text
+Coverage+Review 表示非拒绝样本池，不等于自动接受样本。
+accepted subset 才是自动输出性能。
+review subset 是需要人工复核或二次处理的样本。
+```
+
+### 当前默认结构
+
+```text
+数据主线:
+time-aware resampling + 60-170s crop + window-level fullgrid
+
+分类主线:
+exp_improved.py 完整 GAPS 分类训练协议
+
+回归主线:
+R3aK16 + DCT K=16 + per-class RegHead depth=4
+
+校准主线:
+auto_v2_specialist
+
+部署控制主线:
+QC risk control
+
+R4a:
+不进入默认主线，仅保留为 optional diagnostic residual artifact
+```
+
+### 剩余收尾验证
+
+```text
+1. C5 CO 高浓度残差诊断
+2. QC workpoint subset 表
+3. unified_7_2_1 与 role_aware_target_8_2 的口径说明
+```
+
+QC subset 表建议固定包含：
+
+```text
+accepted_RMSE
+review_RMSE
+reject_RMSE
+non_reject_RMSE
+auto_accept_rate
+review_rate
+reject_rate
+repair_rate
+```
+
+### 当前可写结论
+
+```text
+目前可以暂定 time_aware_60_170 + R3aK16 + auto_v2_specialist + QC
+作为当前阶段主线候选。该方案在 C3/C4 上已经通过校准恢复到旧单机
+baseline 附近或更好，C5 仍受 CO 高浓度低估影响。QC 层能够显著降低
+自动接受样本的误差，但需要进一步选择合理的 coverage/review 工作点。
+R4a 暂不进入默认部署主线。
+```

@@ -39,7 +39,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from config import FLConfig
-from federated_dataset import create_train_loader
+from federated_dataset import create_merged_calibration_loader, create_train_loader
 from gaps_flower.regression_task import create_regression_model, load_classifier_weights, make_regression_config
 from model import FedGasMultiTaskModel
 from utils import CONC_STATS, create_model_by_config
@@ -53,6 +53,27 @@ logger = logging.getLogger("calibration_fit")
 
 # 气体名称列表
 GAS_NAMES = ["Ethanol", "CO", "Ethylene", "Methane"]
+
+
+def _create_target_calibration_loader(
+    data_dir: Union[str, Path],
+    batch_size: int,
+) -> torch.utils.data.DataLoader:
+    """Load target calibration split when available, otherwise keep legacy train fallback."""
+    data_path = Path(data_dir)
+    if (data_path / "calibration_features.npy").exists():
+        return create_merged_calibration_loader(
+            [data_path],
+            batch_size=batch_size,
+            num_workers=0,
+        )
+    return create_train_loader(
+        data_path,
+        batch_size=batch_size,
+        shuffle=False,
+        normalize=False,
+        num_workers=0,
+    )
 
 
 def _denormalize_by_class_numpy(pred_norm: np.ndarray, class_ids: np.ndarray) -> np.ndarray:
@@ -124,9 +145,7 @@ def fit_per_class_affine_params(
     classifier_model.eval()
 
     # 构建校准数据加载器
-    loader = create_train_loader(
-        data_dir, batch_size=batch_size, shuffle=False, num_workers=0
-    )
+    loader = _create_target_calibration_loader(data_dir, batch_size)
     logger.info(f"校准拟合: 加载校准数据 {len(loader.dataset)} 条")
 
     # 收集每个类别的真实值和预测值
@@ -272,10 +291,11 @@ def compute_regression_metrics(
     from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 
     reg_model.eval()
-    loader = create_train_loader(data_dir, batch_size=batch_size, shuffle=False, num_workers=0)
+    loader = _create_target_calibration_loader(data_dir, batch_size)
 
     all_true: List[float] = []
     all_pred_raw: List[float] = []
+    all_cls: List[int] = []
     per_class_stores: Dict[int, Dict[str, List[float]]] = {c: {"true": [], "pred_raw": []} for c in range(num_classes)}
 
     with torch.no_grad():
@@ -292,6 +312,7 @@ def compute_regression_metrics(
 
             all_true.extend(y_true.cpu().numpy().tolist())
             all_pred_raw.extend(pred_ppm_raw.cpu().numpy().tolist())
+            all_cls.extend(y_cls.cpu().numpy().astype(int).tolist())
 
             for c in range(num_classes):
                 mask = y_cls == c
@@ -301,6 +322,7 @@ def compute_regression_metrics(
 
     y_true_arr = np.asarray(all_true, dtype=np.float64)
     y_pred_raw_arr = np.asarray(all_pred_raw, dtype=np.float64)
+    y_cls_arr = np.asarray(all_cls, dtype=int)
 
     # 校准前
     overall_r2_raw = float(r2_score(y_true_arr, y_pred_raw_arr))
@@ -316,9 +338,10 @@ def compute_regression_metrics(
     }
 
     # 校准后
+    per_class_cal: Dict[int, List[float]] = {}
     if affine_params is not None:
-        y_pred_cal: List[float] = []
-        per_class_cal: Dict[int, List[float]] = {c: [] for c in range(num_classes)}
+        y_pred_cal_arr = y_pred_raw_arr.copy()
+        per_class_cal = {c: [] for c in range(num_classes)}
         for c in range(num_classes):
             true_arr = np.asarray(per_class_stores[c]["true"], dtype=np.float64)
             pred_arr = np.asarray(per_class_stores[c]["pred_raw"], dtype=np.float64)
@@ -328,9 +351,10 @@ def compute_regression_metrics(
             else:
                 cal_arr = pred_arr
             per_class_cal[c] = cal_arr.tolist()
-            y_pred_cal.extend(cal_arr.tolist())
+            class_mask = y_cls_arr == c
+            if class_mask.any():
+                y_pred_cal_arr[class_mask] = cal_arr
 
-        y_pred_cal_arr = np.asarray(y_pred_cal, dtype=np.float64)
         metrics["overall_R2_cal"] = float(r2_score(y_true_arr, y_pred_cal_arr))
         metrics["overall_MAE_cal"] = float(mean_absolute_error(y_true_arr, y_pred_cal_arr))
         metrics["overall_RMSE_cal"] = float(np.sqrt(mean_squared_error(y_true_arr, y_pred_cal_arr)))
@@ -459,6 +483,38 @@ def main() -> None:
                         help="校准模式 (默认 affine_only)")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="批次大小")
+    parser.add_argument("--reg-output-mode", default="", choices=["", "sigmoid", "linear"],
+                        help="回归输出模式; 默认从 regression_ckpt 的 model_config 推断")
+    parser.add_argument("--reg-window-stats", action="store_true",
+                        help="追加窗口响应统计特征到回归分支")
+    parser.add_argument("--reg-window-stats-mode", default="", choices=["", "global", "per_channel"],
+                        help="窗口统计模式; 默认从 checkpoint 推断")
+    parser.add_argument("--reg-window-stats-dim", type=int, default=None,
+                        help="窗口统计特征投影维度; 默认从 checkpoint 推断")
+    parser.add_argument("--reg-response-branch", default="", choices=["", "none", "dct", "msconv"],
+                        help="Regression response-shape branch; default inferred from checkpoint")
+    parser.add_argument("--reg-dct-k", type=int, default=None,
+                        help="DCT response branch k; default inferred from checkpoint")
+    parser.add_argument("--reg-dct-gamma-init", type=float, default=None,
+                        help="DCT response branch gamma init; default inferred from checkpoint")
+    parser.add_argument("--reg-dct-dropout", type=float, default=None,
+                        help="DCT response branch dropout; default inferred from checkpoint")
+    parser.add_argument("--reg-msconv-channels", type=int, default=None,
+                        help="msconv branch channels; default inferred from checkpoint")
+    parser.add_argument("--reg-msconv-kernels", default="",
+                        help="msconv branch kernels; default inferred from checkpoint")
+    parser.add_argument("--reg-msconv-gamma-init", type=float, default=None,
+                        help="msconv branch gamma init; default inferred from checkpoint")
+    parser.add_argument("--reg-msconv-dropout", type=float, default=None,
+                        help="msconv branch dropout; default inferred from checkpoint")
+    parser.add_argument("--reg-tcn-adapter", action="store_true",
+                        help="Enable regression TCN adapter; default inferred from checkpoint")
+    parser.add_argument("--reg-tcn-adapter-kernel", type=int, default=None,
+                        help="Regression TCN adapter kernel; default inferred from checkpoint")
+    parser.add_argument("--reg-tcn-adapter-gamma-init", type=float, default=None,
+                        help="Regression TCN adapter gamma init; default inferred from checkpoint")
+    parser.add_argument("--reg-tcn-adapter-dropout", type=float, default=None,
+                        help="Regression TCN adapter dropout; default inferred from checkpoint")
     parser.add_argument("--cpu", action="store_true",
                         help="强制使用 CPU")
     args = parser.parse_args()
@@ -485,9 +541,87 @@ def main() -> None:
 
     # 2. 加载回归模型 B
     logger.info("加载回归模型 B...")
-    reg_config = make_regression_config(device=device.type, batch_size=args.batch_size)
-    reg_model = create_regression_model(reg_config).to(device)
     reg_ckpt = torch.load(args.regression_ckpt, map_location=device, weights_only=False)
+    ckpt_model_config = reg_ckpt.get("model_config", {}) if isinstance(reg_ckpt, dict) else {}
+    reg_output_mode = args.reg_output_mode or ckpt_model_config.get("reg_output_mode")
+    reg_head_depth = ckpt_model_config.get("reg_head_depth")
+    use_reg_window_stats = args.reg_window_stats or ckpt_model_config.get("reg_window_stats")
+    reg_window_stats_mode = args.reg_window_stats_mode or ckpt_model_config.get("reg_window_stats_mode")
+    reg_window_stats_dim = (
+        args.reg_window_stats_dim
+        if args.reg_window_stats_dim is not None
+        else ckpt_model_config.get("reg_window_stats_dim")
+    )
+    reg_response_branch = args.reg_response_branch or ckpt_model_config.get("reg_response_branch")
+    reg_dct_k = args.reg_dct_k if args.reg_dct_k is not None else ckpt_model_config.get("reg_dct_k")
+    reg_dct_gamma_init = (
+        args.reg_dct_gamma_init
+        if args.reg_dct_gamma_init is not None
+        else ckpt_model_config.get("reg_dct_gamma_init")
+    )
+    reg_dct_dropout = (
+        args.reg_dct_dropout
+        if args.reg_dct_dropout is not None
+        else ckpt_model_config.get("reg_dct_dropout")
+    )
+    reg_msconv_channels = (
+        args.reg_msconv_channels
+        if args.reg_msconv_channels is not None
+        else ckpt_model_config.get("reg_msconv_channels")
+    )
+    reg_msconv_kernels = args.reg_msconv_kernels or ckpt_model_config.get("reg_msconv_kernels")
+    reg_msconv_gamma_init = (
+        args.reg_msconv_gamma_init
+        if args.reg_msconv_gamma_init is not None
+        else ckpt_model_config.get("reg_msconv_gamma_init")
+    )
+    reg_msconv_dropout = (
+        args.reg_msconv_dropout
+        if args.reg_msconv_dropout is not None
+        else ckpt_model_config.get("reg_msconv_dropout")
+    )
+    use_reg_tcn_adapter = (
+        args.reg_tcn_adapter
+        if args.reg_tcn_adapter
+        else ckpt_model_config.get("reg_tcn_adapter")
+    )
+    reg_tcn_adapter_kernel = (
+        args.reg_tcn_adapter_kernel
+        if args.reg_tcn_adapter_kernel is not None
+        else ckpt_model_config.get("reg_tcn_adapter_kernel")
+    )
+    reg_tcn_adapter_gamma_init = (
+        args.reg_tcn_adapter_gamma_init
+        if args.reg_tcn_adapter_gamma_init is not None
+        else ckpt_model_config.get("reg_tcn_adapter_gamma_init")
+    )
+    reg_tcn_adapter_dropout = (
+        args.reg_tcn_adapter_dropout
+        if args.reg_tcn_adapter_dropout is not None
+        else ckpt_model_config.get("reg_tcn_adapter_dropout")
+    )
+    reg_config = make_regression_config(
+        device=device.type,
+        batch_size=args.batch_size,
+        reg_head_depth=reg_head_depth,
+        reg_output_mode=reg_output_mode,
+        use_reg_window_stats=use_reg_window_stats,
+        reg_window_stats_mode=reg_window_stats_mode,
+        reg_window_stats_dim=reg_window_stats_dim,
+        reg_response_branch=reg_response_branch,
+        reg_dct_k=reg_dct_k,
+        reg_dct_gamma_init=reg_dct_gamma_init,
+        reg_dct_dropout=reg_dct_dropout,
+        reg_msconv_channels=reg_msconv_channels,
+        reg_msconv_kernels=reg_msconv_kernels,
+        reg_msconv_gamma_init=reg_msconv_gamma_init,
+        reg_msconv_dropout=reg_msconv_dropout,
+        use_reg_tcn_adapter=use_reg_tcn_adapter,
+        reg_tcn_adapter_kernel=reg_tcn_adapter_kernel,
+        reg_tcn_adapter_gamma_init=reg_tcn_adapter_gamma_init,
+        reg_tcn_adapter_dropout=reg_tcn_adapter_dropout,
+    )
+    reg_model = create_regression_model(reg_config).to(device)
     reg_state = reg_ckpt.get("model_state", reg_ckpt)
     missing, unexpected = reg_model.load_state_dict(reg_state, strict=False)
     if missing:

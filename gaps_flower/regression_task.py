@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 
 from config import FLConfig
 from federated_dataset import create_train_loader
@@ -29,11 +29,61 @@ from utils import create_model_by_config, normalize_concentration, set_random_se
 logger = logging.getLogger(__name__)
 
 
+def _parse_class_weights(class_weights_str: str) -> Dict[int, float]:
+    """Parse class weights like ``"1:2.0,2=1.5"``."""
+    weights: Dict[int, float] = {}
+    if not class_weights_str:
+        return weights
+    for item in class_weights_str.split(","):
+        token = item.strip()
+        if not token:
+            continue
+        if ":" in token:
+            key, value = token.split(":", 1)
+        elif "=" in token:
+            key, value = token.split("=", 1)
+        else:
+            raise ValueError(
+                "class_weights_str entries must use 'class:weight', "
+                f"got {token!r}"
+            )
+        cls_id = int(key.strip())
+        weight = float(value.strip())
+        if weight <= 0:
+            raise ValueError(f"class weight must be positive, got {token!r}")
+        weights[cls_id] = weight
+    return weights
+
+
 def make_regression_config(
     device: str = "cpu",
     local_steps: int = 100,
     batch_size: int = 32,
     lr: float = 1e-3,
+    reg_head_depth: Optional[int] = None,
+    reg_output_mode: Optional[str] = None,
+    use_reg_window_stats: Optional[bool] = None,
+    reg_window_stats_mode: Optional[str] = None,
+    reg_window_stats_dim: Optional[int] = None,
+    reg_response_branch: Optional[str] = None,
+    reg_dct_k: Optional[int] = None,
+    reg_dct_gamma_init: Optional[float] = None,
+    reg_dct_dropout: Optional[float] = None,
+    reg_msconv_channels: Optional[int] = None,
+    reg_msconv_kernels: Optional[str] = None,
+    reg_msconv_gamma_init: Optional[float] = None,
+    reg_msconv_dropout: Optional[float] = None,
+    use_reg_tcn_adapter: Optional[bool] = None,
+    reg_tcn_adapter_kernel: Optional[int] = None,
+    reg_tcn_adapter_gamma_init: Optional[float] = None,
+    reg_tcn_adapter_dropout: Optional[float] = None,
+    use_reg_shared_trunk: Optional[bool] = None,
+    reg_shared_trunk_dim: Optional[int] = None,
+    reg_gas_emb_dim: Optional[int] = None,
+    reg_residual_head_depth: Optional[int] = None,
+    use_reg_ratio_branch: Optional[bool] = None,
+    reg_ratio_gamma_init: Optional[float] = None,
+    reg_ratio_dropout: Optional[float] = None,
 ) -> FLConfig:
     """创建回归训练专用配置
 
@@ -48,6 +98,11 @@ def make_regression_config(
         local_steps: 每轮本地训练步数
         batch_size: 批次大小
         lr: 学习率
+        reg_head_depth: 回归头深度; None 表示沿用 FLConfig 默认值
+        reg_output_mode: 回归输出模式; None 表示沿用 FLConfig 默认值
+        use_reg_window_stats: 是否追加窗口响应统计特征
+        reg_window_stats_mode: global 或 per_channel
+        reg_window_stats_dim: 统计特征投影维度
 
     返回:
         回归训练配置 FLConfig
@@ -74,7 +129,69 @@ def make_regression_config(
     config.USE_ADVERSARIAL_DOMAIN = False
     config.USE_MMD_ALIGNMENT = False
     # 回归超参数
-    config.REG_HEAD_DEPTH = 3
+    if reg_head_depth is not None:
+        config.REG_HEAD_DEPTH = int(reg_head_depth)
+    if reg_output_mode is not None:
+        mode = str(reg_output_mode).lower()
+        if mode not in {"sigmoid", "linear"}:
+            raise ValueError(f"Unsupported reg_output_mode: {reg_output_mode}")
+        config.REG_OUTPUT_MODE = mode
+    if use_reg_window_stats is not None:
+        config.REG_WINDOW_STATS = bool(use_reg_window_stats)
+    if reg_window_stats_mode is not None:
+        mode = str(reg_window_stats_mode).lower()
+        if mode not in {"global", "per_channel"}:
+            raise ValueError(f"Unsupported reg_window_stats_mode: {reg_window_stats_mode}")
+        config.REG_WINDOW_STATS_MODE = mode
+    if reg_window_stats_dim is not None:
+        config.REG_WINDOW_STATS_DIM = int(reg_window_stats_dim)
+    if reg_response_branch is not None:
+        branch = str(reg_response_branch).lower()
+        if branch not in {"none", "dct", "msconv"}:
+            raise ValueError(f"Unsupported reg_response_branch: {reg_response_branch}")
+        config.REG_RESPONSE_BRANCH = branch
+    if reg_dct_k is not None:
+        config.REG_DCT_K = int(reg_dct_k)
+    if reg_dct_gamma_init is not None:
+        config.REG_DCT_GAMMA_INIT = float(reg_dct_gamma_init)
+    if reg_dct_dropout is not None:
+        config.REG_DCT_DROPOUT = float(reg_dct_dropout)
+    if reg_msconv_channels is not None:
+        config.REG_MSCONV_CHANNELS = int(reg_msconv_channels)
+    if reg_msconv_kernels is not None:
+        kernels = [int(k.strip()) for k in str(reg_msconv_kernels).split(",") if k.strip()]
+        if not kernels or any(k <= 0 or k % 2 == 0 for k in kernels):
+            raise ValueError(f"Unsupported reg_msconv_kernels: {reg_msconv_kernels}")
+        config.REG_MSCONV_KERNELS = ",".join(str(k) for k in kernels)
+    if reg_msconv_gamma_init is not None:
+        config.REG_MSCONV_GAMMA_INIT = float(reg_msconv_gamma_init)
+    if reg_msconv_dropout is not None:
+        config.REG_MSCONV_DROPOUT = float(reg_msconv_dropout)
+    if use_reg_tcn_adapter is not None:
+        config.REG_TCN_ADAPTER = bool(use_reg_tcn_adapter)
+    if reg_tcn_adapter_kernel is not None:
+        kernel = int(reg_tcn_adapter_kernel)
+        if kernel <= 0 or kernel % 2 == 0:
+            raise ValueError(f"Unsupported reg_tcn_adapter_kernel: {reg_tcn_adapter_kernel}")
+        config.REG_TCN_ADAPTER_KERNEL = kernel
+    if reg_tcn_adapter_gamma_init is not None:
+        config.REG_TCN_ADAPTER_GAMMA_INIT = float(reg_tcn_adapter_gamma_init)
+    if reg_tcn_adapter_dropout is not None:
+        config.REG_TCN_ADAPTER_DROPOUT = float(reg_tcn_adapter_dropout)
+    if use_reg_shared_trunk is not None:
+        config.REG_USE_SHARED_TRUNK = bool(use_reg_shared_trunk)
+    if reg_shared_trunk_dim is not None:
+        config.REG_SHARED_TRUNK_DIM = int(reg_shared_trunk_dim)
+    if reg_gas_emb_dim is not None:
+        config.REG_GAS_EMB_DIM = int(reg_gas_emb_dim)
+    if reg_residual_head_depth is not None:
+        config.REG_RESIDUAL_HEAD_DEPTH = int(reg_residual_head_depth)
+    if use_reg_ratio_branch is not None:
+        config.USE_REG_RATIO_BRANCH = bool(use_reg_ratio_branch)
+    if reg_ratio_gamma_init is not None:
+        config.REG_RATIO_GAMMA_INIT = float(reg_ratio_gamma_init)
+    if reg_ratio_dropout is not None:
+        config.REG_RATIO_DROPOUT = float(reg_ratio_dropout)
     config.HUBER_DELTA = 0.2
     config.NUM_CONC_BUCKETS = 0  # 默认不启用浓度桶辅助任务
     config.LAMBDA_CONC_BUCKET = 0.0
@@ -155,6 +272,7 @@ def build_source_regression_loaders(
     data_root: str,
     client_ids: List[int],
     batch_size: int = 32,
+    exclude_client_classes: Optional[Dict[int, set[int]]] = None,
 ) -> Tuple[Dict[int, DataLoader], Dict[int, int]]:
     """为源域客户端构建回归训练 DataLoader
 
@@ -186,11 +304,36 @@ def build_source_regression_loaders(
                 client_dir,
                 batch_size=batch_size,
                 shuffle=True,
+                normalize=False,
                 num_workers=0,
             )
         except Exception as e:
             logger.error(f"回归训练: 客户端 {cid} 创建 DataLoader 失败: {e}")
             continue
+
+        excluded = (exclude_client_classes or {}).get(int(cid), set())
+        if excluded:
+            labels = getattr(loader.dataset, "classification_labels", None)
+            if labels is None:
+                raise RuntimeError(
+                    f"回归训练: 客户端 {cid} 无 classification_labels, 无法过滤类别 {sorted(excluded)}"
+                )
+            labels_arr = np.asarray(labels).reshape(-1)
+            keep_indices = [
+                idx for idx, cls_id in enumerate(labels_arr)
+                if int(cls_id) not in excluded
+            ]
+            removed = int(len(labels_arr) - len(keep_indices))
+            if not keep_indices:
+                logger.warning(f"回归训练: 客户端 {cid} 过滤类别 {sorted(excluded)} 后无样本, 跳过")
+                continue
+            loader = DataLoader(
+                Subset(loader.dataset, keep_indices),
+                batch_size=batch_size,
+                shuffle=True,
+                num_workers=0,
+            )
+            logger.info(f"回归训练: 客户端 {cid} 已过滤类别 {sorted(excluded)}, 移除样本数 {removed}")
 
         n_samples = len(loader.dataset) if hasattr(loader, "dataset") else 0
         loaders[cid] = loader
@@ -207,7 +350,7 @@ def get_regression_state_keys(model: FedGasMultiTaskModel) -> List[str]:
 
     回归专属参数前缀:
         reg_proj., reg_transformer., reg_attn., reg_attn_linear.,
-        reg_stats_proj., reg_heads.
+        reg_stats_proj., reg_response_adapter., reg_tcn_adapter., reg_heads.
     回归专属参数字面量:
         proto_scale, proto_bias, proto_conc, conc_directions, conc_scale, conc_bias
 
@@ -219,7 +362,10 @@ def get_regression_state_keys(model: FedGasMultiTaskModel) -> List[str]:
     """
     prefixes = (
         "reg_proj.", "reg_transformer.", "reg_attn.",
-        "reg_attn_linear.", "reg_stats_proj.", "reg_heads.",
+        "reg_attn_linear.", "reg_stats_proj.", "reg_response_adapter.",
+        "reg_tcn_adapter.", "reg_ratio_adapter.",
+        "gas_embedding.", "reg_shared_trunk.", "reg_residual_heads.",
+        "reg_heads.",
     )
     exact_names = {
         "proto_scale", "proto_bias", "proto_conc",
@@ -251,9 +397,10 @@ def fedavg_regression_states(
     返回:
         聚合后的 state_dict (仅包含 state_keys 中的键)
     """
-    total = float(sum(sample_counts.values()))
+    participating_clients = list(local_states.keys())
+    total = float(sum(sample_counts.get(cid, 0) for cid in participating_clients))
     if total <= 0:
-        raise RuntimeError("回归 FedAvg: 无源域样本可聚合")
+        raise RuntimeError("回归 FedAvg: 无实际参与客户端样本可聚合")
 
     aggregated: Dict[str, torch.Tensor] = {}
     for key in state_keys:
@@ -279,6 +426,7 @@ def train_regression_local(
     feat_lr: float = 0.0,
     huber_delta: float = 0.2,
     class_weights_str: str = "",
+    reg_range_penalty: float = 0.0,
     stage_name: str = "regression",
 ) -> float:
     """单客户端本地回归训练
@@ -298,6 +446,7 @@ def train_regression_local(
         feat_lr: 特征提取器学习率 (0 表示冻结)
         huber_delta: Huber 损失 beta 参数
         class_weights_str: 类别权重字符串, 如 "1,2,3"
+        reg_range_penalty: linear 输出模式下的归一化范围越界惩罚
         stage_name: 阶段名称 (用于日志)
 
     返回:
@@ -315,12 +464,14 @@ def train_regression_local(
     for name in [
         "reg_proj", "reg_transformer", "reg_attn",
         "reg_attn_linear", "reg_stats_proj",
+        "reg_response_adapter",
+        "reg_ratio_adapter",
+        "reg_tcn_adapter",
+        "gas_embedding", "reg_shared_trunk", "reg_residual_heads",
     ]:
         module = getattr(model, name, None)
         if module is not None:
-            reg_params.extend(
-                p for p in module.parameters() if p.requires_grad is not False
-            )
+            reg_params.extend(list(module.parameters()))
     if getattr(model, "reg_heads", None) is not None:
         reg_params.extend(model.reg_heads.parameters())
     for name in [
@@ -336,6 +487,18 @@ def train_regression_local(
 
     if not reg_params:
         raise RuntimeError("回归训练: 无可训练回归参数")
+
+    trainable_count = sum(p.numel() for p in reg_params)
+    class_weights = _parse_class_weights(class_weights_str)
+    reg_output_mode = str(getattr(model, "reg_output_mode", "sigmoid")).lower()
+    use_unclamped_linear_train = reg_output_mode == "linear"
+    logger.info(
+        f"回归训练 [{stage_name}]: trainable regression params={trainable_count}, "
+        f"modules=reg_proj/reg_transformer/reg_attn/reg_stats_proj/reg_response_adapter/reg_tcn_adapter/reg_heads, "
+        f"reg_output_mode={reg_output_mode}, reg_range_penalty={reg_range_penalty}"
+    )
+    if class_weights:
+        logger.info(f"回归训练 [{stage_name}]: class_weights={class_weights}")
 
     optimizer = torch.optim.AdamW(reg_params, lr=lr, weight_decay=1e-3)
     model.train()
@@ -363,10 +526,29 @@ def train_regression_local(
 
         optimizer.zero_grad()
         _, _, reg_feat = model(x)
-        pred_norm = model.forward_reg(reg_feat, y_cls=y_cls, y_phase=y_phase)
+        pred_norm = model.forward_reg(
+            reg_feat,
+            y_cls=y_cls,
+            y_phase=y_phase,
+            clamp_output=not use_unclamped_linear_train,
+        )
 
-        # SmoothL1 (Huber) 损失
-        loss = F.smooth_l1_loss(pred_norm, y_norm, beta=huber_delta)
+        losses = F.smooth_l1_loss(pred_norm, y_norm, beta=huber_delta, reduction="none").view(-1)
+        if class_weights:
+            sample_weights = torch.ones_like(losses)
+            y_cls_flat = y_cls.view(-1).long()
+            for cls_id, weight in class_weights.items():
+                sample_weights = torch.where(
+                    y_cls_flat == int(cls_id),
+                    torch.full_like(sample_weights, float(weight)),
+                    sample_weights,
+                )
+            loss = (losses * sample_weights).sum() / sample_weights.sum().clamp_min(1e-12)
+        else:
+            loss = losses.mean()
+        if use_unclamped_linear_train and reg_range_penalty > 0:
+            range_violation = F.relu(-pred_norm).pow(2) + F.relu(pred_norm - 1.0).pow(2)
+            loss = loss + float(reg_range_penalty) * range_violation.mean()
         loss.backward()
         optimizer.step()
 

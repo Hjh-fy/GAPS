@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import logging
 import time
+from typing import Optional
 
 import flwr as fl
+import torch
 
 from gaps_flower.task import (
     create_model,
@@ -15,7 +17,9 @@ from gaps_flower.task import (
     load_client_loaders,
     make_client,
     make_config,
+    parameters_to_state_dict,
     set_parameters,
+    set_prev_model_from_state,
     train_one_round,
 )
 
@@ -36,10 +40,12 @@ class GapsFlowerClient(fl.client.NumPyClient):
         device: str,
         local_epochs: int,
         batch_size: int,
+        profile: str = "smoke",
     ):
         self.client_id = client_id
+        self.profile = profile
         self.config = make_config(
-            device=device, local_epochs=local_epochs, batch_size=batch_size
+            device=device, local_epochs=local_epochs, batch_size=batch_size, profile=profile
         )
         self.model = create_model(self.config)
         self.parameter_keys = get_parameters(self.model)[1]
@@ -52,13 +58,15 @@ class GapsFlowerClient(fl.client.NumPyClient):
         self.test_loader = test_loader
         self.train_samples = len(train_loader.dataset)
         self.test_samples = len(test_loader.dataset)
+        self.last_server_state: Optional[dict[str, torch.Tensor]] = None
         logger.info(
-            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d",
+            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s",
             client_id,
             self.train_samples,
             self.test_samples,
             device,
             local_epochs,
+            profile,
         )
 
     def get_parameters(self, config):
@@ -86,9 +94,19 @@ class GapsFlowerClient(fl.client.NumPyClient):
             self.config.LOCAL_EPOCHS,
         )
 
+        current_server_state = parameters_to_state_dict(
+            parameters, self.parameter_keys, self.model.state_dict()
+        )
+        if self.config.USE_REPLAY_DISTILL:
+            prev_state = self.last_server_state or current_server_state
+            set_prev_model_from_state(self.gaps_client, prev_state)
         set_parameters(self.model, parameters, self.parameter_keys)
+        self.last_server_state = {
+            key: value.detach().cpu().clone()
+            for key, value in current_server_state.items()
+        }
         arrays, num_examples, metrics = train_one_round(
-            self.gaps_client, round_idx
+            self.gaps_client, round_idx, fit_config=config
         )
         elapsed = time.perf_counter() - fit_start
         metrics.update({
@@ -98,6 +116,8 @@ class GapsFlowerClient(fl.client.NumPyClient):
             "num_examples": int(num_examples),
             "local_epochs": int(self.config.LOCAL_EPOCHS),
             "train_samples": int(self.train_samples),
+            "profile": self.profile,
+            "replay_distill_enabled": int(bool(self.config.USE_REPLAY_DISTILL)),
         })
         logger.info(
             "[GAPS client %d] fit round=%d DONE: samples=%d, seconds=%.2f",
@@ -111,7 +131,14 @@ class GapsFlowerClient(fl.client.NumPyClient):
     def evaluate(self, parameters, config):
         """本地评估"""
         start = time.perf_counter()
+        current_server_state = parameters_to_state_dict(
+            parameters, self.parameter_keys, self.model.state_dict()
+        )
         set_parameters(self.model, parameters, self.parameter_keys)
+        self.last_server_state = {
+            key: value.detach().cpu().clone()
+            for key, value in current_server_state.items()
+        }
         loss, num_examples, metrics = evaluate(
             self.model, self.test_loader, self.config, client_id=self.client_id
         )
@@ -135,6 +162,12 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--local-epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument(
+        "--profile",
+        choices=("smoke", "gaps_cls", "gaps", "gaps_classification", "classification", "strong_cls"),
+        default="smoke",
+        help="Client training profile: smoke=CE-only, gaps_cls/strong_cls=CE + server prototype alignment + replay distill",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -149,6 +182,7 @@ def main() -> None:
         device=args.device,
         local_epochs=args.local_epochs,
         batch_size=args.batch_size,
+        profile=args.profile,
     )
     fl.client.start_numpy_client(server_address=args.server_address, client=client)
 

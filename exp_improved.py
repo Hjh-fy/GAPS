@@ -101,6 +101,7 @@ def setup_config(args):
     config = FLConfig()
     config.SEED = args.seed
     set_random_seed(config.SEED)
+    config.FEDERATED_DATA_DIR = str(args.federated_data_dir or args.data_dir)
 
     config.GLOBAL_ROUNDS = args.rounds
     config.LOCAL_EPOCHS = args.local_epochs
@@ -649,11 +650,50 @@ def audit_federated_split(federated_dir: Union[str, Path], client_ids: Sequence[
         logger.info(f"Data split audit saved to {save_path}")
     return audit
 
+
+def write_split_protocol_manifest_for_experiment(federated_dir: Union[str, Path],
+                                                 save_dir: Union[str, Path],
+                                                 logger=None) -> Dict[str, Any]:
+    """Record the split protocol used by an experiment output directory."""
+    root = Path(federated_dir)
+    source_manifest = root / "split_protocol_manifest.json"
+    if source_manifest.exists():
+        with source_manifest.open("r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    else:
+        split_info = root / "split_info.json"
+        if split_info.exists():
+            with split_info.open("r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        else:
+            manifest = {}
+    manifest.update({
+        "federated_data_dir": str(root),
+        "protocol": manifest.get("protocol", "window_level_fullgrid"),
+        "same_as_single_machine_baseline": bool(
+            manifest.get("same_as_single_machine_baseline", True)
+        ),
+        "allows_file_overlap": bool(manifest.get("allows_file_overlap", True)),
+    })
+    out_path = Path(save_dir) / "split_protocol_manifest.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+    if logger is not None:
+        logger.info(f"Split protocol manifest saved to {out_path}")
+    return manifest
+
+
 def setup_data(args, config, logger):
     """准备数据"""
     processed_dir = args.processed_dir
-    federated_dir = args.data_dir
+    federated_dir = args.federated_data_dir or args.data_dir
     if not Path(federated_dir).exists():
+        if args.federated_data_dir:
+            raise FileNotFoundError(
+                f"--federated_data_dir was provided but does not exist: {federated_dir}. "
+                "Refusing to create or overwrite time-aware data."
+            )
         logger.info("Creating federated dataset...")
         create_federated_dataset(processed_dir, federated_dir)
 
@@ -665,6 +705,11 @@ def setup_data(args, config, logger):
     audit_federated_split(
         federated_dir, audit_client_ids, logger,
         save_dir=audit_save_dir, num_classes=config.NUM_CLASSES
+    )
+    write_split_protocol_manifest_for_experiment(
+        federated_dir=federated_dir,
+        save_dir=Path(config.MODEL_SAVE_DIR).parent,
+        logger=logger,
     )
 
 
@@ -2491,7 +2536,138 @@ def _dataset_class_labels(dataset):
     return None
 
 
-def _split_calibration_loader(loader, batch_size, val_ratio=0.3, seed=42, split_by='window', logger=None):
+def _dataset_regression_labels(dataset):
+    if isinstance(dataset, Subset):
+        base_labels = _dataset_regression_labels(dataset.dataset)
+        if base_labels is None:
+            return None
+        return np.asarray(base_labels)[list(dataset.indices)]
+    labels = getattr(dataset, 'regression_labels', None)
+    if labels is not None and len(labels) == len(dataset):
+        return np.asarray(labels)
+    reg_labels = getattr(dataset, 'reg_labels', None)
+    if reg_labels is not None and len(reg_labels) == len(dataset):
+        return np.asarray(reg_labels)
+    return None
+
+
+def _stratified_window_split_indices(dataset, val_ratio, seed, mode='class_concentration', logger=None):
+    """Split window indices while preserving class/concentration coverage when possible."""
+    n = len(dataset)
+    class_labels = _dataset_class_labels(dataset)
+    if class_labels is None or len(class_labels) != n:
+        return None, None
+
+    class_labels = np.asarray(class_labels).astype(int)
+    reg_labels = _dataset_regression_labels(dataset)
+    use_concentration = (
+        str(mode).lower() in ('class_concentration', 'class_conc', 'concentration', 'conc')
+        and reg_labels is not None
+        and len(reg_labels) == n
+    )
+    rng = np.random.RandomState(int(seed))
+    groups = {}
+    for idx, cls_id in enumerate(class_labels):
+        cls_id = int(cls_id)
+        if use_concentration:
+            reg_row = np.asarray(reg_labels[idx], dtype=float)
+            if 0 <= cls_id < reg_row.shape[0] and np.isfinite(reg_row[cls_id]):
+                conc = float(np.round(reg_row[cls_id], 6))
+            else:
+                conc = None
+            key = (cls_id, conc)
+        else:
+            key = (cls_id, None)
+        groups.setdefault(key, []).append(idx)
+
+    train_indices = []
+    group_records = []
+    for key, indices in sorted(groups.items(), key=lambda item: (item[0][0], -1.0 if item[0][1] is None else item[0][1])):
+        indices = list(indices)
+        rng.shuffle(indices)
+        if len(indices) <= 1:
+            train_indices.extend(indices)
+            continue
+        ideal_val = len(indices) * float(val_ratio)
+        min_val = 1
+        max_val = len(indices) - 1
+        base_val = int(np.floor(ideal_val))
+        base_val = min(max(base_val, min_val), max_val)
+        group_records.append({
+            'key': key,
+            'indices': indices,
+            'val_count': base_val,
+            'min_val': min_val,
+            'max_val': max_val,
+            'remainder': ideal_val - np.floor(ideal_val),
+        })
+
+    if not group_records:
+        return None, None
+
+    target_val = max(1, int(round(n * float(val_ratio))))
+    min_possible_val = sum(record['min_val'] for record in group_records)
+    max_possible_val = sum(record['max_val'] for record in group_records)
+    target_val = min(max(target_val, min_possible_val), max_possible_val)
+    current_val = sum(record['val_count'] for record in group_records)
+
+    if current_val < target_val:
+        deficit = target_val - current_val
+        order = list(range(len(group_records)))
+        rng.shuffle(order)
+        order.sort(key=lambda i: group_records[i]['remainder'], reverse=True)
+        while deficit > 0:
+            changed = False
+            for idx in order:
+                record = group_records[idx]
+                if record['val_count'] < record['max_val']:
+                    record['val_count'] += 1
+                    deficit -= 1
+                    changed = True
+                    if deficit == 0:
+                        break
+            if not changed:
+                break
+    elif current_val > target_val:
+        surplus = current_val - target_val
+        order = list(range(len(group_records)))
+        rng.shuffle(order)
+        order.sort(key=lambda i: group_records[i]['remainder'])
+        while surplus > 0:
+            changed = False
+            for idx in order:
+                record = group_records[idx]
+                if record['val_count'] > record['min_val']:
+                    record['val_count'] -= 1
+                    surplus -= 1
+                    changed = True
+                    if surplus == 0:
+                        break
+            if not changed:
+                break
+
+    val_indices = []
+    for record in group_records:
+        group_val = int(record['val_count'])
+        val_indices.extend(record['indices'][:group_val])
+        train_indices.extend(record['indices'][group_val:])
+
+    if not train_indices or not val_indices:
+        return None, None
+
+    rng.shuffle(train_indices)
+    rng.shuffle(val_indices)
+    if logger is not None:
+        concentrations = {key for key in groups if key[1] is not None}
+        logger.info(
+            f"Calibration stratified split mode={mode}: groups={len(groups)}, "
+            f"class_conc_groups={len(concentrations)}, target_val={target_val}, "
+            f"train_samples={len(train_indices)}, val_samples={len(val_indices)}"
+        )
+    return train_indices, val_indices
+
+
+def _split_calibration_loader(loader, batch_size, val_ratio=0.3, seed=42, split_by='class_concentration', logger=None):
     """Split a target calibration loader into train/validation loaders."""
     if loader is None or not hasattr(loader, 'dataset'):
         return loader, None
@@ -2505,7 +2681,18 @@ def _split_calibration_loader(loader, batch_size, val_ratio=0.3, seed=42, split_
     if train_size < 1:
         return _reshuffle_loader(loader, batch_size), loader
 
-    split_by = str(split_by or 'window').lower()
+    split_by = str(split_by or 'class_concentration').lower()
+    if split_by in ('class_concentration', 'class_conc', 'concentration', 'conc', 'class'):
+        train_indices, val_indices = _stratified_window_split_indices(
+            dataset, val_ratio, seed, mode=split_by, logger=logger
+        )
+        if train_indices and val_indices:
+            train_loader = DataLoader(Subset(dataset, train_indices), batch_size=batch_size, shuffle=True, num_workers=0)
+            val_loader = DataLoader(Subset(dataset, val_indices), batch_size=batch_size, shuffle=False, num_workers=0)
+            return train_loader, val_loader
+        if logger is not None:
+            logger.warning("Calibration stratified split unavailable; fallback to window split")
+
     if split_by in ('file', 'filename'):
         filenames = _dataset_filenames(dataset)
         if filenames is not None and len(set(filenames)) > 1:
@@ -2761,24 +2948,53 @@ def _pairwise_rank_loss(pred_norm, target_norm, margin=0.02, max_pairs=256):
     return torch.relu(float(margin) - direction * pred_diff).mean()
 
 
+def _score_from_metric_dict(metric_dict, metric='r2'):
+    '''Convert a regression metric dict into a score where larger is better.'''
+    if not metric_dict:
+        return -float('inf')
+    metric = str(metric or 'r2').lower()
+    if metric == 'r2':
+        value = float(metric_dict.get('R2', -999.0))
+        return value if np.isfinite(value) else -999.0
+    if metric == 'neg_mae':
+        value = float(metric_dict.get('MAE', 1e9))
+    elif metric == 'neg_rmse':
+        value = float(metric_dict.get('RMSE', 1e9))
+    else:
+        raise ValueError('Unsupported calibration metric: %s' % metric)
+    if (not np.isfinite(value)) or value < 0:
+        return -1e9
+    return -value
+
+
+def _per_class_oracle_metrics(metrics, class_id):
+    per_class = metrics.get('oracle', {}).get('per_class', {}) if metrics else {}
+    cls_metrics = per_class.get(class_id)
+    if cls_metrics is None:
+        cls_metrics = per_class.get(str(class_id))
+    return cls_metrics
+
+
+def _per_class_oracle_score(metrics, class_id, metric='r2'):
+    return _score_from_metric_dict(_per_class_oracle_metrics(metrics, class_id), metric=metric)
+
+
 def _calibration_score(metrics, metric='r2', scope='overall', num_classes=4):
     """Score calibration candidates on held-out calibration data."""
-    oracle = metrics.get('oracle', {})
+    oracle = metrics.get('oracle', {}) if metrics else {}
     if scope == 'min_class':
         values = []
         for c in range(num_classes):
-            cls_metrics = oracle.get('per_class', {}).get(c) or oracle.get('per_class', {}).get(str(c))
+            cls_metrics = _per_class_oracle_metrics(metrics, c)
             if cls_metrics and cls_metrics.get('n_samples', 0) >= 2:
-                values.append(float(cls_metrics.get('R2', -999.0)))
-        return min(values) if values else -999.0
+                values.append(_score_from_metric_dict(cls_metrics, metric=metric))
+        return min(values) if values else -float('inf')
     overall = oracle.get('overall', {})
-    if metric == 'neg_mae':
-        return -float(overall.get('MAE', 1e9))
-    return float(overall.get('R2', -999.0))
+    return _score_from_metric_dict(overall, metric=metric)
 
 
 def _select_per_class_affine_modes(base_model, classifier_model, train_loader, val_loader, device,
-                                   num_classes, logger=None):
+                                   num_classes, logger=None, metric='r2'):
     """Choose none/bias/affine per class using held-out calibration validation R2."""
     bias_params = _fit_per_class_affine_params(train_loader, base_model, classifier_model, device,
                                                num_classes=num_classes, mode='bias_only')
@@ -2797,15 +3013,16 @@ def _select_per_class_affine_modes(base_model, classifier_model, train_loader, v
     diagnostics = {}
     for c in range(num_classes):
         best_mode = 'none'
-        best_r2 = -999.0
+        best_score = -float('inf')
+        best_r2 = best_score
         diagnostics[c] = {}
         for mode, (params, metrics) in candidates.items():
-            cls_metrics = metrics['oracle']['per_class'].get(c) or metrics['oracle']['per_class'].get(str(c))
-            r2 = float(cls_metrics.get('R2', -999.0)) if cls_metrics else -999.0
-            diagnostics[c][mode] = r2
-            if r2 > best_r2:
+            score = _per_class_oracle_score(metrics, c, metric=metric)
+            diagnostics[c][mode] = score
+            if score > best_score:
                 best_mode = mode
-                best_r2 = r2
+                best_score = score
+                best_r2 = score
         selected_modes[c] = best_mode
         if best_mode == 'bias_only':
             selected_params[c] = bias_params[c]
@@ -2823,7 +3040,7 @@ def _run_gated_target_calibration(base_model, classifier_model, calib_loader, de
         calib_loader, config.BATCH_SIZE,
         val_ratio=getattr(args, 'separate_reg_val_ratio', 0.3),
         seed=int(reg_seed + 20000 + cid),
-        split_by=getattr(args, 'separate_reg_val_split', 'window'),
+        split_by=getattr(args, 'separate_reg_val_split', 'class_concentration'),
         logger=logger
     )
     if val_loader is None:
@@ -2925,7 +3142,7 @@ def _run_auto_target_calibration(base_model, classifier_model, calib_loader, dev
         calib_loader, config.BATCH_SIZE,
         val_ratio=getattr(args, 'separate_reg_val_ratio', 0.3),
         seed=int(reg_seed + 30000 + cid),
-        split_by=getattr(args, 'separate_reg_val_split', 'window'),
+        split_by=getattr(args, 'separate_reg_val_split', 'class_concentration'),
         logger=logger
     )
     if val_loader is None:
@@ -2963,7 +3180,8 @@ def _run_auto_target_calibration(base_model, classifier_model, calib_loader, dev
 
     if selection_scope == 'per_class':
         base_affine, base_modes, base_diag = _select_per_class_affine_modes(
-            base_model, classifier_model, train_loader, val_loader, device, config.NUM_CLASSES, logger=logger
+            base_model, classifier_model, train_loader, val_loader, device, config.NUM_CLASSES,
+            logger=logger, metric=gate_metric
         )
         full_eligible = full_score >= before_score + min_delta
         if not full_eligible:
@@ -2975,15 +3193,16 @@ def _run_auto_target_calibration(base_model, classifier_model, calib_loader, dev
         selected_params = {}
         use_full_classes = set()
         for c in range(config.NUM_CLASSES):
-            before_cls = before_metrics['oracle']['per_class'].get(c) or before_metrics['oracle']['per_class'].get(str(c))
-            full_cls = full_metrics['oracle']['per_class'].get(c) or full_metrics['oracle']['per_class'].get(str(c))
+            before_cls = _per_class_oracle_metrics(before_metrics, c)
+            full_cls = _per_class_oracle_metrics(full_metrics, c)
             before_r2 = float(before_cls.get('R2', -999.0)) if before_cls else -999.0
             full_r2 = float(full_cls.get('R2', -999.0)) if full_cls else -999.0
+            full_score_cls = _score_from_metric_dict(full_cls, metric=gate_metric)
             best_mode = base_modes.get(c, 'none')
             best_r2 = base_diag.get(c, {}).get(best_mode, before_r2)
-            if full_eligible and full_r2 >= best_r2 + min_delta:
+            if full_eligible and full_score_cls >= best_r2 + min_delta:
                 best_mode = 'full'
-                best_r2 = full_r2
+                best_r2 = full_score_cls
                 use_full_classes.add(c)
             selected_modes[c] = best_mode
             if best_mode in ('bias_only', 'affine_only') and base_affine and c in base_affine:
@@ -3043,9 +3262,7 @@ def _run_auto_target_calibration(base_model, classifier_model, calib_loader, dev
 
 
 def _per_class_oracle_r2(metrics, class_id):
-    cls_metrics = metrics.get('oracle', {}).get('per_class', {}).get(class_id)
-    if cls_metrics is None:
-        cls_metrics = metrics.get('oracle', {}).get('per_class', {}).get(str(class_id))
+    cls_metrics = _per_class_oracle_metrics(metrics, class_id)
     return float(cls_metrics.get('R2', -999.0)) if cls_metrics else -999.0
 
 
@@ -3057,7 +3274,7 @@ def _run_auto_v2_target_calibration(base_model, classifier_model, calib_loader, 
             calib_loader, config.BATCH_SIZE,
             val_ratio=getattr(args, 'separate_reg_val_ratio', 0.3),
             seed=int(reg_seed + 40000 + cid),
-            split_by=getattr(args, 'separate_reg_val_split', 'window'),
+            split_by=getattr(args, 'separate_reg_val_split', 'class_concentration'),
             logger=logger
         )
         if val_loader is None:
@@ -3143,16 +3360,20 @@ def _run_auto_v2_target_calibration(base_model, classifier_model, calib_loader, 
     routed_affine = {}
     routed_phase_affine = {}
     class_candidate_r2 = {}
+    class_candidate_scores = {}
     for c in range(config.NUM_CLASSES):
         best_mode = 'none'
-        best_r2 = _per_class_oracle_r2(before_metrics, c)
+        best_score = _per_class_oracle_score(before_metrics, c, metric=gate_metric)
         class_candidate_r2[c] = {}
+        class_candidate_scores[c] = {}
         for mode, info in candidates.items():
             r2 = _per_class_oracle_r2(info['metrics'], c)
+            score = _per_class_oracle_score(info['metrics'], c, metric=gate_metric)
             class_candidate_r2[c][mode] = r2
-            if r2 >= best_r2 + min_delta:
+            class_candidate_scores[c][mode] = score
+            if score >= best_score + min_delta:
                 best_mode = mode
-                best_r2 = r2
+                best_score = score
         selected_modes[c] = best_mode
         if best_mode == 'bias_only':
             routed_affine[c] = bias_params[c]
@@ -3189,6 +3410,7 @@ def _run_auto_v2_target_calibration(base_model, classifier_model, calib_loader, 
         'selected_score': selected_score,
         'selected_modes': selected_modes,
         'class_candidate_r2': class_candidate_r2,
+        'class_candidate_scores': class_candidate_scores,
         'candidate_val_metrics': {k: v['metrics'] for k, v in candidates.items()},
         'selected_val_metrics': selected_eval,
     }
@@ -3202,7 +3424,7 @@ def _run_auto_v2_specialist_target_calibration(base_model, classifier_model, cal
         calib_loader, config.BATCH_SIZE,
         val_ratio=getattr(args, 'separate_reg_val_ratio', 0.3),
         seed=int(reg_seed + 40000 + cid),
-        split_by=getattr(args, 'separate_reg_val_split', 'window'),
+        split_by=getattr(args, 'separate_reg_val_split', 'class_concentration'),
         logger=logger
     )
     if val_loader is None:
@@ -3227,6 +3449,7 @@ def _run_auto_v2_specialist_target_calibration(base_model, classifier_model, cal
     specialist_models = {}
     specialist_val_metrics = {}
     specialist_settings = {}
+    gate_metric = getattr(args, 'separate_reg_gate_metric', 'r2')
     specialist_gate = bool(getattr(args, 'separate_reg_specialist_gate', False))
     specialist_gate_min_delta = float(getattr(args, 'separate_reg_specialist_gate_min_delta', 0.0))
     selected_modes = {int(k): v for k, v in dict(routing_config.get('selected_modes', {})).items()}
@@ -3272,13 +3495,18 @@ def _run_auto_v2_specialist_target_calibration(base_model, classifier_model, cal
         }
         general_r2 = _per_class_oracle_r2(general_selected_metrics, cls_id) if general_selected_metrics else -999.0
         specialist_r2 = _per_class_oracle_r2(specialist_val_metrics[cls_id], cls_id)
-        use_specialist = (not specialist_gate) or (specialist_r2 >= general_r2 + specialist_gate_min_delta)
+        general_score = _per_class_oracle_score(general_selected_metrics, cls_id, metric=gate_metric) if general_selected_metrics else -float('inf')
+        specialist_score = _per_class_oracle_score(specialist_val_metrics[cls_id], cls_id, metric=gate_metric)
+        use_specialist = (not specialist_gate) or (specialist_score >= general_score + specialist_gate_min_delta)
         if use_specialist:
             selected_modes[cls_id] = 'specialist_full'
         else:
             specialist_models.pop(cls_id, None)
         selected_label = selected_modes.get(cls_id, 'general')
         gate_decisions[cls_id] = {
+            'metric': gate_metric,
+            'general_score': general_score,
+            'specialist_score': specialist_score,
             'general_r2': general_r2,
             'specialist_r2': specialist_r2,
             'min_delta': specialist_gate_min_delta,
@@ -4998,7 +5226,7 @@ def run_separate_regression_pipeline(args, config, classifier_state, train_clien
             'gate_min_delta': getattr(args, 'separate_reg_gate_min_delta', 0.0),
             'gate_fallback': getattr(args, 'separate_reg_gate_fallback', 'affine_only'),
             'val_ratio': getattr(args, 'separate_reg_val_ratio', 0.3),
-            'val_split': getattr(args, 'separate_reg_val_split', 'window'),
+            'val_split': getattr(args, 'separate_reg_val_split', 'class_concentration'),
             'auto_scope': getattr(args, 'separate_reg_auto_scope', 'per_class'),
             'class_weights': reg_config.SEPARATE_REG_CLASS_WEIGHTS,
             'huber_delta': float(getattr(reg_config, 'HUBER_DELTA', 0.2)),
@@ -5859,6 +6087,9 @@ def main():
     parser.add_argument('--rounds', type=int, default=default_config.GLOBAL_ROUNDS, help='Number of global rounds')
     parser.add_argument('--data_dir', type=str, default='./dataset/client_data_federated_window_fullgrid_src45_tgt123',
                         help='Federated dataset directory containing client_*/ split npy files')
+    parser.add_argument('--federated_data_dir', type=str, default='',
+                        help='Existing federated dataset directory to use directly. '
+                             'When set, exp_improved.py will not create or overwrite splits.')
     parser.add_argument('--processed_dir', type=str, default='./dataset/processed',
                         help='Processed dataset directory used only when --data_dir does not exist')
     parser.add_argument('--local_epochs', type=int, default=default_config.LOCAL_EPOCHS, help='Local epochs per round')
@@ -5884,7 +6115,7 @@ def main():
                         help='Source FedAvg aggregation scope for separate regression: all=legacy behavior; no_calib excludes per-client calibration/prototype scale/bias tensors')
     parser.add_argument('--separate_reg_source_init', type=str, default='fedavg', choices=['fedavg', 'calib_select'],
                         help='Target-client regression initialization: fedavg uses the source FedAvg checkpoint; calib_select chooses FedAvg or a source-local checkpoint by target calibration score')
-    parser.add_argument('--separate_reg_source_init_metric', type=str, default='r2', choices=['r2', 'neg_mae'],
+    parser.add_argument('--separate_reg_source_init_metric', type=str, default='r2', choices=['r2', 'neg_mae', 'neg_rmse'],
                         help='Metric used by calib_select source initialization')
     parser.add_argument('--separate_reg_source_init_scope', type=str, default='overall', choices=['overall', 'min_class'],
                         help='Calibration scoring scope used by calib_select source initialization')
@@ -5966,9 +6197,11 @@ def main():
                              'none=skip calibration')
     parser.add_argument('--separate_reg_val_ratio', type=float, default=0.3,
                         help='Held-out fraction of target calibration data for gated/auto regression calibration')
-    parser.add_argument('--separate_reg_val_split', type=str, default='window', choices=['window', 'file'],
-                        help='Held-out split unit for gated/auto regression calibration routing')
-    parser.add_argument('--separate_reg_gate_metric', type=str, default='r2', choices=['r2', 'neg_mae'],
+    parser.add_argument('--separate_reg_val_split', type=str, default='class_concentration',
+                        choices=['window', 'class', 'class_concentration', 'file'],
+                        help='Held-out split unit for gated/auto regression calibration routing. '
+                             'class_concentration stratifies target calibration by gas class and concentration when labels are available.')
+    parser.add_argument('--separate_reg_gate_metric', type=str, default='r2', choices=['r2', 'neg_mae', 'neg_rmse'],
                         help='Metric used by gated/auto separate regression calibration')
     parser.add_argument('--separate_reg_gate_scope', type=str, default='overall', choices=['overall', 'min_class'],
                         help='Scope used by gated/auto calibration score')

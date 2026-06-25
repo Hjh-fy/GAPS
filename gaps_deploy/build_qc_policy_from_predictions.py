@@ -56,6 +56,19 @@ def _parse_client_rates(raw: str) -> Dict[str, float]:
     return rates
 
 
+def _parse_client_floats(raw: str) -> Dict[str, float]:
+    values: Dict[str, float] = {}
+    for item in _split_csv(raw):
+        if ":" not in item:
+            raise ValueError(f"Invalid client value item: {item!r}; expected C5:2.0")
+        client_id, value = item.split(":", 1)
+        parsed = float(value)
+        if parsed <= 0.0:
+            raise ValueError(f"Client value must be positive, got {item!r}")
+        values[client_id.strip()] = parsed
+    return values
+
+
 def _assign_groups(paths: Sequence[Path], groups_raw: str) -> Dict[Path, str]:
     groups = _split_csv(groups_raw)
     if groups and len(groups) != len(paths):
@@ -135,7 +148,11 @@ def build_policy(
     client_review_rates: str,
     low_ratio: float,
     high_ratio: float,
+    threshold_scale: float = 1.0,
+    client_threshold_scales: str = "",
 ) -> Dict[str, Any]:
+    if threshold_scale <= 0.0:
+        raise ValueError(f"threshold_scale must be positive, got {threshold_scale}")
     paths = [Path(path) for path in inputs]
     score_name = _policy_score_name(score_column)
     by_group, all_values = _load_grouped_scores(
@@ -151,6 +168,8 @@ def build_policy(
         all_values,
         global_review_rate,
     )
+    raw_threshold = threshold
+    threshold = threshold * float(threshold_scale)
     policies.append(
         _make_policy(
             group="ALL",
@@ -166,10 +185,14 @@ def build_policy(
         "n": len(all_values),
         "target_review_rate": global_review_rate,
         "target_review_count": n_flag,
+        "raw_threshold": raw_threshold,
+        "threshold_scale": float(threshold_scale),
         "threshold": threshold,
-        "estimated_review_rate": actual_rate,
+        "estimated_review_rate": float(np.mean(np.asarray(all_values) > threshold)),
+        "raw_estimated_review_rate": actual_rate,
     })
 
+    client_scales = _parse_client_floats(client_threshold_scales)
     for group, review_rate in _parse_client_rates(client_review_rates).items():
         if group not in by_group:
             raise KeyError(f"No rows found for client/group {group!r}")
@@ -177,6 +200,9 @@ def build_policy(
             by_group[group],
             review_rate,
         )
+        raw_threshold = threshold
+        scale = float(client_scales.get(group, threshold_scale))
+        threshold = threshold * scale
         policies.append(
             _make_policy(
                 group=group,
@@ -192,8 +218,11 @@ def build_policy(
             "n": len(by_group[group]),
             "target_review_rate": review_rate,
             "target_review_count": n_flag,
+            "raw_threshold": raw_threshold,
+            "threshold_scale": scale,
             "threshold": threshold,
-            "estimated_review_rate": actual_rate,
+            "estimated_review_rate": float(np.mean(np.asarray(by_group[group]) > threshold)),
+            "raw_estimated_review_rate": actual_rate,
         })
 
     return {
@@ -202,6 +231,8 @@ def build_policy(
             "runtime_score": score_name,
             "low_ratio": low_ratio,
             "high_ratio": high_ratio,
+            "threshold_scale": threshold_scale,
+            "client_threshold_scales": client_scales,
             "inputs": [str(path) for path in paths],
             "reports": reports,
         },
@@ -220,6 +251,8 @@ def main() -> None:
     parser.add_argument("--client-review-rates", default="")
     parser.add_argument("--low-ratio", type=float, default=1.0)
     parser.add_argument("--high-ratio", type=float, default=999.0)
+    parser.add_argument("--threshold-scale", type=float, default=1.0)
+    parser.add_argument("--client-threshold-scales", default="")
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
 
@@ -231,6 +264,8 @@ def main() -> None:
         client_review_rates=args.client_review_rates,
         low_ratio=args.low_ratio,
         high_ratio=args.high_ratio,
+        threshold_scale=args.threshold_scale,
+        client_threshold_scales=args.client_threshold_scales,
     )
 
     output = Path(args.output)
@@ -242,6 +277,8 @@ def main() -> None:
         print(
             f"{report['group']}: n={report['n']}, "
             f"target={report['target_review_rate']:.2%}, "
+            f"raw_threshold={report['raw_threshold']:.6g}, "
+            f"scale={report['threshold_scale']:.3g}, "
             f"threshold={report['threshold']:.6g}, "
             f"estimated={report['estimated_review_rate']:.2%}"
         )

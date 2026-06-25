@@ -676,7 +676,18 @@ class Client:
         Returns:
             分类损失值
         """
-        return F.cross_entropy(logits, y_cls)
+        label_smoothing = float(getattr(self.config, 'CLS_LABEL_SMOOTHING', 0.0))
+        focal_gamma = float(getattr(self.config, 'CLS_FOCAL_GAMMA', 0.0))
+        ce = F.cross_entropy(
+            logits,
+            y_cls,
+            reduction='none',
+            label_smoothing=label_smoothing,
+        )
+        if focal_gamma > 0:
+            pt = torch.exp(-ce).clamp(min=1e-6, max=1.0)
+            ce = ((1.0 - pt) ** focal_gamma) * ce
+        return ce.mean()
     
     def _compute_align_loss(self, feats, y_cls, y_p, global_protos):
         """计算对齐损失

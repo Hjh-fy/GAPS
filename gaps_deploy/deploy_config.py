@@ -22,6 +22,7 @@ class DeployConfig:
     属性:
         classifier_checkpoint: 分类模型A checkpoint 路径
         regression_checkpoint: 回归模型B checkpoint 路径
+        full_model_checkpoint: 目标端 full 校准模型 checkpoint 路径，可选
         calibration_params_path: 校准参数 JSON 路径 (affine/bias/phase_affine)
         routing_config_path: 路由配置 JSON 路径 (per-class 模式选择)
         qc_policy_path: QC 策略 JSON 路径 (风险分数列表 + 阈值)
@@ -42,6 +43,7 @@ class DeployConfig:
     # 模型路径
     classifier_checkpoint: str = ""
     regression_checkpoint: str = ""
+    full_model_checkpoint: str = ""
 
     # 校准参数路径
     calibration_params_path: str = ""
@@ -94,6 +96,7 @@ class DeployConfig:
         return {
             "classifier_checkpoint": self.classifier_checkpoint,
             "regression_checkpoint": self.regression_checkpoint,
+            "full_model_checkpoint": self.full_model_checkpoint,
             "calibration_params_path": self.calibration_params_path,
             "routing_config_path": self.routing_config_path,
             "qc_policy_path": self.qc_policy_path,
@@ -146,6 +149,8 @@ class DeployConfig:
             errors.append(f"分类模型 checkpoint 不存在: {self.classifier_checkpoint}")
         if not self.regression_checkpoint or not Path(self.regression_checkpoint).exists():
             errors.append(f"回归模型 checkpoint 不存在: {self.regression_checkpoint}")
+        if self.full_model_checkpoint and not Path(self.full_model_checkpoint).exists():
+            errors.append(f"full 校准模型 checkpoint 不存在: {self.full_model_checkpoint}")
         if self.calibration_params_path and not Path(self.calibration_params_path).exists():
             errors.append(f"校准参数文件不存在: {self.calibration_params_path}")
         if self.qc_policy_path and not Path(self.qc_policy_path).exists():

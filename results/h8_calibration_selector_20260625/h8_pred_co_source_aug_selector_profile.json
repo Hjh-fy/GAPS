@@ -1,0 +1,78 @@
+{
+  "schema": "h8_co_specialist_selector.v1",
+  "base_profile": "h2_3",
+  "candidate_name": "h8_pred_co_source_aug_else_h23_calibration_selected",
+  "switch_rule": {
+    "type": "pred_class_equals",
+    "class_id": 1,
+    "enabled_clients": [
+      "C3",
+      "C4",
+      "C5"
+    ],
+    "specialist": "source_aug_target_ridge_plus_c4_rescue",
+    "fallback": "h2_3"
+  },
+  "thresholds": {
+    "min_switch_precision": 0.95,
+    "max_switch_false_positive_rate": 0.05,
+    "min_co_recall": 0.9,
+    "min_co_high_recall": 0.8,
+    "max_co_val_rmse_delta": 0.0
+  },
+  "selector_inputs": {
+    "switch_audit": "results\\h8_switch_rule_audit_20260625\\h8_pred_co_switch_split_audit.csv",
+    "source_aug_fit_audit": "results\\source_augmented_target_ridge_stratcalval_20260625\\fit_audit.csv"
+  },
+  "client_decisions": [
+    {
+      "client": "C3",
+      "enable_h8_pred_co_switch": 1,
+      "switch_precision_CO": 0.9883720930232558,
+      "switch_false_positive_rate": 0.011627906976744186,
+      "CO_recall_by_switch": 1.0,
+      "CO_high_recall_by_switch": 1.0,
+      "rich_only_CO_val_RMSE": 11.585377006785192,
+      "source_aug_CO_val_RMSE": 8.064250350638078,
+      "source_aug_minus_rich_CO_val_RMSE": -3.521126656147114,
+      "precision_pass": 1,
+      "fp_pass": 1,
+      "co_recall_pass": 1,
+      "high_recall_pass": 1,
+      "co_val_gain_pass": 1
+    },
+    {
+      "client": "C4",
+      "enable_h8_pred_co_switch": 1,
+      "switch_precision_CO": 1.0,
+      "switch_false_positive_rate": 0.0,
+      "CO_recall_by_switch": 0.9625,
+      "CO_high_recall_by_switch": 0.875,
+      "rich_only_CO_val_RMSE": 18.165253287082425,
+      "source_aug_CO_val_RMSE": 16.16837885252757,
+      "source_aug_minus_rich_CO_val_RMSE": -1.9968744345548544,
+      "precision_pass": 1,
+      "fp_pass": 1,
+      "co_recall_pass": 1,
+      "high_recall_pass": 1,
+      "co_val_gain_pass": 1
+    },
+    {
+      "client": "C5",
+      "enable_h8_pred_co_switch": 1,
+      "switch_precision_CO": 0.9868421052631579,
+      "switch_false_positive_rate": 0.013157894736842105,
+      "CO_recall_by_switch": 0.9375,
+      "CO_high_recall_by_switch": 0.9583333333333334,
+      "rich_only_CO_val_RMSE": 11.786542310210368,
+      "source_aug_CO_val_RMSE": 10.629690381453763,
+      "source_aug_minus_rich_CO_val_RMSE": -1.1568519287566055,
+      "precision_pass": 1,
+      "fp_pass": 1,
+      "co_recall_pass": 1,
+      "high_recall_pass": 1,
+      "co_val_gain_pass": 1
+    }
+  ],
+  "runtime_status": "analysis_profile_only; source-aug runtime artifact not yet implemented"
+}

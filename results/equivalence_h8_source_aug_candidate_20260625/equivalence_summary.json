@@ -1,0 +1,16 @@
+{
+  "analysis_predictions": "results/co_only_source_aug_hybrid_stratcalval_20260625/co_only_source_aug_hybrid_predictions.csv",
+  "analysis_column": "h8_pred_co_source_aug_else_h23_ppm",
+  "runtime_predictions": "results/runtime_validation_h8_source_aug_candidate_20260625/runtime_predictions.csv",
+  "runtime_column": "co_corrected_ppm",
+  "tolerance": 1e-06,
+  "analysis_rows": 5400,
+  "runtime_rows": 5400,
+  "rows_compared": 5400,
+  "missing_in_analysis": 0,
+  "missing_in_runtime": 0,
+  "num_mismatch": 0,
+  "max_abs_diff": 1.1368683772161603e-13,
+  "mean_abs_diff": 1.1339406779808525e-14,
+  "p99_abs_diff": 8.526512829121202e-14
+}

@@ -225,8 +225,6 @@ class FederatedDatasetSplitter:
             clients_data, global_contributions, calibration_contributions = self._split_by_unit(unit_data)
         elif self.config.split_method == SplitMethod.IID:
             clients_data, global_contributions, calibration_contributions = self._split_iid(unit_data)
-        elif self.config.split_method == SplitMethod.GAS_BASED:
-            clients_data, global_contributions, calibration_contributions = self._split_by_gas(unit_data)
         else:
             raise ValueError(f"不支持的划分方法: {self.config.split_method}")
         if global_contributions:
@@ -283,7 +281,7 @@ class FederatedDatasetSplitter:
                 print(f"      测试集: {stats['n_test']:,} 样本 ({stats['test_ratio']:.1%})")
                 print(f"      校准集: {stats['n_calibration']:,} 样本 ({stats['calibration_ratio']:.1%})")
         return clients_data, all_global_contributions, all_calibration_contributions
-    
+
     def _normalize_phase_labels(self, phase_labels: Optional[np.ndarray]) -> Optional[np.ndarray]:
         """Convert string/int phase labels to {-1,0,1,2}."""
         if phase_labels is None:
@@ -683,73 +681,7 @@ class FederatedDatasetSplitter:
             if calibration_contribution:
                 all_calibration_contributions.append(calibration_contribution)
         return clients_data, all_global_contributions, all_calibration_contributions
-    
-    def _split_by_gas(self, unit_data: Dict[int, Dict[str, Any]], n_clients: int = 4) -> Tuple[Dict[int, Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
-        """按气体类型划分数据集
-        
-        将所有单元的数据按气体类型分配给n_clients个客户端
-        
-        Args:
-            unit_data: 单元数据字典
-            n_clients: 客户端数量
-            
-        Returns:
-            客户端数据字典、全局测试贡献列表、校准集贡献列表
-        """
-        n_clients = min(n_clients, 4)
-        gas_data = {i: {"features": [], "regression_labels": [], "classification_labels": [], "phase_labels": [], "experiment_info": []} for i in range(4)}
-        for unit_id, data in unit_data.items():
-            features = data["features"]
-            regression_labels = data["regression_labels"]
-            classification_labels = data["classification_labels"]
-            phase_labels = data["phase_labels"]
-            experiment_info = data["experiment_info"]
-            for i in range(len(features)):
-                gas_type = int(classification_labels[i])
-                gas_data[gas_type]["features"].append(features[i])
-                gas_data[gas_type]["regression_labels"].append(regression_labels[i])
-                gas_data[gas_type]["classification_labels"].append(classification_labels[i])
-                gas_data[gas_type]["phase_labels"].append(phase_labels[i])
-                if experiment_info and i < len(experiment_info):
-                    gas_data[gas_type]["experiment_info"].append(experiment_info[i])
-                else:
-                    gas_data[gas_type]["experiment_info"].append({"unit_id": unit_id})
-        clients_data = {}
-        all_global_contributions = []
-        all_calibration_contributions = []
-        client_id = 0
-        for gas_type in range(4):
-            if len(gas_data[gas_type]["features"]) > 0:
-                features = np.array(gas_data[gas_type]["features"])
-                regression_labels = np.array(gas_data[gas_type]["regression_labels"])
-                classification_labels = np.array(gas_data[gas_type]["classification_labels"])
-                phase_labels = np.array(gas_data[gas_type]["phase_labels"])
-                experiment_info = gas_data[gas_type]["experiment_info"]
-                if self.config.verbose:
-                    gas_name = ["乙醇", "一氧化碳", "乙烯", "甲烷"][gas_type]
-                    print(f"\n 创建气体客户端 {client_id} ({gas_name})")
-                    print(f"   样本数: {len(features):,}")
-                if len(features) < self.config.min_samples_per_client:
-                    warnings.warn(f"气体类型 {gas_type} 只有 {len(features)} 个样本，少于最小要求 {self.config.min_samples_per_client}")
-                client_data, global_contribution, calibration_contribution = self._split_single_client(
-                    features=features, regression_labels=regression_labels,
-                    classification_labels=classification_labels, phase_labels=phase_labels,
-                    experiment_info=experiment_info, source_info={"gas_type": gas_type, "client_id": client_id}
-                )
-                gas_name = ["ethanol", "carbon_monoxide", "ethylene", "methane"][gas_type]
-                client_data["gas_type"] = gas_type
-                client_data["gas_name"] = gas_name
-                client_data["source_info"] = {"gas_type": gas_type, "gas_name": gas_name, "original_samples": len(features)}
-                clients_data[client_id] = client_data
-                if global_contribution:
-                    all_global_contributions.append(global_contribution)
-                if calibration_contribution:
-                    all_calibration_contributions.append(calibration_contribution)
-                client_id += 1
-                if client_id >= n_clients:
-                    break
-        return clients_data, all_global_contributions, all_calibration_contributions
-    
+
     def _split_single_client(self, features: np.ndarray, regression_labels: np.ndarray,
                              classification_labels: np.ndarray, phase_labels: Optional[np.ndarray],
                              experiment_info: List[Dict], source_info: Dict) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
@@ -1464,10 +1396,6 @@ class FederatedDatasetSplitter:
             if hasattr(self, 'calibration_set') and self.calibration_set:
                 print(f"   校准集: {len(self.calibration_set['features']):,} 个样本")
     
-    def _create_visualizations(self, output_path: Path):
-        # 省略可视化代码（保留原功能，不影响核心流程）
-        pass
-
 
 # =========================
 # 高级API接口

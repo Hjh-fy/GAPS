@@ -1,0 +1,17 @@
+{
+  "candidate_name": "c12_c345_h2_3_mlp_c3_ridge_c4_c5grid_plus_c4_rescue",
+  "description": "Current balanced mainline: MLP for C3, Ridge for C4, expanded-grid MLP for C5, plus calibration-selected C4 route rescue.",
+  "mlp_modes": {
+    "C3": "mlp_direct",
+    "C4": "baseline_final",
+    "C5": "mlp_direct"
+  },
+  "ridge_modes": {
+    "C3": "baseline_final",
+    "C4": "ridge_direct",
+    "C5": "baseline_final"
+  },
+  "c5_grid_mlp_clients": [
+    "C5"
+  ]
+}

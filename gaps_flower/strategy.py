@@ -142,6 +142,10 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "class_phase_counts": counts,
                 "prototype_count": int(metrics.get("prototype_count", len(prototypes))),
                 "prototype_var_count": int(metrics.get("prototype_var_count", len(proto_vars))),
+                "received_global_prototypes": int(metrics.get("received_global_prototypes", 0)),
+                "use_align": int(metrics.get("use_align", 0)),
+                "use_replay_distill": int(metrics.get("use_replay_distill", 0)),
+                "device_residual_norm": float(metrics.get("device_residual_norm", 0.0)),
             }
             if global_feature:
                 client_entry["global_feature_dim"] = len(global_feature)
@@ -324,7 +328,26 @@ class GapsStrategy(CheckpointFedAvg):
         da_use_coral: bool = True,
         da_use_mmd: bool = True,
         da_use_adversarial: bool = False,
+        da_coral_class_conditional: bool = True,
+        da_use_align_reg_legacy: bool = False,
+        da_lambda_align_reg_legacy: float = 0.05,
+        strict_calibration_split: bool = True,
         da_device: str = "cpu",
+        da_lambda_coral: float = 0.1,
+        da_lambda_global_mmd: float = 0.5,
+        da_lambda_class_mmd: float = 0.5,
+        da_lambda_proto_anchor: float = 0.3,
+        da_lambda_adv: float = 0.1,
+        da_lambda_target_ce: float = 0.0,
+        da_lambda_proto: float = 0.05,
+        da_lambda_consistency: float = 2.0,
+        da_lambda_residual: float = 0.1,
+        da_lambda_proto_mmd: float = 0.2,
+        da_lambda_stage_mmd: float = 0.2,
+        da_target_ce_label_smoothing: float = 0.0,
+        da_target_ce_class_balanced: bool = False,
+        da_server_opt_lr: float = 1e-4,
+        use_adapted_as_global: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -344,10 +367,54 @@ class GapsStrategy(CheckpointFedAvg):
         self.da_use_coral = da_use_coral
         self.da_use_mmd = da_use_mmd
         self.da_use_adversarial = da_use_adversarial
+        self.da_coral_class_conditional = da_coral_class_conditional
+        self.da_use_align_reg_legacy = da_use_align_reg_legacy
+        self.da_lambda_align_reg_legacy = da_lambda_align_reg_legacy
+        self.strict_calibration_split = strict_calibration_split
         self.da_device = da_device
+        self.da_lambda_coral = da_lambda_coral
+        self.da_lambda_global_mmd = da_lambda_global_mmd
+        self.da_lambda_class_mmd = da_lambda_class_mmd
+        self.da_lambda_proto_anchor = da_lambda_proto_anchor
+        self.da_lambda_adv = da_lambda_adv
+        self.da_lambda_target_ce = da_lambda_target_ce
+        self.da_lambda_proto = da_lambda_proto
+        self.da_lambda_consistency = da_lambda_consistency
+        self.da_lambda_residual = da_lambda_residual
+        self.da_lambda_proto_mmd = da_lambda_proto_mmd
+        self.da_lambda_stage_mmd = da_lambda_stage_mmd
+        self.da_target_ce_label_smoothing = da_target_ce_label_smoothing
+        self.da_target_ce_class_balanced = da_target_ce_class_balanced
+        self.da_server_opt_lr = da_server_opt_lr
+        self.use_adapted_as_global = use_adapted_as_global
         self._da_trainer = None
         self._val_loader = None
         self._calib_loader = None
+
+    def _semantic_protos_json(self) -> str:
+        """Serialize current semantic prototypes for client-side alignment."""
+        payload = {
+            key: tensor.detach().cpu().float().view(-1).tolist()
+            for key, tensor in sorted(self.semantic_protos.items())
+        }
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+    def configure_fit(self, server_round, parameters, client_manager):
+        """Broadcast server semantic prototypes to clients before local fit.
+
+        Round 1 has no prototypes yet, so clients run CE-only and upload local
+        class-phase statistics. From later rounds, ``gaps_cls`` clients can use
+        these EMA prototypes in ``Client.train_one_round`` for alignment.
+        """
+        configured = super().configure_fit(server_round, parameters, client_manager)
+        proto_payload = self._semantic_protos_json() if self.semantic_protos else ""
+        for _client, fit_ins in configured:
+            fit_ins.config["server_round"] = int(server_round)
+            fit_ins.config["semantic_proto_ready"] = bool(proto_payload)
+            if proto_payload:
+                fit_ins.config["semantic_protos_json"] = proto_payload
+                fit_ins.config["semantic_proto_count"] = int(len(self.semantic_protos))
+        return configured
 
     def aggregate_fit(
         self,
@@ -453,11 +520,17 @@ class GapsStrategy(CheckpointFedAvg):
 
             # ── 阶段 4.4: 服务端域适应 ──
             if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
-                da_path, da_summary = self._run_domain_adapt(
-                    server_round, aggregated_state, arrays
+                da_path, da_summary, da_arrays = self._run_domain_adapt(
+                    server_round, aggregated_state, arrays, results, weights
                 )
                 event["domain_adapt"] = da_path
                 event["domain_adapt_summary"] = da_summary
+                event["use_adapted_as_global"] = bool(self.use_adapted_as_global)
+                if self.use_adapted_as_global:
+                    aggregated_parameters = ndarrays_to_parameters(da_arrays)
+                    event["returned_parameters"] = "adapted"
+                else:
+                    event["returned_parameters"] = "plain_aggregated"
         self._write_history()
         return aggregated_parameters, aggregated_metrics
 
@@ -767,12 +840,66 @@ class GapsStrategy(CheckpointFedAvg):
         print(f"[GAPS] Saved semantic protos (EMA α={self.proto_ema_alpha}): {path}")
         return str(path)
 
+    @staticmethod
+    def _parse_proto_key_tuple(key: str):
+        text = str(key).strip()
+        if text.startswith("(") and text.endswith(")"):
+            text = text[1:-1]
+        text = text.replace("_", ",")
+        parts = [p.strip() for p in text.split(",") if p.strip()]
+        if len(parts) < 2:
+            return None
+        try:
+            return int(parts[0]), int(parts[1])
+        except ValueError:
+            return None
+
+    def _collect_da_client_payloads(self, results: List[Tuple[ClientProxy, FitRes]]):
+        """Collect uploaded client prototypes/counts/residuals for DA losses.
+
+        This bridges Flower metric payloads back to the single-machine server
+        optimization interface: client_mus, client_counts, client_ids, and
+        optional device residual estimates.
+        """
+        client_mus = []
+        client_counts = []
+        client_ids = []
+        client_residuals = []
+        for _proxy, fit_res in results:
+            metrics = dict(fit_res.metrics or {})
+            cid = int(metrics.get("client_id", len(client_ids)))
+            proto_json = self._parse_json_metric(metrics.get("prototype_json"), {})
+            count_json = self._parse_json_metric(metrics.get("class_phase_counts_json"), {})
+            residual_json = self._parse_json_metric(metrics.get("device_residual_json"), [])
+
+            mus = {}
+            counts = {}
+            for key, vec in proto_json.items():
+                parsed = self._parse_proto_key_tuple(key)
+                if parsed is None:
+                    continue
+                mus[parsed] = torch.tensor(vec, dtype=torch.float32)
+                counts[parsed] = int(count_json.get(key, count_json.get(f"{parsed[0]},{parsed[1]}", 1)))
+            client_mus.append(mus)
+            client_counts.append(counts)
+            client_ids.append(cid)
+            if isinstance(residual_json, list) and residual_json:
+                client_residuals.append(torch.tensor(residual_json, dtype=torch.float32))
+            else:
+                client_residuals.append(None)
+        return client_mus, client_counts, client_ids, client_residuals
+
     # ═══════════════════════════════════════════════════════════════
     # 阶段 4.4: 服务端域适应 (CORAL + MMD + 对抗)
     # ═══════════════════════════════════════════════════════════════
 
     def _run_domain_adapt(
-        self, server_round: int, aggregated_state: OrderedDict, arrays: List[np.ndarray]
+        self,
+        server_round: int,
+        aggregated_state: OrderedDict,
+        arrays: List[np.ndarray],
+        results: List[Tuple[ClientProxy, FitRes]],
+        weights: torch.Tensor,
     ) -> Tuple[str, dict]:
         """在聚合后的全局模型上运行服务端域适应
 
@@ -799,12 +926,28 @@ class GapsStrategy(CheckpointFedAvg):
                 "USE_DEEP_CORAL": self.da_use_coral,
                 "USE_MMD_ALIGNMENT": self.da_use_mmd,
                 "USE_ADVERSARIAL_DOMAIN": self.da_use_adversarial,
-                "LAMBDA_DEEP_CORAL": 0.1,
-                "LAMBDA_GLOBAL_MMD": 0.5,
-                "LAMBDA_CLASS_MMD": 0.5,
-                "LAMBDA_PROTO_ANCHOR": 0.3,
-                "LAMBDA_ADV_DOMAIN": 0.1,
-                "SERVER_OPT_LR": 1e-4,
+                "LAMBDA_DEEP_CORAL": self.da_lambda_coral,
+                "LAMBDA_GLOBAL_MMD": self.da_lambda_global_mmd,
+                "LAMBDA_CLASS_MMD": self.da_lambda_class_mmd,
+                "LAMBDA_PROTO_ANCHOR": self.da_lambda_proto_anchor,
+                "LAMBDA_ADV_DOMAIN": self.da_lambda_adv,
+                "LAMBDA_TARGET_CE": self.da_lambda_target_ce,
+                "LAMBDA_PROTO": self.da_lambda_proto,
+                "LAMBDA_CONSISTENCY": self.da_lambda_consistency,
+                "LAMBDA_RES": self.da_lambda_residual,
+                "LAMBDA_PROTO_MMD": self.da_lambda_proto_mmd,
+                "LAMBDA_STAGE_MMD": self.da_lambda_stage_mmd,
+                "USE_ALIGN_REG_LEGACY": self.da_use_align_reg_legacy,
+                "LAMBDA_ALIGN_REG_LEGACY": self.da_lambda_align_reg_legacy,
+                "USE_CONTRASTIVE_CONSISTENCY": True,
+                "USE_PROTO_MMD": self.da_lambda_proto_mmd > 0.0,
+                # Direct local-prototype-to-semantic align regularization remains
+                # disabled by default, but can be enabled as a legacy diagnostic
+                # to reproduce the single-machine strong classification baseline.
+                "USE_PROTO_DECOUPLING": self.da_lambda_residual > 0.0,
+                "TARGET_CE_LABEL_SMOOTHING": self.da_target_ce_label_smoothing,
+                "TARGET_CE_CLASS_BALANCED": self.da_target_ce_class_balanced,
+                "SERVER_OPT_LR": self.da_server_opt_lr,
                 "HIDDEN_DIM2": 64,
                 "NUM_CLASSES": 4,
                 "MAX_VAL_BATCHES": 10,
@@ -812,7 +955,8 @@ class GapsStrategy(CheckpointFedAvg):
                 "ADV_CRITIC_ITERS": 3,
                 "ADV_GRADIENT_PENALTY": 10.0,
                 "ADV_CLASS_CONDITIONAL": True,
-                "CORAL_CLASS_CONDITIONAL": False,
+                "CORAL_CLASS_CONDITIONAL": self.da_coral_class_conditional,
+                "DA_LEARN_SEMANTIC_PROTOS": True,
             }
             self._da_trainer = ServerDomainAdaptation(
                 model=da_model,
@@ -825,18 +969,53 @@ class GapsStrategy(CheckpointFedAvg):
         else:
             da_device = self._da_trainer.device
             da_model = self._build_da_model(aggregated_state, da_device)
-            self._da_trainer.model = da_model
+            self._da_trainer.reset_round_state(
+                model=da_model,
+                semantic_protos=self.semantic_protos,
+            )
 
         # ── 2. 运行域适应优化 ──
+        client_mus, client_counts, client_ids, client_residuals = self._collect_da_client_payloads(results)
         adapted_model, diag = self._da_trainer.run_adaptation(
             num_steps=self.domain_adapt_steps,
+            client_mus=client_mus,
+            client_counts=client_counts,
+            client_weights=weights.to(self._da_trainer.device),
+            client_ids=client_ids,
+            client_residuals=client_residuals,
         )
+        if hasattr(self._da_trainer, "get_semantic_protos"):
+            self.semantic_protos = self._da_trainer.get_semantic_protos()
+            diag["semantic_protos_after_da"] = self._save_semantic_protos(server_round)
 
         # ── 3. 保存 domain-adapted checkpoint ──
         adapted_state = adapted_model.state_dict()
+        changed_tensors = 0
+        max_abs_delta = 0.0
+        mean_abs_delta_sum = 0.0
+        compared_tensors = 0
         da_arrays = []
         for key in self.parameter_keys:
-            da_arrays.append(adapted_state[key].detach().cpu().numpy())
+            adapted_tensor = adapted_state[key].detach().cpu()
+            da_arrays.append(adapted_tensor.numpy())
+            if key in aggregated_state:
+                base_tensor = aggregated_state[key].detach().cpu()
+                delta = (adapted_tensor.float() - base_tensor.float()).abs()
+                tensor_max = float(delta.max().item()) if delta.numel() else 0.0
+                tensor_mean = float(delta.mean().item()) if delta.numel() else 0.0
+                max_abs_delta = max(max_abs_delta, tensor_max)
+                mean_abs_delta_sum += tensor_mean
+                compared_tensors += 1
+                if tensor_max > 0.0:
+                    changed_tensors += 1
+        diag["checkpoint_changed_tensors"] = int(changed_tensors)
+        diag["checkpoint_compared_tensors"] = int(compared_tensors)
+        diag["checkpoint_max_abs_delta"] = float(max_abs_delta)
+        diag["checkpoint_mean_abs_delta"] = (
+            float(mean_abs_delta_sum / compared_tensors)
+            if compared_tensors
+            else 0.0
+        )
 
         ckpt = {
             "round": int(server_round),
@@ -848,6 +1027,10 @@ class GapsStrategy(CheckpointFedAvg):
             "run_name": self.run_name,
             "adaptive": True,
             "diagnostics": diag,
+            "semantic_protos": {
+                key: value.detach().cpu().clone()
+                for key, value in self.semantic_protos.items()
+            },
         }
         path = self.output_dir / f"server_round_{server_round:03d}_adapted.pth"
         torch.save(ckpt, path)
@@ -867,7 +1050,7 @@ class GapsStrategy(CheckpointFedAvg):
             encoding="utf-8",
         )
 
-        return str(path), diag
+        return str(path), diag, da_arrays
 
     def _build_da_model(
         self, aggregated_state: OrderedDict, device: torch.device
@@ -920,40 +1103,58 @@ class GapsStrategy(CheckpointFedAvg):
             dirs = [d.strip() for d in data_dirs_spec.split(",") if d.strip()]
             all_features = []
             all_cls_labels = []
+            all_phase_labels = []
 
             for data_dir in dirs:
                 dp = Path(data_dir)
-                # 优先查找 calibration_*.npy，其次 test_*.npy，最后裸文件名
+                # 主实验协议要求服务端 DA 只使用 calibration split。
+                # strict_calibration_split=True 时禁止 fallback 到 test/train，防止数据泄漏。
                 prefix = None
-                for candidate in ("calibration_", "test_", "train_", ""):
-                    feat_path = dp / f"{candidate}features.npy"
+                if getattr(self, "strict_calibration_split", True):
+                    feat_path = dp / "calibration_features.npy"
                     if feat_path.exists():
-                        prefix = candidate
-                        break
-                if prefix is None:
-                    raise FileNotFoundError(
-                        f"在目录 {data_dir} 中找不到任何 features.npy"
-                    )
+                        prefix = "calibration_"
+                    else:
+                        raise FileNotFoundError(
+                            f"严格 calibration split 模式下，目录 {data_dir} 缺少 calibration_features.npy"
+                        )
+                else:
+                    for candidate in ("calibration_", "test_", "train_", ""):
+                        feat_path = dp / f"{candidate}features.npy"
+                        if feat_path.exists():
+                            prefix = candidate
+                            break
+                    if prefix is None:
+                        raise FileNotFoundError(
+                            f"在目录 {data_dir} 中找不到任何 features.npy"
+                        )
 
                 features = np.load(dp / f"{prefix}features.npy")
                 cls_path = dp / f"{prefix}classification_labels.npy"
                 if not cls_path.exists():
                     cls_path = dp / "classification_labels.npy"
                 cls_labels = np.load(cls_path)
+                phase_path = dp / f"{prefix}phase_labels.npy"
+                if phase_path.exists():
+                    phase_labels = np.load(phase_path, allow_pickle=True)
+                else:
+                    phase_labels = np.full(len(features), -1, dtype=np.int64)
 
                 all_features.append(features)
                 all_cls_labels.append(cls_labels)
+                all_phase_labels.append(phase_labels)
                 print(f"[GAPS]   + {data_dir} ({prefix}features.npy): "
                       f"{len(features)} samples")
 
             merged_features = np.concatenate(all_features, axis=0)
             merged_cls_labels = np.concatenate(all_cls_labels, axis=0)
+            merged_phase_labels = np.concatenate(all_phase_labels, axis=0)
 
             dataset = GasSensorWindowDataset(
                 features=merged_features,
                 regression_labels=np.zeros((len(merged_features), 4), dtype=np.float32),
                 classification_labels=merged_cls_labels,
-                phase_labels=None,
+                phase_labels=merged_phase_labels,
                 normalize=False,
                 mean_std=None,
             )

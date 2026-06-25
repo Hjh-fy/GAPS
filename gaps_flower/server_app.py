@@ -54,8 +54,37 @@ def main() -> None:
                         help="域适应是否启用 MMD 对齐损失")
     parser.add_argument("--da-use-adversarial", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
                         help="域适应是否启用对抗训练 (WGAN-GP + GRL)")
+    parser.add_argument("--da-coral-class-conditional", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
+                        help="Deep CORAL 是否按类别分别对齐；单机强分类基座默认使用 class-conditional CORAL")
+    parser.add_argument("--da-use-align-reg-legacy", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
+                        help="兼容单机旧版 server_representation_learning 的直接 local-proto→semantic-proto 对齐项，仅用于复现实验诊断")
+    parser.add_argument("--da-lambda-align-reg-legacy", type=float, default=0.05,
+                        help="legacy align-reg 诊断项权重；只有 --da-use-align-reg-legacy true 时生效")
+    parser.add_argument("--strict-calibration-split", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
+                        help="服务端 DA 数据是否强制读取 calibration_* split，防止 fallback 到 test/train 造成泄漏")
     parser.add_argument("--da-device", type=str, default="cpu",
                         help="域适应计算设备 (cpu 或 cuda)")
+    parser.add_argument("--use-adapted-as-global", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
+                        help="Return domain-adapted parameters to clients in the next Flower round")
+    parser.add_argument("--da-lambda-coral", type=float, default=0.1)
+    parser.add_argument("--da-lambda-global-mmd", type=float, default=0.5)
+    parser.add_argument("--da-lambda-class-mmd", type=float, default=0.5)
+    parser.add_argument("--da-lambda-proto-anchor", type=float, default=0.3)
+    parser.add_argument("--da-lambda-adv", type=float, default=0.1)
+    parser.add_argument("--da-lambda-target-ce", type=float, default=0.0)
+    parser.add_argument("--da-lambda-proto", type=float, default=0.05,
+                        help="DA prototype learning loss weight, matching single-machine LAMBDA_PROTO")
+    parser.add_argument("--da-lambda-consistency", type=float, default=2.0,
+                        help="DA source consistency-to-prototypes loss weight")
+    parser.add_argument("--da-lambda-residual", type=float, default=0.1,
+                        help="DA device residual matching loss weight")
+    parser.add_argument("--da-lambda-proto-mmd", type=float, default=0.2,
+                        help="DA inter-client prototype MMD/consistency weight")
+    parser.add_argument("--da-lambda-stage-mmd", type=float, default=0.2,
+                        help="DA stage-wise MMD weight within each class")
+    parser.add_argument("--da-target-ce-label-smoothing", type=float, default=0.0)
+    parser.add_argument("--da-target-ce-class-balanced", type=lambda v: v.lower() in ("true", "1", "yes"), default=False)
+    parser.add_argument("--da-server-opt-lr", type=float, default=1e-4)
     args = parser.parse_args()
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32)
@@ -94,7 +123,26 @@ def main() -> None:
             da_use_coral=args.da_use_coral,
             da_use_mmd=args.da_use_mmd,
             da_use_adversarial=args.da_use_adversarial,
+            da_coral_class_conditional=args.da_coral_class_conditional,
+            da_use_align_reg_legacy=args.da_use_align_reg_legacy,
+            da_lambda_align_reg_legacy=args.da_lambda_align_reg_legacy,
+            strict_calibration_split=args.strict_calibration_split,
             da_device=args.da_device,
+            da_lambda_coral=args.da_lambda_coral,
+            da_lambda_global_mmd=args.da_lambda_global_mmd,
+            da_lambda_class_mmd=args.da_lambda_class_mmd,
+            da_lambda_proto_anchor=args.da_lambda_proto_anchor,
+            da_lambda_adv=args.da_lambda_adv,
+            da_lambda_target_ce=args.da_lambda_target_ce,
+            da_lambda_proto=args.da_lambda_proto,
+            da_lambda_consistency=args.da_lambda_consistency,
+            da_lambda_residual=args.da_lambda_residual,
+            da_lambda_proto_mmd=args.da_lambda_proto_mmd,
+            da_lambda_stage_mmd=args.da_lambda_stage_mmd,
+            da_target_ce_label_smoothing=args.da_target_ce_label_smoothing,
+            da_target_ce_class_balanced=args.da_target_ce_class_balanced,
+            da_server_opt_lr=args.da_server_opt_lr,
+            use_adapted_as_global=args.use_adapted_as_global,
             **strategy_kwargs,
         )
     else:

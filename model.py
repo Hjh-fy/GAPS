@@ -252,6 +252,130 @@ class FedGasBaseModel(nn.Module):
         return logits, cls_feat, reg_feat
 
 
+# ===============================
+# 共享浓度主干 (Shared Concentration Trunk)
+# 设计目标: 让所有气体共享一个浓度预测主干,
+#           减少独立 per-class head 的结构碎片化,
+#           同时保留类别残差头做精细化修正。
+#
+# 输入: reg_feat (B, feat_dim) + gas_emb (B, gas_emb_dim)
+# 输出: shared_pred (B, 1)
+# ===============================
+class SharedConcentrationTrunk(nn.Module):
+    """共享浓度预测主干
+
+    所有气体类别共享同一个 MLP 主干,
+    通过 gas_embedding 注入类别信息,
+    输出共享的归一化浓度基础预测。
+
+    参数:
+        feat_dim: 回归特征维度 (默认 64)
+        gas_emb_dim: 气体嵌入维度 (默认 16)
+        shared_dim: 共享主干隐藏层维度 (默认 128)
+        dropout: Dropout 比例
+    """
+    def __init__(self, feat_dim: int = 64, gas_emb_dim: int = 16,
+                 shared_dim: int = 128, dropout: float = 0.1):
+        super().__init__()
+        input_dim = feat_dim + gas_emb_dim
+        mid_dim = shared_dim // 2
+
+        self.fc1 = nn.Linear(input_dim, shared_dim)
+        self.ln1 = nn.LayerNorm(shared_dim)
+        self.fc2 = nn.Linear(shared_dim, mid_dim)
+        self.ln2 = nn.LayerNorm(mid_dim)
+        self.fc3 = nn.Linear(mid_dim, 1)
+
+        self.selu = nn.SELU()
+        self.dropout = nn.AlphaDropout(dropout)
+
+        # 残差投影: 将输入投影到各隐藏层维度
+        self.proj1 = nn.Linear(input_dim, shared_dim) if input_dim != shared_dim else nn.Identity()
+        self.proj2 = nn.Linear(input_dim, mid_dim) if input_dim != mid_dim else nn.Identity()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (B, feat_dim + gas_emb_dim)
+        identity1 = self.proj1(x)
+        identity2 = self.proj2(x)
+
+        out = self.selu(self.ln1(self.fc1(x)))
+        out = out + identity1
+        out = self.dropout(out)
+
+        out = self.selu(self.ln2(self.fc2(out)) + identity2)
+        out = self.fc3(out)  # (B, 1)
+        return out
+
+
+# ===============================
+# 类别残差头 (Class Residual Head)
+# 设计目标: 每个气体类别有一个轻量残差头,
+#           学习类别特定的浓度偏移 delta,
+#           与共享主干的 shared_pred 相加得到最终预测。
+#
+# 输入: reg_feat (B, feat_dim)
+# 输出: delta (B, 1), 表示类别特定的浓度修正量
+# ===============================
+class ClassResidualHead(nn.Module):
+    """类别特定残差头
+
+    轻量级 MLP, 学习类别特定的浓度偏移 delta,
+    最终预测 = shared_pred + delta。
+
+    参数:
+        feat_dim: 回归特征维度 (默认 64)
+        depth: 残差头深度 (默认 2, 可选 1 或 3)
+        dropout: Dropout 比例
+    """
+    def __init__(self, feat_dim: int = 64, depth: int = 2, dropout: float = 0.1):
+        super().__init__()
+        self.depth = depth
+
+        if depth == 1:
+            # 最轻量: 单层线性
+            self.fc1 = nn.Linear(feat_dim, 1)
+        elif depth == 3:
+            self.fc1 = nn.Linear(feat_dim, 64)
+            self.ln1 = nn.LayerNorm(64)
+            self.fc2 = nn.Linear(64, 32)
+            self.ln2 = nn.LayerNorm(32)
+            self.fc3 = nn.Linear(32, 1)
+            self.proj1 = nn.Linear(feat_dim, 64) if feat_dim != 64 else nn.Identity()
+            self.proj2 = nn.Linear(feat_dim, 32) if feat_dim != 32 else nn.Identity()
+            self.selu = nn.SELU()
+            self.dropout = nn.AlphaDropout(dropout)
+        else:
+            # depth=2 (默认): 两层隐藏
+            self.fc1 = nn.Linear(feat_dim, 32)
+            self.ln1 = nn.LayerNorm(32)
+            self.fc2 = nn.Linear(32, 1)
+            self.proj1 = nn.Linear(feat_dim, 32) if feat_dim != 32 else nn.Identity()
+            self.selu = nn.SELU()
+            self.dropout = nn.AlphaDropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.depth == 1:
+            return self.fc1(x)
+
+        if self.depth == 3:
+            identity1 = self.proj1(x)
+            identity2 = self.proj2(x)
+            out = self.selu(self.ln1(self.fc1(x)))
+            out = out + identity1
+            out = self.dropout(out)
+            out = self.selu(self.ln2(self.fc2(out)) + identity2)
+            out = self.fc3(out)
+            return out
+
+        # depth=2
+        identity1 = self.proj1(x)
+        out = self.selu(self.ln1(self.fc1(x)))
+        out = out + identity1
+        out = self.dropout(out)
+        out = self.fc2(out)
+        return out
+
+
 class RegHead(nn.Module):
     """深度残差回归头，支持可配置深度和分位数输出模式"""
     def __init__(self, feat_dim, depth=3, quantile_mode=False):
@@ -354,6 +478,237 @@ class RegHead(nn.Module):
         return out
 
 
+class DCTResponseBranch(nn.Module):
+    """Low-frequency response-shape adapter for regression features."""
+    def __init__(
+        self,
+        num_sensors=8,
+        seq_len=100,
+        k=8,
+        feat_dim=64,
+        gamma_init=0.0,
+        dropout=0.1,
+    ):
+        super().__init__()
+        self.num_sensors = int(num_sensors)
+        self.seq_len = int(seq_len)
+        self.k = int(k)
+        if self.k <= 0:
+            raise ValueError(f"DCT k must be positive, got {k}")
+        if self.k > self.seq_len:
+            raise ValueError(f"DCT k={self.k} exceeds seq_len={self.seq_len}")
+
+        basis = self._build_dct_basis(self.seq_len, self.k, torch.device("cpu"), torch.float32)
+        self.register_buffer("basis", basis, persistent=False)
+        input_dim = self.num_sensors * self.k
+        self.input_norm = nn.LayerNorm(input_dim)
+        self.proj = nn.Linear(input_dim, feat_dim)
+        self.out_norm = nn.LayerNorm(feat_dim)
+        self.act = nn.GELU()
+        self.dropout = nn.Dropout(float(dropout))
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init), dtype=torch.float32))
+
+    @staticmethod
+    def _build_dct_basis(seq_len, k, device, dtype):
+        n = torch.arange(seq_len, device=device, dtype=dtype).unsqueeze(0)
+        freq = torch.arange(k, device=device, dtype=dtype).unsqueeze(1)
+        basis = torch.cos(torch.pi / float(seq_len) * (n + 0.5) * freq)
+        basis[0] = basis[0] * (1.0 / float(seq_len)) ** 0.5
+        if k > 1:
+            basis[1:] = basis[1:] * (2.0 / float(seq_len)) ** 0.5
+        return basis
+
+    def forward(self, x_seq):
+        x_float = x_seq.float()
+        seq_len = x_float.size(1)
+        if seq_len == self.basis.size(1):
+            basis = self.basis.to(device=x_float.device, dtype=x_float.dtype)
+        else:
+            if self.k > seq_len:
+                raise ValueError(f"DCT k={self.k} exceeds runtime seq_len={seq_len}")
+            basis = self._build_dct_basis(seq_len, self.k, x_float.device, x_float.dtype)
+        coeff = torch.matmul(x_float.transpose(1, 2), basis.t())
+        coeff = coeff.reshape(coeff.size(0), -1)
+        feat = self.input_norm(coeff)
+        feat = self.proj(feat)
+        feat = self.out_norm(feat)
+        feat = self.dropout(self.act(feat))
+        return self.gamma.to(dtype=feat.dtype) * feat
+
+
+class MultiScaleTemporalResponseBranch(nn.Module):
+    """Multi-scale temporal adapter over raw sensor responses."""
+    def __init__(
+        self,
+        num_sensors=8,
+        feat_dim=64,
+        hidden_channels=16,
+        kernels=(3, 7, 15, 31),
+        gamma_init=0.0,
+        dropout=0.1,
+    ):
+        super().__init__()
+        self.num_sensors = int(num_sensors)
+        self.hidden_channels = int(hidden_channels)
+        self.kernels = tuple(int(k) for k in kernels)
+        if self.hidden_channels <= 0:
+            raise ValueError(f"hidden_channels must be positive, got {hidden_channels}")
+        if not self.kernels:
+            raise ValueError("At least one temporal kernel is required")
+        for kernel in self.kernels:
+            if kernel <= 0 or kernel % 2 == 0:
+                raise ValueError(f"Temporal kernels must be positive odd integers, got {kernel}")
+
+        self.input_norm = nn.InstanceNorm1d(self.num_sensors, affine=True)
+        self.branches = nn.ModuleList()
+        for kernel in self.kernels:
+            self.branches.append(
+                nn.Sequential(
+                    nn.Conv1d(self.num_sensors, self.hidden_channels, kernel_size=kernel, padding=kernel // 2),
+                    nn.GELU(),
+                    nn.Conv1d(self.hidden_channels, self.hidden_channels, kernel_size=1),
+                    nn.GELU(),
+                    nn.AdaptiveAvgPool1d(1),
+                    nn.Flatten(),
+                )
+            )
+        branch_dim = self.hidden_channels * len(self.kernels)
+        self.proj = nn.Sequential(
+            nn.LayerNorm(branch_dim),
+            nn.Linear(branch_dim, feat_dim),
+            nn.LayerNorm(feat_dim),
+            nn.GELU(),
+            nn.Dropout(float(dropout)),
+        )
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init), dtype=torch.float32))
+
+    def forward(self, x_seq):
+        x = x_seq.float().transpose(1, 2)
+        x = self.input_norm(x)
+        feat = torch.cat([branch(x) for branch in self.branches], dim=1)
+        feat = self.proj(feat)
+        return self.gamma.to(dtype=feat.dtype) * feat
+
+
+class RegTCNResidualAdapter(nn.Module):
+    """Small regression-only residual adapter on encoded TCN features."""
+    def __init__(self, channels=48, kernel_size=3, gamma_init=0.0, dropout=0.05):
+        super().__init__()
+        self.channels = int(channels)
+        self.kernel_size = int(kernel_size)
+        if self.channels <= 0:
+            raise ValueError(f"channels must be positive, got {channels}")
+        if self.kernel_size <= 0 or self.kernel_size % 2 == 0:
+            raise ValueError(f"kernel_size must be a positive odd integer, got {kernel_size}")
+        self.depthwise = nn.Conv1d(
+            self.channels,
+            self.channels,
+            kernel_size=self.kernel_size,
+            padding=self.kernel_size // 2,
+            groups=self.channels,
+        )
+        self.pointwise = nn.Conv1d(self.channels, self.channels, kernel_size=1)
+        self.act = nn.GELU()
+        self.dropout = nn.Dropout(float(dropout))
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init), dtype=torch.float32))
+
+    def forward(self, x):
+        delta = self.depthwise(x)
+        delta = self.pointwise(delta)
+        delta = self.dropout(self.act(delta))
+        return x + self.gamma.to(dtype=delta.dtype) * delta
+
+
+# ===============================
+# 跨通道比率响应分支 (Cross-Channel Ratio Response Branch)
+# 设计目标: 从原始传感器窗口提取每通道统计量和跨通道比率,
+#           作为 per-class regression head 的增强特征输入。
+#           不共享输出函数,不学习时序 pattern,
+#           只做物理可解释的轻量特征工程。
+#
+# 输入: x_seq (B, 100, 8) 原始窗口
+# 输出: ratio_feat (B, feat_dim) 残差特征, 与 reg_feat 相加
+# ===============================
+class CrossChannelRatioBranch(nn.Module):
+    """跨通道比率响应分支
+
+    从原始传感器窗口提取每通道统计量和跨通道比率,
+    作为回归特征的低维增强信号。不做 Conv1d,
+    只用可解释的统计量, 避免学出跨域不稳定的时序模式。
+
+    参数:
+        num_sensors: 传感器通道数 (默认 8)
+        feat_dim: 回归特征维度 (默认 64)
+        proj_dim: 内部投影维度 (默认 32)
+        gamma_init: 残差缩放因子初始值 (默认 0.0, 安全初始化)
+        dropout: Dropout 比例
+    """
+    def __init__(self, num_sensors: int = 8, feat_dim: int = 64,
+                 proj_dim: int = 32, gamma_init: float = 0.0,
+                 dropout: float = 0.05):
+        super().__init__()
+        self.num_sensors = int(num_sensors)
+        self.feat_dim = int(feat_dim)
+
+        # 每通道 4 个统计量: mean, std, amp, slope
+        per_channel_stats = self.num_sensors * 4
+
+        # 跨通道比率: top-3 amp 比率 + top-2 slope 比率 = 3 + 1 = 4
+        # 但实际提取时我们固定提取 amp_max1/max2、amp_max1/max3、slope_max1/max2
+        # 以及 amp_max1/max4 作为补充 = 4 个比率
+        num_ratios = 4
+
+        input_dim = per_channel_stats + num_ratios  # 32 + 4 = 36
+
+        self.input_norm = nn.LayerNorm(input_dim)
+        self.proj = nn.Linear(input_dim, proj_dim)
+        self.out_norm = nn.LayerNorm(proj_dim)
+        self.out_proj = nn.Linear(proj_dim, feat_dim)
+        self.act = nn.SELU()
+        self.dropout = nn.AlphaDropout(float(dropout))
+        self.gamma = nn.Parameter(torch.tensor(float(gamma_init), dtype=torch.float32))
+
+    def forward(self, x_seq: torch.Tensor) -> torch.Tensor:
+        # x_seq: (B, T, C)  e.g. (B, 100, 8)
+        x = x_seq.float()  # (B, T, C)
+
+        # --- 每通道统计量 (B, C*4) ---
+        ch_mean = x.mean(dim=1)                                              # (B, C)
+        ch_std = x.std(dim=1, unbiased=False)                                # (B, C)
+        ch_amp = x.amax(dim=1) - x.amin(dim=1)                              # (B, C)
+        # 线性斜率: 用差分均值近似
+        ch_slope = (x[:, -1, :] - x[:, 0, :]) / max(x.size(1) - 1, 1)       # (B, C)
+        per_channel = torch.cat([ch_mean, ch_std, ch_amp, ch_slope], dim=1)  # (B, C*4)
+
+        # --- 跨通道比率 (B, 4) ---
+        # 按 amp 排序取 top-4 通道索引
+        _, amp_indices = ch_amp.sort(dim=1, descending=True)  # (B, C), 降序
+        # 安全获取 top-k amp 值
+        top1_amp = ch_amp.gather(1, amp_indices[:, 0:1])      # (B, 1)
+        top2_amp = ch_amp.gather(1, amp_indices[:, 1:2])
+        top3_amp = ch_amp.gather(1, amp_indices[:, 2:3])
+        top4_amp = ch_amp.gather(1, amp_indices[:, 3:4])
+
+        top1_slope = ch_slope.gather(1, amp_indices[:, 0:1])
+        top2_slope = ch_slope.gather(1, amp_indices[:, 1:2])
+
+        eps = 1e-6
+        ratio1 = top1_amp / (top2_amp + eps)                                  # (B, 1)
+        ratio2 = top1_amp / (top3_amp + eps)
+        ratio3 = top1_amp / (top4_amp + eps)
+        ratio4 = top1_slope / (top2_slope + eps)
+        ratios = torch.cat([ratio1, ratio2, ratio3, ratio4], dim=1)           # (B, 4)
+
+        # --- 拼接 + 投影 ---
+        combined = torch.cat([per_channel, ratios], dim=1)                   # (B, 36)
+        feat = self.input_norm(combined)
+        feat = self.act(self.proj(feat))
+        feat = self.out_norm(feat)
+        feat = self.dropout(feat)
+        feat = self.out_proj(feat)                                            # (B, feat_dim)
+        return self.gamma.to(dtype=feat.dtype) * feat
+
+
 class FedGasMultiTaskModel(FedGasBaseModel):
     def __init__(self, num_classes=4, num_sensors=8, feat_dim=64,
                  use_mixstyle=False, mixstyle_prob=0.5, mixstyle_alpha=0.1, noise_std=0.01,
@@ -363,7 +718,17 @@ class FedGasMultiTaskModel(FedGasBaseModel):
                  transformer_num_layers=2, transformer_ff_dim=96,
                  reg_grad_detach=False, tcn_norm='instance',
                  use_reg_window_stats=False, reg_window_stats_dim=8,
-                 reg_window_stats_mode='global'):
+                 reg_window_stats_mode='global', reg_output_mode='sigmoid',
+                 reg_response_branch='none', reg_dct_k=8,
+                 reg_dct_gamma_init=0.0, reg_dct_dropout=0.1,
+                 reg_msconv_channels=16, reg_msconv_kernels='3,7,15,31',
+                 reg_msconv_gamma_init=0.0, reg_msconv_dropout=0.1,
+                 use_reg_tcn_adapter=False, reg_tcn_adapter_kernel=3,
+                 reg_tcn_adapter_gamma_init=0.0, reg_tcn_adapter_dropout=0.05,
+                 use_reg_shared_trunk=False, reg_shared_trunk_dim=128,
+                 reg_gas_emb_dim=16, reg_residual_head_depth=2,
+                 use_reg_ratio_branch=False, reg_ratio_gamma_init=0.0,
+                 reg_ratio_dropout=0.05):
         super().__init__(num_classes, num_sensors, feat_dim, use_mixstyle, mixstyle_prob, mixstyle_alpha, noise_std,
                          encoder_type=encoder_type, transformer_d_model=transformer_d_model,
                          transformer_nhead=transformer_nhead, transformer_num_layers=transformer_num_layers,
@@ -375,7 +740,33 @@ class FedGasMultiTaskModel(FedGasBaseModel):
         self.reg_window_stats_mode = str(reg_window_stats_mode).lower()
         if self.reg_window_stats_mode not in ('global', 'per_channel'):
             raise ValueError(f'Unsupported reg_window_stats_mode: {reg_window_stats_mode}')
+        self.reg_output_mode = str(reg_output_mode or 'sigmoid').lower()
+        if self.reg_output_mode not in ('sigmoid', 'linear'):
+            raise ValueError(f'Unsupported reg_output_mode: {reg_output_mode}')
+        self.reg_response_branch = str(reg_response_branch or 'none').lower()
+        if self.reg_response_branch not in ('none', 'dct', 'msconv'):
+            raise ValueError(f'Unsupported reg_response_branch: {reg_response_branch}')
+        self.reg_dct_k = int(reg_dct_k)
+        self.reg_dct_gamma_init = float(reg_dct_gamma_init)
+        self.reg_dct_dropout = float(reg_dct_dropout)
+        self.reg_msconv_channels = int(reg_msconv_channels)
+        if isinstance(reg_msconv_kernels, str):
+            self.reg_msconv_kernels = tuple(
+                int(k.strip()) for k in reg_msconv_kernels.split(',') if k.strip()
+            )
+        else:
+            self.reg_msconv_kernels = tuple(int(k) for k in reg_msconv_kernels)
+        self.reg_msconv_gamma_init = float(reg_msconv_gamma_init)
+        self.reg_msconv_dropout = float(reg_msconv_dropout)
+        self.use_reg_tcn_adapter = bool(use_reg_tcn_adapter)
+        self.reg_tcn_adapter_kernel = int(reg_tcn_adapter_kernel)
+        self.reg_tcn_adapter_gamma_init = float(reg_tcn_adapter_gamma_init)
+        self.reg_tcn_adapter_dropout = float(reg_tcn_adapter_dropout)
         self.reg_grad_detach = reg_grad_detach  # 回归梯度阻断标志
+        self.use_reg_shared_trunk = bool(use_reg_shared_trunk)
+        self.reg_shared_trunk_dim = int(reg_shared_trunk_dim)
+        self.reg_gas_emb_dim = int(reg_gas_emb_dim)
+        self.reg_residual_head_depth = int(reg_residual_head_depth)
         branch_dim = transformer_d_model if encoder_type == 'transformer' else 48
         branch_heads = transformer_nhead if encoder_type == 'transformer' else 4
         branch_layers = transformer_num_layers if encoder_type == 'transformer' else 2
@@ -406,6 +797,48 @@ class FedGasMultiTaskModel(FedGasBaseModel):
             )
         else:
             self.reg_stats_proj = None
+        if self.reg_response_branch == 'dct':
+            self.reg_response_adapter = DCTResponseBranch(
+                num_sensors=num_sensors,
+                seq_len=100,
+                k=self.reg_dct_k,
+                feat_dim=feat_dim,
+                gamma_init=self.reg_dct_gamma_init,
+                dropout=self.reg_dct_dropout,
+            )
+        elif self.reg_response_branch == 'msconv':
+            self.reg_response_adapter = MultiScaleTemporalResponseBranch(
+                num_sensors=num_sensors,
+                feat_dim=feat_dim,
+                hidden_channels=self.reg_msconv_channels,
+                kernels=self.reg_msconv_kernels,
+                gamma_init=self.reg_msconv_gamma_init,
+                dropout=self.reg_msconv_dropout,
+            )
+        else:
+            self.reg_response_adapter = None
+        self.use_reg_ratio_branch = bool(use_reg_ratio_branch)
+        self.reg_ratio_gamma_init = float(reg_ratio_gamma_init)
+        self.reg_ratio_dropout = float(reg_ratio_dropout)
+        if self.use_reg_ratio_branch:
+            self.reg_ratio_adapter = CrossChannelRatioBranch(
+                num_sensors=num_sensors,
+                feat_dim=feat_dim,
+                proj_dim=32,
+                gamma_init=self.reg_ratio_gamma_init,
+                dropout=self.reg_ratio_dropout,
+            )
+        else:
+            self.reg_ratio_adapter = None
+        if self.use_reg_tcn_adapter and encoder_type == 'tcn':
+            self.reg_tcn_adapter = RegTCNResidualAdapter(
+                channels=branch_dim,
+                kernel_size=self.reg_tcn_adapter_kernel,
+                gamma_init=self.reg_tcn_adapter_gamma_init,
+                dropout=self.reg_tcn_adapter_dropout,
+            )
+        else:
+            self.reg_tcn_adapter = None
         reg_input_dim = feat_dim + self.reg_window_stats_dim
 
         self.use_proto_reg = use_proto_reg
@@ -419,6 +852,38 @@ class FedGasMultiTaskModel(FedGasBaseModel):
             self.proto_bias = None
             self.use_quantile = False
             self.quantile_out_dim = 1
+            self.gas_embedding = None
+            self.reg_shared_trunk = None
+            self.reg_residual_heads = None
+        elif self.use_reg_shared_trunk:
+            # 共享浓度主干 + 类别残差头
+            #   reg_feat + gas_emb -> SharedTrunk -> shared_pred
+            #   reg_feat -> ClassResidualHead_c -> delta_c
+            #   final = shared_pred + delta_c
+            self.reg_heads = None
+            self.conc_directions = None
+            self.conc_scale = None
+            self.conc_bias = None
+            self.use_quantile = False
+            self.quantile_out_dim = 1
+            self.gas_embedding = nn.Embedding(num_classes, self.reg_gas_emb_dim)
+            self.reg_shared_trunk = SharedConcentrationTrunk(
+                feat_dim=reg_input_dim,
+                gas_emb_dim=self.reg_gas_emb_dim,
+                shared_dim=self.reg_shared_trunk_dim,
+                dropout=0.1,
+            )
+            self.reg_residual_heads = nn.ModuleList([
+                ClassResidualHead(
+                    feat_dim=reg_input_dim,
+                    depth=self.reg_residual_head_depth,
+                    dropout=0.1,
+                )
+                for _ in range(num_classes)
+            ])
+            # 原型条件偏置（每个类别一个 scale 和 bias）
+            self.proto_scale = nn.Parameter(torch.ones(num_classes, 1))
+            self.proto_bias = nn.Parameter(torch.zeros(num_classes, 1))
         else:
             self.reg_heads = nn.ModuleList(
                 [RegHead(reg_input_dim, depth=reg_head_depth, quantile_mode=use_quantile) 
@@ -429,6 +894,9 @@ class FedGasMultiTaskModel(FedGasBaseModel):
             # 原型条件偏置（每个类别一个 scale 和 bias）
             self.proto_scale = nn.Parameter(torch.ones(num_classes, 1))
             self.proto_bias = nn.Parameter(torch.zeros(num_classes, 1))
+            self.gas_embedding = None
+            self.reg_shared_trunk = None
+            self.reg_residual_heads = None
 
         # 每个原型一个可学习的浓度中心（4类 × 3阶段）
         self.proto_conc = nn.Parameter(torch.zeros(num_classes, num_phases))
@@ -439,6 +907,17 @@ class FedGasMultiTaskModel(FedGasBaseModel):
         else:
             self.conc_bucket_classifier = None
         self.num_conc_buckets = num_conc_buckets
+
+    def _reg_base_output(self, raw_out):
+        if self.reg_output_mode == 'linear':
+            return raw_out
+        return torch.sigmoid(raw_out)
+
+    @staticmethod
+    def _maybe_clamp_reg_output(pred, clamp_output=True):
+        if clamp_output:
+            return torch.clamp(pred, 0.0, 1.0)
+        return pred
 
     def _append_reg_window_stats(self, reg_feat, x_seq):
         if self.reg_stats_proj is None:
@@ -458,6 +937,18 @@ class FedGasMultiTaskModel(FedGasBaseModel):
                 slope.mean(dim=1),
             ], dim=1)
         return torch.cat([reg_feat, self.reg_stats_proj(stats)], dim=1)
+
+    def _apply_reg_response_branch(self, reg_feat, x_seq):
+        if self.reg_response_adapter is not None:
+            reg_feat = reg_feat + self.reg_response_adapter(x_seq)
+        if self.reg_ratio_adapter is not None:
+            reg_feat = reg_feat + self.reg_ratio_adapter(x_seq)
+        return reg_feat
+
+    def _apply_reg_tcn_adapter(self, temporal_feat):
+        if self.reg_tcn_adapter is None:
+            return temporal_feat
+        return self.reg_tcn_adapter(temporal_feat)
 
     def forward(self, x):
         x_input = x
@@ -485,6 +976,7 @@ class FedGasMultiTaskModel(FedGasBaseModel):
                 reg_feat = self.dropout(reg_feat)
             else:
                 logits, cls_feat, reg_feat = super().forward(x)
+            reg_feat = self._apply_reg_response_branch(reg_feat, x_input)
             reg_feat = self._append_reg_window_stats(reg_feat, x_input)
 
             if self.conc_bucket_classifier is not None:
@@ -524,6 +1016,7 @@ class FedGasMultiTaskModel(FedGasBaseModel):
             # 回归分支：Transformer + 独立池化
             # 梯度阻断：回归梯度止于此，不污染共享TCN
             out_for_reg = out.detach() if self.reg_grad_detach else out
+            out_for_reg = self._apply_reg_tcn_adapter(out_for_reg)
             reg_temporal = self.reg_transformer(out_for_reg.permute(0, 2, 1))  # (B, 100, 48)
             reg_attn_out, _ = self.reg_attn(reg_temporal, reg_temporal, reg_temporal)
             reg_weights = self.reg_attn_linear(reg_attn_out)
@@ -542,6 +1035,7 @@ class FedGasMultiTaskModel(FedGasBaseModel):
             cls_feat = F.normalize(raw, dim=1, p=2)
             logits = self.classifier(cls_feat)
             reg_feat = raw
+        reg_feat = self._apply_reg_response_branch(reg_feat, x_input)
         reg_feat = self._append_reg_window_stats(reg_feat, x_input)
         
         # 浓度桶分类（辅助任务）
@@ -552,7 +1046,7 @@ class FedGasMultiTaskModel(FedGasBaseModel):
 
         return logits, cls_feat, reg_feat
 
-    def forward_reg(self, feat, y_cls=None, y_reg=None, probs=None, y_phase=None):
+    def forward_reg(self, feat, y_cls=None, y_reg=None, probs=None, y_phase=None, clamp_output=True):
         """回归前向传播：输出归一化浓度 pred ∈ [0, 1]
         
         重构说明: 统一输出线性空间 + sigmoid, 不再使用对数空间。
@@ -567,48 +1061,87 @@ class FedGasMultiTaskModel(FedGasBaseModel):
                     if mask.sum() > 0:
                         d = F.normalize(self.conc_directions[c], dim=0)
                         proj = feat[mask] @ d
-                        base_pred = torch.sigmoid(proj.unsqueeze(1))
+                        base_pred = self._reg_base_output(proj.unsqueeze(1))
                         base_pred = self.conc_scale[c] * base_pred + self.conc_bias[c]
                         if y_phase is not None:
                             phase_idx = y_phase[mask].long()
                             base_pred = base_pred + self.conc_scale[c] * self.proto_conc[c, phase_idx].unsqueeze(1)
-                        pred[mask] = torch.clamp(base_pred, 0.0, 1.0)
+                        pred[mask] = self._maybe_clamp_reg_output(base_pred, clamp_output)
                 return pred
             else:
                 all_preds = []
                 for c in range(len(self.conc_directions)):
                     d = F.normalize(self.conc_directions[c], dim=0)
                     proj = feat @ d
-                    base_pred = torch.sigmoid(proj.unsqueeze(1))
+                    base_pred = self._reg_base_output(proj.unsqueeze(1))
                     base_pred = self.conc_scale[c] * base_pred + self.conc_bias[c]
                     if y_phase is not None:
                         base_pred = base_pred + self.conc_scale[c] * self.proto_conc[c, y_phase.long()].unsqueeze(1)
-                    all_preds.append(torch.clamp(base_pred, 0.0, 1.0))
+                    all_preds.append(self._maybe_clamp_reg_output(base_pred, clamp_output))
                 all_preds = torch.cat(all_preds, dim=1)
                 return (probs * all_preds).sum(dim=1, keepdim=True)
         else:
             if y_cls is not None:
+                # ---- 共享浓度主干路径: shared_pred + class_residual ----
+                if self.use_reg_shared_trunk:
+                    gas_ids = y_cls.long()                           # (B,)
+                    gas_emb = self.gas_embedding(gas_ids)            # (B, gas_emb_dim)
+                    shared_input = torch.cat([feat, gas_emb], dim=1) # (B, reg_input_dim + gas_emb_dim)
+                    shared_pred = self.reg_shared_trunk(shared_input)# (B, 1)
+                    pred = torch.zeros(feat.size(0), 1, device=device)
+                    for c in range(len(self.reg_residual_heads)):
+                        mask = (y_cls == c)
+                        if mask.sum() > 0:
+                            delta = self.reg_residual_heads[c](feat[mask])  # (N, 1)
+                            raw_out = shared_pred[mask] + delta
+                            pred_norm = self._reg_base_output(raw_out)
+                            result = self.proto_scale[c] * pred_norm + self.proto_bias[c]
+                            if y_phase is not None:
+                                phase_idx = y_phase[mask].long()
+                                result = result + self.proto_conc[c, phase_idx].unsqueeze(1)
+                            pred[mask] = self._maybe_clamp_reg_output(result, clamp_output)
+                    return pred
+                # ---- 原始独立回归头路径 ----
                 pred = torch.zeros(feat.size(0), 1, device=device)
                 for c in range(len(self.reg_heads)):
                     mask = (y_cls == c)
                     if mask.sum() > 0:
                         raw_out = self.reg_heads[c](feat[mask])
-                        pred_norm = torch.sigmoid(raw_out)
+                        pred_norm = self._reg_base_output(raw_out)
                         result = self.proto_scale[c] * pred_norm + self.proto_bias[c]
                         if y_phase is not None:
                             phase_idx = y_phase[mask].long()
                             result = result + self.proto_conc[c, phase_idx].unsqueeze(1)
-                        pred[mask] = torch.clamp(result, 0.0, 1.0)
+                        pred[mask] = self._maybe_clamp_reg_output(result, clamp_output)
                 return pred
             else:
+                # y_cls=None: 使用 probs 对各气体预测加权混合
+                if self.use_reg_shared_trunk:
+                    # 对每个类别分别计算: gas_emb_c -> shared_pred + delta_c
+                    reg_outputs = []
+                    for c in range(len(self.reg_residual_heads)):
+                        gas_ids = torch.full((feat.size(0),), c, dtype=torch.long, device=device)
+                        gas_emb_c = self.gas_embedding(gas_ids)
+                        shared_input_c = torch.cat([feat, gas_emb_c], dim=1)
+                        shared_pred_c = self.reg_shared_trunk(shared_input_c)
+                        delta_c = self.reg_residual_heads[c](feat)
+                        raw_out = shared_pred_c + delta_c
+                        pred_norm = self._reg_base_output(raw_out)
+                        result = self.proto_scale[c] * pred_norm + self.proto_bias[c]
+                        if y_phase is not None:
+                            result = result + self.proto_conc[c, y_phase.long()].unsqueeze(1)
+                        reg_outputs.append(self._maybe_clamp_reg_output(result, clamp_output))
+                    reg_outputs = torch.cat(reg_outputs, dim=1)
+                    return (probs * reg_outputs).sum(dim=1, keepdim=True)
+                # 原始路径: y_cls=None 时 probs 加权混合
                 reg_outputs = []
                 for c in range(len(self.reg_heads)):
                     raw_out = self.reg_heads[c](feat)
-                    pred_norm = torch.sigmoid(raw_out)
+                    pred_norm = self._reg_base_output(raw_out)
                     result = self.proto_scale[c] * pred_norm + self.proto_bias[c]
                     if y_phase is not None:
                         result = result + self.proto_conc[c, y_phase.long()].unsqueeze(1)
-                    reg_outputs.append(torch.clamp(result, 0.0, 1.0))
+                    reg_outputs.append(self._maybe_clamp_reg_output(result, clamp_output))
                 reg_outputs = torch.cat(reg_outputs, dim=1)
                 return (probs * reg_outputs).sum(dim=1, keepdim=True)
 
@@ -623,10 +1156,25 @@ class FedGasMultiTaskModel(FedGasBaseModel):
                 params.append(self.reg_attn_linear.bias)
         if getattr(self, 'reg_stats_proj', None) is not None:
             params.extend(self.reg_stats_proj.parameters())
+        if getattr(self, 'reg_response_adapter', None) is not None:
+            params.extend(self.reg_response_adapter.parameters())
+        if getattr(self, 'reg_ratio_adapter', None) is not None:
+            params.extend(self.reg_ratio_adapter.parameters())
+        if getattr(self, 'reg_tcn_adapter', None) is not None:
+            params.extend(self.reg_tcn_adapter.parameters())
         if self.use_proto_reg:
             params.append(self.conc_directions)
             params.append(self.conc_scale)
             params.append(self.conc_bias)
+        elif self.use_reg_shared_trunk:
+            params.extend(self.reg_shared_trunk.parameters())
+            params.append(self.gas_embedding.weight)
+            for head in self.reg_residual_heads:
+                params.extend(head.parameters())
+            if hasattr(self, 'proto_scale') and self.proto_scale is not None:
+                params.append(self.proto_scale)
+            if hasattr(self, 'proto_bias') and self.proto_bias is not None:
+                params.append(self.proto_bias)
         elif hasattr(self, 'reg_heads') and self.reg_heads is not None:
             for head in self.reg_heads:
                 params.extend(head.parameters())

@@ -44,6 +44,7 @@ from typing import Any, Dict, List, Optional, Sequence
 import numpy as np
 
 from .deploy_config import DeployConfig
+from .calibration import DEFAULT_CONC_RANGES
 from .inference import DeployPredictor, DeployResult
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,42 @@ def load_json(path: Path) -> Dict[str, Any]:
         return json.load(f)
 
 
+def _infer_split_prefix(features_path: Path) -> str:
+    """Infer sidecar label prefix from a features file name."""
+    name = features_path.name
+    suffix = "features.npy"
+    if not name.endswith(suffix):
+        return ""
+    return name[: -len(suffix)]
+
+
+def _load_sidecar_labels(features_path: Path) -> Dict[str, np.ndarray]:
+    """Load optional labels next to `{split}_features.npy` for offline checks."""
+    prefix = _infer_split_prefix(features_path)
+    parent = features_path.parent
+    paths = {
+        "true_class": parent / f"{prefix}classification_labels.npy",
+        "regression": parent / f"{prefix}regression_labels.npy",
+        "phase": parent / f"{prefix}phase_labels.npy",
+    }
+    labels: Dict[str, np.ndarray] = {}
+    for key, path in paths.items():
+        if path.exists():
+            labels[key] = np.load(path, allow_pickle=True)
+            logger.info(f"加载{key}标签: {path}, shape={labels[key].shape}")
+    return labels
+
+
+def _true_ppm_at(regression_labels: np.ndarray, true_class: int, index: int) -> float:
+    """Return the ppm label for the true gas class at one row."""
+    values = np.asarray(regression_labels[index])
+    if values.ndim == 0:
+        return float(values)
+    if 0 <= true_class < values.shape[0]:
+        return float(values[true_class])
+    return float("nan")
+
+
 def predict_client_file(
     predictor: DeployPredictor,
     features_path: str,
@@ -99,17 +136,22 @@ def predict_client_file(
         部署结果字典列表
     """
     # 加载特征
-    features = np.load(features_path).astype(np.float32)
+    feature_file = Path(features_path)
+    features = np.load(feature_file).astype(np.float32)
     logger.info(f"加载特征: {features_path}, shape={features.shape}")
+    sidecar_labels = _load_sidecar_labels(feature_file)
 
     # 加载元数据 (phase 信息)
     phase_map: Dict[int, int] = {}
+    if "phase" in sidecar_labels:
+        phase_labels = np.asarray(sidecar_labels["phase"], dtype=np.int64).reshape(-1)
+        phase_map = {int(i): int(v) for i, v in enumerate(phase_labels)}
     if info_path and Path(info_path).exists():
         info = load_json(Path(info_path))
         if isinstance(info, list):
             for i, item in enumerate(info):
-                if isinstance(item, dict):
-                    phase_map[i] = int(item.get("phase", -1))
+                if isinstance(item, dict) and "phase" in item and item["phase"] is not None:
+                    phase_map[i] = int(item["phase"])
         logger.info(f"加载元数据: {info_path}, {len(phase_map)} 条记录")
 
     # 批量推理
@@ -120,16 +162,34 @@ def predict_client_file(
         end = min(start + batch_size, total)
         batch_features = features[start:end]
 
-        # 获取当前批次的 phase (取众数)
-        batch_phases = [phase_map.get(i, -1) for i in range(start, end)]
-        phase = max(set(batch_phases), key=batch_phases.count) if batch_phases else -1
+        batch_phases = np.asarray(
+            [phase_map.get(i, -1) for i in range(start, end)],
+            dtype=np.int64,
+        )
 
-        results = predictor.predict_batch(batch_features, client_id=client_id, phase=phase)
+        results = predictor.predict_batch(batch_features, client_id=client_id, phase=batch_phases)
 
         for i, result in enumerate(results):
+            sample_index = start + i
             row = result.to_dict()
-            row["sample_index"] = start + i
-            row["phase"] = phase_map.get(start + i, phase)
+            row["sample_index"] = sample_index
+            row["phase"] = int(batch_phases[i])
+            if "true_class" in sidecar_labels:
+                true_cls = int(np.asarray(sidecar_labels["true_class"]).reshape(-1)[sample_index])
+                row["true_class"] = true_cls
+                row["true_gas"] = (
+                    predictor.config.gas_names[true_cls]
+                    if 0 <= true_cls < len(predictor.config.gas_names)
+                    else f"Class{true_cls}"
+                )
+                row["class_correct"] = int(int(row.get("pred_class", -1)) == true_cls)
+                if "regression" in sidecar_labels:
+                    true_ppm = _true_ppm_at(sidecar_labels["regression"], true_cls, sample_index)
+                    row["true_ppm"] = true_ppm
+                    try:
+                        row["abs_error"] = abs(float(row["calibrated_ppm"]) - true_ppm)
+                    except (TypeError, ValueError):
+                        row["abs_error"] = ""
             all_rows.append(row)
 
         if (start // batch_size) % 10 == 0:
@@ -202,8 +262,41 @@ def _build_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     # 如果存在真实标签 (离线评估)，计算指标
     if rows and "true_ppm" in rows[0]:
         summary["evaluation"] = _compute_eval_metrics(rows)
+        summary["per_true_class_evaluation"] = _compute_grouped_eval_metrics(
+            rows,
+            group_key="true_class",
+            label_key="true_gas",
+        )
+    if rows and "class_correct" in rows[0]:
+        correct = [int(r.get("class_correct", 0)) for r in rows]
+        summary["classification_accuracy"] = float(np.mean(correct)) if correct else None
 
     return summary
+
+
+def _compute_grouped_eval_metrics(
+    rows: List[Dict[str, Any]],
+    group_key: str,
+    label_key: str = "",
+) -> Dict[str, Dict[str, Any]]:
+    """Compute offline regression and classification metrics by group."""
+    grouped: Dict[str, List[Dict[str, Any]]] = {}
+    for row in rows:
+        if group_key not in row:
+            continue
+        key = str(row.get(group_key))
+        grouped.setdefault(key, []).append(row)
+
+    out: Dict[str, Dict[str, Any]] = {}
+    for key, group_rows in sorted(grouped.items(), key=lambda item: int(item[0])):
+        metrics = _compute_eval_metrics(group_rows)
+        if label_key and group_rows:
+            metrics["label"] = group_rows[0].get(label_key, "")
+        if group_rows and "class_correct" in group_rows[0]:
+            correct = [int(r.get("class_correct", 0)) for r in group_rows]
+            metrics["classification_accuracy"] = float(np.mean(correct)) if correct else None
+        out[key] = metrics
+    return out
 
 
 def _compute_eval_metrics(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -225,13 +318,23 @@ def _compute_eval_metrics(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     y_pred = y_pred[valid]
     err = y_pred - y_true
     ae = np.abs(err)
+    rmse = float(np.sqrt(np.mean(err ** 2)))
     ss_res = float(np.sum(err ** 2))
     ss_tot = float(np.sum((y_true - y_true.mean()) ** 2))
+    ranges = []
+    valid_rows = [row for row, keep in zip(rows, valid.tolist()) if keep]
+    for row in valid_rows:
+        cls_id = int(row.get("true_class", row.get("pred_class", -1)))
+        lo, hi = DEFAULT_CONC_RANGES.get(cls_id, (float(np.min(y_true)), float(np.max(y_true))))
+        ranges.append(max(float(hi) - float(lo), 1e-12))
+    range_arr = np.asarray(ranges, dtype=np.float64)
 
     return {
         "n": int(valid.sum()),
         "R2": float(1.0 - ss_res / max(ss_tot, 1e-12)),
         "MAE": float(np.mean(ae)),
+        "RMSE": rmse,
+        "NRMSE_range": float(np.sqrt(np.mean((err / range_arr) ** 2))),
         "MedAE": float(np.median(ae)),
         "P90AE": float(np.percentile(ae, 90)),
         "P95AE": float(np.percentile(ae, 95)),
@@ -253,9 +356,26 @@ def _print_summary(summary: Dict[str, Any]) -> None:
     if "evaluation" in summary:
         eval_ = summary["evaluation"]
         print(f"\n  离线评估指标 (基于真实标签):")
-        print(f"    R²: {eval_.get('R2', 'N/A')}")
+        print(f"    R2: {eval_.get('R2', 'N/A')}")
         print(f"    MAE: {eval_.get('MAE', 'N/A')}")
+        print(f"    RMSE: {eval_.get('RMSE', 'N/A')}")
+        print(f"    NRMSE_range: {eval_.get('NRMSE_range', 'N/A')}")
         print(f"    P90AE: {eval_.get('P90AE', 'N/A')}")
+    if summary.get("classification_accuracy") is not None:
+        print(f"    分类准确率: {summary['classification_accuracy']:.4f}")
+
+    per_true = summary.get("per_true_class_evaluation", {})
+    if per_true:
+        print(f"\n  Per-gas offline metrics:")
+        for cls, eval_ in sorted(per_true.items(), key=lambda x: int(x[0])):
+            label = eval_.get("label") or f"Class{cls}"
+            print(
+                f"    {label} (class={cls}): "
+                f"n={eval_.get('n')}, R2={eval_.get('R2')}, "
+                f"MAE={eval_.get('MAE')}, RMSE={eval_.get('RMSE')}, "
+                f"NRMSE_range={eval_.get('NRMSE_range')}, P90AE={eval_.get('P90AE')}, "
+                f"cls_acc={eval_.get('classification_accuracy')}"
+            )
 
     print(f"\n  各类别分布:")
     for cls, info in sorted(summary.get("by_class", {}).items(), key=lambda x: int(x[0])):

@@ -596,7 +596,7 @@ def evaluate_model(model: FedGasModel, data_loader: torch.utils.data.DataLoader,
 
 
 def compute_mmd(features1: torch.Tensor, features2: torch.Tensor, seed: int = 42) -> torch.Tensor:
-    """计算最大均值差异
+    r"""计算最大均值差异
     
     计算两个特征分布之间的最大均值差异（MMD），使用高斯核。
     \f[
@@ -2100,6 +2100,26 @@ def create_model_by_config(config, with_reg_head=False):
         use_reg_window_stats = getattr(config, 'REG_WINDOW_STATS', False)
         reg_window_stats_mode = getattr(config, 'REG_WINDOW_STATS_MODE', 'global')
         reg_window_stats_dim = getattr(config, 'REG_WINDOW_STATS_DIM', 8)
+        reg_output_mode = getattr(config, 'REG_OUTPUT_MODE', 'sigmoid')
+        reg_response_branch = getattr(config, 'REG_RESPONSE_BRANCH', 'none')
+        reg_dct_k = getattr(config, 'REG_DCT_K', 8)
+        reg_dct_gamma_init = getattr(config, 'REG_DCT_GAMMA_INIT', 0.0)
+        reg_dct_dropout = getattr(config, 'REG_DCT_DROPOUT', 0.1)
+        reg_msconv_channels = getattr(config, 'REG_MSCONV_CHANNELS', 16)
+        reg_msconv_kernels = getattr(config, 'REG_MSCONV_KERNELS', '3,7,15,31')
+        reg_msconv_gamma_init = getattr(config, 'REG_MSCONV_GAMMA_INIT', 0.0)
+        reg_msconv_dropout = getattr(config, 'REG_MSCONV_DROPOUT', 0.1)
+        use_reg_tcn_adapter = getattr(config, 'REG_TCN_ADAPTER', False)
+        reg_tcn_adapter_kernel = getattr(config, 'REG_TCN_ADAPTER_KERNEL', 3)
+        reg_tcn_adapter_gamma_init = getattr(config, 'REG_TCN_ADAPTER_GAMMA_INIT', 0.0)
+        reg_tcn_adapter_dropout = getattr(config, 'REG_TCN_ADAPTER_DROPOUT', 0.05)
+        use_reg_shared_trunk = getattr(config, 'REG_USE_SHARED_TRUNK', False)
+        reg_shared_trunk_dim = getattr(config, 'REG_SHARED_TRUNK_DIM', 128)
+        reg_gas_emb_dim = getattr(config, 'REG_GAS_EMB_DIM', 16)
+        reg_residual_head_depth = getattr(config, 'REG_RESIDUAL_HEAD_DEPTH', 2)
+        use_reg_ratio_branch = getattr(config, 'USE_REG_RATIO_BRANCH', False)
+        reg_ratio_gamma_init = getattr(config, 'REG_RATIO_GAMMA_INIT', 0.0)
+        reg_ratio_dropout = getattr(config, 'REG_RATIO_DROPOUT', 0.05)
         if getattr(config, 'USE_PROTO_REG', False) and not hasattr(config, 'OVERRIDE_PROTO_REG'):
             model_kwargs.update({
                 'reg_head_depth': getattr(config, 'REG_HEAD_DEPTH', 3),
@@ -2111,7 +2131,27 @@ def create_model_by_config(config, with_reg_head=False):
                 'reg_grad_detach': reg_grad_detach,
                 'use_reg_window_stats': use_reg_window_stats,
                 'reg_window_stats_mode': reg_window_stats_mode,
-                'reg_window_stats_dim': reg_window_stats_dim
+                'reg_window_stats_dim': reg_window_stats_dim,
+                'reg_output_mode': reg_output_mode,
+                'reg_response_branch': reg_response_branch,
+                'reg_dct_k': reg_dct_k,
+                'reg_dct_gamma_init': reg_dct_gamma_init,
+                'reg_dct_dropout': reg_dct_dropout,
+                'reg_msconv_channels': reg_msconv_channels,
+                'reg_msconv_kernels': reg_msconv_kernels,
+                'reg_msconv_gamma_init': reg_msconv_gamma_init,
+                'reg_msconv_dropout': reg_msconv_dropout,
+                'use_reg_tcn_adapter': use_reg_tcn_adapter,
+                'reg_tcn_adapter_kernel': reg_tcn_adapter_kernel,
+                'reg_tcn_adapter_gamma_init': reg_tcn_adapter_gamma_init,
+                'reg_tcn_adapter_dropout': reg_tcn_adapter_dropout,
+                'use_reg_shared_trunk': use_reg_shared_trunk,
+                'reg_shared_trunk_dim': reg_shared_trunk_dim,
+                'reg_gas_emb_dim': reg_gas_emb_dim,
+                'reg_residual_head_depth': reg_residual_head_depth,
+                'use_reg_ratio_branch': use_reg_ratio_branch,
+                'reg_ratio_gamma_init': reg_ratio_gamma_init,
+                'reg_ratio_dropout': reg_ratio_dropout
             })
             return FedGasMultiTaskModel(**model_kwargs)
         elif getattr(config, 'USE_PROTO_REG', False):
@@ -2128,7 +2168,27 @@ def create_model_by_config(config, with_reg_head=False):
                 'reg_grad_detach': reg_grad_detach,
                 'use_reg_window_stats': use_reg_window_stats,
                 'reg_window_stats_mode': reg_window_stats_mode,
-                'reg_window_stats_dim': reg_window_stats_dim
+                'reg_window_stats_dim': reg_window_stats_dim,
+                'reg_output_mode': reg_output_mode,
+                'reg_response_branch': reg_response_branch,
+                'reg_dct_k': reg_dct_k,
+                'reg_dct_gamma_init': reg_dct_gamma_init,
+                'reg_dct_dropout': reg_dct_dropout,
+                'reg_msconv_channels': reg_msconv_channels,
+                'reg_msconv_kernels': reg_msconv_kernels,
+                'reg_msconv_gamma_init': reg_msconv_gamma_init,
+                'reg_msconv_dropout': reg_msconv_dropout,
+                'use_reg_tcn_adapter': use_reg_tcn_adapter,
+                'reg_tcn_adapter_kernel': reg_tcn_adapter_kernel,
+                'reg_tcn_adapter_gamma_init': reg_tcn_adapter_gamma_init,
+                'reg_tcn_adapter_dropout': reg_tcn_adapter_dropout,
+                'use_reg_shared_trunk': use_reg_shared_trunk,
+                'reg_shared_trunk_dim': reg_shared_trunk_dim,
+                'reg_gas_emb_dim': reg_gas_emb_dim,
+                'reg_residual_head_depth': reg_residual_head_depth,
+                'use_reg_ratio_branch': use_reg_ratio_branch,
+                'reg_ratio_gamma_init': reg_ratio_gamma_init,
+                'reg_ratio_dropout': reg_ratio_dropout
             })
             return FedGasMultiTaskModel(**model_kwargs)
     else:

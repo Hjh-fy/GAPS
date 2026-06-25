@@ -191,7 +191,7 @@ class RiskScoreComputer:
             scores["margin_risk"] = 0.0
 
         # 2. 响应签名风险 (需要 features 和 calib_refs)
-        if features is not None and class_id in self.calib_refs:
+        if features is not None and self.calib_refs:
             self._compute_response_scores(scores, features, pred_ppm, class_id)
         else:
             for key in [
@@ -200,6 +200,11 @@ class RiskScoreComputer:
                 "response_mean_conc_gap_norm",
                 "class_response_rank_risk",
                 "class_response_margin_risk",
+                "class_response_rank",
+                "class_response_margin",
+                "best_response_class",
+                "best_response_norm",
+                "pred_response_norm",
             ]:
                 if key not in scores:
                     scores[key] = 0.0
@@ -246,54 +251,178 @@ class RiskScoreComputer:
         class_id: int,
     ) -> None:
         """计算响应签名相关风险分数"""
-        ref = self.calib_refs.get(class_id)
-        if ref is None:
-            return
+        pred_ref = self.calib_refs.get(class_id)
+        pred_item = None
+        ranked_items: List[Dict[str, float]] = []
+        ranking_enabled = self._response_ranking_enabled()
 
-        # 提取特征描述符
-        feat = np.asarray(features, dtype=np.float64)
-        if feat.ndim == 2:
-            # (T, C) → 展平或计算统计量
-            sig = feat.mean(axis=0)  # 简化: 使用均值作为签名
+        for ref_cls, ref in self.calib_refs.items():
+            try:
+                ref_cls_int = int(ref_cls)
+            except (TypeError, ValueError):
+                continue
+            nearest = self._nearest_response(features, ref)
+            if nearest is None:
+                continue
+            item = {
+                "class": float(ref_cls_int),
+                "dist": nearest["dist"],
+                "norm": nearest["norm"],
+                "nearest_idx": float(nearest["nearest_idx"]),
+                "nearest_conc": nearest["nearest_conc"],
+            }
+            ranked_items.append(item)
+            if ref_cls_int == int(class_id):
+                pred_item = item
+
+        ranked_items.sort(key=lambda item: item["norm"])
+
+        if pred_item is not None:
+            scores["response_signature_norm"] = float(pred_item["norm"])
+            nearest_conc = pred_item["nearest_conc"]
+            if np.isfinite(nearest_conc):
+                scores["response_conc_gap_norm"] = float(abs(pred_ppm - nearest_conc) / 25.0)
+                scores["nearest_calib_conc"] = float(nearest_conc)
+            else:
+                scores["response_conc_gap_norm"] = 0.0
+                scores["nearest_calib_conc"] = float("nan")
+            scores["nearest_calib_idx"] = float(pred_item["nearest_idx"])
+        elif pred_ref is not None:
+            scores["response_signature_norm"] = 0.0
+            scores["response_conc_gap_norm"] = 0.0
         else:
-            sig = feat.ravel()
+            scores["response_signature_norm"] = 0.0
+            scores["response_conc_gap_norm"] = 0.0
 
-        # 标准化签名
-        center = np.asarray(ref.get("center", np.zeros_like(sig)))
-        scale = np.asarray(ref.get("scale", np.ones_like(sig)))
+        if ranking_enabled and ranked_items and pred_item is not None:
+            classes = [int(item["class"]) for item in ranked_items]
+            rank = 1 + classes.index(int(class_id))
+            best = ranked_items[0]
+            pred_norm = float(pred_item["norm"])
+            best_norm = float(best["norm"])
+            margin = pred_norm - best_norm
+            scores["best_response_class"] = float(best["class"])
+            scores["best_response_norm"] = best_norm
+            scores["pred_response_norm"] = pred_norm
+            scores["class_response_rank"] = float(rank)
+            scores["class_response_rank_risk"] = float(rank - 1)
+            scores["class_response_margin"] = float(margin)
+            scores["class_response_margin_risk"] = float(max(0.0, margin))
+            scores["best_response_nearest_calib_conc"] = float(best["nearest_conc"])
+        else:
+            scores["best_response_class"] = -1.0
+            scores["best_response_norm"] = 0.0
+            scores["pred_response_norm"] = 0.0
+            scores["class_response_rank"] = 0.0
+            scores["class_response_rank_risk"] = 0.0
+            scores["class_response_margin"] = 0.0
+            scores["class_response_margin_risk"] = 0.0
+
+    def _response_ranking_enabled(self) -> bool:
+        """Return whether class-wise response ranking should affect QC.
+
+        Old v1 packages used 8-D time-mean response references and were tuned
+        with rank/margin risks effectively disabled. Keep those packages stable
+        unless the calibration artifact explicitly opts in, or unless it uses
+        the new 40-D response descriptor generated for QC v2.
+        """
+        for ref in self.calib_refs.values():
+            if not isinstance(ref, dict):
+                continue
+            if bool(ref.get("response_ranking_enabled", False)):
+                return True
+            signature = str(ref.get("signature", "")).lower()
+            signature_dim = int(ref.get("signature_dim", self._ref_dim(ref)) or 0)
+            if signature == "mean_std_amp_slope_noise" or signature_dim >= 40:
+                return True
+        return False
+
+    @staticmethod
+    def _response_signature(features: np.ndarray, target_dim: int) -> Optional[np.ndarray]:
+        """Return a response signature compatible with the reference dimension.
+
+        Existing deployment packages store an 8-D time-mean signature. Newer
+        packages store a 40-D descriptor: mean, std, amplitude, slope, and
+        short-term noise for each sensor channel.
+        """
+        feat = np.asarray(features, dtype=np.float64)
+        if feat.ndim == 3 and feat.shape[0] == 1:
+            feat = feat[0]
+        if feat.ndim != 2:
+            flat = feat.ravel()
+            return flat if flat.size == target_dim else None
+
+        if target_dim == feat.shape[1]:
+            return feat.mean(axis=0)
+
+        mean_ch = feat.mean(axis=0)
+        std_ch = feat.std(axis=0)
+        amp_ch = feat.max(axis=0) - feat.min(axis=0)
+        edge = max(1, int(round(feat.shape[0] * 0.10)))
+        slope_ch = feat[-edge:, :].mean(axis=0) - feat[:edge, :].mean(axis=0)
+        diff = np.diff(feat, axis=0)
+        noise_ch = diff.std(axis=0) if diff.size else np.zeros_like(mean_ch)
+        descriptor = np.concatenate([mean_ch, std_ch, amp_ch, slope_ch, noise_ch], axis=0)
+        if descriptor.size == target_dim:
+            return descriptor
+        if mean_ch.size == target_dim:
+            return mean_ch
+        return None
+
+    @staticmethod
+    def _ref_dim(ref: Dict[str, Any]) -> int:
+        center = np.asarray(ref.get("center", []), dtype=np.float64)
+        if center.ndim == 1 and center.size > 0:
+            return int(center.size)
+        z_sigs = np.asarray(ref.get("z_sigs", []), dtype=np.float64)
+        if z_sigs.ndim == 2 and z_sigs.shape[1] > 0:
+            return int(z_sigs.shape[1])
+        return 0
+
+    def _nearest_response(self, features: np.ndarray, ref: Dict[str, Any]) -> Optional[Dict[str, float]]:
+        target_dim = self._ref_dim(ref)
+        if target_dim <= 0:
+            return None
+        sig = self._response_signature(features, target_dim)
+        if sig is None:
+            return None
+
+        center = np.asarray(ref.get("center", np.zeros(target_dim)), dtype=np.float64).reshape(-1)
+        scale = np.asarray(ref.get("scale", np.ones(target_dim)), dtype=np.float64).reshape(-1)
+        if center.size != target_dim or scale.size != target_dim or sig.size != target_dim:
+            return None
         scale = np.where(np.abs(scale) < 1e-8, 1.0, scale)
         z_sig = (sig - center) / scale
 
-        # 计算到校准集签名的最近距离
-        z_sigs = np.asarray(ref.get("z_sigs", np.zeros((1, len(sig)))))
-        if z_sigs.size > 0 and z_sigs.ndim == 2:
-            dists = np.linalg.norm(z_sigs - z_sig.reshape(1, -1), axis=1)
-            sig_dist = float(np.min(dists))
-            nearest_idx = int(np.argmin(dists))
-        else:
-            sig_dist = 0.0
-            nearest_idx = 0
+        z_sigs = np.asarray(ref.get("z_sigs", []), dtype=np.float64)
+        if z_sigs.ndim != 2 or z_sigs.shape[1] != target_dim or z_sigs.shape[0] == 0:
+            return None
 
-        # 标准化缩放
+        dists = np.linalg.norm(z_sigs - z_sig.reshape(1, -1), axis=1)
+        if dists.size > 1:
+            zero_mask = dists <= 1e-12
+            if np.any(zero_mask) and np.any(~zero_mask):
+                dists = np.where(zero_mask, np.inf, dists)
+        nearest_idx = int(np.argmin(dists))
+        sig_dist = float(dists[nearest_idx])
         loocv_p90 = float(ref.get("loocv_p90", 1.0))
-        if loocv_p90 < 1e-8:
+        if not np.isfinite(loocv_p90) or loocv_p90 < 1e-8:
             loocv_p90 = 1.0
 
-        scores["response_signature_norm"] = float(sig_dist / loocv_p90)
+        rows = ref.get("rows", [])
+        nearest_conc = float("nan")
+        if rows and nearest_idx < len(rows):
+            try:
+                nearest_conc = float(rows[nearest_idx].get("concentration", np.nan))
+            except (TypeError, ValueError):
+                nearest_conc = float("nan")
 
-        # 浓度差距
-        ref_rows = ref.get("rows", [])
-        if ref_rows and nearest_idx < len(ref_rows):
-            nearest_conc = float(ref_rows[nearest_idx].get("concentration", pred_ppm))
-        else:
-            nearest_conc = pred_ppm
-
-        scores["response_conc_gap_norm"] = float(abs(pred_ppm - nearest_conc) / 25.0)
-
-        # 类别响应排序 (简化版)
-        # 在完整实现中需要比较所有类别的响应距离
-        scores["class_response_rank_risk"] = 0.0
-        scores["class_response_margin_risk"] = 0.0
+        return {
+            "dist": sig_dist,
+            "norm": float(sig_dist / loocv_p90),
+            "nearest_idx": float(nearest_idx),
+            "nearest_conc": nearest_conc,
+        }
 
     def compute_batch(
         self,

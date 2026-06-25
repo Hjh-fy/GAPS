@@ -404,7 +404,11 @@ class RegressionCalibrator:
         for c_str, params in routing_config.get("affine_params", {}).items():
             c = int(c_str)
             if isinstance(params, dict):
-                self.affine_params[c] = AffineCalibrator.from_dict(params)
+                calib = AffineCalibrator.from_dict(params)
+                if calib.mode == "bias_only" or self.selected_modes.get(c) == "bias_only":
+                    self.bias_params[c] = calib
+                else:
+                    self.affine_params[c] = calib
 
         # 加载 phase_affine 参数
         for c_str, params in routing_config.get("phase_affine_params", {}).items():

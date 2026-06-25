@@ -48,8 +48,8 @@ class PreprocessConfig:
     seed: int = 42                      # 随机种子
     expected_duration: int = 600        # 期望的总时长 (秒)
     data_completeness_threshold: float = 0.95  # 数据完整度阈值 (低于此值记录警告)
-    phase_early_max_days: int = 5       # 早期阶段最大天数
-    phase_middle_max_days: int = 15     # 中期阶段最大天数
+    phase_early_max_days: int = 7       # 早期阶段最大天数
+    phase_middle_max_days: int = 14     # 中期阶段最大天数
 
 
 @dataclass
