@@ -2,7 +2,7 @@
 
 Date: 2026-06-25
 
-Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal target Ridge, target MLP, hybrid profile selection, H8 CO-specialist, and H2.3 runtime parity evidence.
+Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal target Ridge, target MLP, hybrid profile selection, H8 CO-specialist, formal C4 route rescue, and runtime parity evidence.
 
 - Summary CSV: `results/target_direct_head_mainline_20260625/target_direct_head_mainline_summary.csv`
 - H2.3 deployment bundle: `results/deployment_h2_3_mlp_ridge_candidate_20260624`
@@ -15,6 +15,9 @@ Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal 
 - H8 deployment bundle: `results/deployment_h8_source_aug_candidate_20260625`
 - H8 runtime validation dir: `results/runtime_validation_h8_source_aug_candidate_20260625`
 - H8 runtime equivalence: `results/equivalence_h8_source_aug_candidate_20260625/equivalence_summary.json`
+- H8 + formal C4 rescue deployment bundle: `results/deployment_h8_formal_c4_rescue_candidate_20260625`
+- H8 + formal C4 rescue runtime validation dir: `results/runtime_validation_h8_formal_c4_rescue_candidate_20260625`
+- H8 + formal C4 rescue runtime equivalence: `results/equivalence_h8_formal_c4_rescue_candidate_20260625/equivalence_summary.json`
 
 ## Main Metrics
 
@@ -26,7 +29,7 @@ Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal 
 | H2.2 MLP C3 + Ridge C4/C5 | deployment candidate archived | 19.89 | 0.1397 | 16.15 | 22.02 | 30.67 | 20.02 | 34.24 | 31.66 | 19.09 |
 | H2.3 MLP C3 + Ridge C4 + C5-grid MLP | current mainline | 18.62 | 0.1326 | 16.15 | 22.02 | 26.85 | 20.02 | 34.24 | 34.82 | 17.83 |
 | H8 pred-CO source-aug else H2.3 | CO-specialist candidate | 18.47 | 0.1354 | 14.97 | 19.76 | 23.69 | 19.93 | 32.22 | 27.54 | 18.38 |
-| H8 + formal C4 route rescue | formal rescue candidate | 18.30 | 0.1350 | 14.97 | 17.16 | 23.69 | 19.93 | 26.79 | 27.54 | 18.38 |
+| H8 + formal C4 route rescue | deployable rescue candidate | 18.30 | 0.1350 | 14.97 | 17.16 | 23.69 | 19.93 | 26.79 | 27.54 | 18.38 |
 
 ## Delta vs Original Baseline
 
@@ -64,6 +67,9 @@ Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal 
 | H8 runtime equivalence | results/equivalence_h8_source_aug_candidate_20260625/equivalence_summary.json | ok-file |
 | H8 selector profile | results/h8_calibration_selector_20260625/h8_pred_co_source_aug_selector_profile.json | ok-file |
 | Formal C4 rescue report | results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selector_report.md | ok-file |
+| H8+C4 formal rescue deployment | results/deployment_h8_formal_c4_rescue_candidate_20260625 | ok-dir |
+| H8+C4 formal rescue runtime validation | results/runtime_validation_h8_formal_c4_rescue_candidate_20260625 | ok-dir |
+| H8+C4 formal rescue equivalence | results/equivalence_h8_formal_c4_rescue_candidate_20260625/equivalence_summary.json | ok-file |
 
 ## Reproduction Workflow
 
@@ -103,11 +109,18 @@ H8:
 - max abs diff: 1.1368683772161603e-13
 - mean abs diff: 1.1339406779808525e-14
 
+H8 + formal C4 route rescue:
+- rows compared: 5400
+- missing in analysis/runtime: 0 / 0
+- mismatch rows: 0
+- max abs diff: 1.9895196601282805e-13
+- mean abs diff: 1.147921264216873e-14
+
 ## Decision
 
 - Promote H2.3 as the current balanced mainline: it gives a large gain over the original baseline and already has deployment/runtime equivalence.
 - Keep H8 as a CO-specialist candidate, not the default mainline: it improves CO and high-CO, but worsens ALL NRMSE and nonCO versus H2.3.
 - H8 now has calibration-only selector support and runtime parity, so it can be treated as a deployable CO-specialist candidate.
-- H8 + formal C4 route rescue improves C4 high-CO further with zero test false hits, but it is not exported to runtime yet.
+- H8 + formal C4 route rescue improves C4 high-CO further with zero test false hits and runtime parity has been verified.
 - Export/profile parameterization has started: `export_hybrid_mlp_ridge_deployment_candidate.py` now accepts `--profile-json` while preserving `--candidate h2_2/h2_3` compatibility.
 - Mainline decision remains H2.3 vs H8-family: H8 improves CO/high-CO and ALL RMSE slightly, but worsens ALL NRMSE and nonCO versus H2.3.

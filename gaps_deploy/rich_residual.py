@@ -502,7 +502,23 @@ class RichResidualPolicy:
         client_id: str,
         meta: Mapping[str, Any] | None,
     ) -> float | None:
-        gate = self.route_rescue.get("selected_gate")
+        gates = []
+        if self.route_rescue.get("selected_gate"):
+            gates.append(self.route_rescue.get("selected_gate"))
+        gates.extend(self.route_rescue.get("additional_gates", []))
+        for gate in gates:
+            rescue = self._single_route_rescue_ppm(gate, result, client_id, meta)
+            if rescue is not None:
+                return rescue
+        return None
+
+    def _single_route_rescue_ppm(
+        self,
+        gate: Mapping[str, Any] | None,
+        result: DeployResult,
+        client_id: str,
+        meta: Mapping[str, Any] | None,
+    ) -> float | None:
         if not gate:
             return None
         if str(client_id) != "C4":

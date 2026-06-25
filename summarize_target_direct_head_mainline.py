@@ -25,6 +25,9 @@ H8_RUNTIME = Path("results/runtime_validation_h8_source_aug_candidate_20260625")
 H8_EQUIV = Path("results/equivalence_h8_source_aug_candidate_20260625/equivalence_summary.json")
 FORMAL_C4_RESCUE_SUMMARY = Path("results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_summary.csv")
 FORMAL_C4_RESCUE_REPORT = Path("results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selector_report.md")
+FORMAL_C4_DEPLOY = Path("results/deployment_h8_formal_c4_rescue_candidate_20260625")
+FORMAL_C4_RUNTIME = Path("results/runtime_validation_h8_formal_c4_rescue_candidate_20260625")
+FORMAL_C4_EQUIV = Path("results/equivalence_h8_formal_c4_rescue_candidate_20260625/equivalence_summary.json")
 
 
 SCOPES = [
@@ -86,8 +89,8 @@ MODE_SOURCES = [
         "label": "H8 + formal C4 route rescue",
         "mode": "H8_plus_formal_c4_route_rescue",
         "source": FORMAL_C4_RESCUE_SUMMARY,
-        "status": "formal rescue candidate",
-        "reading": "Calibration-selected C4 route rescue on top of H8; no runtime export yet.",
+        "status": "deployable rescue candidate",
+        "reading": "Calibration-selected C4 route rescue on top of H8; runtime parity verified.",
     },
 ]
 
@@ -177,6 +180,12 @@ def read_h8_equiv() -> dict[str, Any]:
     return json.loads(H8_EQUIV.read_text(encoding="utf-8"))
 
 
+def read_formal_c4_equiv() -> dict[str, Any]:
+    if not FORMAL_C4_EQUIV.exists():
+        return {}
+    return json.loads(FORMAL_C4_EQUIV.read_text(encoding="utf-8"))
+
+
 def path_status(path: Path) -> str:
     if path.is_dir():
         return "ok-dir"
@@ -245,6 +254,9 @@ def main() -> None:
         ["H8 runtime equivalence", H8_EQUIV.as_posix(), path_status(H8_EQUIV)],
         ["H8 selector profile", H8_SELECTOR_PROFILE.as_posix(), path_status(H8_SELECTOR_PROFILE)],
         ["Formal C4 rescue report", FORMAL_C4_RESCUE_REPORT.as_posix(), path_status(FORMAL_C4_RESCUE_REPORT)],
+        ["H8+C4 formal rescue deployment", FORMAL_C4_DEPLOY.as_posix(), path_status(FORMAL_C4_DEPLOY)],
+        ["H8+C4 formal rescue runtime validation", FORMAL_C4_RUNTIME.as_posix(), path_status(FORMAL_C4_RUNTIME)],
+        ["H8+C4 formal rescue equivalence", FORMAL_C4_EQUIV.as_posix(), path_status(FORMAL_C4_EQUIV)],
     ]
     workflow_rows = [
         ["1", "Target Ridge direct", "python run_formal_target_ridge_auto_v2_eval.py"],
@@ -264,7 +276,7 @@ def main() -> None:
         "",
         "Date: 2026-06-25",
         "",
-        "Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal target Ridge, target MLP, hybrid profile selection, H8 CO-specialist, and H2.3 runtime parity evidence.",
+        "Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal target Ridge, target MLP, hybrid profile selection, H8 CO-specialist, formal C4 route rescue, and runtime parity evidence.",
         "",
         f"- Summary CSV: `{OUT_CSV.as_posix()}`",
         f"- H2.3 deployment bundle: `{H2_3_DEPLOY.as_posix()}`",
@@ -277,6 +289,9 @@ def main() -> None:
         f"- H8 deployment bundle: `{H8_DEPLOY.as_posix()}`",
         f"- H8 runtime validation dir: `{H8_RUNTIME.as_posix()}`",
         f"- H8 runtime equivalence: `{H8_EQUIV.as_posix()}`",
+        f"- H8 + formal C4 rescue deployment bundle: `{FORMAL_C4_DEPLOY.as_posix()}`",
+        f"- H8 + formal C4 rescue runtime validation dir: `{FORMAL_C4_RUNTIME.as_posix()}`",
+        f"- H8 + formal C4 rescue runtime equivalence: `{FORMAL_C4_EQUIV.as_posix()}`",
         "",
         "## Main Metrics",
         "",
@@ -341,6 +356,21 @@ def main() -> None:
         )
     else:
         lines.append("- H8 runtime parity summary was not found.")
+    formal_c4_equiv = read_formal_c4_equiv()
+    lines.append("")
+    if formal_c4_equiv:
+        lines.extend(
+            [
+                "H8 + formal C4 route rescue:",
+                f"- rows compared: {formal_c4_equiv.get('rows_compared')}",
+                f"- missing in analysis/runtime: {formal_c4_equiv.get('missing_in_analysis')} / {formal_c4_equiv.get('missing_in_runtime')}",
+                f"- mismatch rows: {formal_c4_equiv.get('num_mismatch')}",
+                f"- max abs diff: {formal_c4_equiv.get('max_abs_diff')}",
+                f"- mean abs diff: {formal_c4_equiv.get('mean_abs_diff')}",
+            ]
+        )
+    else:
+        lines.append("- H8 + formal C4 route rescue runtime parity summary was not found.")
     lines.extend(
         [
             "",
@@ -348,10 +378,10 @@ def main() -> None:
             "",
             "- Promote H2.3 as the current balanced mainline: it gives a large gain over the original baseline and already has deployment/runtime equivalence.",
             "- Keep H8 as a CO-specialist candidate, not the default mainline: it improves CO and high-CO, but worsens ALL NRMSE and nonCO versus H2.3.",
-        "- H8 now has calibration-only selector support and runtime parity, so it can be treated as a deployable CO-specialist candidate.",
-        "- H8 + formal C4 route rescue improves C4 high-CO further with zero test false hits, but it is not exported to runtime yet.",
-        "- Export/profile parameterization has started: `export_hybrid_mlp_ridge_deployment_candidate.py` now accepts `--profile-json` while preserving `--candidate h2_2/h2_3` compatibility.",
-        "- Mainline decision remains H2.3 vs H8-family: H8 improves CO/high-CO and ALL RMSE slightly, but worsens ALL NRMSE and nonCO versus H2.3.",
+            "- H8 now has calibration-only selector support and runtime parity, so it can be treated as a deployable CO-specialist candidate.",
+            "- H8 + formal C4 route rescue improves C4 high-CO further with zero test false hits and runtime parity has been verified.",
+            "- Export/profile parameterization has started: `export_hybrid_mlp_ridge_deployment_candidate.py` now accepts `--profile-json` while preserving `--candidate h2_2/h2_3` compatibility.",
+            "- Mainline decision remains H2.3 vs H8-family: H8 improves CO/high-CO and ALL RMSE slightly, but worsens ALL NRMSE and nonCO versus H2.3.",
             "",
         ]
     )

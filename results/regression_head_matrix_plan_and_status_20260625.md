@@ -123,7 +123,8 @@ Formalization status:
 1. `summarize_target_direct_head_mainline.py` now consolidates H2.3/H8 metrics, artifact checklist, runtime parity, and reproduction workflow.
 2. H2.3 has deployment/runtime parity and remains the balanced mainline.
 3. H8 has deployment/runtime parity and remains the CO-specialist candidate.
-4. H8 improves CO/high-CO but worsens ALL NRMSE/nonCO versus H2.3, so it should not silently replace H2.3 as the default.
+4. H8 + formal C4 route rescue now has a deployment candidate and runtime parity, so it can be used as a deployable CO-specialist rescue candidate.
+5. H8 improves CO/high-CO but worsens ALL NRMSE/nonCO versus H2.3, so it should not silently replace H2.3 as the default.
 
 ## Matrix E: C4 CO High Diagnosis
 
@@ -131,9 +132,13 @@ New outputs:
 
 - `diagnose_c4_co_high_mainline.py`
 - `run_c4_route_rescue_upper_bound.py`
+- `export_h8_formal_c4_rescue_deployment_candidate.py`
 - `results/c4_co_high_mainline_diagnosis_20260625/c4_co_high_mainline_diagnosis_report.md`
 - `results/c4_route_rescue_upper_bound_20260625/c4_route_rescue_upper_bound_report.md`
 - `results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selector_report.md`
+- `results/deployment_h8_formal_c4_rescue_candidate_20260625/rich_residual_candidate.json`
+- `results/runtime_validation_h8_formal_c4_rescue_candidate_20260625/runtime_summary.csv`
+- `results/equivalence_h8_formal_c4_rescue_candidate_20260625/equivalence_summary.json`
 
 Key diagnosis:
 
@@ -168,7 +173,13 @@ Formal calibration-selected C4 route-rescue:
 | H8 pred-CO source-aug | 18.47 | 32.22 | 8.86 | 18.38 |
 | H8 + formal C4 route rescue | 18.30 | 26.79 | 8.86 | 18.38 |
 
-Decision: C4 high is now clearly a route-rescue calibration problem more than a general concentration-head problem. The formal calibration-selected C4 route rescue gives a no-leakage gain with zero false hits, but it only recovers the Ethanol-route subset. The Ethylene-route miss remains the main gap between the formal result and the test-only upper bound.
+Runtime/export status:
+
+- The formal C4 route-rescue gate is layered on top of the existing H8 route-rescue gate instead of replacing it.
+- Runtime parity check compared 5400 target-test rows against the formal analysis output.
+- Equivalence result: `num_mismatch=0`, `max_abs_diff=1.99e-13`, `mean_abs_diff=1.15e-14`.
+
+Decision: C4 high is now clearly a route-rescue calibration problem more than a general concentration-head problem. The formal calibration-selected C4 route rescue gives a no-leakage gain with zero false hits, and it has been exported into a runtime-validated deployment candidate. It only recovers the Ethanol-route subset; the Ethylene-route miss remains the main gap between the formal result and the test-only upper bound.
 
 ## Current Interpretation
 

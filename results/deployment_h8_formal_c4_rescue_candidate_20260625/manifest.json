@@ -1,0 +1,331 @@
+{
+  "name": "GAPS fixed-DA C12->C345 final deployment bundle",
+  "created_at_utc": "2026-06-24T16:04:25.301318+00:00",
+  "classifier_round": 25,
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "target_clients": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "input_shape": [
+    100,
+    8
+  ],
+  "output_fields": [
+    "gas_class",
+    "gas_name",
+    "class_prob",
+    "base_r3ak16_raw_ppm",
+    "routed_pred_ppm",
+    "final_ppm",
+    "co_corrected_ppm",
+    "qc_decision",
+    "risk_score"
+  ],
+  "runtime_dependencies": [
+    "python>=3.10",
+    "numpy",
+    "torch",
+    "scikit-learn",
+    "matplotlib"
+  ],
+  "files": [
+    {
+      "path": "classifier.pth",
+      "size_bytes": 181291,
+      "sha256": "8e42e712590d448d6a00755fc16db3681a18d47fddf7f392e31a58f3261c7109"
+    },
+    {
+      "path": "client_3_auto_v2_package/calibration/calibration_stats.json",
+      "size_bytes": 179347,
+      "sha256": "f6da3536cf77bf903c9014e8d6e6ab527dfe421b8817b02d29d4350c45b74ddb"
+    },
+    {
+      "path": "client_3_auto_v2_package/calibration/routing_config.json",
+      "size_bytes": 220,
+      "sha256": "0ee1f1e49fd03614f7eadb6637342a3ef71234a1655405829ee819b713ffaeb1"
+    },
+    {
+      "path": "client_3_auto_v2_package/config/deploy_config.json",
+      "size_bytes": 2089,
+      "sha256": "b68d562884d837a5454c3fe893a5a6855db75848ec13bf200b58aef586d5cd81"
+    },
+    {
+      "path": "client_3_auto_v2_package/models/classification_model.pth",
+      "size_bytes": 181291,
+      "sha256": "8e42e712590d448d6a00755fc16db3681a18d47fddf7f392e31a58f3261c7109"
+    },
+    {
+      "path": "client_3_auto_v2_package/models/full_model.pth",
+      "size_bytes": 1794082,
+      "sha256": "b2401c187050686ef4863dc33144b32fab5ea5e35fc6011511f504253219ec53"
+    },
+    {
+      "path": "client_3_auto_v2_package/models/model_config.json",
+      "size_bytes": 928,
+      "sha256": "778cd39d75bf78a036ac1e5e4ff47148f2b0e97b432d663be21b98ee7a070af2"
+    },
+    {
+      "path": "client_3_auto_v2_package/models/regression_model.pth",
+      "size_bytes": 1797988,
+      "sha256": "9f7e1040b82314366d70c8c1ed6b120f4d8a007b543723a691ceaffb28a9e3b3"
+    },
+    {
+      "path": "client_3_auto_v2_package/models/specialists/class_1.pth",
+      "size_bytes": 1793949,
+      "sha256": "fbdc28a2a89723339ecd5c7f227f4e7cc8fcbc894cfe53e470e0b7fec044a3d0"
+    },
+    {
+      "path": "client_3_auto_v2_package/models/specialists/class_2.pth",
+      "size_bytes": 1793949,
+      "sha256": "cb30087472ab3fee85c237f72f4fd11bdee450d192cd3dd046fecc2579154135"
+    },
+    {
+      "path": "client_3_auto_v2_package/qc/selected_policy.json",
+      "size_bytes": 985,
+      "sha256": "fca91910f47f0a4a3cddf71e1d23ff7196d6f0ba0fd9456550cde3715cca7b6f"
+    },
+    {
+      "path": "client_3_auto_v2_package/README.md",
+      "size_bytes": 435,
+      "sha256": "380f3972e90f17d5cea1f80cbfedb3f4befbd193487988803db73a84e67628e0"
+    },
+    {
+      "path": "client_4_auto_v2_package/calibration/calibration_stats.json",
+      "size_bytes": 97465,
+      "sha256": "58fba070ac9895ce9e1b19484be0f864c1cc34f15b24b03abe568ce5af5d2f99"
+    },
+    {
+      "path": "client_4_auto_v2_package/calibration/routing_config.json",
+      "size_bytes": 209,
+      "sha256": "aa40b43b46f879fc33ed13c809b11300440e0b33a520f39cec2a5e05694a0c5c"
+    },
+    {
+      "path": "client_4_auto_v2_package/config/deploy_config.json",
+      "size_bytes": 2089,
+      "sha256": "b68d562884d837a5454c3fe893a5a6855db75848ec13bf200b58aef586d5cd81"
+    },
+    {
+      "path": "client_4_auto_v2_package/models/classification_model.pth",
+      "size_bytes": 181291,
+      "sha256": "8e42e712590d448d6a00755fc16db3681a18d47fddf7f392e31a58f3261c7109"
+    },
+    {
+      "path": "client_4_auto_v2_package/models/full_model.pth",
+      "size_bytes": 1794082,
+      "sha256": "8ad973af7b82adbbacd2a32201ef5e411d3558da126a71b057270a974d4953f1"
+    },
+    {
+      "path": "client_4_auto_v2_package/models/model_config.json",
+      "size_bytes": 928,
+      "sha256": "778cd39d75bf78a036ac1e5e4ff47148f2b0e97b432d663be21b98ee7a070af2"
+    },
+    {
+      "path": "client_4_auto_v2_package/models/regression_model.pth",
+      "size_bytes": 1797988,
+      "sha256": "9f7e1040b82314366d70c8c1ed6b120f4d8a007b543723a691ceaffb28a9e3b3"
+    },
+    {
+      "path": "client_4_auto_v2_package/models/specialists/class_2.pth",
+      "size_bytes": 1793949,
+      "sha256": "ea3be3698ec6b3e9a1c06ecf87d15b5d0e490bcf2a09341c757e237b00494784"
+    },
+    {
+      "path": "client_4_auto_v2_package/qc/selected_policy.json",
+      "size_bytes": 985,
+      "sha256": "fca91910f47f0a4a3cddf71e1d23ff7196d6f0ba0fd9456550cde3715cca7b6f"
+    },
+    {
+      "path": "client_4_auto_v2_package/README.md",
+      "size_bytes": 435,
+      "sha256": "380f3972e90f17d5cea1f80cbfedb3f4befbd193487988803db73a84e67628e0"
+    },
+    {
+      "path": "client_5_auto_v2_package/calibration/calibration_stats.json",
+      "size_bytes": 97646,
+      "sha256": "cf9fea089b5f26874f84c70ddf5a64e5306b64d0cf831ba55f9e160b826ac792"
+    },
+    {
+      "path": "client_5_auto_v2_package/calibration/routing_config.json",
+      "size_bytes": 220,
+      "sha256": "0ee1f1e49fd03614f7eadb6637342a3ef71234a1655405829ee819b713ffaeb1"
+    },
+    {
+      "path": "client_5_auto_v2_package/config/deploy_config.json",
+      "size_bytes": 2089,
+      "sha256": "b68d562884d837a5454c3fe893a5a6855db75848ec13bf200b58aef586d5cd81"
+    },
+    {
+      "path": "client_5_auto_v2_package/models/classification_model.pth",
+      "size_bytes": 181291,
+      "sha256": "8e42e712590d448d6a00755fc16db3681a18d47fddf7f392e31a58f3261c7109"
+    },
+    {
+      "path": "client_5_auto_v2_package/models/full_model.pth",
+      "size_bytes": 1794082,
+      "sha256": "d809e8b54c05a5ade8a37f822252271a77a89e91d32a255a1a97cff131bc4fd6"
+    },
+    {
+      "path": "client_5_auto_v2_package/models/model_config.json",
+      "size_bytes": 928,
+      "sha256": "778cd39d75bf78a036ac1e5e4ff47148f2b0e97b432d663be21b98ee7a070af2"
+    },
+    {
+      "path": "client_5_auto_v2_package/models/regression_model.pth",
+      "size_bytes": 1797988,
+      "sha256": "9f7e1040b82314366d70c8c1ed6b120f4d8a007b543723a691ceaffb28a9e3b3"
+    },
+    {
+      "path": "client_5_auto_v2_package/models/specialists/class_1.pth",
+      "size_bytes": 1793949,
+      "sha256": "10dc00a276976c3e12a899f2614f8b962b9f67f00e2bd856e71e54479366730c"
+    },
+    {
+      "path": "client_5_auto_v2_package/models/specialists/class_2.pth",
+      "size_bytes": 1793949,
+      "sha256": "a621df3d571f6bc23e241c4dc93e5e95ed459fca05e4641d731a498e3a6b11d5"
+    },
+    {
+      "path": "client_5_auto_v2_package/qc/selected_policy.json",
+      "size_bytes": 985,
+      "sha256": "fca91910f47f0a4a3cddf71e1d23ff7196d6f0ba0fd9456550cde3715cca7b6f"
+    },
+    {
+      "path": "client_5_auto_v2_package/README.md",
+      "size_bytes": 435,
+      "sha256": "380f3972e90f17d5cea1f80cbfedb3f4befbd193487988803db73a84e67628e0"
+    },
+    {
+      "path": "co_guarded_ridge_params.json",
+      "size_bytes": 4429,
+      "sha256": "b601051d77f7eed623a0c820297b21308b14fec41fd819f8528a1577a2bc66ff"
+    },
+    {
+      "path": "co_specific_correction_manifest.json",
+      "size_bytes": 969,
+      "sha256": "6001d95c6811a3aba6625ae1f1ce80f7c61103a05a82db634eefbb31b2f9ebd4"
+    },
+    {
+      "path": "label_mapping.json",
+      "size_bytes": 77,
+      "sha256": "d84941afda755bd8809da821d3e907355ffba0f7d26f516f5ce7a69f812b0163"
+    },
+    {
+      "path": "model_config.json",
+      "size_bytes": 962,
+      "sha256": "6356b6b0914ec3ba89bad191aa497a32ba2ac1c3c912235f54a1c0b748126a3f"
+    },
+    {
+      "path": "norm_stats.npz",
+      "size_bytes": 564,
+      "sha256": "36cb04ade212d80f21003e07c9d20034043bdeeb70c31fd296c56ce8cc559698"
+    },
+    {
+      "path": "qc_policy.json",
+      "size_bytes": 985,
+      "sha256": "fca91910f47f0a4a3cddf71e1d23ff7196d6f0ba0fd9456550cde3715cca7b6f"
+    },
+    {
+      "path": "regression_fedavg_global.pt",
+      "size_bytes": 1797988,
+      "sha256": "9f7e1040b82314366d70c8c1ed6b120f4d8a007b543723a691ceaffb28a9e3b3"
+    },
+    {
+      "path": "rich_residual_candidate.json",
+      "size_bytes": 1624786,
+      "sha256": "ccf73e71e22f7ce81680702fc8334fb039220124c538c42e6445469d2f165db7"
+    },
+    {
+      "path": "run_inference.py",
+      "size_bytes": 292,
+      "sha256": "ce56addfa1024779571ca985ddc96b66c1a15c2e532a5cd7ab1b3e8862098ca4"
+    },
+    {
+      "path": "runtime_config.json",
+      "size_bytes": 790,
+      "sha256": "bc9c4a8cc99e3670d8e8080e41e1a9bd56eecba9b1d46fcadc0cf8e9447982cd"
+    },
+    {
+      "path": "runtime_src/config.py",
+      "size_bytes": 21129,
+      "sha256": "71d958756a8479d6991ba9bd1b59a5c410c70a1d179dcee5f85f94136857a34d"
+    },
+    {
+      "path": "runtime_src/federated_dataset.py",
+      "size_bytes": 20477,
+      "sha256": "11bc438450e7364bd756d79f8b0d49d824ce6e444c218f51b25e64fec63513da"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/__init__.py",
+      "size_bytes": 1020,
+      "sha256": "5cfada058b33e9532b6af5d4094f49674acd31e2b558c70e3828604c7be49243"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/calibration.py",
+      "size_bytes": 17849,
+      "sha256": "8a1d89816547d070a121545295ee5c005998f00e10d8a4abf9d84ed3bfa619dc"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/deploy_config.py",
+      "size_bytes": 6269,
+      "sha256": "4edc80139b9a5020c1bcd311429c7567ddf27aa02720e322ce3a8ac8fec67445"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/final_runtime.py",
+      "size_bytes": 10631,
+      "sha256": "22721e485da4712a2be3bc8c1ebefc234c1b289f285202ec94f509174f8e7c76"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/inference.py",
+      "size_bytes": 40137,
+      "sha256": "63a714a46e7afcc37cd5ef2ab329795e7373649e183464ad220857bffe7f56b7"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/qc_policy.py",
+      "size_bytes": 25001,
+      "sha256": "25e3f01967aa0d9d685125eb9da40d7624afa701e22e46ae3b3bf0385c9bda0f"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/r4a_residual.py",
+      "size_bytes": 8482,
+      "sha256": "aedecf9031bbbd6a84f8623ad8afdca1836b5349839e54c97e1cfff614345e05"
+    },
+    {
+      "path": "runtime_src/gaps_deploy/rich_residual.py",
+      "size_bytes": 17805,
+      "sha256": "aac5c3d4f2a8f7639d964d7f51f5da6240f435ee366f0805087aa0dcdf5de832"
+    },
+    {
+      "path": "runtime_src/gaps_flower/__init__.py",
+      "size_bytes": 59,
+      "sha256": "3f987481b2e63ed80847fcd4558af474653f504fb504a89b22ee74c075de9eda"
+    },
+    {
+      "path": "runtime_src/gaps_flower/regression_task.py",
+      "size_bytes": 25735,
+      "sha256": "f78415b73e0ccf4f611ec443b6a2335333517e3117709bfe905ecbc06036b35c"
+    },
+    {
+      "path": "runtime_src/model.py",
+      "size_bytes": 62693,
+      "sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8"
+    },
+    {
+      "path": "runtime_src/utils.py",
+      "size_bytes": 136029,
+      "sha256": "cf96fb25e35adfb4d8f1b2feb5191b3e63a47eeedfbf933f2f86facdbe5ae9f2"
+    },
+    {
+      "path": "semantic_protos_latest.json",
+      "size_bytes": 40522,
+      "sha256": "b2716ecfbaaec3243df6429d904b0e76ecc2605384501054c8040aca763a6b13"
+    }
+  ],
+  "candidate_name": "c12_c345_h8_source_aug_plus_formal_c4_route_rescue",
+  "base_bundle": "results/deployment_h8_source_aug_candidate_20260625",
+  "formal_c4_route_rescue_gate": "results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selected_gate.json"
+}
