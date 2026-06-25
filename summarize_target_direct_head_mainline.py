@@ -23,6 +23,8 @@ H8_SELECTOR_PROFILE = Path("results/h8_calibration_selector_20260625/h8_pred_co_
 H8_DEPLOY = Path("results/deployment_h8_source_aug_candidate_20260625")
 H8_RUNTIME = Path("results/runtime_validation_h8_source_aug_candidate_20260625")
 H8_EQUIV = Path("results/equivalence_h8_source_aug_candidate_20260625/equivalence_summary.json")
+FORMAL_C4_RESCUE_SUMMARY = Path("results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_summary.csv")
+FORMAL_C4_RESCUE_REPORT = Path("results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selector_report.md")
 
 
 SCOPES = [
@@ -79,6 +81,13 @@ MODE_SOURCES = [
         "source": H8_SUMMARY,
         "status": "CO-specialist candidate",
         "reading": "Improves CO/high-CO but worsens ALL NRMSE/nonCO versus H2.3.",
+    },
+    {
+        "label": "H8 + formal C4 route rescue",
+        "mode": "H8_plus_formal_c4_route_rescue",
+        "source": FORMAL_C4_RESCUE_SUMMARY,
+        "status": "formal rescue candidate",
+        "reading": "Calibration-selected C4 route rescue on top of H8; no runtime export yet.",
     },
 ]
 
@@ -235,6 +244,7 @@ def main() -> None:
         ["H8 runtime validation", H8_RUNTIME.as_posix(), path_status(H8_RUNTIME)],
         ["H8 runtime equivalence", H8_EQUIV.as_posix(), path_status(H8_EQUIV)],
         ["H8 selector profile", H8_SELECTOR_PROFILE.as_posix(), path_status(H8_SELECTOR_PROFILE)],
+        ["Formal C4 rescue report", FORMAL_C4_RESCUE_REPORT.as_posix(), path_status(FORMAL_C4_RESCUE_REPORT)],
     ]
     workflow_rows = [
         ["1", "Target Ridge direct", "python run_formal_target_ridge_auto_v2_eval.py"],
@@ -244,8 +254,9 @@ def main() -> None:
         ["5", "H8 CO-specialist analysis", "python run_co_only_source_aug_hybrid_eval.py --output-dir results/co_only_source_aug_hybrid_stratcalval_20260625"],
         ["6", "H8 selector profile", "python select_h8_profile_from_calibration.py"],
         ["7", "H8 deployment export", "python export_h8_source_aug_deployment_candidate.py"],
-        ["8", "Runtime validation", "python validate_rich_residual_runtime_candidate.py --deployment-dir <deployment_dir> --output-dir <runtime_validation_dir>"],
-        ["9", "Mainline summary", "python summarize_target_direct_head_mainline.py"],
+        ["8", "Formal C4 route rescue selector", "python run_formal_c4_route_rescue_selector.py"],
+        ["9", "Runtime validation", "python validate_rich_residual_runtime_candidate.py --deployment-dir <deployment_dir> --output-dir <runtime_validation_dir>"],
+        ["10", "Mainline summary", "python summarize_target_direct_head_mainline.py"],
     ]
 
     lines = [
@@ -337,9 +348,10 @@ def main() -> None:
             "",
             "- Promote H2.3 as the current balanced mainline: it gives a large gain over the original baseline and already has deployment/runtime equivalence.",
             "- Keep H8 as a CO-specialist candidate, not the default mainline: it improves CO and high-CO, but worsens ALL NRMSE and nonCO versus H2.3.",
-            "- H8 now has calibration-only selector support and runtime parity, so it can be treated as a deployable CO-specialist candidate.",
-            "- Export/profile parameterization has started: `export_hybrid_mlp_ridge_deployment_candidate.py` now accepts `--profile-json` while preserving `--candidate h2_2/h2_3` compatibility.",
-            "- Mainline decision remains H2.3 vs H8: H8 improves CO/high-CO and ALL RMSE slightly, but worsens ALL NRMSE and nonCO versus H2.3.",
+        "- H8 now has calibration-only selector support and runtime parity, so it can be treated as a deployable CO-specialist candidate.",
+        "- H8 + formal C4 route rescue improves C4 high-CO further with zero test false hits, but it is not exported to runtime yet.",
+        "- Export/profile parameterization has started: `export_hybrid_mlp_ridge_deployment_candidate.py` now accepts `--profile-json` while preserving `--candidate h2_2/h2_3` compatibility.",
+        "- Mainline decision remains H2.3 vs H8-family: H8 improves CO/high-CO and ALL RMSE slightly, but worsens ALL NRMSE and nonCO versus H2.3.",
             "",
         ]
     )

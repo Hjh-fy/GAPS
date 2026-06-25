@@ -133,6 +133,7 @@ New outputs:
 - `run_c4_route_rescue_upper_bound.py`
 - `results/c4_co_high_mainline_diagnosis_20260625/c4_co_high_mainline_diagnosis_report.md`
 - `results/c4_route_rescue_upper_bound_20260625/c4_route_rescue_upper_bound_report.md`
+- `results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selector_report.md`
 
 Key diagnosis:
 
@@ -155,7 +156,19 @@ Test-only upper-bound:
 - This lowers C4 high RMSE to 14.81 and ALL RMSE to about 18.05 in the upper-bound sweep.
 - This is not yet a formal rule because it was selected on test. The next formal step is to run the same gate family on calibration-validation, select there, then evaluate once on test.
 
-Decision: C4 high is now clearly a route-rescue calibration problem more than a general concentration-head problem. The next formal experiment should be a calibration-selected C4 route-rescue extension, not another source-head replacement.
+Formal calibration-selected C4 route-rescue:
+
+- `run_formal_c4_route_rescue_selector.py` selects the route-rescue gate on target calibration only, then applies it to H8 test predictions.
+- Selected gate: `client=C4`, `pred_class=Ethanol`, `final_ppm <= 20`, `risk_score >= 6`, `rescue_ppm=250`.
+- Calibration support: 3/24 C4 high calibration hits, zero false hits.
+- Test result: 14/102 C4 high test hits, zero false hits.
+
+| mode | ALL RMSE | C4 high RMSE | C4 nonCO RMSE | nonCO ALL RMSE |
+| --- | ---: | ---: | ---: | ---: |
+| H8 pred-CO source-aug | 18.47 | 32.22 | 8.86 | 18.38 |
+| H8 + formal C4 route rescue | 18.30 | 26.79 | 8.86 | 18.38 |
+
+Decision: C4 high is now clearly a route-rescue calibration problem more than a general concentration-head problem. The formal calibration-selected C4 route rescue gives a no-leakage gain with zero false hits, but it only recovers the Ethanol-route subset. The Ethylene-route miss remains the main gap between the formal result and the test-only upper bound.
 
 ## Current Interpretation
 
