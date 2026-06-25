@@ -1,0 +1,19 @@
+{
+  "data_root": "dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid",
+  "target_predictions": "results/timeaware_2080_c12src_c345tgt_fixed_da_r25_r3ak16_auto_v2_eval/ppm_layer_co_audit/target_layer_predictions.csv",
+  "target_clients": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "val_ratio": 0.25,
+  "outputs": {
+    "val_scores": "results\\lightweight_l2_unified_selector_20260625\\l2_unified_selector_val_scores.csv",
+    "profile": "results\\lightweight_l2_unified_selector_20260625\\l2_unified_selector_profile.csv",
+    "client_profile": "results\\lightweight_l2_unified_selector_20260625\\l2_client_selector_profile.csv",
+    "predictions": "results\\lightweight_l2_unified_selector_20260625\\l2_unified_selector_predictions.csv",
+    "client_predictions": "results\\lightweight_l2_unified_selector_20260625\\l2_client_selector_predictions.csv",
+    "summary": "results\\lightweight_l2_unified_selector_20260625\\l2_unified_selector_summary.csv",
+    "report": "results\\lightweight_l2_unified_selector_20260625\\l2_unified_selector_report.md"
+  }
+}

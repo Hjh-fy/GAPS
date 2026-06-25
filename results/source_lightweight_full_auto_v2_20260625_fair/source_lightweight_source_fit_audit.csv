@@ -1,0 +1,10 @@
+base_mode,class_id,gas,best,best_val_RMSE
+source_ridge,0,Ethanol,1.0,4.141121525121393
+source_ridge,1,CO,0.1,14.579673308581
+source_ridge,2,Ethylene,0.0,3.6861297050233293
+source_ridge,3,Methane,0.1,8.466658336086661
+source_per_gas_mlp,0,Ethanol,"(16,);alpha=0.1",2.24277653400847
+source_per_gas_mlp,1,CO,"(16,);alpha=0.1",8.135537024939278
+source_per_gas_mlp,2,Ethylene,"(16,);alpha=0.01",1.6833524026147253
+source_per_gas_mlp,3,Methane,"(16,);alpha=0.1",4.853724890420179
+source_shared_mlp,all,all,"(16,);alpha=0.01",6.856348788071804

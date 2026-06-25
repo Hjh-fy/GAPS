@@ -41,6 +41,10 @@ Existing outputs:
 
 - `results/source_lightweight_regression_head_ablation_20260625_lite/source_lightweight_head_ablation_report.md`
 - `results/source_lightweight_target_calibrated_20260625_lite/source_lightweight_target_calibrated_report.md`
+- `results/lightweight_fair_auto_v2_experiment_plan_20260625.md`
+- `results/source_lightweight_full_auto_v2_20260625_fair/source_lightweight_full_auto_v2_report.md`
+- `results/lightweight_fair_matrix_20260625/lightweight_fair_matrix_report.md`
+- `results/lightweight_l2_unified_selector_20260625/l2_unified_selector_report.md`
 
 Key reading:
 
@@ -55,7 +59,41 @@ Key reading:
 | source per-gas MLP + target affine | 39.41 | 73.29 | 59.68 | 29.96 |
 | source shared MLP + target affine | 36.87 | 60.33 | 52.08 | 31.69 |
 
-Decision: lightweight source heads are useful diagnostics, but not ready to replace R3aK16. The bottleneck is cross-client transfer/calibration, not just regression head capacity.
+Fair follow-up:
+
+- `run_source_lightweight_full_auto_v2_eval.py` now evaluates lightweight source heads with full target residual auto_v2.
+- The target calibration split is internally split into calibration-fit/calibration-validation.
+- Residual candidates are selected per target client/gas using calibration-validation only.
+- Selected candidates are refit on full target calibration.
+- Target test is used only once for final reporting.
+
+This changes the conclusion materially:
+
+| mode | ALL RMSE | C3 CO | C4 CO | C5 CO | C4 high | C5 high | nonCO |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| H8 CO-specialist reference | 18.47 | 14.97 | 19.76 | 23.69 | 32.22 | 27.54 | 18.38 |
+| H2.3 mainline reference | 18.62 | 16.15 | 22.02 | 26.85 | 34.24 | 34.82 | 17.83 |
+| best diagnostic lightweight forced piecewise | 21.96 | 14.27 | 53.02 | 27.79 | 95.73 | 34.88 | 17.56 |
+| source ridge + full residual auto_v2 | 22.62 | 17.04 | 48.35 | 25.83 | 85.87 | 29.53 | 19.54 |
+| source shared MLP + full residual auto_v2 | 22.63 | 14.27 | 53.14 | 27.25 | 95.38 | 29.73 | 18.70 |
+| source per-gas MLP + full residual auto_v2 | 22.76 | 15.73 | 53.71 | 24.87 | 96.37 | 27.62 | 18.85 |
+| R3aK16 baseline final | 27.34 | 33.70 | 56.59 | 46.12 | 95.32 | 60.00 | 19.00 |
+
+Decision: affine-only calibration was not enough, but full residual auto_v2 makes lightweight source heads credible deployment-lite candidates. They now beat the original R3aK16 baseline on ALL RMSE and CO for C3/C5, but still do not reach H2.3/H8 because C4 CO and C4 high-CO remain weak. Do not replace the performance mainline yet; keep lightweight heads as optional candidates for parameter/runtime evaluation and a future unified L2 selector.
+
+L2 selector follow-up:
+
+- `run_lightweight_l2_unified_selector.py` compares B0 baseline, target Ridge direct, target MLP direct, and three L1 lightweight full-auto_v2 candidates using calibration-validation RMSE.
+- Per-client/gas selector chooses lightweight candidates in 8/12 cells, but test ALL worsens to 23.58. This indicates cell-level calibration-val selection is unstable with small validation cells.
+- Conservative client-level selector chooses lightweight candidates for all three target clients, but reaches only ALL RMSE 22.63, similar to the best L1 single candidate and worse than target MLP direct 21.82.
+
+| mode | ALL RMSE | C3 CO | C4 CO | C5 CO | C4 high | C5 high | nonCO |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| target MLP direct | 21.82 | 16.15 | 48.85 | 31.03 | 85.05 | 39.41 | 17.61 |
+| L2 client-level selector | 22.63 | 14.27 | 53.71 | 24.87 | 96.37 | 27.62 | 18.84 |
+| L2 per-client/gas selector | 23.58 | 14.27 | 57.35 | 28.06 | 96.82 | 27.62 | 19.12 |
+
+L2 decision: lightweight heads do contain useful validation signal, but selector-level mixing does not create a new performance mainline. The best use is still deployment-lite evaluation or as optional ingredients inside a carefully guarded selector, not free per-gas switching.
 
 ## Matrix C: Missing Lightweight Structural Runs
 
@@ -78,7 +116,7 @@ Stop rule: if a candidate cannot approach M0 after the same target calibration, 
 
 ## Matrix D: Mainline Performance Work
 
-The most valuable line remains target direct-head auto_v2, because it already beats the R3aK16 baseline by a large margin.
+The most valuable line remains target direct-head auto_v2, because it still beats both the R3aK16 baseline and the fair lightweight L1 results by a clear margin.
 
 Next formalization:
 
@@ -94,5 +132,6 @@ The original regression difficulty is not simply "the R3aK16 head is too complex
 - source-domain concentration mapping can be fitted by even lightweight heads;
 - target-domain ppm mapping shifts substantially across clients;
 - source-only direct transfer is unreliable;
-- target-side calibration/direct heads are currently the strongest improvement mechanism;
-- lighter neural structures are interesting only if they keep target-calibrated full-set metrics close to the current best.
+- full residual target calibration can rescue lightweight source heads much more than affine-only calibration;
+- target-side direct heads are still the strongest performance mechanism;
+- lighter neural structures are interesting as deployment-lite candidates if they keep target-calibrated full-set metrics close to the current best and provide a real parameter/runtime advantage.

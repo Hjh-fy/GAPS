@@ -1,0 +1,45 @@
+{
+  "data_root": "dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid",
+  "target_predictions": "results/timeaware_2080_c12src_c345tgt_fixed_da_r25_r3ak16_auto_v2_eval/ppm_layer_co_audit/target_layer_predictions.csv",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "target_clients": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "base_modes": [
+    "source_ridge",
+    "source_per_gas_mlp",
+    "source_shared_mlp"
+  ],
+  "residual_modes": [
+    "identity",
+    "affine",
+    "ridge_basic",
+    "ridge_phase",
+    "piecewise_ridge"
+  ],
+  "ridge_alphas": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "mlp_hidden_grid": [
+    [
+      16
+    ]
+  ],
+  "mlp_alphas": [
+    0.01,
+    0.1
+  ],
+  "val_ratio": 0.25,
+  "seed": 42
+}
