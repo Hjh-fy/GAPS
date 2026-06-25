@@ -95,6 +95,23 @@ L2 selector follow-up:
 
 L2 decision: lightweight heads do contain useful validation signal, but selector-level mixing does not create a new performance mainline. The best use is still deployment-lite evaluation or as optional ingredients inside a carefully guarded selector, not free per-gas switching.
 
+L3 named matrix follow-up:
+
+- `run_l3_lightweight_hybrid_matrix.py` explicitly tests lightweight-base + H2.3/H8/C4-rescue combinations.
+- Output: `results/l3_lightweight_hybrid_matrix_20260626/l3_lightweight_hybrid_matrix_report.md`
+- No new training is performed; the script combines existing L1 lightweight full-auto_v2 predictions, H2.3/H8 predictions, source-augmented target Ridge predictions, and the formal calibration-selected C4 route-rescue gate.
+
+| mode | ALL RMSE | ALL NRMSE | C4 CO | C4 high | C5 high | nonCO |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| H2.3 reference | 18.62 | 0.1326 | 22.02 | 34.24 | 34.82 | 17.83 |
+| H8 + formal C4 rescue | 18.30 | 0.1350 | 17.16 | 26.79 | 27.54 | 18.38 |
+| L3 source per-gas MLP CO switch + H2.3 fallback + formal C4 rescue | 18.30 | 0.1339 | 17.98 | 27.38 | 27.42 | 18.20 |
+| L3 source shared MLP CO switch + H2.3 fallback + formal C4 rescue | 18.44 | 0.1351 | 17.50 | 26.54 | 29.54 | 18.34 |
+| L3 light H2.3 analogy + formal C4 rescue | 19.69 | 0.1411 | 25.19 | 41.16 | 27.62 | 19.26 |
+| Best strict lightweight full-auto_v2 base | 22.62 | 0.1492 | 48.35 | 85.87 | 29.53 | 19.54 |
+
+L3 decision: full lightweight replacement is still not good enough, mainly because C4 CO/high-CO remains weak. However, selective lightweight CO switching is much stronger than expected. The per-gas MLP CO-switch plus formal C4 rescue is effectively tied with H8 + formal C4 rescue on ALL RMSE while improving NRMSE/nonCO slightly, so it should be kept as a deployment-lite CO-specialist candidate. The shared-MLP CO switch gives the best C4 high-CO RMSE but loses more on ALL/C5.
+
 ## Matrix C: Missing Lightweight Structural Runs
 
 These are worth running next only if we want a neural lightweight replacement rather than a post-hoc direct head.

@@ -1,0 +1,100 @@
+{
+  "formal_predictions": "results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_predictions.csv",
+  "light_predictions": "results/source_lightweight_full_auto_v2_20260625_fair/source_lightweight_full_auto_v2_predictions.csv",
+  "source_aug_predictions": "results/source_augmented_target_ridge_20260625_lite/target_predictions_plus_source_preds_plus_c4_rescue.csv",
+  "formal_gate": "results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_selected_gate.json",
+  "output_dir": "results/l3_lightweight_hybrid_matrix_20260626",
+  "rows": 5400,
+  "modes": [
+    {
+      "mode": "A0_baseline_final",
+      "pred_key": "baseline_final_ppm",
+      "family": "reference"
+    },
+    {
+      "mode": "H2_3_R3aK16_current_mainline",
+      "pred_key": "h2_3_ppm",
+      "family": "reference"
+    },
+    {
+      "mode": "H8_R3aK16_source_aug_CO_else_H2_3",
+      "pred_key": "h8_pred_co_source_aug_else_h23_ppm",
+      "family": "reference"
+    },
+    {
+      "mode": "source_aug_target_Ridge_plus_C4_rescue",
+      "pred_key": "source_aug_target_ridge_plus_c4_rescue_ppm",
+      "family": "source-augmented target Ridge reference"
+    },
+    {
+      "mode": "H8_plus_formal_C4_rescue",
+      "pred_key": "formal_c4_route_rescue_ppm",
+      "family": "reference"
+    },
+    {
+      "mode": "L3_light_source_ridge_full_auto_v2",
+      "pred_key": "source_ridge_val_selected_ppm",
+      "family": "strict lightweight base"
+    },
+    {
+      "mode": "L3_light_source_per_gas_mlp_full_auto_v2",
+      "pred_key": "source_per_gas_mlp_val_selected_ppm",
+      "family": "strict lightweight base"
+    },
+    {
+      "mode": "L3_light_source_shared_mlp_full_auto_v2",
+      "pred_key": "source_shared_mlp_val_selected_ppm",
+      "family": "strict lightweight base"
+    },
+    {
+      "mode": "L3_light_H2_3_analog",
+      "pred_key": "l3_light_h2_3_analog_ppm",
+      "family": "lightweight H2.3 analogy"
+    },
+    {
+      "mode": "L3_light_H2_3_analog_plus_formal_C4_rescue",
+      "pred_key": "l3_light_h2_3_analog_plus_formal_c4_ppm",
+      "family": "lightweight H2.3 analogy + formal rescue"
+    },
+    {
+      "mode": "L3_light_client_val_profile",
+      "pred_key": "l3_light_client_val_profile_ppm",
+      "family": "lightweight client-val profile"
+    },
+    {
+      "mode": "L3_light_client_val_profile_plus_formal_C4_rescue",
+      "pred_key": "l3_light_client_val_profile_plus_formal_c4_ppm",
+      "family": "lightweight client-val profile + formal rescue"
+    },
+    {
+      "mode": "L3_source_ridge_CO_else_H2_3",
+      "pred_key": "l3_source_ridge_CO_else_h2_3_ppm",
+      "family": "lightweight CO switch + H2.3 fallback"
+    },
+    {
+      "mode": "L3_source_ridge_CO_else_H2_3_plus_formal_C4_rescue",
+      "pred_key": "l3_source_ridge_CO_else_h2_3_plus_formal_c4_ppm",
+      "family": "lightweight CO switch + H2.3 fallback + formal rescue"
+    },
+    {
+      "mode": "L3_source_per_gas_mlp_CO_else_H2_3",
+      "pred_key": "l3_source_per_gas_mlp_CO_else_h2_3_ppm",
+      "family": "lightweight CO switch + H2.3 fallback"
+    },
+    {
+      "mode": "L3_source_per_gas_mlp_CO_else_H2_3_plus_formal_C4_rescue",
+      "pred_key": "l3_source_per_gas_mlp_CO_else_h2_3_plus_formal_c4_ppm",
+      "family": "lightweight CO switch + H2.3 fallback + formal rescue"
+    },
+    {
+      "mode": "L3_source_shared_mlp_CO_else_H2_3",
+      "pred_key": "l3_source_shared_mlp_CO_else_h2_3_ppm",
+      "family": "lightweight CO switch + H2.3 fallback"
+    },
+    {
+      "mode": "L3_source_shared_mlp_CO_else_H2_3_plus_formal_C4_rescue",
+      "pred_key": "l3_source_shared_mlp_CO_else_h2_3_plus_formal_c4_ppm",
+      "family": "lightweight CO switch + H2.3 fallback + formal rescue"
+    }
+  ]
+}
