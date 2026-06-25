@@ -143,6 +143,22 @@ Formalization status:
 4. H8 + formal C4 route rescue now has a deployment candidate and runtime parity, so it can be used as a deployable CO-specialist rescue candidate.
 5. H8 improves CO/high-CO but worsens ALL NRMSE/nonCO versus H2.3, so it should not silently replace H2.3 as the default.
 
+Reverse-direction C45 -> C123 check:
+
+- `run_c45_c123_optimal_config_analysis.py` analyzes source C4/C5 -> target C1/C2/C3 under the same no-QC full-set priority.
+- Output: `results/c45_c123_optimal_config_analysis_20260626/c45_c123_optimal_config_analysis_report.md`
+- Target test rows: 8040.
+
+| mode | ALL RMSE | ALL NRMSE | C1 CO | C2 CO | C3 CO | C1 high | C2 high | C3 high | nonCO |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline final | 22.94 | 0.1473 | 37.68 | 22.00 | 32.31 | 51.97 | 25.56 | 38.16 | 19.34 |
+| target Ridge direct | 15.59 | 0.1123 | 23.77 | 15.55 | 14.68 | 38.30 | 17.09 | 16.37 | 14.50 |
+| target MLP direct | 16.46 | 0.1201 | 23.84 | 17.31 | 14.93 | 39.73 | 22.13 | 18.47 | 15.49 |
+| source-aug target Ridge | 16.01 | 0.1183 | 24.92 | 15.78 | 10.73 | 40.16 | 17.35 | 11.04 | 15.24 |
+| H8-style source-aug CO else Ridge | 16.13 | 0.1192 | 24.70 | 15.78 | 10.73 | 39.70 | 17.35 | 11.04 | 15.44 |
+
+Reverse decision: for C45 -> C123, the clean performance mainline is all-target Ridge direct. The C12 -> C345 H8/source-aug idea improves C3 CO/high-CO in reverse, but it worsens ALL RMSE and nonCO, so it should remain a diagnostic CO-specialist variant rather than the reverse default. C4 route-rescue does not apply because C4 is a source client in this direction.
+
 ## Matrix E: C4 CO High Diagnosis
 
 New outputs:

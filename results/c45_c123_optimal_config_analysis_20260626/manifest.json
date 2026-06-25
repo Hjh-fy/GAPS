@@ -1,0 +1,52 @@
+{
+  "ridge_predictions": "results/formal_target_ridge_auto_v2_c45_c123_20260625/formal_target_ridge_predictions.csv",
+  "mlp_predictions": "results/formal_target_mlp_auto_v2_c45_c123_20260625/formal_target_mlp_predictions.csv",
+  "ridge_selection": "results/formal_target_ridge_auto_v2_c45_c123_20260625/formal_target_ridge_selection_table.csv",
+  "mlp_selection": "results/formal_target_mlp_auto_v2_c45_c123_20260625/formal_target_mlp_selection_table.csv",
+  "source_aug_predictions": "results/source_augmented_target_ridge_c45_c123_20260626/target_predictions_plus_source_preds_plus_c4_rescue.csv",
+  "output_dir": "results/c45_c123_optimal_config_analysis_20260626",
+  "rows": 8040,
+  "calibration_profile": {
+    "C1": "mlp",
+    "C2": "mlp",
+    "C3": "mlp"
+  },
+  "best_test_oracle_combo": "C1:ridge,C2:ridge,C3:ridge",
+  "modes": [
+    {
+      "mode": "A0_baseline_final",
+      "pred_key": "baseline_final_ppm",
+      "family": "reference"
+    },
+    {
+      "mode": "H1_target_Ridge_direct",
+      "pred_key": "ridge_direct_ppm",
+      "family": "formal direct head"
+    },
+    {
+      "mode": "H2_target_MLP_direct",
+      "pred_key": "mlp_direct_ppm",
+      "family": "formal direct head"
+    },
+    {
+      "mode": "H2b_source_aug_target_Ridge",
+      "pred_key": "source_aug_target_ridge_ppm",
+      "family": "source-augmented target Ridge"
+    },
+    {
+      "mode": "H8_style_source_aug_CO_else_Ridge",
+      "pred_key": "H8_style_source_aug_CO_else_Ridge_ppm",
+      "family": "CO specialist switch + Ridge fallback"
+    },
+    {
+      "mode": "H3_calibration_client_hybrid",
+      "pred_key": "calibration_client_hybrid_ppm",
+      "family": "calibration-selected Ridge/MLP"
+    },
+    {
+      "mode": "H4_test_oracle_client_hybrid",
+      "pred_key": "test_oracle_client_hybrid_ppm",
+      "family": "test-only diagnostic"
+    }
+  ]
+}

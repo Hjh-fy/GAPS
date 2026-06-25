@@ -1,0 +1,48 @@
+{
+  "data_root": "dataset/client_data_c45src_c123tgt_2080_timeaware_60_170_window_fullgrid",
+  "target_predictions": "results/timeaware_2080_c45src_c123tgt_flower_r3ak16_auto_v2_eval_after_fix/target_layer_predictions_full_calib_test.csv",
+  "source_clients": [
+    "C4",
+    "C5"
+  ],
+  "target_clients": [
+    "C1",
+    "C2",
+    "C3"
+  ],
+  "ridge_alphas": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "mlp_hidden_grid": [
+    [
+      16
+    ]
+  ],
+  "mlp_alphas": [
+    0.01,
+    0.1
+  ],
+  "source_prediction_features": [
+    "H1_source_ridge_ppm",
+    "H2_source_per_gas_mlp_ppm",
+    "H3_source_shared_mlp_ppm"
+  ],
+  "route_rescue_artifact": "results/deployment_candidates_20260624/c12_c345_a1_rich_residual_plus_c4_rescue.json",
+  "selected_c4_gate": {
+    "candidate": "c4_rescue_recovery_risk2_ppm_lt50_ethanol_only_to250",
+    "phase": "recovery",
+    "risk_threshold": 2.0,
+    "max_ppm": 50.0,
+    "pred_classes": "0",
+    "rescue_ppm": 250.0
+  },
+  "rich_feature_count": 104,
+  "augmented_feature_count": 107,
+  "seed": 42
+}
