@@ -118,12 +118,44 @@ Stop rule: if a candidate cannot approach M0 after the same target calibration, 
 
 The most valuable line remains target direct-head auto_v2, because it still beats both the R3aK16 baseline and the fair lightweight L1 results by a clear margin.
 
-Next formalization:
+Formalization status:
 
-1. turn target direct-head Ridge/MLP/profile selection into one reproducible mainline script;
-2. export selected profiles and parameters with runtime schema;
-3. verify deployment/runtime parity on PC;
-4. only then revisit Raspberry Pi deployment for the new bundle.
+1. `summarize_target_direct_head_mainline.py` now consolidates H2.3/H8 metrics, artifact checklist, runtime parity, and reproduction workflow.
+2. H2.3 has deployment/runtime parity and remains the balanced mainline.
+3. H8 has deployment/runtime parity and remains the CO-specialist candidate.
+4. H8 improves CO/high-CO but worsens ALL NRMSE/nonCO versus H2.3, so it should not silently replace H2.3 as the default.
+
+## Matrix E: C4 CO High Diagnosis
+
+New outputs:
+
+- `diagnose_c4_co_high_mainline.py`
+- `run_c4_route_rescue_upper_bound.py`
+- `results/c4_co_high_mainline_diagnosis_20260625/c4_co_high_mainline_diagnosis_report.md`
+- `results/c4_route_rescue_upper_bound_20260625/c4_route_rescue_upper_bound_report.md`
+
+Key diagnosis:
+
+| scope | baseline | H2.3 | source-aug | H8 |
+| --- | ---: | ---: | ---: | ---: |
+| C4 high overall RMSE | 95.32 | 34.24 | 33.05 | 32.22 |
+| C4 high pred_CO RMSE | 20.84 | 19.70 | 15.05 | 15.05 |
+| C4 high pred_nonCO RMSE | 228.78 | 71.38 | 73.64 | 71.38 |
+
+Reading:
+
+- H8/source-aug already solves most C4 high cases when the route is predicted as CO.
+- The remaining C4 high error is dominated by a small number of route-driven failures where true high CO is predicted as non-CO.
+- Existing C4 route rescue already fixes many pred-Ethanol/recovery 250 ppm cases.
+- The current large residual failures include one pred-Ethylene recovery 250 ppm case and one pred-Ethanol main-response 200 ppm case.
+
+Test-only upper-bound:
+
+- A diagnostic gate using deployment-visible fields (`client=C4`, `pred_class in {Ethanol, Ethylene}`, `final_ppm <= 20 or 30`, `risk_score >= 4`) with `rescue_ppm=250` hits 15-17 true C4 high cases with zero false hits on test.
+- This lowers C4 high RMSE to 14.81 and ALL RMSE to about 18.05 in the upper-bound sweep.
+- This is not yet a formal rule because it was selected on test. The next formal step is to run the same gate family on calibration-validation, select there, then evaluate once on test.
+
+Decision: C4 high is now clearly a route-rescue calibration problem more than a general concentration-head problem. The next formal experiment should be a calibration-selected C4 route-rescue extension, not another source-head replacement.
 
 ## Current Interpretation
 
@@ -135,3 +167,4 @@ The original regression difficulty is not simply "the R3aK16 head is too complex
 - full residual target calibration can rescue lightweight source heads much more than affine-only calibration;
 - target-side direct heads are still the strongest performance mechanism;
 - lighter neural structures are interesting as deployment-lite candidates if they keep target-calibrated full-set metrics close to the current best and provide a real parameter/runtime advantage.
+- C4 high-CO now appears dominated by a few route-driven non-CO predictions, so the next performance gain should come from calibration-selected route rescue rather than another global regression head.

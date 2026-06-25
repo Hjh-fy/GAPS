@@ -168,6 +168,14 @@ def read_h8_equiv() -> dict[str, Any]:
     return json.loads(H8_EQUIV.read_text(encoding="utf-8"))
 
 
+def path_status(path: Path) -> str:
+    if path.is_dir():
+        return "ok-dir"
+    if path.is_file():
+        return "ok-file"
+    return "missing"
+
+
 def main() -> None:
     rows = [load_mode_metrics(spec) for spec in MODE_SOURCES]
     write_csv(OUT_CSV, rows)
@@ -218,6 +226,27 @@ def main() -> None:
         ["C5 CO high", fmt((h8.get("c5_co_high_rmse") or 0.0) - (h23.get("c5_co_high_rmse") or 0.0))],
         ["nonCO ALL", fmt((h8.get("nonco_all_rmse") or 0.0) - (h23.get("nonco_all_rmse") or 0.0))],
     ]
+    artifact_rows = [
+        ["H2.3 deployment bundle", H2_3_DEPLOY.as_posix(), path_status(H2_3_DEPLOY)],
+        ["H2.3 runtime validation", H2_3_RUNTIME.as_posix(), path_status(H2_3_RUNTIME)],
+        ["H2.3 runtime equivalence", H2_3_EQUIV.as_posix(), path_status(H2_3_EQUIV)],
+        ["H2.3 profile JSON", H2_3_PROFILE.as_posix(), path_status(H2_3_PROFILE)],
+        ["H8 deployment bundle", H8_DEPLOY.as_posix(), path_status(H8_DEPLOY)],
+        ["H8 runtime validation", H8_RUNTIME.as_posix(), path_status(H8_RUNTIME)],
+        ["H8 runtime equivalence", H8_EQUIV.as_posix(), path_status(H8_EQUIV)],
+        ["H8 selector profile", H8_SELECTOR_PROFILE.as_posix(), path_status(H8_SELECTOR_PROFILE)],
+    ]
+    workflow_rows = [
+        ["1", "Target Ridge direct", "python run_formal_target_ridge_auto_v2_eval.py"],
+        ["2", "Target MLP direct", "python run_formal_target_mlp_auto_v2_eval.py"],
+        ["3", "Hybrid H2 profile selection", "python run_hybrid_regression_head_selection.py"],
+        ["4", "H2.3 deployment export", "python export_hybrid_mlp_ridge_deployment_candidate.py --candidate h2_3 --output results/deployment_candidates_20260624/c12_c345_h2_3_mlp_ridge_candidate.json"],
+        ["5", "H8 CO-specialist analysis", "python run_co_only_source_aug_hybrid_eval.py --output-dir results/co_only_source_aug_hybrid_stratcalval_20260625"],
+        ["6", "H8 selector profile", "python select_h8_profile_from_calibration.py"],
+        ["7", "H8 deployment export", "python export_h8_source_aug_deployment_candidate.py"],
+        ["8", "Runtime validation", "python validate_rich_residual_runtime_candidate.py --deployment-dir <deployment_dir> --output-dir <runtime_validation_dir>"],
+        ["9", "Mainline summary", "python summarize_target_direct_head_mainline.py"],
+    ]
 
     lines = [
         "# Target Direct-Head Mainline Confirmation",
@@ -255,6 +284,14 @@ def main() -> None:
         "## H8 vs H2.3",
         "",
         md_table(["metric", "H8 - H2.3"], h8_vs_h23),
+        "",
+        "## Artifact Checklist",
+        "",
+        md_table(["artifact", "path", "status"], artifact_rows),
+        "",
+        "## Reproduction Workflow",
+        "",
+        md_table(["step", "purpose", "command"], workflow_rows),
         "",
         "## H8 Selector Status",
         "",

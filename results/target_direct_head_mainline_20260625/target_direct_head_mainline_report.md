@@ -49,6 +49,33 @@ Scope: C12 -> C345 target test, no-QC full-set. This report consolidates formal 
 | C5 CO high | -7.28 |
 | nonCO ALL | 0.55 |
 
+## Artifact Checklist
+
+| artifact | path | status |
+| --- | --- | --- |
+| H2.3 deployment bundle | results/deployment_h2_3_mlp_ridge_candidate_20260624 | ok-dir |
+| H2.3 runtime validation | results/runtime_validation_h2_3_mlp_ridge_candidate_20260624 | ok-dir |
+| H2.3 runtime equivalence | results/equivalence_h2_3_mlp_ridge_candidate_20260624/equivalence_summary.json | ok-file |
+| H2.3 profile JSON | results/target_direct_head_mainline_20260625/h2_3_profile.json | ok-file |
+| H8 deployment bundle | results/deployment_h8_source_aug_candidate_20260625 | ok-dir |
+| H8 runtime validation | results/runtime_validation_h8_source_aug_candidate_20260625 | ok-dir |
+| H8 runtime equivalence | results/equivalence_h8_source_aug_candidate_20260625/equivalence_summary.json | ok-file |
+| H8 selector profile | results/h8_calibration_selector_20260625/h8_pred_co_source_aug_selector_profile.json | ok-file |
+
+## Reproduction Workflow
+
+| step | purpose | command |
+| --- | --- | --- |
+| 1 | Target Ridge direct | python run_formal_target_ridge_auto_v2_eval.py |
+| 2 | Target MLP direct | python run_formal_target_mlp_auto_v2_eval.py |
+| 3 | Hybrid H2 profile selection | python run_hybrid_regression_head_selection.py |
+| 4 | H2.3 deployment export | python export_hybrid_mlp_ridge_deployment_candidate.py --candidate h2_3 --output results/deployment_candidates_20260624/c12_c345_h2_3_mlp_ridge_candidate.json |
+| 5 | H8 CO-specialist analysis | python run_co_only_source_aug_hybrid_eval.py --output-dir results/co_only_source_aug_hybrid_stratcalval_20260625 |
+| 6 | H8 selector profile | python select_h8_profile_from_calibration.py |
+| 7 | H8 deployment export | python export_h8_source_aug_deployment_candidate.py |
+| 8 | Runtime validation | python validate_rich_residual_runtime_candidate.py --deployment-dir <deployment_dir> --output-dir <runtime_validation_dir> |
+| 9 | Mainline summary | python summarize_target_direct_head_mainline.py |
+
 ## H8 Selector Status
 
 - The H8 switch rule is deployment-visible: switch to the CO specialist when `pred_class == CO`.
