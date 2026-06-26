@@ -11,6 +11,7 @@ from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, weighted_averag
 from gaps_flower.task import create_model, get_parameters, make_config
 
 DEFAULT_STRATEGIES = ("fedavg", "gaps")
+PROFILE_CHOICES = ("smoke", "gaps_cls", "gaps", "gaps_classification", "classification", "strong_cls")
 
 
 def fit_config(server_round: int) -> dict:
@@ -24,6 +25,8 @@ def main() -> None:
     parser.add_argument("--min-clients", type=int, default=1)
     parser.add_argument("--output-dir", default="results/flower_server")
     parser.add_argument("--run-name", default="flower_smoke")
+    parser.add_argument("--profile", choices=PROFILE_CHOICES, default="smoke",
+                        help="Server model/config profile; keep this aligned with client --profile for matrix runs")
     parser.add_argument("--save-history", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
                         help="是否保存 history.json 记录 (True/False)")
     parser.add_argument("--strategy", choices=DEFAULT_STRATEGIES, default="fedavg",
@@ -87,7 +90,7 @@ def main() -> None:
     parser.add_argument("--da-server-opt-lr", type=float, default=1e-4)
     args = parser.parse_args()
 
-    config = make_config(device="cpu", local_epochs=1, batch_size=32)
+    config = make_config(device="cpu", local_epochs=1, batch_size=32, profile=args.profile)
     model = create_model(config)
     initial_arrays, parameter_keys = get_parameters(model)
 
