@@ -1,0 +1,92 @@
+{
+  "description": "Stage-A Flower classification matrix: Alibaba Cloud server + local PC source clients. Target clients are used for DA calibration/evaluation only, not for source training.",
+  "defaults": {
+    "rounds": 25,
+    "local_epochs": 5,
+    "batch_size": 32,
+    "strategy": "gaps",
+    "profile": "strong_cls",
+    "use_domain_adapt": true,
+    "use_adapted_as_global": true,
+    "domain_adapt_steps": 30,
+    "domain_adapt_warmup": 3,
+    "da_use_coral": true,
+    "da_use_mmd": true,
+    "da_use_adversarial": false,
+    "da_coral_class_conditional": true,
+    "strict_calibration_split": true,
+    "da_device": "cpu",
+    "da_lambda_coral": 0.1,
+    "da_lambda_global_mmd": 0.5,
+    "da_lambda_class_mmd": 0.5,
+    "da_lambda_proto_anchor": 0.3,
+    "da_lambda_proto": 0.05,
+    "da_lambda_consistency": 2.0,
+    "da_lambda_residual": 0.1,
+    "da_lambda_proto_mmd": 0.2,
+    "da_lambda_stage_mmd": 0.2,
+    "da_server_opt_lr": 0.0001
+  },
+  "runs": [
+    {
+      "run_id": "F1_C1_to_C5",
+      "source_clients": [1],
+      "target_clients": [5],
+      "purpose": "single-source forward transfer to C5"
+    },
+    {
+      "run_id": "F2_C12_to_C5",
+      "source_clients": [1, 2],
+      "target_clients": [5],
+      "purpose": "two-source forward transfer to C5"
+    },
+    {
+      "run_id": "F3_C123_to_C5",
+      "source_clients": [1, 2, 3],
+      "target_clients": [5],
+      "purpose": "three-source forward transfer to C5"
+    },
+    {
+      "run_id": "F4_C1234_to_C5",
+      "source_clients": [1, 2, 3, 4],
+      "target_clients": [5],
+      "purpose": "leave-one-target forward transfer to C5"
+    },
+    {
+      "run_id": "F5_C1_to_C2345",
+      "source_clients": [1],
+      "target_clients": [2, 3, 4, 5],
+      "purpose": "single-source forward transfer to multiple targets"
+    },
+    {
+      "run_id": "F6_C12_to_C345",
+      "source_clients": [1, 2],
+      "target_clients": [3, 4, 5],
+      "purpose": "current forward mainline reference"
+    },
+    {
+      "run_id": "R1_C5_to_C1",
+      "source_clients": [5],
+      "target_clients": [1],
+      "purpose": "single-source reverse transfer to C1"
+    },
+    {
+      "run_id": "R2_C45_to_C1",
+      "source_clients": [4, 5],
+      "target_clients": [1],
+      "purpose": "two-source reverse transfer to C1"
+    },
+    {
+      "run_id": "R3_C345_to_C1",
+      "source_clients": [3, 4, 5],
+      "target_clients": [1],
+      "purpose": "three-source reverse transfer to C1"
+    },
+    {
+      "run_id": "R4_C2345_to_C1",
+      "source_clients": [2, 3, 4, 5],
+      "target_clients": [1],
+      "purpose": "leave-one-target reverse transfer to C1"
+    }
+  ]
+}
