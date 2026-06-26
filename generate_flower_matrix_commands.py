@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import posixpath
 import shlex
+import subprocess
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -28,16 +30,34 @@ def parse_bool(value: Any) -> bool:
     return str(value).strip().lower() in BOOL_TRUE
 
 
-def client_dir(data_root: str, client_id: int) -> str:
-    return str(Path(data_root) / f"client_{int(client_id)}")
+def remote_join(*parts: str) -> str:
+    """Join Linux/POSIX remote paths even when this script runs on Windows."""
+    cleaned = [str(part).replace("\\", "/").rstrip("/") for part in parts if str(part)]
+    if not cleaned:
+        return ""
+    first, *rest = cleaned
+    return posixpath.join(first, *rest)
 
 
-def comma_client_dirs(data_root: str, clients: Iterable[int]) -> str:
-    return ",".join(client_dir(data_root, int(client)) for client in clients)
+def remote_client_dir(data_root: str, client_id: int) -> str:
+    return remote_join(data_root, f"client_{int(client_id)}")
 
 
-def q(value: str) -> str:
+def comma_remote_client_dirs(data_root: str, clients: Iterable[int]) -> str:
+    return ",".join(remote_client_dir(data_root, int(client)) for client in clients)
+
+
+def q_posix(value: str) -> str:
     return shlex.quote(str(value))
+
+
+def q_windows_cmd(value: str) -> str:
+    value = str(value)
+    if not value:
+        return '""'
+    # cmd.exe uses double quotes; escape embedded double quotes conservatively.
+    escaped = value.replace('"', '\\"')
+    return f'"{escaped}"' if any(ch.isspace() for ch in escaped) else escaped
 
 
 def merge_run(defaults: dict[str, Any], run: dict[str, Any]) -> dict[str, Any]:
@@ -67,24 +87,25 @@ def select_runs(runs: list[dict[str, Any]], names: str | None) -> list[dict[str,
 def build_server_command(run: dict[str, Any], args: argparse.Namespace) -> str:
     source_clients = [int(item) for item in run["source_clients"]]
     target_clients = [int(item) for item in run["target_clients"]]
-    output_dir = str(Path(args.remote_output_root) / str(run["run_id"]))
-    server_val_data = comma_client_dirs(args.remote_data_root, source_clients)
-    server_calib_data = comma_client_dirs(args.remote_data_root, target_clients)
+    output_dir = remote_join(args.remote_output_root, str(run["run_id"]))
+    server_val_data = comma_remote_client_dirs(args.remote_data_root, source_clients)
+    server_calib_data = comma_remote_client_dirs(args.remote_data_root, target_clients)
 
     parts = [
-        "cd", q(args.remote_project_dir), "&&",
+        "cd", q_posix(args.remote_project_dir), "&&",
         args.remote_python,
         "-m", "gaps_flower.server_app",
-        "--server-address", q(args.server_bind_address),
+        "--server-address", q_posix(args.server_bind_address),
         "--rounds", str(int(run.get("rounds", 25))),
         "--min-clients", str(len(source_clients)),
-        "--strategy", q(str(run.get("strategy", "gaps"))),
-        "--run-name", q(str(run["run_id"])),
-        "--output-dir", q(output_dir),
+        "--strategy", q_posix(str(run.get("strategy", "gaps"))),
+        "--profile", q_posix(str(run.get("profile", "strong_cls"))),
+        "--run-name", q_posix(str(run["run_id"])),
+        "--output-dir", q_posix(output_dir),
         "--save-history", "true",
         "--use-domain-adapt", str(parse_bool(run.get("use_domain_adapt", True))).lower(),
-        "--server-val-data", q(server_val_data),
-        "--server-calib-data", q(server_calib_data),
+        "--server-val-data", q_posix(server_val_data),
+        "--server-calib-data", q_posix(server_calib_data),
         "--domain-adapt-steps", str(int(run.get("domain_adapt_steps", 30))),
         "--domain-adapt-warmup", str(int(run.get("domain_adapt_warmup", 3))),
         "--da-use-coral", str(parse_bool(run.get("da_use_coral", True))).lower(),
@@ -92,7 +113,7 @@ def build_server_command(run: dict[str, Any], args: argparse.Namespace) -> str:
         "--da-use-adversarial", str(parse_bool(run.get("da_use_adversarial", False))).lower(),
         "--da-coral-class-conditional", str(parse_bool(run.get("da_coral_class_conditional", True))).lower(),
         "--strict-calibration-split", str(parse_bool(run.get("strict_calibration_split", True))).lower(),
-        "--da-device", q(str(run.get("da_device", "cpu"))),
+        "--da-device", q_posix(str(run.get("da_device", "cpu"))),
         "--use-adapted-as-global", str(parse_bool(run.get("use_adapted_as_global", True))).lower(),
         "--da-lambda-coral", str(float(run.get("da_lambda_coral", 0.1))),
         "--da-lambda-global-mmd", str(float(run.get("da_lambda_global_mmd", 0.5))),
@@ -108,19 +129,26 @@ def build_server_command(run: dict[str, Any], args: argparse.Namespace) -> str:
     return " ".join(parts)
 
 
-def build_client_command(run: dict[str, Any], args: argparse.Namespace, client_id: int) -> str:
-    parts = [
-        q(args.local_python),
+def build_client_command(run: dict[str, Any], args: argparse.Namespace, client_id: int) -> list[str]:
+    return [
+        str(args.local_python),
         "-m", "gaps_flower.client_app",
-        "--server-address", q(args.server_public_address),
+        "--server-address", str(args.server_public_address),
         "--client-id", str(int(client_id)),
-        "--data-root", q(args.local_data_root),
-        "--device", q(args.local_device),
+        "--data-root", str(args.local_data_root),
+        "--device", str(args.local_device),
         "--local-epochs", str(int(run.get("local_epochs", 5))),
         "--batch-size", str(int(run.get("batch_size", 32))),
-        "--profile", q(str(run.get("profile", "strong_cls"))),
+        "--profile", str(run.get("profile", "strong_cls")),
     ]
-    return " ".join(parts)
+
+
+def client_command_text(cmd: list[str], *, shell: str) -> str:
+    if shell == "windows_cmd":
+        return " ".join(q_windows_cmd(part) for part in cmd)
+    if shell == "posix":
+        return " ".join(q_posix(part) for part in cmd)
+    return subprocess.list2cmdline(cmd)
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
@@ -147,8 +175,8 @@ def emit_run(run: dict[str, Any], args: argparse.Namespace) -> None:
         "target_clients": [int(item) for item in run["target_clients"]],
         "purpose": run.get("purpose", ""),
         "server_command": server_cmd,
-        "client_commands": client_cmds,
-        "remote_output_dir": str(Path(args.remote_output_root) / run_id),
+        "client_commands": {key: value for key, value in client_cmds.items()},
+        "remote_output_dir": remote_join(args.remote_output_root, run_id),
         "expected_outputs": [
             "history.json",
             "server_latest.pth",
@@ -159,11 +187,12 @@ def emit_run(run: dict[str, Any], args: argparse.Namespace) -> None:
     }
     write_json(out / "command_manifest.json", manifest)
     write_text(out / "server_command.sh", "#!/usr/bin/env bash\nset -e\n" + server_cmd + "\n")
+
     client_lines = ["@echo off", "REM Start each client in a separate terminal if desired."]
     for name, cmd in client_cmds.items():
-        client_lines.append(f"start \"{run_id}_{name}\" cmd /k {cmd}")
+        client_lines.append(f"start \"{run_id}_{name}\" cmd /k {client_command_text(cmd, shell='windows_cmd')}")
     write_text(out / "local_clients_windows.bat", "\n".join(client_lines) + "\n")
-    write_text(out / "local_clients_commands.txt", "\n".join(client_cmds.values()) + "\n")
+    write_text(out / "local_clients_commands.txt", "\n".join(client_command_text(cmd, shell="posix") for cmd in client_cmds.values()) + "\n")
 
 
 def main() -> None:
