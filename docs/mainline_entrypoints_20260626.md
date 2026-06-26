@@ -9,7 +9,7 @@ This document is the current entrypoint map for the GAPS codebase. It intentiona
 | R3aK16 | Source-domain neural regression base model and baseline | keep as baseline/fallback |
 | H2.3 | Balanced target-side performance mainline | default mainline |
 | H8 | pred-CO source-augmented target Ridge specialist | CO-specialist candidate |
-| H8 + formal C4 route rescue | CO/high-CO deployable specialist candidate | runtime candidate, requires v2 re-export after max_conf_margin fix |
+| H8 + formal C4 route rescue | CO/high-CO deployable specialist candidate | v2 runtime/export/schema/guardrail/parity validated |
 | L1 | lightweight source head + full residual auto_v2 | deployment-lite candidate |
 | L2/L3 | selector/lightweight diagnostics | diagnostic, not default mainline |
 | QC | accept/review/reject deployment reliability layer | post-hoc only, not model capability metric |
@@ -74,14 +74,21 @@ H2.3 remains the **balanced default mainline** unless a specialist mode is expli
 | `export_h8_formal_c4_rescue_deployment_candidate.py` | export H8 + formal C4 rescue candidate; v2 preserves `max_conf_margin` |
 | `validate_rich_residual_runtime_candidate.py` | validate runtime output against target test splits |
 | `compare_h8_runtime_equivalence.py` | compare analysis prediction CSV and runtime output equivalence |
+| `audit_h8_c4_guardrails.py` | audit formal C4 route-rescue hits and nonCO guardrails |
+| `validate_feature_schema.py` | validate feature/runtime schema contract for deployment bundles |
+| `benchmark_runtime_profiles.py` | benchmark exported bundle size and CPU latency |
+| `select_target_profile.py` | emit formal balanced/co-priority/deployment-lite profile selection record |
 
-### Required next local command after current fix
+### Current H8+C4 v2 validation status
 
-```bash
-python export_h8_formal_c4_rescue_deployment_candidate.py
-```
+The current H8+C4 v2 bundle has been re-exported and validated:
 
-Then run runtime validation and equivalence comparison before accepting the new bundle.
+- feature/runtime schema: pass
+- guardrail audit: pass
+- runtime vs analysis parity: 5400 rows, 0 mismatch
+- public runtime output includes `auto_output_ppm`
+
+See `results/h8_c4_deployable_specialist_validation_20260626.md` for the compact evidence report.
 
 ## 5. Lightweight / Deployment-Lite Entrypoints
 

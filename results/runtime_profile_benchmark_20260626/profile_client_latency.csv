@@ -1,0 +1,12 @@
+profile,role,bundle,artifact_size_mb,model_file_size_mb,expected_full_all_rmse,notes,client,status,rows,repeats,load_ms,mean_latency_ms_per_window,p90_latency_ms_per_window,runtime_total_ms_per_window,auto_output_field_present,benchmark_subset_rmse,benchmark_subset_nrmse
+H2.3,balanced_mainline,results\deployment_h2_3_mlp_ridge_candidate_20260624,24.0419,21.238,18.62,balanced no-QC full-set mainline,C3,ok,300,3,2389.429,3.03304,3.4196,3.03245,False,20.789309,0.173818
+H2.3,balanced_mainline,results\deployment_h2_3_mlp_ridge_candidate_20260624,24.0419,21.238,18.62,balanced no-QC full-set mainline,C4,ok,300,3,247.645,2.55533,2.7384,2.55466,False,12.365753,0.082299
+H2.3,balanced_mainline,results\deployment_h2_3_mlp_ridge_candidate_20260624,24.0419,21.238,18.62,balanced no-QC full-set mainline,C5,ok,300,3,402.704,2.61476,2.75583,2.61413,False,25.708893,0.189157
+H8,co_specialist,results\deployment_h8_source_aug_candidate_20260625,24.638,21.238,18.47,CO-specialist source-aug target ridge,C3,ok,300,3,503.015,2.65503,2.70011,2.65429,False,21.121762,0.176077
+H8,co_specialist,results\deployment_h8_source_aug_candidate_20260625,24.638,21.238,18.47,CO-specialist source-aug target ridge,C4,ok,300,3,274.971,2.64084,2.88717,2.64014,False,11.541283,0.079898
+H8,co_specialist,results\deployment_h8_source_aug_candidate_20260625,24.638,21.238,18.47,CO-specialist source-aug target ridge,C5,ok,300,3,354.082,2.59986,2.69443,2.59917,False,25.219681,0.187852
+H8+C4,guarded_co_priority,results\deployment_h8_formal_c4_rescue_candidate_20260625,24.6414,21.238,18.3,H8 plus calibration-selected formal C4 route-rescue,C3,ok,300,3,178.203,2.63556,2.69875,2.63486,True,21.121762,0.176077
+H8+C4,guarded_co_priority,results\deployment_h8_formal_c4_rescue_candidate_20260625,24.6414,21.238,18.3,H8 plus calibration-selected formal C4 route-rescue,C4,ok,300,3,159.258,2.54779,2.72723,2.54712,True,11.541283,0.079898
+H8+C4,guarded_co_priority,results\deployment_h8_formal_c4_rescue_candidate_20260625,24.6414,21.238,18.3,H8 plus calibration-selected formal C4 route-rescue,C5,ok,300,3,170.643,2.57359,2.61442,2.57294,True,25.219681,0.187852
+L1,deployment_lite_candidate,results\deployment_l1_lightweight_candidate_20260626,0.0,0.0,22.6,pending exported runtime bundle; keep only if size/latency improves,ALL,missing_bundle,,,,,,,,,
+B0,baseline_reference,results\deployment_b0_r3ak16_candidate_20260626,0.0,0.0,27.34,pending exported runtime bundle for original auto_v2 baseline,ALL,missing_bundle,,,,,,,,,

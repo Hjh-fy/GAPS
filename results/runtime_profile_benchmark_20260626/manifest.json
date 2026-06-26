@@ -1,0 +1,16 @@
+{
+  "data_root": "dataset\\client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid",
+  "clients": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "limit": 300,
+  "repeats": 3,
+  "device": "cpu",
+  "outputs": {
+    "client_latency": "results\\runtime_profile_benchmark_20260626\\profile_client_latency.csv",
+    "summary": "results\\runtime_profile_benchmark_20260626\\profile_summary.csv",
+    "report": "results\\runtime_profile_benchmark_20260626\\runtime_profile_benchmark_report.md"
+  }
+}

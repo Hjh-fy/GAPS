@@ -28,6 +28,7 @@ OUTPUT_FIELDS = [
     "routed_pred_ppm",
     "final_ppm",
     "co_corrected_ppm",
+    "auto_output_ppm",
     "qc_decision",
     "risk_score",
 ]
@@ -153,6 +154,7 @@ class FinalDeployRuntime:
 
     @staticmethod
     def _public_row(result: DeployResult, co_corrected_ppm: float) -> Dict[str, Any]:
+        qc_decision = str(result.qc_status)
         return {
             "gas_class": int(result.pred_class),
             "gas_name": str(result.pred_gas),
@@ -161,7 +163,8 @@ class FinalDeployRuntime:
             "routed_pred_ppm": float(result.routed_pred_ppm),
             "final_ppm": float(result.final_ppm),
             "co_corrected_ppm": float(co_corrected_ppm),
-            "qc_decision": str(result.qc_status),
+            "auto_output_ppm": float(co_corrected_ppm) if qc_decision == "accept" else "",
+            "qc_decision": qc_decision,
             "risk_score": float(result.risk_score),
         }
 

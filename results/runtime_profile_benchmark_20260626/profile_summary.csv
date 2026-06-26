@@ -1,0 +1,6 @@
+profile,role,bundle,artifact_size_mb,model_file_size_mb,expected_full_all_rmse,notes,status,clients,rows,mean_latency_ms_per_window,p90_latency_ms_per_window,benchmark_subset_rmse,benchmark_subset_nrmse,auto_output_field_present
+H2.3,balanced_mainline,results\deployment_h2_3_mlp_ridge_candidate_20260624,24.0419,21.238,18.62,balanced no-QC full-set mainline,ok,"C3,C4,C5",900,2.73438,3.28685,20.380173,0.155741,False
+H8,co_specialist,results\deployment_h8_source_aug_candidate_20260625,24.638,21.238,18.47,CO-specialist source-aug target ridge,ok,"C3,C4,C5",900,2.63191,2.84976,20.127612,0.155644,False
+H8+C4,guarded_co_priority,results\deployment_h8_formal_c4_rescue_candidate_20260625,24.6414,21.238,18.3,H8 plus calibration-selected formal C4 route-rescue,ok,"C3,C4,C5",900,2.58565,2.72153,20.127612,0.155644,True
+L1,deployment_lite_candidate,results\deployment_l1_lightweight_candidate_20260626,0.0,0.0,22.6,pending exported runtime bundle; keep only if size/latency improves,missing_bundle,,,,,,,
+B0,baseline_reference,results\deployment_b0_r3ak16_candidate_20260626,0.0,0.0,27.34,pending exported runtime bundle for original auto_v2 baseline,missing_bundle,,,,,,,

@@ -290,3 +290,28 @@ Do not promote a candidate as a default mainline if any of these are true:
 9. Runtime/size/latency benchmark
 10. auto_output_ppm and engineering refinements
 ```
+
+## 7. Status update after local validation
+
+Current completed items:
+
+- H8+C4 v2 bundle re-exported with `runtime_guard_patched=true`.
+- Runtime validation completed on C3/C4/C5 target test.
+- Runtime-vs-analysis equivalence completed: 5400 rows, 0 mismatch, max_abs_diff 1.42e-13.
+- H8+C4 guardrail audit completed: hit_N=1, hit_false_N=0, hit_nonCO_N=0, guardrail_status=pass.
+- Feature/runtime schema validation completed: status=pass.
+- `auto_output_ppm` added to `FinalDeployRuntime` and the H8+C4 v2 exported runtime schema.
+- `benchmark_runtime_profiles.py` added and first CPU benchmark generated at `results/runtime_profile_benchmark_20260626/`.
+- `select_target_profile.py` added and selector output generated at `results/target_profile_selector_20260626/`.
+
+Current selector state:
+
+```text
+balanced        -> H2.3
+co_priority     -> H8_plus_formal_C4_route_rescue
+deployment_lite -> H2.3 fallback, because L1 has no exported runtime bundle yet
+```
+
+Important limitation:
+
+H8+C4 formal route-rescue is a high-precision surgical rescue. It hits one C4 high-CO test window in the current split, with zero false/nonCO hits. It should be reported as a guarded specialist, not as broad high-CO coverage.

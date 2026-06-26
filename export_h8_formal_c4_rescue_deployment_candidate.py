@@ -14,6 +14,20 @@ from pathlib import Path
 from typing import Any
 
 
+OUTPUT_FIELDS_V2 = [
+    "gas_class",
+    "gas_name",
+    "class_prob",
+    "base_r3ak16_raw_ppm",
+    "routed_pred_ppm",
+    "final_ppm",
+    "co_corrected_ppm",
+    "auto_output_ppm",
+    "qc_decision",
+    "risk_score",
+]
+
+
 def convert_gate(selected: dict[str, Any]) -> dict[str, Any]:
     """Convert the selector output into the deployment runtime gate schema.
 
@@ -109,13 +123,22 @@ def main() -> None:
     manifest["base_bundle"] = args.base_bundle
     manifest["formal_c4_route_rescue_gate"] = args.selected_gate
     manifest["route_rescue_schema"] = artifact["route_rescue_policy"]["schema"]
+    manifest["output_fields"] = OUTPUT_FIELDS_V2
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
+    runtime_config_path = out / "runtime_config.json"
+    runtime_config = json.loads(runtime_config_path.read_text(encoding="utf-8"))
+    runtime_config["output_fields"] = OUTPUT_FIELDS_V2
+    runtime_config_path.write_text(json.dumps(runtime_config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
     runtime_rich_residual = out / "runtime_src" / "gaps_deploy" / "rich_residual.py"
+    runtime_final = out / "runtime_src" / "gaps_deploy" / "final_runtime.py"
     runtime_guard_patched = False
     if runtime_rich_residual.exists():
         shutil.copy2(Path("gaps_deploy") / "rich_residual.py", runtime_rich_residual)
         runtime_guard_patched = patch_runtime_route_rescue_guard(runtime_rich_residual)
+    if runtime_final.exists():
+        shutil.copy2(Path("gaps_deploy") / "final_runtime.py", runtime_final)
 
     print(
         json.dumps(

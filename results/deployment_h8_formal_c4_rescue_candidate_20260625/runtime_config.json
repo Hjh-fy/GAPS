@@ -1,0 +1,32 @@
+{
+  "bundle_version": "fixed-da-c12-c345-r25-v1",
+  "client_packages": {
+    "C3": "client_3_auto_v2_package",
+    "C4": "client_4_auto_v2_package",
+    "C5": "client_5_auto_v2_package"
+  },
+  "norm_stats": "norm_stats.npz",
+  "normalization": {
+    "enabled": false,
+    "reason": "The frozen time-aware features and training/runtime package use normalize=False."
+  },
+  "co_correction_params": "co_guarded_ridge_params.json",
+  "rich_residual_artifact": "rich_residual_candidate.json",
+  "output_fields": [
+    "gas_class",
+    "gas_name",
+    "class_prob",
+    "base_r3ak16_raw_ppm",
+    "routed_pred_ppm",
+    "final_ppm",
+    "co_corrected_ppm",
+    "auto_output_ppm",
+    "qc_decision",
+    "risk_score"
+  ],
+  "input_shape": [
+    100,
+    8
+  ],
+  "device_default": "cpu"
+}
