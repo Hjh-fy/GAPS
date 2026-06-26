@@ -25,12 +25,16 @@
     "profile": "H8_plus_formal_C4_route_rescue",
     "description": "Source-aug CO specialist when pred_class==CO, H2.3 fallback, plus calibration-selected C4 route rescue.",
     "artifact": "results/deployment_h8_formal_c4_rescue_candidate_20260625",
-    "runtime_parity": "results/equivalence_h8_formal_c4_rescue_candidate_20260625/equivalence_summary.json"
+    "status": "runtime_ready_specialist",
+    "runtime_parity": "results/equivalence_h8_formal_c4_rescue_candidate_20260626/equivalence_summary.json",
+    "guardrail_audit": "results/h8_c4_guardrail_audit_20260626/h8_c4_guardrail_summary.json",
+    "feature_schema": "results/feature_schema_validation_h8_formal_c4_rescue_20260626/feature_schema_validation.json"
   },
   "deployment_lite_candidate": {
-    "profile": "L3_source_per_gas_mlp_CO_else_H2_3_plus_formal_C4_rescue",
-    "description": "Lightweight per-gas MLP CO switch with H2.3 fallback and formal C4 rescue; nearly ties H8 while improving NRMSE/nonCO slightly.",
-    "status": "analysis_only"
+    "profile": "H2.3",
+    "description": "L1 remains analysis-only until an exported runtime bundle proves a size or latency advantage.",
+    "status": "fallback",
+    "reason": "L1 has no exported runtime bundle or benchmark pass yet."
   },
   "route_rescue": {
     "enabled": true,

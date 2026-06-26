@@ -1,7 +1,8 @@
 """Summarize bidirectional target-side profile selection.
 
-Outputs a compact cross-direction table and selected profile JSON files that can
-serve as the input contract for later runtime/profile parameterization.
+This script owns direction-level regression/profile reporting.  The formal
+deployment selector in ``select_target_profile.py`` owns runtime mode selection
+for the current deployable C12->C345 bundle.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from typing import Any
 OUT_DIR = Path("results/bidirectional_profile_selection_20260626")
 C12_SUMMARY = Path("results/target_direct_head_mainline_20260625/target_direct_head_mainline_summary.csv")
 C45_SUMMARY = Path("results/c45_c123_optimal_config_analysis_20260626/c45_c123_optimal_config_summary.csv")
+FORMAL_SELECTOR = Path("results/target_profile_selector_20260626/selected_profiles.json")
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -57,6 +59,12 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def read_json(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def c12_row(rows: list[dict[str, str]], mode: str, label: str, role: str) -> dict[str, Any]:
@@ -116,6 +124,8 @@ def c45_row(rows: list[dict[str, str]], mode: str, label: str, role: str) -> dic
 
 
 def profile_c12() -> dict[str, Any]:
+    formal = read_json(FORMAL_SELECTOR)
+    deployment_lite = formal.get("profiles", {}).get("deployment_lite", {})
     return {
         "schema": "gaps_target_profile_selection.v1",
         "direction": "C12_to_C345",
@@ -131,12 +141,16 @@ def profile_c12() -> dict[str, Any]:
             "profile": "H8_plus_formal_C4_route_rescue",
             "description": "Source-aug CO specialist when pred_class==CO, H2.3 fallback, plus calibration-selected C4 route rescue.",
             "artifact": "results/deployment_h8_formal_c4_rescue_candidate_20260625",
-            "runtime_parity": "results/equivalence_h8_formal_c4_rescue_candidate_20260625/equivalence_summary.json",
+            "status": "runtime_ready_specialist",
+            "runtime_parity": "results/equivalence_h8_formal_c4_rescue_candidate_20260626/equivalence_summary.json",
+            "guardrail_audit": "results/h8_c4_guardrail_audit_20260626/h8_c4_guardrail_summary.json",
+            "feature_schema": "results/feature_schema_validation_h8_formal_c4_rescue_20260626/feature_schema_validation.json",
         },
         "deployment_lite_candidate": {
-            "profile": "L3_source_per_gas_mlp_CO_else_H2_3_plus_formal_C4_rescue",
-            "description": "Lightweight per-gas MLP CO switch with H2.3 fallback and formal C4 rescue; nearly ties H8 while improving NRMSE/nonCO slightly.",
-            "status": "analysis_only",
+            "profile": deployment_lite.get("selected_profile", "H2.3"),
+            "description": "L1 remains analysis-only until an exported runtime bundle proves a size or latency advantage.",
+            "status": "fallback",
+            "reason": deployment_lite.get("reason", "L1 runtime bundle is missing."),
         },
         "route_rescue": {
             "enabled": True,
@@ -163,6 +177,11 @@ def profile_c45() -> dict[str, Any]:
             "description": "Improves C3 CO/high-CO but worsens ALL and nonCO; keep diagnostic only.",
             "status": "diagnostic_only",
         },
+        "deployment_lite_candidate": {
+            "profile": "target_Ridge_direct_all_clients",
+            "description": "No reverse-direction lite runtime bundle is available; keep the balanced target Ridge profile.",
+            "status": "fallback",
+        },
         "route_rescue": {
             "enabled": False,
             "reason": "C4 is a source client in this direction; no target C4 route-rescue is applicable.",
@@ -177,7 +196,7 @@ def main() -> None:
     rows = [
         c12_row(c12, "A0_baseline_final", "baseline final", "baseline"),
         c12_row(c12, "H2_3_mlp_c3_ridge_c4_c5grid", "H2.3 balanced mainline", "balanced_mainline"),
-        c12_row(c12, "H8_plus_formal_c4_route_rescue", "H8 + formal C4 rescue", "co_specialist_candidate"),
+        c12_row(c12, "H8_plus_formal_c4_route_rescue", "H8 + formal C4 rescue", "runtime_ready_co_specialist"),
         c45_row(c45, "A0_baseline_final", "baseline final", "baseline"),
         c45_row(c45, "H1_target_Ridge_direct", "target Ridge direct", "balanced_mainline"),
         c45_row(c45, "H8_style_source_aug_CO_else_Ridge", "H8-style source-aug CO else Ridge", "diagnostic_co_specialist"),
@@ -234,8 +253,9 @@ def main() -> None:
             "",
             "## Decision",
             "",
-            "- C12 -> C345: keep H2.3 as balanced mainline and H8 + formal C4 rescue as deployable CO-specialist candidate.",
-            "- C45 -> C123: use target Ridge direct as the clean mainline; H8-style source-aug switching is diagnostic because it improves C3 CO/high-CO but worsens ALL/nonCO.",
+            "- C12 -> C345: H2.3 is the balanced mainline; H8 + formal C4 rescue is the guarded CO-priority runtime-ready specialist.",
+            "- C45 -> C123: use target Ridge direct as the clean balanced mainline; H8-style source-aug switching is diagnostic because it improves C3 CO/high-CO but worsens ALL/nonCO.",
+            "- Deployment-lite is not established in either direction yet. L1 remains analysis-only until an exported runtime bundle proves a size or latency advantage.",
             "- Therefore the final system should expose a direction-specific profile selector, not a single hard-coded regression head.",
             "",
         ]

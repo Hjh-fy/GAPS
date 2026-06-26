@@ -348,7 +348,9 @@ The current reproducible mainline is documented here:
 - [Next-Stage Execution Plan](docs/gaps_next_stage_execution_plan_20260626.md)
 - [Experiment Design and Acceptance Criteria](docs/experiment_design_and_acceptance_20260626.md)
 - [Feature Schema and Runtime Contract](docs/feature_schema_and_runtime_contract_20260626.md)
+- [Final Mainline Summary](results/gaps_final_mainline_summary_20260626.md)
 - [H8+C4 Deployable Specialist Validation](results/h8_c4_deployable_specialist_validation_20260626.md)
+- [Bidirectional Profile Selection](results/bidirectional_profile_selection_20260626/bidirectional_profile_selection_report.md)
 - [Runtime Profile Benchmark](results/runtime_profile_benchmark_20260626/runtime_profile_benchmark_report.md)
 - [Target Profile Selector](results/target_profile_selector_20260626/target_profile_selector_report.md)
 

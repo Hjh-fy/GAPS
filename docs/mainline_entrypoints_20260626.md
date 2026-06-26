@@ -108,7 +108,13 @@ L1/L2/L3 should not replace H2.3/H8 on performance alone. They need runtime/size
 |---|---|
 | `run_c45_c123_optimal_config_analysis.py` | reverse direction C45 -> C123 optimal profile analysis |
 | `summarize_bidirectional_profile_selection.py` | summarize C12->C345 and C45->C123 profile selection |
-| `select_target_profile.py` | normalize and select candidate profiles using calibration-derived evidence |
+| `select_target_profile.py` | formal deployment-mode selector for balanced / co-priority / deployment-lite |
+
+Current responsibility split:
+
+- `select_target_profile.py` owns deployable profile modes and guardrail/schema/parity evidence.
+- `summarize_bidirectional_profile_selection.py` owns direction-level C12->C345 / C45->C123 reporting.
+- `results/gaps_final_mainline_summary_20260626.md` is the current single-page mainline conclusion.
 
 ## 7. Deployment Runtime Entrypoints
 
