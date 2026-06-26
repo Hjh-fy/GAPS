@@ -1,0 +1,59 @@
+{
+  "hit_N": 1,
+  "hit_true_C4_high_CO_N": 1,
+  "hit_false_N": 0,
+  "hit_nonCO_N": 0,
+  "C4_high_CO_total_N": 102,
+  "C4_high_CO_recall": 0.00980392156862745,
+  "hit_by_response_phase": {
+    "main_response": 1
+  },
+  "hit_by_pred_class": {
+    "0": 1
+  },
+  "hit_by_file_repeat_phase": [
+    {
+      "filename": "B4_GCO_F080_R2.txt",
+      "repeat_id": "2",
+      "response_phase": "main_response",
+      "N": 1
+    }
+  ],
+  "analysis_predictions": "results\\formal_c4_route_rescue_selector_20260625\\formal_c4_route_rescue_predictions.csv",
+  "selected_gate_path": "results\\formal_c4_route_rescue_selector_20260625\\formal_c4_route_rescue_selected_gate.json",
+  "selected_gate": {
+    "class_label": "ethanol",
+    "pred_classes": "0",
+    "phase": "any",
+    "max_final": 20.0,
+    "min_risk": 6.0,
+    "max_conf_margin": 1.0,
+    "rescue_ppm": 250.0,
+    "hit_N": 3,
+    "true_c4_high_hits": 3,
+    "false_hits": 0,
+    "calib_c4_high_N": 24,
+    "calib_c4_high_recall": 0.125
+  },
+  "before_column": "h8_pred_co_source_aug_else_h23_ppm",
+  "after_column": "formal_c4_route_rescue_ppm",
+  "rows": 5400,
+  "equivalence_summary_path": "results\\equivalence_h8_formal_c4_rescue_candidate_20260626\\equivalence_summary.json",
+  "equivalence": {
+    "analysis_predictions": "results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_predictions.csv",
+    "analysis_column": "formal_c4_route_rescue_ppm",
+    "runtime_predictions": "results/runtime_validation_h8_formal_c4_rescue_candidate_20260626/runtime_predictions.csv",
+    "runtime_column": "co_corrected_ppm",
+    "tolerance": 1e-06,
+    "analysis_rows": 5400,
+    "runtime_rows": 5400,
+    "rows_compared": 5400,
+    "missing_in_analysis": 0,
+    "missing_in_runtime": 0,
+    "num_mismatch": 0,
+    "max_abs_diff": 1.4210854715202004e-13,
+    "mean_abs_diff": 1.2750294647250687e-14,
+    "p99_abs_diff": 8.526512829121202e-14
+  },
+  "guardrail_status": "pass"
+}

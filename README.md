@@ -340,3 +340,16 @@ large deployment bundles
 ```
 
 如果需要共享大文件、模型 checkpoint 或完整结果目录，应单独打包或通过外部存储传输。
+## Current Mainline Entry Points (2026-06-26)
+
+The current reproducible mainline is documented here:
+
+- [Mainline Entrypoints](docs/mainline_entrypoints_20260626.md)
+- [Next-Stage Execution Plan](docs/gaps_next_stage_execution_plan_20260626.md)
+- [Experiment Design and Acceptance Criteria](docs/experiment_design_and_acceptance_20260626.md)
+- [Feature Schema and Runtime Contract](docs/feature_schema_and_runtime_contract_20260626.md)
+
+Use these documents as the current entry point for classification, regression,
+target profile selection, deployment runtime, and acceptance criteria. The older
+README sections are kept as a historical code map and may mention legacy or
+diagnostic scripts.

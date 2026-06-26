@@ -1,0 +1,504 @@
+{
+  "bundle": "results\\deployment_h8_formal_c4_rescue_candidate_20260625",
+  "data_root": "dataset\\client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid",
+  "clients": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "status": "pass",
+  "checks": [
+    {
+      "name": "C3_train_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        0,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C3_train_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "label_N": 0
+    },
+    {
+      "name": "C3_train_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "label_N": 0
+    },
+    {
+      "name": "C3_train_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        0,
+        4
+      ]
+    },
+    {
+      "name": "C3_train_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "metadata_N": 0
+    },
+    {
+      "name": "C3_calibration_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        680,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C3_calibration_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 680,
+      "label_N": 680
+    },
+    {
+      "name": "C3_calibration_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 680,
+      "label_N": 680
+    },
+    {
+      "name": "C3_calibration_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        680,
+        4
+      ]
+    },
+    {
+      "name": "C3_calibration_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 680,
+      "metadata_N": 680
+    },
+    {
+      "name": "C3_test_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        2680,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C3_test_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 2680,
+      "label_N": 2680
+    },
+    {
+      "name": "C3_test_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 2680,
+      "label_N": 2680
+    },
+    {
+      "name": "C3_test_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        2680,
+        4
+      ]
+    },
+    {
+      "name": "C3_test_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 2680,
+      "metadata_N": 2680
+    },
+    {
+      "name": "C4_train_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        0,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C4_train_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "label_N": 0
+    },
+    {
+      "name": "C4_train_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "label_N": 0
+    },
+    {
+      "name": "C4_train_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        0,
+        4
+      ]
+    },
+    {
+      "name": "C4_train_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "metadata_N": 0
+    },
+    {
+      "name": "C4_calibration_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        320,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C4_calibration_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 320,
+      "label_N": 320
+    },
+    {
+      "name": "C4_calibration_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 320,
+      "label_N": 320
+    },
+    {
+      "name": "C4_calibration_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        320,
+        4
+      ]
+    },
+    {
+      "name": "C4_calibration_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 320,
+      "metadata_N": 320
+    },
+    {
+      "name": "C4_test_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        1360,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C4_test_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 1360,
+      "label_N": 1360
+    },
+    {
+      "name": "C4_test_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 1360,
+      "label_N": 1360
+    },
+    {
+      "name": "C4_test_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        1360,
+        4
+      ]
+    },
+    {
+      "name": "C4_test_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 1360,
+      "metadata_N": 1360
+    },
+    {
+      "name": "C5_train_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        0,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C5_train_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "label_N": 0
+    },
+    {
+      "name": "C5_train_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "label_N": 0
+    },
+    {
+      "name": "C5_train_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        0,
+        4
+      ]
+    },
+    {
+      "name": "C5_train_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 0,
+      "metadata_N": 0
+    },
+    {
+      "name": "C5_calibration_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        320,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C5_calibration_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 320,
+      "label_N": 320
+    },
+    {
+      "name": "C5_calibration_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 320,
+      "label_N": 320
+    },
+    {
+      "name": "C5_calibration_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        320,
+        4
+      ]
+    },
+    {
+      "name": "C5_calibration_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 320,
+      "metadata_N": 320
+    },
+    {
+      "name": "C5_test_feature_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        1360,
+        100,
+        8
+      ],
+      "expected": [
+        null,
+        100,
+        8
+      ]
+    },
+    {
+      "name": "C5_test_class_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 1360,
+      "label_N": 1360
+    },
+    {
+      "name": "C5_test_phase_label_length",
+      "status": "pass",
+      "message": "",
+      "N": 1360,
+      "label_N": 1360
+    },
+    {
+      "name": "C5_test_regression_label_shape",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        1360,
+        4
+      ]
+    },
+    {
+      "name": "C5_test_metadata_length",
+      "status": "pass",
+      "message": "",
+      "N": 1360,
+      "metadata_N": 1360
+    },
+    {
+      "name": "runtime_config_exists",
+      "status": "pass",
+      "message": "results\\deployment_h8_formal_c4_rescue_candidate_20260625\\runtime_config.json"
+    },
+    {
+      "name": "runtime_input_shape",
+      "status": "pass",
+      "message": "",
+      "input_shape": [
+        100,
+        8
+      ],
+      "expected": [
+        100,
+        8
+      ]
+    },
+    {
+      "name": "norm_stats_mean",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        1,
+        1,
+        8
+      ],
+      "finite": true,
+      "broadcast_to_batch": true
+    },
+    {
+      "name": "norm_stats_std",
+      "status": "pass",
+      "message": "",
+      "shape": [
+        1,
+        1,
+        8
+      ],
+      "finite": true,
+      "broadcast_to_batch": true
+    },
+    {
+      "name": "runtime_normalization",
+      "status": "pass",
+      "message": "",
+      "enabled": false,
+      "reason": "The frozen time-aware features and training/runtime package use normalize=False."
+    },
+    {
+      "name": "runtime_client_package_C3",
+      "status": "pass",
+      "message": "client_3_auto_v2_package"
+    },
+    {
+      "name": "runtime_client_package_C4",
+      "status": "pass",
+      "message": "client_4_auto_v2_package"
+    },
+    {
+      "name": "runtime_client_package_C5",
+      "status": "pass",
+      "message": "client_5_auto_v2_package"
+    },
+    {
+      "name": "rich_residual_artifact_exists",
+      "status": "pass",
+      "message": "rich_residual_candidate.json"
+    },
+    {
+      "name": "route_rescue_schema_v2",
+      "status": "pass",
+      "message": "c4_route_rescue_policy.v2"
+    },
+    {
+      "name": "route_rescue_max_conf_margin",
+      "status": "pass",
+      "message": "",
+      "additional_gate_N": 1
+    }
+  ],
+  "warnings": [
+    "C3 calibration: unexpected response_phase values ['pre_onset']",
+    "C3 test: unexpected response_phase values ['pre_onset']",
+    "C4 test: unexpected response_phase values ['pre_onset']",
+    "C5 calibration: unexpected response_phase values ['pre_onset']",
+    "C5 test: unexpected response_phase values ['pre_onset']"
+  ]
+}
