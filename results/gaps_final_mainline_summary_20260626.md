@@ -108,6 +108,44 @@ First CPU benchmark: 300 target test windows per client, C3/C4/C5, 3 repeats.
 
 H8+C4 does not introduce a meaningful runtime burden compared with H2.3/H8. L1 cannot be called deployment-lite yet because no exported runtime bundle has been benchmarked.
 
+## Low-Calibration Stress
+
+Low-calibration stress was run with stratified target-calibration subsets at 20%, 10%, and 5%. QC was not used. Each ratio refits the target-side heads with calibration-only selection, then evaluates the fixed target test set.
+
+| Calibration | Selector profile | B0 ALL | H2.3 ALL | H8+C4 forced ALL | Selector ALL | H2.3 nonCO | Test gate false/nonCO |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 20% | H2.3 fallback | 27.34 | 18.86 | 18.24 | 18.86 | 17.16 | 0 / 0 |
+| 10% | H2.3 fallback | 27.34 | 23.23 | 22.60 | 23.23 | 21.21 | 0 / 0 |
+| 5% | H2.3 fallback | 27.34 | 27.47 | 26.87 | 27.47 | 24.83 | 0 / 0 |
+
+Reading:
+
+- At 20% and 10%, H2.3 still improves no-QC full-set ALL RMSE over B0; at 5%, the refit becomes too weak and no longer clearly beats B0.
+- H8+C4 forced sometimes improves test ALL RMSE, but the calibration-only selector does not enable it because calibration CO RMSE does not beat H2.3. This is the correct conservative behavior: test is not used for selection.
+- Low-calibration route-rescue gates had zero test false hits and zero test nonCO hits after enforcing the same gate schema (`max_final`, `min_risk`, `max_conf_margin`) used by the selector.
+- Therefore, the runtime-ready H8+C4 specialist remains a full-calibration CO-priority profile, while low-calibration mode should default to H2.3 fallback unless a future selector has stronger calibration evidence.
+
+Entrypoints:
+
+- `run_low_calib_stress_profiles.py`
+- `results/low_calib_stress_profiles_20260626/low_calib_stress_report.md`
+
+## QC Post-Hoc Reliability
+
+QC remains a post-hoc deployment reliability layer, not a model-selection criterion.
+
+| Profile | Role | Full RMSE | Accept coverage | Accept RMSE | Review coverage | Reject coverage | Accepted+review RMSE | High-error recall |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| H2.3 | balanced | 18.62 | 0.4233 | 5.92 | 0.3411 | 0.2356 | 9.07 | 0.9089 |
+| H8+C4 | co_priority | 18.30 | 0.4233 | 5.48 | 0.3411 | 0.2356 | 8.06 | 0.9033 |
+
+Under the same QC routing, H8+C4 has lower accepted and accepted+review RMSE than H2.3, while both profiles preserve similar high-error recall. These values support deployment reliability reporting only; they do not replace the no-QC full-set model-capability decision.
+
+Entrypoints:
+
+- `summarize_qc_posthoc_profiles.py`
+- `results/qc_posthoc_reliability_20260626/qc_posthoc_report.md`
+
 ## Runtime Output Schema
 
 Current public runtime fields:
@@ -137,21 +175,24 @@ risk_score
 | deployment selector | `select_target_profile.py` |
 | direction-level summary | `summarize_bidirectional_profile_selection.py` |
 | runtime benchmark | `benchmark_runtime_profiles.py` |
+| low-calibration stress | `run_low_calib_stress_profiles.py` |
+| QC post-hoc reliability | `summarize_qc_posthoc_profiles.py` |
 | H8+C4 specialist report | `results/h8_c4_deployable_specialist_validation_20260626.md` |
 | profile selector output | `results/target_profile_selector_20260626/selected_profiles.json` |
 | bidirectional report | `results/bidirectional_profile_selection_20260626/bidirectional_profile_selection_report.md` |
+| low-calibration report | `results/low_calib_stress_profiles_20260626/low_calib_stress_report.md` |
+| QC post-hoc report | `results/qc_posthoc_reliability_20260626/qc_posthoc_report.md` |
 
 ## Current Limitations
 
 1. H8+C4 route-rescue has very low recall by design: it is a precision guard for one observed C4 wrong-route pattern.
 2. Deployment-lite is not established. L1 needs an exported runtime bundle and size/latency benchmark before promotion.
-3. Low-calibration stress testing is still pending for 20%, 10%, and 5% calibration ratios.
+3. Low-calibration 5% is not enough for reliable target profile refitting; 20% and 10% are more credible, with 20% remaining the strongest setting.
 4. QC summary should be reported after model selection, not used to select model ability.
 5. The reverse direction validates direction-specific selection, but it does not yet have a full runtime-ready artifact chain equivalent to forward H8+C4.
 
 ## Recommended Final-Stage Work
 
-1. Run low-calibration stress for B0/H2.3/H8+C4 selector at 20%, 10%, and 5%.
-2. Decide whether L1 is worth exporting; keep it out of mainline unless benchmarked advantage is clear.
-3. Produce a QC post-hoc reliability report for H2.3 and H8+C4.
-4. Convert this summary into thesis/meeting figures and tables.
+1. Decide whether L1 is worth exporting; keep it out of mainline unless benchmarked advantage is clear.
+2. Keep H8+C4 as a 20% calibration CO-priority specialist; do not generalize the C4 gate beyond calibration-selected target clients.
+3. Convert this summary into thesis/meeting figures and tables.

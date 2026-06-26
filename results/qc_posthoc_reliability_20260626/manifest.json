@@ -1,0 +1,30 @@
+{
+  "profiles": [
+    {
+      "profile": "H2.3",
+      "role": "balanced",
+      "predictions": "results/runtime_validation_h2_3_mlp_ridge_candidate_20260624/runtime_predictions.csv",
+      "pred_key": "co_corrected_ppm"
+    },
+    {
+      "profile": "H8+C4",
+      "role": "co_priority",
+      "predictions": "results/runtime_validation_h8_formal_c4_rescue_candidate_20260626/runtime_predictions.csv",
+      "pred_key": "co_corrected_ppm"
+    }
+  ],
+  "scopes": [
+    "ALL",
+    "C3",
+    "C4",
+    "C5",
+    "CO",
+    "nonCO"
+  ],
+  "high_error_abs_ppm": 20.0,
+  "high_error_rel_ratio": 0.1,
+  "outputs": {
+    "summary": "results\\qc_posthoc_reliability_20260626\\qc_posthoc_summary.csv",
+    "report": "results\\qc_posthoc_reliability_20260626\\qc_posthoc_report.md"
+  }
+}

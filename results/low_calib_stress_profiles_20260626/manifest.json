@@ -1,0 +1,26 @@
+{
+  "data_root": "dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid",
+  "target_predictions": "results/timeaware_2080_c12src_c345tgt_fixed_da_r25_r3ak16_auto_v2_eval/ppm_layer_co_audit/target_layer_predictions.csv",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "target_clients": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "ratios": [
+    20.0,
+    10.0,
+    5.0
+  ],
+  "base_calib_ratio": 20.0,
+  "outputs": [
+    "low_calib_stress_summary.csv",
+    "low_calib_selector_decisions.csv",
+    "low_calib_fit_audit.csv",
+    "low_calib_subset_audit.csv",
+    "low_calib_stress_report.md"
+  ]
+}
