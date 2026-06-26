@@ -1,0 +1,276 @@
+{
+  "direction": "C45_to_C123",
+  "baseline": {
+    "direction": "C45_to_C123",
+    "mode": "A0_baseline_final",
+    "all_rmse": 22.93516678392923,
+    "all_nrmse": 0.1473183954542298,
+    "nonco_rmse": 19.33535306343395,
+    "co_rmse_mean": 30.661960180226497,
+    "co_rmse_max": 37.68371311330023,
+    "co_high_rmse_mean": 38.564025953478335,
+    "co_high_rmse_max": 51.970704701307724,
+    "target_co_rmse": {
+      "C1": 37.68371311330023,
+      "C2": 21.996732424248606,
+      "C3": 32.30543500313066
+    },
+    "target_co_high_rmse": {
+      "C1": 51.970704701307724,
+      "C2": 25.558009695314574,
+      "C3": 38.16336346381271
+    },
+    "role_hint": "baseline"
+  },
+  "balanced_mainline": {
+    "direction": "C45_to_C123",
+    "mode": "H1_target_Ridge_direct",
+    "all_rmse": 15.587352816709759,
+    "all_nrmse": 0.11230957374657152,
+    "nonco_rmse": 14.502979747159873,
+    "co_rmse_mean": 18.001618504132228,
+    "co_rmse_max": 23.7749709340666,
+    "co_high_rmse_mean": 23.916507642540797,
+    "co_high_rmse_max": 38.29822156493511,
+    "target_co_rmse": {
+      "C1": 23.7749709340666,
+      "C2": 15.554724250493107,
+      "C3": 14.675160327836982
+    },
+    "target_co_high_rmse": {
+      "C1": 38.29822156493511,
+      "C2": 17.08611447311477,
+      "C3": 16.36518688957252
+    },
+    "role_hint": "balanced_candidate"
+  },
+  "co_specialist_candidate": null,
+  "selection_rule": {
+    "balanced_mainline": "shortlist candidates within 2.0% of best ALL RMSE, then minimize ALL NRMSE, nonCO RMSE, ALL RMSE",
+    "co_specialist_candidate": "within 2.0% ALL RMSE of balanced mainline, then minimize mean/max target CO-high RMSE; kept only if it improves CO-high"
+  },
+  "top_by_all_rmse": [
+    {
+      "direction": "C45_to_C123",
+      "mode": "H1_target_Ridge_direct",
+      "all_rmse": 15.587352816709759,
+      "all_nrmse": 0.11230957374657152,
+      "nonco_rmse": 14.502979747159873,
+      "co_rmse_mean": 18.001618504132228,
+      "co_rmse_max": 23.7749709340666,
+      "co_high_rmse_mean": 23.916507642540797,
+      "co_high_rmse_max": 38.29822156493511,
+      "target_co_rmse": {
+        "C1": 23.7749709340666,
+        "C2": 15.554724250493107,
+        "C3": 14.675160327836982
+      },
+      "target_co_high_rmse": {
+        "C1": 38.29822156493511,
+        "C2": 17.08611447311477,
+        "C3": 16.36518688957252
+      },
+      "role_hint": "balanced_candidate"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H2b_source_aug_target_Ridge",
+      "all_rmse": 16.006937565947673,
+      "all_nrmse": 0.11834006654515783,
+      "nonco_rmse": 15.23651388755279,
+      "co_rmse_mean": 17.14485319703746,
+      "co_rmse_max": 24.922653732208232,
+      "co_high_rmse_mean": 22.850768763610645,
+      "co_high_rmse_max": 40.15911493370123,
+      "target_co_rmse": {
+        "C1": 24.922653732208232,
+        "C2": 15.77817007714271,
+        "C3": 10.733735781761435
+      },
+      "target_co_high_rmse": {
+        "C1": 40.15911493370123,
+        "C2": 17.352270002044254,
+        "C3": 11.040921355086454
+      },
+      "role_hint": "co_specialist_or_diagnostic"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H8_style_source_aug_CO_else_Ridge",
+      "all_rmse": 16.125156058136636,
+      "all_nrmse": 0.11916270517959378,
+      "nonco_rmse": 15.44177306545454,
+      "co_rmse_mean": 17.07035836754354,
+      "co_rmse_max": 24.699169243726477,
+      "co_high_rmse_mean": 22.696465991632905,
+      "co_high_rmse_max": 39.69620661776801,
+      "target_co_rmse": {
+        "C1": 24.699169243726477,
+        "C2": 15.77817007714271,
+        "C3": 10.733735781761435
+      },
+      "target_co_high_rmse": {
+        "C1": 39.69620661776801,
+        "C2": 17.352270002044254,
+        "C3": 11.040921355086454
+      },
+      "role_hint": "co_specialist_or_diagnostic"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H2_target_MLP_direct",
+      "all_rmse": 16.456674801978895,
+      "all_nrmse": 0.12005714584288844,
+      "nonco_rmse": 15.488297040137878,
+      "co_rmse_mean": 18.693145027600313,
+      "co_rmse_max": 23.840402738013267,
+      "co_high_rmse_mean": 26.775277959196107,
+      "co_high_rmse_max": 39.73450779112074,
+      "target_co_rmse": {
+        "C1": 23.840402738013267,
+        "C2": 17.310573192512845,
+        "C3": 14.92845915227482
+      },
+      "target_co_high_rmse": {
+        "C1": 39.73450779112074,
+        "C2": 22.125978908929994,
+        "C3": 18.465347177537584
+      },
+      "role_hint": "balanced_candidate"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H3_calibration_client_hybrid",
+      "all_rmse": 16.456674801978895,
+      "all_nrmse": 0.12005714584288844,
+      "nonco_rmse": 15.488297040137878,
+      "co_rmse_mean": 18.693145027600313,
+      "co_rmse_max": 23.840402738013267,
+      "co_high_rmse_mean": 26.775277959196107,
+      "co_high_rmse_max": 39.73450779112074,
+      "target_co_rmse": {
+        "C1": 23.840402738013267,
+        "C2": 17.310573192512845,
+        "C3": 14.92845915227482
+      },
+      "target_co_high_rmse": {
+        "C1": 39.73450779112074,
+        "C2": 22.125978908929994,
+        "C3": 18.465347177537584
+      },
+      "role_hint": "candidate"
+    }
+  ],
+  "top_by_co_high_mean": [
+    {
+      "direction": "C45_to_C123",
+      "mode": "H8_style_source_aug_CO_else_Ridge",
+      "all_rmse": 16.125156058136636,
+      "all_nrmse": 0.11916270517959378,
+      "nonco_rmse": 15.44177306545454,
+      "co_rmse_mean": 17.07035836754354,
+      "co_rmse_max": 24.699169243726477,
+      "co_high_rmse_mean": 22.696465991632905,
+      "co_high_rmse_max": 39.69620661776801,
+      "target_co_rmse": {
+        "C1": 24.699169243726477,
+        "C2": 15.77817007714271,
+        "C3": 10.733735781761435
+      },
+      "target_co_high_rmse": {
+        "C1": 39.69620661776801,
+        "C2": 17.352270002044254,
+        "C3": 11.040921355086454
+      },
+      "role_hint": "co_specialist_or_diagnostic"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H2b_source_aug_target_Ridge",
+      "all_rmse": 16.006937565947673,
+      "all_nrmse": 0.11834006654515783,
+      "nonco_rmse": 15.23651388755279,
+      "co_rmse_mean": 17.14485319703746,
+      "co_rmse_max": 24.922653732208232,
+      "co_high_rmse_mean": 22.850768763610645,
+      "co_high_rmse_max": 40.15911493370123,
+      "target_co_rmse": {
+        "C1": 24.922653732208232,
+        "C2": 15.77817007714271,
+        "C3": 10.733735781761435
+      },
+      "target_co_high_rmse": {
+        "C1": 40.15911493370123,
+        "C2": 17.352270002044254,
+        "C3": 11.040921355086454
+      },
+      "role_hint": "co_specialist_or_diagnostic"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H1_target_Ridge_direct",
+      "all_rmse": 15.587352816709759,
+      "all_nrmse": 0.11230957374657152,
+      "nonco_rmse": 14.502979747159873,
+      "co_rmse_mean": 18.001618504132228,
+      "co_rmse_max": 23.7749709340666,
+      "co_high_rmse_mean": 23.916507642540797,
+      "co_high_rmse_max": 38.29822156493511,
+      "target_co_rmse": {
+        "C1": 23.7749709340666,
+        "C2": 15.554724250493107,
+        "C3": 14.675160327836982
+      },
+      "target_co_high_rmse": {
+        "C1": 38.29822156493511,
+        "C2": 17.08611447311477,
+        "C3": 16.36518688957252
+      },
+      "role_hint": "balanced_candidate"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H2_target_MLP_direct",
+      "all_rmse": 16.456674801978895,
+      "all_nrmse": 0.12005714584288844,
+      "nonco_rmse": 15.488297040137878,
+      "co_rmse_mean": 18.693145027600313,
+      "co_rmse_max": 23.840402738013267,
+      "co_high_rmse_mean": 26.775277959196107,
+      "co_high_rmse_max": 39.73450779112074,
+      "target_co_rmse": {
+        "C1": 23.840402738013267,
+        "C2": 17.310573192512845,
+        "C3": 14.92845915227482
+      },
+      "target_co_high_rmse": {
+        "C1": 39.73450779112074,
+        "C2": 22.125978908929994,
+        "C3": 18.465347177537584
+      },
+      "role_hint": "balanced_candidate"
+    },
+    {
+      "direction": "C45_to_C123",
+      "mode": "H3_calibration_client_hybrid",
+      "all_rmse": 16.456674801978895,
+      "all_nrmse": 0.12005714584288844,
+      "nonco_rmse": 15.488297040137878,
+      "co_rmse_mean": 18.693145027600313,
+      "co_rmse_max": 23.840402738013267,
+      "co_high_rmse_mean": 26.775277959196107,
+      "co_high_rmse_max": 39.73450779112074,
+      "target_co_rmse": {
+        "C1": 23.840402738013267,
+        "C2": 17.310573192512845,
+        "C3": 14.92845915227482
+      },
+      "target_co_high_rmse": {
+        "C1": 39.73450779112074,
+        "C2": 22.125978908929994,
+        "C3": 18.465347177537584
+      },
+      "role_hint": "candidate"
+    }
+  ]
+}

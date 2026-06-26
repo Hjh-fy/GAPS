@@ -177,6 +177,24 @@ Reverse-direction C45 -> C123 check:
 
 Reverse decision: for C45 -> C123, the clean performance mainline is all-target Ridge direct. The C12 -> C345 H8/source-aug idea improves C3 CO/high-CO in reverse, but it worsens ALL RMSE and nonCO, so it should remain a diagnostic CO-specialist variant rather than the reverse default. C4 route-rescue does not apply because C4 is a source client in this direction.
 
+Profile-selection formalization:
+
+- `select_target_profile.py` turns the recent matrix results into a reproducible selector.
+- Output: `results/target_profile_selector_20260626/target_profile_selector_audit.md`
+- The selector uses no-QC full-set metrics only. QC accepted quality is not used for model selection.
+- Balanced mainline rule: shortlist candidates within 2% of the best ALL RMSE, then choose the lowest ALL NRMSE, nonCO RMSE, and ALL RMSE.
+- CO-specialist rule: within 2% ALL RMSE of the balanced mainline, choose the lowest mean/max target CO-high RMSE if it improves over balanced.
+- Test-oracle candidates are excluded.
+
+Selected profiles:
+
+| direction | selected balanced mainline | selected CO-specialist candidate | interpretation |
+| --- | --- | --- | --- |
+| C12 -> C345 | H2.3 R3aK16 current mainline | H8 + formal C4 rescue | keep H2.3 as default; expose H8+C4 rescue when CO-high recovery is prioritized |
+| C45 -> C123 | target Ridge direct | none under current constraints | reverse direction favors a simpler Ridge profile; source-aug/H8 remains diagnostic |
+
+This is the cleanest current framing: the method is not a single hard-coded regression head. It is a direction-specific target profile selection framework. R3aK16 remains the source regression reference/base for C12 -> C345, but final target ppm can be produced by the selected target-side profile.
+
 ## Matrix E: C4 CO High Diagnosis
 
 New outputs:
