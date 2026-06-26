@@ -4,6 +4,24 @@ Date: 2026-06-25
 
 Main rule: performance first. A regression-head or calibration method is promoted only if it improves no-QC full-set target final RMSE / NRMSE, then CO and CO-high RMSE, without obvious nonCO damage. QC is not used for model selection here.
 
+## Bidirectional Profile Selection
+
+New output:
+
+- `summarize_bidirectional_profile_selection.py`
+- `results/bidirectional_profile_selection_20260626/bidirectional_profile_selection_report.md`
+- `results/bidirectional_profile_selection_20260626/selected_profile_c12_to_c345.json`
+- `results/bidirectional_profile_selection_20260626/selected_profile_c45_to_c123.json`
+
+Current decision:
+
+| direction | balanced mainline | CO-specialist candidate | decision |
+| --- | --- | --- | --- |
+| C12 -> C345 | H2.3 MLP C3 + Ridge C4 + C5-grid MLP | H8 + formal C4 route rescue | Keep H2.3 as balanced mainline; use H8+C4 rescue as deployable CO-specialist candidate. |
+| C45 -> C123 | target Ridge direct for C1/C2/C3 | H8-style source-aug CO else Ridge | Use target Ridge as clean mainline; keep H8-style only as diagnostic because it improves C3 CO/high-CO but worsens ALL/nonCO. |
+
+Interpretation: the final method should be described as a direction-specific target profile selection framework, not a single hard-coded regression head. The candidate family is shared, but the selected profile depends on calibration evidence for each source/target split.
+
 ## Current Baselines
 
 | item | status | key result |

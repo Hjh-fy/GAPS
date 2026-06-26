@@ -1,0 +1,7 @@
+direction,source_clients,target_clients,mode,label,role,ALL_RMSE,ALL_NRMSE,CO_RMSE_by_target,CO_high_RMSE_by_target,nonCO_ALL_RMSE
+C12_to_C345,"C1,C2","C3,C4,C5",A0_baseline_final,baseline final,baseline,27.336272006610333,0.1578336952944895,C3=33.70; C4=56.59; C5=46.12,C3=41.70; C4=95.32; C5=60.00,19.00289748774791
+C12_to_C345,"C1,C2","C3,C4,C5",H2_3_mlp_c3_ridge_c4_c5grid,H2.3 balanced mainline,balanced_mainline,18.62168397346191,0.132579221262454,C3=16.15; C4=22.02; C5=26.85,C3=20.02; C4=34.24; C5=34.82,17.831882292749544
+C12_to_C345,"C1,C2","C3,C4,C5",H8_plus_formal_c4_route_rescue,H8 + formal C4 rescue,co_specialist_candidate,18.30411372953233,0.13500614497338967,C3=14.97; C4=17.16; C5=23.69,C3=19.93; C4=26.79; C5=27.54,18.37932337781323
+C45_to_C123,"C4,C5","C1,C2,C3",A0_baseline_final,baseline final,baseline,22.93516678392923,0.1473183954542298,C1=37.68; C2=22.00; C3=32.31,C1=51.97; C2=25.56; C3=38.16,19.33535306343395
+C45_to_C123,"C4,C5","C1,C2,C3",H1_target_Ridge_direct,target Ridge direct,balanced_mainline,15.587352816709759,0.11230957374657152,C1=23.77; C2=15.55; C3=14.68,C1=38.30; C2=17.09; C3=16.37,14.502979747159873
+C45_to_C123,"C4,C5","C1,C2,C3",H8_style_source_aug_CO_else_Ridge,H8-style source-aug CO else Ridge,diagnostic_co_specialist,16.125156058136636,0.11916270517959378,C1=24.70; C2=15.78; C3=10.73,C1=39.70; C2=17.35; C3=11.04,15.44177306545454

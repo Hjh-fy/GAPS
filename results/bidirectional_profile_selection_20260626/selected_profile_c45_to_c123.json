@@ -1,0 +1,33 @@
+{
+  "schema": "gaps_target_profile_selection.v1",
+  "direction": "C45_to_C123",
+  "source_clients": [
+    "C4",
+    "C5"
+  ],
+  "target_clients": [
+    "C1",
+    "C2",
+    "C3"
+  ],
+  "selection_priority": [
+    "no_qc_full_set_ALL_RMSE",
+    "ALL_NRMSE",
+    "CO_high_RMSE",
+    "nonCO_RMSE"
+  ],
+  "balanced_mainline": {
+    "profile": "target_Ridge_direct_all_clients",
+    "description": "Target Ridge direct heads for C1/C2/C3.",
+    "status": "analysis_candidate"
+  },
+  "co_specialist_candidate": {
+    "profile": "H8_style_source_aug_CO_else_Ridge",
+    "description": "Improves C3 CO/high-CO but worsens ALL and nonCO; keep diagnostic only.",
+    "status": "diagnostic_only"
+  },
+  "route_rescue": {
+    "enabled": false,
+    "reason": "C4 is a source client in this direction; no target C4 route-rescue is applicable."
+  }
+}
