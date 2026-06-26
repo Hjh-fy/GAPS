@@ -1,0 +1,16 @@
+{
+  "analysis_predictions": "results/formal_c4_route_rescue_selector_20260625/formal_c4_route_rescue_predictions.csv",
+  "analysis_column": "formal_c4_route_rescue_ppm",
+  "runtime_predictions": "results/runtime_validation_h8_formal_c4_rescue_candidate_20260626/runtime_predictions.csv",
+  "runtime_column": "co_corrected_ppm",
+  "tolerance": 1e-06,
+  "analysis_rows": 5400,
+  "runtime_rows": 5400,
+  "rows_compared": 5400,
+  "missing_in_analysis": 0,
+  "missing_in_runtime": 0,
+  "num_mismatch": 0,
+  "max_abs_diff": 1.4210854715202004e-13,
+  "mean_abs_diff": 1.2750294647250687e-14,
+  "p99_abs_diff": 8.526512829121202e-14
+}

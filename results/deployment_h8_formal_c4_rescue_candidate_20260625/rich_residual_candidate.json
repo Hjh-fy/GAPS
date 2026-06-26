@@ -1,5 +1,5 @@
 {
-  "schema": "gaps_hybrid_mlp_ridge_policy.v1+h8_source_aug.v1+formal_c4_route_rescue.v1",
+  "schema": "gaps_hybrid_mlp_ridge_policy.v1+h8_source_aug.v1+formal_c4_route_rescue.v2",
   "candidate_name": "c12_c345_h8_source_aug_plus_formal_c4_route_rescue",
   "direction": "C12_to_C345",
   "target_mlp_policy": {
@@ -48429,7 +48429,7 @@
     ]
   },
   "route_rescue_policy": {
-    "schema": "c4_route_rescue_policy.v1",
+    "schema": "c4_route_rescue_policy.v2",
     "selected_gate": {
       "candidate": "c4_rescue_recovery_risk2_ppm_lt50_ethanol_only_to250",
       "phase": "recovery",
@@ -48444,6 +48444,7 @@
         "phase": "any",
         "risk_threshold": 6.0,
         "max_ppm": 20.0,
+        "max_conf_margin": 1.0,
         "pred_classes": "0",
         "rescue_ppm": 250.0,
         "selection_source": "target_calibration_only",
