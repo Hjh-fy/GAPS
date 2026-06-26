@@ -177,6 +177,13 @@ Reverse-direction C45 -> C123 check:
 
 Reverse decision: for C45 -> C123, the clean performance mainline is all-target Ridge direct. The C12 -> C345 H8/source-aug idea improves C3 CO/high-CO in reverse, but it worsens ALL RMSE and nonCO, so it should remain a diagnostic CO-specialist variant rather than the reverse default. C4 route-rescue does not apply because C4 is a source client in this direction.
 
+Reverse deployment artifact:
+
+- `export_target_ridge_profile_artifact.py` exports the selected C45 -> C123 target Ridge direct profile.
+- Artifact: `results/deployment_target_ridge_c45_c123_candidate_20260626/rich_residual_candidate.json`
+- `compare_target_ridge_profile_artifact.py` validates the artifact against the formal analysis predictions.
+- Runtime equivalence: 8040 target-test rows, 0 mismatches, max absolute difference `6.82e-13`.
+
 Profile-selection formalization:
 
 - `select_target_profile.py` turns the recent matrix results into a reproducible selector.
