@@ -8,6 +8,10 @@ for each source-target run:
 
 Use this first with the 10-run matrix config, inspect commands, then run the
 server command and launch local clients with ``run_local_flower_matrix_clients.py``.
+
+Important: the dataset root must match each run's source/target roles. If a path
+contains a tag such as ``c12src_c345tgt``, the generator will warn when the run
+uses a client outside that encoded source/target role.
 """
 
 from __future__ import annotations
@@ -15,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import posixpath
+import re
 import shlex
 import subprocess
 from pathlib import Path
@@ -22,6 +27,7 @@ from typing import Any, Iterable
 
 
 BOOL_TRUE = {"true", "1", "yes", "y", "on"}
+ROLE_TAG_RE = re.compile(r"c([0-9]+)src_c([0-9]+)tgt", re.IGNORECASE)
 
 
 def parse_bool(value: Any) -> bool:
@@ -82,6 +88,43 @@ def select_runs(runs: list[dict[str, Any]], names: str | None) -> list[dict[str,
     if missing:
         raise SystemExit(f"Unknown run_id(s): {sorted(missing)}")
     return selected
+
+
+def parse_role_tag(path_text: str) -> tuple[set[int], set[int]] | None:
+    """Parse role hints like ``c12src_c345tgt`` from a dataset path."""
+    match = ROLE_TAG_RE.search(str(path_text).replace("\\", "/"))
+    if not match:
+        return None
+    src = {int(ch) for ch in match.group(1)}
+    tgt = {int(ch) for ch in match.group(2)}
+    return src, tgt
+
+
+def role_split_warnings(run: dict[str, Any], *, local_data_root: str, remote_data_root: str) -> list[str]:
+    """Return warnings when a run conflicts with encoded role-aware split names.
+
+    Example: if data_root contains ``c12src_c345tgt`` then C1/C2 should be used
+    as source clients and C3/C4/C5 should be used as target clients. Runs such as
+    C345 -> C1 need their own role-aware split root and should not reuse this one.
+    """
+    warnings: list[str] = []
+    run_src = {int(x) for x in run["source_clients"]}
+    run_tgt = {int(x) for x in run["target_clients"]}
+    for label, root in [("local_data_root", local_data_root), ("remote_data_root", remote_data_root)]:
+        parsed = parse_role_tag(root)
+        if not parsed:
+            continue
+        encoded_src, encoded_tgt = parsed
+        bad_src = sorted(run_src - encoded_src)
+        bad_tgt = sorted(run_tgt - encoded_tgt)
+        if bad_src or bad_tgt:
+            warnings.append(
+                f"{label} appears role-aware with source={sorted(encoded_src)} target={sorted(encoded_tgt)}, "
+                f"but run uses source={sorted(run_src)} target={sorted(run_tgt)}; "
+                f"source_mismatch={bad_src}, target_mismatch={bad_tgt}. "
+                "Generate/use a matching role-aware split root before running this command."
+            )
+    return warnings
 
 
 def build_server_command(run: dict[str, Any], args: argparse.Namespace) -> str:
@@ -169,6 +212,7 @@ def emit_run(run: dict[str, Any], args: argparse.Namespace) -> None:
         f"C{int(client)}": build_client_command(run, args, int(client))
         for client in run["source_clients"]
     }
+    warnings = role_split_warnings(run, local_data_root=args.local_data_root, remote_data_root=args.remote_data_root)
     manifest = {
         "run_id": run_id,
         "source_clients": [int(item) for item in run["source_clients"]],
@@ -177,6 +221,7 @@ def emit_run(run: dict[str, Any], args: argparse.Namespace) -> None:
         "server_command": server_cmd,
         "client_commands": {key: value for key, value in client_cmds.items()},
         "remote_output_dir": remote_join(args.remote_output_root, run_id),
+        "warnings": warnings,
         "expected_outputs": [
             "history.json",
             "server_latest.pth",
@@ -189,10 +234,16 @@ def emit_run(run: dict[str, Any], args: argparse.Namespace) -> None:
     write_text(out / "server_command.sh", "#!/usr/bin/env bash\nset -e\n" + server_cmd + "\n")
 
     client_lines = ["@echo off", "REM Start each client in a separate terminal if desired."]
+    for warning in warnings:
+        client_lines.append(f"REM WARNING: {warning}")
     for name, cmd in client_cmds.items():
         client_lines.append(f"start \"{run_id}_{name}\" cmd /k {client_command_text(cmd, shell='windows_cmd')}")
     write_text(out / "local_clients_windows.bat", "\n".join(client_lines) + "\n")
     write_text(out / "local_clients_commands.txt", "\n".join(client_command_text(cmd, shell="posix") for cmd in client_cmds.values()) + "\n")
+    if warnings:
+        print(f"[WARN] {run_id}:")
+        for warning in warnings:
+            print(f"  - {warning}")
 
 
 def main() -> None:
