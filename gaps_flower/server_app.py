@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import json
+import sys
+from pathlib import Path
 
 import flwr as fl
 from flwr.common import ndarrays_to_parameters
@@ -12,6 +15,61 @@ from gaps_flower.task import create_model, get_parameters, make_config
 
 DEFAULT_STRATEGIES = ("fedavg", "gaps")
 PROFILE_CHOICES = ("smoke", "gaps_cls", "gaps", "gaps_classification", "classification", "strong_cls")
+DA_PRESETS = ("none", "default", "fixed_da_strong")
+FIXED_DA_STRONG = {
+    "domain_adapt_steps": 100,
+    "domain_adapt_warmup": 0,
+    "da_use_coral": True,
+    "da_use_mmd": True,
+    "da_use_adversarial": True,
+    "da_coral_class_conditional": True,
+    "da_lambda_coral": 0.5,
+    "da_lambda_global_mmd": 0.5,
+    "da_lambda_class_mmd": 0.5,
+    "da_lambda_adv": 0.5,
+    "da_server_opt_lr": 0.0005,
+    "use_adapted_as_global": True,
+}
+
+
+def _explicit_cli_dests(parser: argparse.ArgumentParser, argv: list[str]) -> set[str]:
+    option_to_dest = {}
+    for action in parser._actions:
+        for option in action.option_strings:
+            option_to_dest[option] = action.dest
+    explicit = set()
+    for item in argv:
+        option = item.split("=", 1)[0]
+        if option in option_to_dest:
+            explicit.add(option_to_dest[option])
+    return explicit
+
+
+def apply_da_preset(args: argparse.Namespace, explicit_dests: set[str]) -> None:
+    if args.da_preset != "fixed_da_strong":
+        return
+    for key, value in FIXED_DA_STRONG.items():
+        if key not in explicit_dests:
+            setattr(args, key, value)
+
+
+def save_run_config(args: argparse.Namespace, explicit_dests: set[str]) -> None:
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "argv": sys.argv[1:],
+        "explicit_args": sorted(explicit_dests),
+        "args": vars(args),
+        "da_preset_effective": (
+            {key: getattr(args, key) for key in FIXED_DA_STRONG}
+            if args.da_preset == "fixed_da_strong"
+            else {}
+        ),
+    }
+    (output_dir / "run_config.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def fit_config(server_round: int) -> dict:
@@ -41,6 +99,8 @@ def main() -> None:
                         help="选择性聚合最小缩放因子，防止权重归零")
     parser.add_argument("--use-proto-mmd", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
                         help="是否计算原型级域漂移诊断 (仅 --strategy gaps 生效)")
+    parser.add_argument("--da-preset", choices=DA_PRESETS, default="default",
+                        help="Optional server-side DA preset; explicit CLI flags override preset values")
     parser.add_argument("--use-domain-adapt", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
                         help="是否启用服务端域适应 CORAL/MMD/对抗 (需 --server-val-data 和 --server-calib-data)")
     parser.add_argument("--server-val-data", type=str, default=None,
@@ -89,6 +149,9 @@ def main() -> None:
     parser.add_argument("--da-target-ce-class-balanced", type=lambda v: v.lower() in ("true", "1", "yes"), default=False)
     parser.add_argument("--da-server-opt-lr", type=float, default=1e-4)
     args = parser.parse_args()
+    explicit_dests = _explicit_cli_dests(parser, sys.argv[1:])
+    apply_da_preset(args, explicit_dests)
+    save_run_config(args, explicit_dests)
 
     config = make_config(device="cpu", local_epochs=1, batch_size=32, profile=args.profile)
     model = create_model(config)
