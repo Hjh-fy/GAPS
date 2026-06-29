@@ -53,6 +53,31 @@ R3aK16 is kept because it is the stable source regression reference and the basi
 
 H2.3 remains the balanced default because it gives the cleanest overall/nonCO balance. H8+C4 is selected only in `co_priority` mode because it improves CO/high-CO metrics while slightly worsening nonCO compared with H2.3.
 
+## H2.3 No-B0 Feature Ablation
+
+A0-A6 tested whether the H2.3 target direct-head profile can be simplified by removing B0/R3aK16/auto_v2 support. The forward C12 -> C345 run used the existing formal target-head outputs and compared the current H2.3 profile with direct-only variants.
+
+Direct-head feature construction was checked against `run_regression_head_ablation.add_target_features`: the target heads use target-window rich statistics and metadata, not B0/R3aK16/auto_v2 ppm fields. The B0-like keys checked were `final_ppm`, `auto_v2_ppm`, `baseline_final_ppm`, `base_r3ak16_raw_ppm`, `routed_pred_ppm`, `risk_score`, and `confidence_margin`; none are direct-head training features.
+
+| Mode | Reading | ALL RMSE | ALL NRMSE | C3 NRMSE | C4 NRMSE | C5 NRMSE | Macro-client NRMSE |
+|---|---|---:|---:|---:|---:|---:|---:|
+| A0 | B0 R3aK16/auto_v2 baseline | 27.34 | 0.1578 | 0.1108 | 0.1520 | 0.2272 | 0.1633 |
+| A1 | current H2.3 with B0-dependent C4 rescue/profile layer | 18.62 | 0.1326 | 0.1023 | 0.0713 | 0.2100 | 0.1279 |
+| A2-A6 | direct target heads only; no B0-dependent rescue | 22.39 | 0.1436 | 0.1023 | 0.1311 | 0.2100 | 0.1478 |
+
+Conclusion:
+
+- A2-A6 are identical, confirming that B0/R3aK16/auto_v2 ppm values and QC-risk scalars are not target direct-head feature inputs.
+- However, no-B0 direct-only is not close enough to current H2.3: macro-client NRMSE degrades from 0.1279 to 0.1478, mainly because C4 NRMSE degrades from 0.0713 to 0.1311.
+- The C4 high-CO error confirms the same pattern: current H2.3 gives C4 high-CO RMSE/NRMSE 34.24 / 0.1522, while direct-only gives 96.70 / 0.4298.
+- Therefore R3aK16/auto_v2 should not be described as target direct-head feature inputs, but they should remain in the current runtime/mainline as the baseline, fallback, audit, and route-rescue support layer.
+- Under the planned decision rule, reverse C45 -> C123 no-B0 ablation was not run because the forward no-B0 version is not close to H2.3.
+
+Entrypoints:
+
+- `run_h2_3_no_b0_feature_ablation.py`
+- `results/h2_3_no_b0_feature_ablation_20260629/c12_c345/h2_3_no_b0_feature_ablation_report.md`
+
 ## H8+C4 Runtime-Ready Specialist Evidence
 
 H8+C4 now has a complete deployment evidence chain:
@@ -177,11 +202,13 @@ risk_score
 | runtime benchmark | `benchmark_runtime_profiles.py` |
 | low-calibration stress | `run_low_calib_stress_profiles.py` |
 | QC post-hoc reliability | `summarize_qc_posthoc_profiles.py` |
+| H2.3 no-B0 ablation | `run_h2_3_no_b0_feature_ablation.py` |
 | H8+C4 specialist report | `results/h8_c4_deployable_specialist_validation_20260626.md` |
 | profile selector output | `results/target_profile_selector_20260626/selected_profiles.json` |
 | bidirectional report | `results/bidirectional_profile_selection_20260626/bidirectional_profile_selection_report.md` |
 | low-calibration report | `results/low_calib_stress_profiles_20260626/low_calib_stress_report.md` |
 | QC post-hoc report | `results/qc_posthoc_reliability_20260626/qc_posthoc_report.md` |
+| H2.3 no-B0 ablation report | `results/h2_3_no_b0_feature_ablation_20260629/c12_c345/h2_3_no_b0_feature_ablation_report.md` |
 
 ## Current Limitations
 
@@ -190,9 +217,11 @@ risk_score
 3. Low-calibration 5% is not enough for reliable target profile refitting; 20% and 10% are more credible, with 20% remaining the strongest setting.
 4. QC summary should be reported after model selection, not used to select model ability.
 5. The reverse direction validates direction-specific selection, but it does not yet have a full runtime-ready artifact chain equivalent to forward H8+C4.
+6. H2.3 target direct heads do not use B0/R3aK16/auto_v2 ppm as training features, but the current best forward H2.3 result still depends on the B0/risk-supported C4 rescue/profile layer; direct-only no-B0 is weaker.
 
 ## Recommended Final-Stage Work
 
 1. Decide whether L1 is worth exporting; keep it out of mainline unless benchmarked advantage is clear.
 2. Keep H8+C4 as a 20% calibration CO-priority specialist; do not generalize the C4 gate beyond calibration-selected target clients.
-3. Convert this summary into thesis/meeting figures and tables.
+3. When presenting H2.3, distinguish target direct-head calibration from the runtime support layer: R3aK16/auto_v2 are not direct-head feature inputs, but they remain useful for baseline/fallback/audit/rescue.
+4. Convert this summary into thesis/meeting figures and tables.

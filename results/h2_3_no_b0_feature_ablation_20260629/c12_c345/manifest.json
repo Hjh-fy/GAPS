@@ -1,0 +1,88 @@
+{
+  "direction": "c12_c345",
+  "ridge_predictions": "results\\formal_target_ridge_auto_v2_20260624\\formal_target_ridge_predictions.csv",
+  "mlp_predictions": "results\\formal_target_mlp_auto_v2_20260624\\formal_target_mlp_predictions.csv",
+  "c5_grid_predictions": "results\\formal_target_mlp_c5_grid_20260624\\formal_target_mlp_predictions.csv",
+  "row_count": 5400,
+  "direct_head_feature_count": "target-window rich feature_dict; see run_regression_head_ablation.add_target_features",
+  "direct_head_feature_examples": [
+    "amp_mean",
+    "window_center_s",
+    "response_phase_main_response"
+  ],
+  "b0_like_feature_keys_checked": [
+    "final_ppm",
+    "auto_v2_ppm",
+    "baseline_final_ppm",
+    "base_r3ak16_raw_ppm",
+    "routed_pred_ppm",
+    "risk_score",
+    "confidence_margin"
+  ],
+  "b0_like_feature_keys_found": [],
+  "decision": {
+    "rule": "Run reverse C45->C123 only if forward no-B0 direct-only is close to current H2.3.",
+    "close_threshold_relative_macro_client_NRMSE": 0.05,
+    "a1_macro_client_NRMSE": 0.12785055064545134,
+    "a2_macro_client_NRMSE": 0.1478033368638915,
+    "relative_macro_client_NRMSE_gap": 0.15606335770717336,
+    "c4_NRMSE_a1_current": 0.07128030276758814,
+    "c4_NRMSE_a2_direct_only": 0.13113866142290861,
+    "c4_high_CO_NRMSE_a1_current": 0.15218954205191143,
+    "c4_high_CO_NRMSE_a2_direct_only": 0.4297843057534949,
+    "run_reverse_under_forward_gate": false,
+    "reading": "Forward no-B0 is not close to current H2.3; keep B0/R3aK16/auto_v2 as runtime support layer."
+  },
+  "override_hits": {
+    "A0_B0_R3aK16_auto_v2": 0,
+    "A1_H2_3_current_with_B0_rescue": 15,
+    "A2_H2_3_direct_only_no_B0_rescue": 0,
+    "A3_no_auto_v2_ppm_feature": 0,
+    "A4_no_r3ak16_ppm_feature": 0,
+    "A5_no_risk_feature": 0,
+    "A6_no_ppm_no_risk_direct_only": 0
+  },
+  "mode_specs": [
+    {
+      "mode": "A0_B0_R3aK16_auto_v2",
+      "pred_key": "A0_baseline_final_ppm",
+      "role": "B0 baseline"
+    },
+    {
+      "mode": "A1_H2_3_current_with_B0_rescue",
+      "pred_key": "A1_h2_3_current_ppm",
+      "role": "current H2.3 profile with B0-dependent C4 rescue"
+    },
+    {
+      "mode": "A2_H2_3_direct_only_no_B0_rescue",
+      "pred_key": "A2_h2_3_direct_only_ppm",
+      "role": "fixed H2.3 direct heads without B0-dependent C4 rescue"
+    },
+    {
+      "mode": "A3_no_auto_v2_ppm_feature",
+      "pred_key": "A3_no_auto_v2_ppm_feature_ppm",
+      "role": "same direct-head features; no auto_v2 ppm feature present"
+    },
+    {
+      "mode": "A4_no_r3ak16_ppm_feature",
+      "pred_key": "A4_no_r3ak16_ppm_feature_ppm",
+      "role": "same direct-head features; no R3aK16 ppm feature present"
+    },
+    {
+      "mode": "A5_no_risk_feature",
+      "pred_key": "A5_no_risk_feature_ppm",
+      "role": "same direct-head features; no risk feature present"
+    },
+    {
+      "mode": "A6_no_ppm_no_risk_direct_only",
+      "pred_key": "A6_no_ppm_no_risk_direct_only_ppm",
+      "role": "clean direct target-head output"
+    }
+  ],
+  "outputs": [
+    "h2_3_no_b0_feature_ablation_predictions.csv",
+    "h2_3_no_b0_feature_ablation_summary.csv",
+    "h2_3_no_b0_feature_ablation_per_client.csv",
+    "h2_3_no_b0_feature_ablation_report.md"
+  ]
+}
