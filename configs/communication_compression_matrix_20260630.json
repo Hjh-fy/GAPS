@@ -1,0 +1,46 @@
+{
+  "description": "Communication-compression classification experiments for F6 C12->C345: compare 25 communication rounds with 10 rounds plus optional final server-side post-DA.",
+  "defaults": {
+    "local_epochs": 5,
+    "batch_size": 32,
+    "strategy": "gaps",
+    "profile": "strong_cls",
+    "use_domain_adapt": true,
+    "use_adapted_as_global": true,
+    "domain_adapt_steps": 100,
+    "domain_adapt_warmup": 0,
+    "da_use_coral": true,
+    "da_use_mmd": true,
+    "da_use_adversarial": true,
+    "da_coral_class_conditional": true,
+    "strict_calibration_split": true,
+    "da_device": "cpu",
+    "da_lambda_coral": 0.5,
+    "da_lambda_global_mmd": 0.5,
+    "da_lambda_class_mmd": 0.5,
+    "da_lambda_proto_anchor": 0.3,
+    "da_lambda_adv": 0.5,
+    "da_lambda_proto": 0.05,
+    "da_lambda_consistency": 2.0,
+    "da_lambda_residual": 0.1,
+    "da_lambda_proto_mmd": 0.2,
+    "da_lambda_stage_mmd": 0.2,
+    "da_server_opt_lr": 0.0005
+  },
+  "runs": [
+    {
+      "run_id": "CC_F6_C12_to_C345_R25_STRONG_DA",
+      "source_clients": [1, 2],
+      "target_clients": [3, 4, 5],
+      "rounds": 25,
+      "purpose": "25 communication round strong-DA baseline"
+    },
+    {
+      "run_id": "CC_F6_C12_to_C345_R10_STRONG_DA",
+      "source_clients": [1, 2],
+      "target_clients": [3, 4, 5],
+      "rounds": 10,
+      "purpose": "10 communication round strong-DA compressed communication run"
+    }
+  ]
+}

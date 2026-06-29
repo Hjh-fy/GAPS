@@ -1,0 +1,38 @@
+{
+  "description": "Final checkpoint profiles for communication-compression comparison. Post-DA profiles reuse the 10R communication run and add server-only adaptation steps after training.",
+  "baseline_profile": "25R_strong_DA",
+  "profiles": [
+    {
+      "profile_id": "25R_strong_DA",
+      "run_id": "CC_F6_C12_to_C345_R25_STRONG_DA",
+      "checkpoint": "server_latest_adapted.pth",
+      "communication_rounds": 25,
+      "post_da_steps": 0,
+      "role": "baseline"
+    },
+    {
+      "profile_id": "10R_strong_DA",
+      "run_id": "CC_F6_C12_to_C345_R10_STRONG_DA",
+      "checkpoint": "server_latest_adapted.pth",
+      "communication_rounds": 10,
+      "post_da_steps": 0,
+      "role": "compressed"
+    },
+    {
+      "profile_id": "10R_postDA300",
+      "run_id": "CC_F6_C12_to_C345_R10_STRONG_DA",
+      "checkpoint": "server_latest_postda300.pth",
+      "communication_rounds": 10,
+      "post_da_steps": 300,
+      "role": "compressed_plus_server_post_da"
+    },
+    {
+      "profile_id": "10R_postDA500",
+      "run_id": "CC_F6_C12_to_C345_R10_STRONG_DA",
+      "checkpoint": "server_latest_postda500.pth",
+      "communication_rounds": 10,
+      "post_da_steps": 500,
+      "role": "compressed_plus_server_post_da"
+    }
+  ]
+}
