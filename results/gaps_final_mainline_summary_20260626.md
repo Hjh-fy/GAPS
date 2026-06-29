@@ -27,6 +27,38 @@ fixed-DA classifier/backbone
 -> runtime output schema
 ```
 
+### F6 Strong Fixed-DA Follow-Up
+
+The later Flower matrix run `F6_C12_to_C345_fixed_da_strong_r25` restored target classification to a normal level:
+
+| Checkpoint | Accuracy | Macro-F1 | ECE | NLL | C3 | C4 | C5 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| final adapted r25 | 0.9817 | 0.9817 | 0.0143 | 0.1051 | 0.9907 | 0.9860 | 0.9596 |
+| final base r25 | 0.9774 | 0.9773 | 0.0192 | 0.1462 | 0.9922 | 0.9647 | 0.9610 |
+| best adapted round19 | 0.9869 | 0.9869 | 0.0104 | 0.0975 | 0.9925 | 0.9868 | 0.9757 |
+
+Regression follow-up using this backbone shows a more nuanced result:
+
+| Profile | ALL RMSE | ALL NRMSE | C3 NRMSE | C4 NRMSE | C5 NRMSE | C3 CO | C4 CO | C5 CO | nonCO |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| old H2.3 current | 18.62 | 0.1326 | 0.1023 | 0.0713 | 0.2100 | 16.15 | 22.02 | 26.85 | 17.83 |
+| F6 final r25 B0 | 28.57 | 0.1899 | 0.1131 | 0.1396 | 0.3138 | 33.57 | 50.36 | 43.36 |  |
+| F6 final r25 H2.3 | 22.94 | 0.1789 | 0.0978 | 0.0734 | 0.3207 | 15.19 | 22.99 | 25.23 | 23.79 |
+| F6 round19 B0 | 27.09 | 0.1633 | 0.1101 | 0.1504 | 0.2436 | 33.70 | 55.95 | 43.77 |  |
+| F6 round19 H2.3 | 18.62 | 0.1357 | 0.0846 | 0.0610 | 0.2352 | 16.14 | 17.31 | 25.92 | 18.38 |
+| F6 round19 H2 MLP + C4 rescue | 18.26 | 0.1348 | 0.0846 | 0.0691 | 0.2309 | 16.14 | 17.77 | 26.98 | 17.71 |
+
+Reading:
+
+- The weak-DA classification failure is fixed, but the official final r25 adapted checkpoint does not automatically improve full-set regression. Its C4/CO and C5/CO improve, while C5 nonCO becomes worse, so full-set NRMSE degrades.
+- The best adapted round19 checkpoint is much better for regression: H2 MLP + C4 rescue reaches ALL RMSE 18.26 / ALL NRMSE 0.1348, slightly better than old H2.3 RMSE while preserving a similar NRMSE level.
+- Round19 remains an oracle/best-checkpoint analysis unless a calibration/validation-only checkpoint selector is formalized. The official report should keep final r25 adapted as the 25-round final checkpoint and report round19 as best-checkpoint evidence.
+
+Entrypoints:
+
+- `results/f6_regression_from_strong_cls_20260629/f6_regression_followup_report.md`
+- `results/f6_regression_from_strong_cls_20260629/f6_regression_comparison.csv`
+
 ## Regression Base: R3aK16
 
 R3aK16 remains the source-domain neural regression base and reference, not the final ppm output by itself.
