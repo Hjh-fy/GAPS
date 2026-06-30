@@ -1,0 +1,39 @@
+{
+  "description": "Role-aware data roots for the remaining source-target classification matrix. A run may use a subset of the encoded source clients, but target clients must stay within the encoded target clients.",
+  "base_full_split_root": "dataset/client_data_federated_window_fullgrid_src12_tgt345",
+  "generated_roots": {
+    "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid": {
+      "covers_runs": [
+        "F1_C1_to_C5",
+        "F2_C12_to_C5",
+        "F3_C123_to_C5",
+        "F4_C1234_to_C5"
+      ],
+      "source_clients": [1, 2, 3, 4],
+      "target_clients": [5],
+      "target_resplit": "merge original train/calibration/test, stratify by class and concentration into calibration/test"
+    },
+    "client_data_c1src_c2345tgt_2080_timeaware_60_170_window_fullgrid": {
+      "covers_runs": [
+        "F5_C1_to_C2345"
+      ],
+      "source_clients": [1],
+      "target_clients": [2, 3, 4, 5],
+      "target_resplit": "merge original train/calibration/test, stratify by class and concentration into calibration/test"
+    },
+    "client_data_c2345src_c1tgt_2080_timeaware_60_170_window_fullgrid": {
+      "covers_runs": [
+        "R1_C5_to_C1",
+        "R2_C45_to_C1",
+        "R3_C345_to_C1",
+        "R4_C2345_to_C1"
+      ],
+      "source_clients": [2, 3, 4, 5],
+      "target_clients": [1],
+      "target_resplit": "merge original train/calibration/test, stratify by class and concentration into calibration/test"
+    }
+  },
+  "generated_at": "2026-06-30",
+  "target_calib_ratio": 0.2,
+  "seed": 42
+}
