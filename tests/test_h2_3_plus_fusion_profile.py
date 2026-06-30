@@ -1,6 +1,9 @@
 from run_h2_3_plus_fusion_profile import (
     apply_client_blends,
+    apply_c4_rescue_to_rows,
     combine_h2_3_rows,
+    load_reference_rows,
+    normalize_c4_gate,
     select_client_blend_weights,
 )
 
@@ -103,3 +106,70 @@ def test_combine_h2_3_rows_keeps_only_matching_client_family_rows():
 
     assert [(row["client"], row["sample_index"]) for row in combined] == [("C3", 0), ("C4", 0)]
     assert [row["h2_3_direct_only_ppm"] for row in combined] == [101.0, 99.0]
+
+
+def test_normalize_c4_gate_accepts_formal_selector_schema_and_preserves_margin():
+    gate = normalize_c4_gate(
+        {
+            "pred_classes": "0",
+            "phase": "any",
+            "max_final": 20.0,
+            "min_risk": 6.0,
+            "max_conf_margin": 0.7,
+            "rescue_ppm": 250.0,
+        }
+    )
+
+    assert gate["pred_classes"] == "0"
+    assert gate["max_ppm"] == 20.0
+    assert gate["risk_threshold"] == 6.0
+    assert gate["max_conf_margin"] == 0.7
+
+
+def test_apply_c4_rescue_to_rows_enforces_confidence_margin():
+    gate = normalize_c4_gate(
+        {
+            "pred_classes": "0",
+            "phase": "any",
+            "max_final": 20.0,
+            "min_risk": 6.0,
+            "max_conf_margin": 0.7,
+            "rescue_ppm": 250.0,
+        }
+    )
+    base = {
+        "client": "C4",
+        "pred_class": 0,
+        "final_ppm": 10.0,
+        "risk_score": 7.0,
+        "response_phase": "recovery",
+        "direct_ppm": 42.0,
+    }
+
+    rows = apply_c4_rescue_to_rows(
+        [
+            {**base, "sample_index": 0, "confidence_margin": 0.6},
+            {**base, "sample_index": 1, "confidence_margin": 0.8},
+        ],
+        "direct_ppm",
+        "rescued_ppm",
+        gate,
+    )
+
+    assert rows[0]["rescued_ppm"] == 250.0
+    assert rows[0]["c4_rescue_applied"] == 1
+    assert rows[1]["rescued_ppm"] == 42.0
+    assert rows[1]["c4_rescue_applied"] == 0
+
+
+def test_load_reference_rows_accepts_latest_h2_3_replay_column(tmp_path):
+    path = tmp_path / "reference.csv"
+    path.write_text(
+        "client,split,sample_index,h2_3_ppm\nC3,test,0,123.5\n",
+        encoding="utf-8",
+    )
+    base_rows = [{"client": "C3", "split": "test", "sample_index": 0, "true_ppm": 120.0}]
+
+    rows = load_reference_rows(path, base_rows)
+
+    assert rows[0]["reference_h2_3_current_ppm"] == 123.5

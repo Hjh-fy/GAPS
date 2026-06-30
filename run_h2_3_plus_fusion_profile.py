@@ -15,7 +15,7 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 
 from run_formal_target_mlp_auto_v2_eval import MLPHead, apply_client_mlp, fit_mlp
-from run_formal_target_ridge_auto_v2_eval import apply_c4_rescue, attach_response_phase, selected_c4_gate
+from run_formal_target_ridge_auto_v2_eval import attach_response_phase
 from run_h2_3_backbone_feature_ablation import build_feature_groups, load_feature_rows, merge_backbone_features
 from run_regression_head_ablation import (
     CLASS_NAMES,
@@ -68,6 +68,61 @@ def parse_hidden_grid(text: str) -> list[tuple[int, ...]]:
         for item in text.split(";")
         if item.strip()
     ]
+
+
+def parse_pred_classes(text: Any) -> set[int]:
+    return {int(float(part)) for part in str(text).split(",") if str(part).strip()}
+
+
+def normalize_c4_gate(gate: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "pred_classes": ",".join(str(v) for v in gate.get("pred_classes", "").split(",")) if isinstance(gate.get("pred_classes"), str) else ",".join(str(v) for v in gate.get("pred_classes", [])),
+        "phase": str(gate.get("phase", "any")),
+        "max_ppm": fnum(gate.get("max_ppm", gate.get("max_final", 50.0))),
+        "risk_threshold": fnum(gate.get("risk_threshold", gate.get("min_risk", 0.0))),
+        "max_conf_margin": fnum(gate.get("max_conf_margin", 1.0)),
+        "rescue_ppm": fnum(gate.get("rescue_ppm")),
+    }
+
+
+def load_c4_gate(path: str | Path) -> dict[str, Any]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    selected = data.get("route_rescue_policy", {}).get("selected_gate", data)
+    return normalize_c4_gate(selected)
+
+
+def c4_gate_hit(row: dict[str, Any], gate: dict[str, Any]) -> bool:
+    if client_name(row.get("client")) != "C4":
+        return False
+    if inum(row.get("pred_class")) not in parse_pred_classes(gate.get("pred_classes")):
+        return False
+    if fnum(row.get("final_ppm")) >= fnum(gate.get("max_ppm")):
+        return False
+    if fnum(row.get("risk_score"), 0.0) < fnum(gate.get("risk_threshold"), 0.0):
+        return False
+    if fnum(row.get("confidence_margin"), 1.0) > fnum(gate.get("max_conf_margin"), 1.0):
+        return False
+    phase = str(gate.get("phase", "any"))
+    if phase != "any" and str(row.get("response_phase")) != phase:
+        return False
+    return True
+
+
+def apply_c4_rescue_to_rows(
+    rows: Sequence[dict[str, Any]],
+    source_key: str,
+    output_key: str,
+    gate: dict[str, Any],
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    rescue_ppm = fnum(gate.get("rescue_ppm"))
+    for row in rows:
+        item = dict(row)
+        hit = c4_gate_hit(item, gate)
+        item["c4_rescue_applied"] = int(hit)
+        item[output_key] = rescue_ppm if hit else fnum(item.get(source_key))
+        out.append(item)
+    return out
 
 
 def blend_value(anchor: Any, candidate: Any, weight: float) -> float:
@@ -342,7 +397,7 @@ def combine_h2_3_rows(
             item = {k: v for k, v in row.items() if k != "feature_dict"}
             item["h2_3_direct_only_ppm"] = fnum(item.get(pred_key))
             out.append(item)
-    return apply_c4_rescue(out, "h2_3_direct_only_ppm", "h2_3_current_ppm", gate)
+    return apply_c4_rescue_to_rows(out, "h2_3_direct_only_ppm", "h2_3_current_ppm", gate)
 
 
 def merge_prediction_sets(
@@ -541,7 +596,9 @@ def load_reference_rows(path: str | Path, base_rows: Sequence[dict[str, Any]]) -
         if ref is None:
             continue
         item = dict(row)
-        item["reference_h2_3_current_ppm"] = fnum(ref.get("A1_h2_3_current_ppm"))
+        item["reference_h2_3_current_ppm"] = fnum(
+            ref.get("A1_h2_3_current_ppm", ref.get("h2_3_ppm"))
+        )
         out.append(item)
     return out
 
@@ -557,7 +614,7 @@ def run(args: argparse.Namespace) -> None:
     blend_weights = parse_float_grid(args.blend_weights)
     hiddens = parse_hidden_grid(args.hidden_grid)
     c5_hiddens = parse_hidden_grid(args.c5_hidden_grid)
-    gate = selected_c4_gate(args.route_rescue_artifact)
+    gate = load_c4_gate(args.route_rescue_artifact)
 
     raw_rows = [
         row for row in read_csv(args.target_predictions)
@@ -621,8 +678,8 @@ def run(args: argparse.Namespace) -> None:
         args.val_ratio,
         "regfeat_ridge",
     )
-    reg_val = apply_c4_rescue(reg_val, "regfeat_ridge_ppm", "regfeat_ridge_plus_c4_rescue_ppm", gate)
-    reg_test = apply_c4_rescue(reg_test, "regfeat_ridge_ppm", "regfeat_ridge_plus_c4_rescue_ppm", gate)
+    reg_val = apply_c4_rescue_to_rows(reg_val, "regfeat_ridge_ppm", "regfeat_ridge_plus_c4_rescue_ppm", gate)
+    reg_test = apply_c4_rescue_to_rows(reg_test, "regfeat_ridge_ppm", "regfeat_ridge_plus_c4_rescue_ppm", gate)
 
     val_merged = merge_prediction_sets(
         anchor_val,
