@@ -134,6 +134,13 @@ def apply_selected_gate(df: pd.DataFrame, gate: dict[str, Any]) -> pd.DataFrame:
     return apply_gate(df, mask, fnum(gate["rescue_ppm"]))
 
 
+def apply_gate_to_predictions(rows: list[dict[str, Any]], gate: dict[str, Any]) -> list[dict[str, Any]]:
+    df = pd.DataFrame(rows).copy()
+    gated = apply_selected_gate(df, gate)
+    gated["formal_c4_route_rescue_ppm"] = gated["candidate_ppm"].astype(float)
+    return gated.to_dict("records")
+
+
 def audit_gate(df: pd.DataFrame, pred_key: str, label: str) -> dict[str, Any]:
     c4_high = df[
         (df["client"].astype(str) == "C4")
@@ -235,6 +242,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Formal calibration-selected C4 route-rescue selector.")
     parser.add_argument("--target-predictions", default="results/timeaware_2080_c12src_c345tgt_fixed_da_r25_r3ak16_auto_v2_eval/ppm_layer_co_audit/target_layer_predictions.csv")
     parser.add_argument("--h8-test-predictions", default="results/co_only_source_aug_hybrid_stratcalval_20260625/co_only_source_aug_hybrid_predictions.csv")
+    parser.add_argument("--h8-validation-predictions", default="")
     parser.add_argument("--data-root", default="dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid")
     parser.add_argument("--output-dir", default="results/formal_c4_route_rescue_selector_20260625")
     args = parser.parse_args()
@@ -253,8 +261,7 @@ def main() -> None:
 
     test_df = pd.read_csv(args.h8_test_predictions)
     test_df = test_df[test_df["split"].astype(str) == "test"].copy()
-    test_df = apply_selected_gate(test_df, selected)
-    test_df["formal_c4_route_rescue_ppm"] = test_df["candidate_ppm"].astype(float)
+    test_df = pd.DataFrame(apply_gate_to_predictions(test_df.to_dict("records"), selected))
 
     summary: list[dict[str, Any]] = []
     base_rows = test_df.to_dict("records")
@@ -269,6 +276,11 @@ def main() -> None:
     write_csv(out / "formal_c4_route_rescue_summary.csv", summary)
     write_csv(out / "formal_c4_route_rescue_audit.csv", audit)
     test_df.to_csv(out / "formal_c4_route_rescue_predictions.csv", index=False)
+    if args.h8_validation_predictions:
+        validation_df = pd.read_csv(args.h8_validation_predictions)
+        validation_df = validation_df[validation_df["split"].astype(str) == "calibration"].copy()
+        validation_df = pd.DataFrame(apply_gate_to_predictions(validation_df.to_dict("records"), selected))
+        validation_df.to_csv(out / "formal_c4_route_rescue_validation_predictions.csv", index=False)
     (out / "formal_c4_route_rescue_selected_gate.json").write_text(json.dumps(selected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     write_report(out, selected, scores, summary, audit)
     print(f"Wrote formal C4 route-rescue selector to {out}")

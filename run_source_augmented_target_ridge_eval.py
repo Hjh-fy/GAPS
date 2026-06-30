@@ -23,6 +23,7 @@ from run_regression_head_ablation import (
     build_oracle_rows,
     client_name,
     deterministic_train_val,
+    fit_ridge,
     fit_select_refit,
     fnum,
     inum,
@@ -115,6 +116,65 @@ def metric_value(summary: list[dict[str, Any]], mode: str, scope: str, metric: s
             value = row.get(metric)
             return None if value in (None, "") else float(value)
     return None
+
+
+def row_key(row: dict[str, Any]) -> tuple[str, str, int]:
+    return (
+        client_name(row.get("client") or row.get("client_id")),
+        str(row.get("split", "calibration")),
+        inum(row.get("sample_index")),
+    )
+
+
+def fit_target_ridge_holdout_predictions(
+    training_feature_rows: list[dict[str, Any]],
+    validation_feature_rows: list[dict[str, Any]],
+    target_clients: list[str],
+    feature_names: list[str],
+    alphas: list[float],
+    val_ratio: float,
+    prefix: str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Fit on calibration-train rows and predict deterministic holdout rows.
+
+    ``training_feature_rows`` and ``validation_feature_rows`` may contain
+    different feature_dict values for the same physical row. This lets source
+    features be oracle-routed for fitting while validation rows use the
+    deployment-visible route.
+    """
+    validation_by_key = {row_key(row): row for row in validation_feature_rows}
+    train_models: dict[tuple[str, int], Any] = {}
+    val_rows_all: list[dict[str, Any]] = []
+    fit_audit: list[dict[str, Any]] = []
+    for client in target_clients:
+        for cls_id in sorted(CLASS_NAMES):
+            cls_rows = [
+                row for row in training_feature_rows
+                if client_name(row.get("client")) == client and inum(row.get("true_class")) == cls_id
+            ]
+            if not cls_rows:
+                continue
+            train_rows, val_seed_rows = deterministic_train_val(cls_rows, val_ratio=val_ratio)
+            val_rows = [dict(validation_by_key[row_key(row)]) for row in val_seed_rows]
+            for row in val_rows:
+                row["route_class"] = inum(row.get("pred_class"))
+            _refit_model, audit = fit_select_refit(train_rows, val_rows, feature_names, alphas)
+            best_alpha = fnum(audit["best_alpha"])
+            train_models[(client, cls_id)] = fit_ridge(train_rows, feature_names, best_alpha)
+            val_rows_all.extend(val_rows)
+            fit_audit.append(
+                {
+                    "family": prefix,
+                    "client": client,
+                    "class_id": cls_id,
+                    "gas": CLASS_NAMES[cls_id],
+                    "train_N": len(train_rows),
+                    "val_N": len(val_rows),
+                    "best_alpha": best_alpha,
+                    "best_val_RMSE": audit["best_val_RMSE"],
+                }
+            )
+    return apply_client_models(val_rows_all, train_models, prefix), fit_audit
 
 
 def write_report(out: Path, summary: list[dict[str, Any]], fit_audit: list[dict[str, Any]]) -> None:
@@ -222,7 +282,8 @@ def main() -> None:
         if client_name(row.get("client") or row.get("client_id")) in set(target_clients)
     ]
     target_rows = add_target_features(target_base_rows, data_root)
-    target_cal = [dict(row) for row in target_rows if row["split"] == "calibration"]
+    target_cal_route = [dict(row) for row in target_rows if row["split"] == "calibration"]
+    target_cal = [dict(row) for row in target_cal_route]
     target_test = [dict(row) for row in target_rows if row["split"] == "test"]
     for row in target_cal:
         row["route_class"] = row["true_class"]
@@ -230,9 +291,11 @@ def main() -> None:
         row["baseline_final_ppm"] = fnum(row.get("final_ppm"))
 
     target_cal_with_src = attach_source_predictions(target_cal, ridge_models, mlp_models, shared_model)
+    target_cal_route_with_src = attach_source_predictions(target_cal_route, ridge_models, mlp_models, shared_model)
     target_test_with_src = attach_source_predictions(target_test, ridge_models, mlp_models, shared_model)
     pred_keys = ["H1_source_ridge_ppm", "H2_source_per_gas_mlp_ppm", "H3_source_shared_mlp_ppm"]
     target_cal_aug = add_pred_features(target_cal_with_src, pred_keys)
+    target_cal_route_aug = add_pred_features(target_cal_route_with_src, pred_keys)
     target_test_aug = add_pred_features(target_test_with_src, pred_keys)
 
     rich_feature_names = sorted(target_cal[0]["feature_dict"].keys())
@@ -279,6 +342,24 @@ def main() -> None:
 
     target_rich = apply_client_models(target_test, rich_models, "target_ridge_rich_only")
     target_aug = apply_client_models(target_test_aug, aug_models, "target_ridge_plus_source_preds")
+    validation_rich, validation_rich_audit = fit_target_ridge_holdout_predictions(
+        target_cal_route,
+        target_cal_route,
+        target_clients,
+        rich_feature_names,
+        ridge_alphas,
+        0.25,
+        "target_ridge_rich_only",
+    )
+    validation_aug, validation_aug_audit = fit_target_ridge_holdout_predictions(
+        target_cal_aug,
+        target_cal_route_aug,
+        target_clients,
+        aug_feature_names,
+        ridge_alphas,
+        0.25,
+        "target_ridge_plus_source_preds",
+    )
 
     gate = selected_c4_gate(args.route_rescue_artifact)
     target_rich_phase = attach_response_phase(target_rich, data_root)
@@ -295,6 +376,18 @@ def main() -> None:
         "target_ridge_plus_source_preds_plus_c4_rescue_ppm",
         gate,
     )
+    validation_rich_rescue = apply_c4_rescue(
+        attach_response_phase(validation_rich, data_root),
+        "target_ridge_rich_only_ppm",
+        "target_ridge_rich_only_plus_c4_rescue_ppm",
+        gate,
+    )
+    validation_aug_rescue = apply_c4_rescue(
+        attach_response_phase(validation_aug, data_root),
+        "target_ridge_plus_source_preds_ppm",
+        "target_ridge_plus_source_preds_plus_c4_rescue_ppm",
+        gate,
+    )
 
     summary: list[dict[str, Any]] = []
     summary.extend(summarize(target_test, "baseline_final_ppm", "baseline_final_ppm", "test"))
@@ -305,10 +398,15 @@ def main() -> None:
 
     write_csv(out / "target_summary.csv", summary)
     write_csv(out / "fit_audit.csv", fit_audit)
+    write_csv(out / "validation_fit_audit.csv", [*validation_rich_audit, *validation_aug_audit])
     write_csv(out / "target_predictions_rich_only.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_rich])
     write_csv(out / "target_predictions_plus_source_preds.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_aug])
     write_csv(out / "target_predictions_rich_only_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_rich_rescue])
     write_csv(out / "target_predictions_plus_source_preds_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_aug_rescue])
+    write_csv(out / "target_validation_rich_only.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_rich])
+    write_csv(out / "target_validation_plus_source_preds.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_aug])
+    write_csv(out / "target_validation_rich_only_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_rich_rescue])
+    write_csv(out / "target_validation_plus_source_preds_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_aug_rescue])
     write_report(out, summary, fit_audit)
     (out / "manifest.json").write_text(
         json.dumps(
@@ -326,6 +424,13 @@ def main() -> None:
                 "rich_feature_count": len(rich_feature_names),
                 "augmented_feature_count": len(aug_feature_names),
                 "seed": args.seed,
+                "validation_outputs": [
+                    "target_validation_rich_only.csv",
+                    "target_validation_plus_source_preds.csv",
+                    "target_validation_rich_only_plus_c4_rescue.csv",
+                    "target_validation_plus_source_preds_plus_c4_rescue.csv",
+                    "validation_fit_audit.csv",
+                ],
             },
             indent=2,
             ensure_ascii=False,
