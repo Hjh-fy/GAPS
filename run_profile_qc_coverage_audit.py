@@ -288,6 +288,19 @@ def best_profile_rows(rows: Sequence[dict[str, Any]], group_keys: Sequence[str])
     return out
 
 
+def profile_family(profile: str) -> str:
+    text = profile.lower().replace(" ", "")
+    if "selector" in text:
+        return "client_selector"
+    if "h2.3+" in text or "h2_3+" in text:
+        return "h23_plus"
+    if "h8" in text or "formalc4" in text:
+        return "h8_c4"
+    if "h2.3" in text or "h2_3" in text:
+        return "h23"
+    return ""
+
+
 def write_report(
     out_dir: Path,
     post_rows: Sequence[dict[str, Any]],
@@ -330,26 +343,23 @@ def write_report(
             "|---|---:|---:|---:|---:|---:|",
         ]
     )
-    profiles = [
-        "H2.3 target direct-head",
-        "H2.3+ reg-feat weak-blend",
-        "H8 + formal C4 route rescue",
-        "Client selector C34 H2.3+ / C5 H8+C4",
-    ]
+    families = ["h23", "h23_plus", "h8_c4", "client_selector"]
     for client in sorted({row.get("client") for row in sweep_by_client}):
         coverages = sorted(
             {row.get("target_coverage") for row in sweep_by_client if row.get("client") == client},
             key=lambda text: int(str(text).rstrip("%")),
         )
         for coverage in coverages:
-            by_profile = {
-                row["profile"]: row
-                for row in sweep_by_client
-                if row.get("client") == client and row.get("target_coverage") == coverage
-            }
+            by_family: dict[str, dict[str, Any]] = {}
+            for row in sweep_by_client:
+                if row.get("client") != client or row.get("target_coverage") != coverage:
+                    continue
+                family = profile_family(str(row.get("profile", "")))
+                if family:
+                    by_family.setdefault(family, row)
             values = []
-            for profile in profiles:
-                row = by_profile.get(profile, {})
+            for family in families:
+                row = by_family.get(family, {})
                 values.append(f"{format_float(row.get('RMSE'), 3)} / {format_float(row.get('NRMSE'), 4)}")
             lines.append(f"| {client} | {coverage} | " + " | ".join(values) + " |")
 

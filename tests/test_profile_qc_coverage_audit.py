@@ -6,6 +6,7 @@ from run_profile_qc_coverage_audit import (
     build_profile_rows,
     coverage_sweep_rows,
     post_qc_metric_rows,
+    write_report,
 )
 
 
@@ -87,3 +88,29 @@ def test_best_profile_rows_orders_percent_coverage_numerically():
     best = best_profile_rows(rows, ["client", "target_coverage"])
 
     assert [row["target_coverage"] for row in best] == ["75%", "100%"]
+
+
+def test_write_report_maps_oracle_profile_names_into_per_client_columns(tmp_path):
+    sweep_by_client = [
+        {"client": "C3", "target_coverage": "75%", "profile": "H2.3 oracle-route", "RMSE": 7.0, "NRMSE": 0.04},
+        {
+            "client": "C3",
+            "target_coverage": "75%",
+            "profile": "H2.3+ oracle-route weak-blend",
+            "RMSE": 6.0,
+            "NRMSE": 0.03,
+        },
+        {"client": "C3", "target_coverage": "75%", "profile": "H8+C4 oracle-route", "RMSE": 5.0, "NRMSE": 0.02},
+        {
+            "client": "C3",
+            "target_coverage": "75%",
+            "profile": "Oracle client selector C34 H2.3+ / C5 H8+C4",
+            "RMSE": 4.0,
+            "NRMSE": 0.01,
+        },
+    ]
+
+    write_report(tmp_path, [], sweep_by_client, [], [])
+
+    report = (tmp_path / "profile_qc_coverage_audit_report.md").read_text(encoding="utf-8")
+    assert "| C3 | 75% | 7.000 / 0.0400 | 6.000 / 0.0300 | 5.000 / 0.0200 | 4.000 / 0.0100 |" in report
