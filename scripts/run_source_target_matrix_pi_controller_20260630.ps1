@@ -33,11 +33,11 @@ function Log([string]$Message) {
 }
 
 function SshEcs([string]$Command) {
-    & ssh $EcsHost $Command
+    & ssh -n -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 $EcsHost $Command
 }
 
 function SshPi([string]$Command) {
-    & ssh $PiHost $Command
+    & ssh -n -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 $PiHost $Command
 }
 
 function Ensure-Tunnels {
@@ -77,7 +77,7 @@ function Ensure-Tunnels {
 }
 
 function Is-RunComplete([string]$RunId) {
-    $cmd = "test -f '$EcsResultsRoot/$RunId/server_latest_adapted.pth' && test -f '$EcsResultsRoot/$RunId/history.json' && echo complete || true"
+    $cmd = "test -f '$EcsResultsRoot/$RunId/server_latest_adapted.pth' && test -f '$EcsResultsRoot/$RunId/history.json' && test -f '$EcsResultsRoot/$RunId/client_stats_round_025.json' && echo complete || true"
     $out = SshEcs "cd '$EcsProject' && $cmd"
     return ($out -join "`n") -match "complete"
 }
@@ -88,7 +88,7 @@ function Server-Pids([string]$RunId) {
 }
 
 function Launch-Server([string]$RunId) {
-    $cmd = "cd '$EcsProject' && mkdir -p '$EcsResultsRoot/$RunId' && sed -i 's/\r$//' '$CommandRoot/$RunId/server_command.sh' && nohup bash '$CommandRoot/$RunId/server_command.sh' > '$EcsResultsRoot/$RunId/server_launch.log' 2>&1 < /dev/null & echo `$!"
+    $cmd = "cd '$EcsProject' && mkdir -p '$EcsResultsRoot/$RunId' && sed -i 's/\r$//' '$CommandRoot/$RunId/server_command.sh' && setsid nohup bash '$CommandRoot/$RunId/server_command.sh' > '$EcsResultsRoot/$RunId/server_launch.log' 2>&1 < /dev/null & echo `$!"
     $out = SshEcs $cmd
     Log "server launched run=$RunId output=$($out -join ' ')"
     Start-Sleep -Seconds 15
@@ -96,7 +96,7 @@ function Launch-Server([string]$RunId) {
 
 function Launch-Client([string]$RunId, [string]$DataRoot, [int]$ClientId) {
     $logPath = "$PiLogRoot/$RunId/client_$ClientId.log"
-    $cmd = "cd '$PiProject' && mkdir -p '$PiLogRoot/$RunId' && nohup /home/gaps/GAPS/gaps_rpi_env/bin/python -m gaps_flower.client_app --server-address 127.0.0.1:18080 --client-id $ClientId --data-root '$PiProject/dataset/$DataRoot' --device cpu --local-epochs 5 --batch-size 32 --profile strong_cls > '$logPath' 2>&1 < /dev/null & echo `$!"
+    $cmd = "cd '$PiProject' && mkdir -p '$PiLogRoot/$RunId' && setsid nohup /home/gaps/GAPS/gaps_rpi_env/bin/python -m gaps_flower.client_app --server-address 127.0.0.1:18080 --client-id $ClientId --data-root '$PiProject/dataset/$DataRoot' --device cpu --local-epochs 5 --batch-size 32 --profile strong_cls > '$logPath' 2>&1 < /dev/null & echo `$!"
     $out = SshPi $cmd
     Log "client launched run=$RunId C$ClientId output=$($out -join ' ')"
 }
