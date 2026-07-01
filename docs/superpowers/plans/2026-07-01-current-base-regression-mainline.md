@@ -51,7 +51,7 @@ def test_build_mainline_summary_extracts_oracle_profiles():
         {"mode": "oracle-route_guarded_profile", "scope": "ALL", "N": "10", "RMSE": "9.1", "NRMSE": "0.049"},
     ]
     h23_rows = [
-        {"mode": "H2_3_current_r25_replay", "scope": "ALL", "N": "10", "RMSE": "10.5", "NRMSE": "0.056"},
+        {"mode": "H2_3_oracle_route", "scope": "ALL", "N": "10", "RMSE": "10.5", "NRMSE": "0.056"},
     ]
 
     out = build_mainline_summary(rows, h23_rows, scopes=["ALL", "C3"])
@@ -231,7 +231,7 @@ from run_regression_head_ablation import fnum, inum, read_csv, write_csv
 
 
 MAINLINE_PROFILE_SPECS = [
-    ("H2.3 oracle-route", "H2_3_current_r25_replay", "h23"),
+    ("H2.3 oracle-route", "H2_3_oracle_route", "h23"),
     ("H2.3+ oracle-route weak-blend", "oracle-route_H2.3+", "guarded"),
     ("H8+C4 oracle-route", "oracle-route_H8+C4", "guarded"),
     ("Guarded practical oracle-route", "oracle-route_guarded_profile", "guarded"),
