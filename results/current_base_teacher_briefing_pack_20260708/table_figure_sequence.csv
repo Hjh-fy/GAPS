@@ -1,0 +1,13 @@
+order,item_id,kind,title,source,placement,talk_track
+1,F1,figure,System pipeline,results\current_base_teacher_briefing_pack_20260708\figures\F1_system_pipeline.svg,opening_system_story,先讲系统为什么这样分层：real-route -> 双回归流 -> threshold guard -> QC report。
+2,T3,table,P4 threshold guard deployment audit,threshold_guard_metrics.csv,main_result,先给 P4 主结果，说明这是当前最可提交结果。
+3,F2,figure,P4 threshold guard per-client gains,results\current_base_teacher_briefing_pack_20260708\figures\F2_threshold_guard_gains.svg,main_result_visual,用 per-client gain 图让老师快速看到 ALL/C3/C4/C5 都有收益。
+4,F3,figure,CO/nonCO safety panel,results\current_base_teacher_briefing_pack_20260708\figures\F3_co_nonco_safety.svg,safety,说明 CO rescue 与 nonCO safety 同时成立。
+5,T4,table,P4 selected thresholds,threshold_guard_selected_thresholds.csv,threshold_provenance,强调 tau 来自 validation/calibration，不是 test tuning。
+6,F4,figure,Low-cal budget stability,results\current_base_teacher_briefing_pack_20260708\figures\F4_low_cal_stability.svg,stability,解释低 calibration 下 selector 选择过程的稳定性。
+7,T1,table,Real-route full main table,real_route_mainline_summary.csv,full_context,full-set 作为实际端到端难度背景。
+8,T2,table,Real-route Accepted+Review main table,real_route_post_qc_summary.csv,qc_context,Accepted+Review 是论文主报告切片。
+9,T5,table,P3 low-cal stress,selector_low_cal_metric_summary.csv,stress_table,低 calibration stress 的表格证据。
+10,T6,table,P5 route-gap appendix,light_route_gap_appendix_table.csv,route_gap_appendix,route-gap 只作 appendix，不抢主线。
+11,F5,figure,Route-gap appendix,results\current_base_teacher_briefing_pack_20260708\figures\F5_route_gap_appendix.svg,route_gap_visual,说明 C5 full-set gap 的分类/route-noise 背景。
+12,T7,table,Claim-evidence matrix,claim_evidence_matrix.csv,claim_evidence,最后用 claim-evidence matrix 收束贡献和边界。

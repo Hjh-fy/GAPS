@@ -1,0 +1,9 @@
+slide,title,content,assets
+1,问题与一句话主线,真实部署 route 下，目标域回归需要 profile calibration + guarded rescue。,K1/K2 claims
+2,系统主线图,F6 real-route -> H2.3+ anchor / H8+C4 rescue -> threshold guard -> QC Accepted+Review。,F1
+3,主结果,P4 Accepted+Review ALL/C3/C4/C5 全部优于 H2.3+。,T3 + F2
+4,为什么 guard 安全,CO 上允许 rescue，nonCO H8 usage=0。,F3
+5,阈值来源与无泄漏,tau_C3/C4/C5 由 validation/calibration 选择，test 只做最终审计。,T4
+6,低 calibration 稳定性,预算 12/24/48/80 重采样；budget=80 时 C3/C4/C5 positive gain rate=100%。,T5 + F4
+7,route-gap 作为附录解释,C5 full-set gap 最大，解释 route-noise 背景，不替代 real-route 主线。,T6 + F5
+8,贡献、边界与下一步,贡献 K1-K5；边界是 current-base C12->C345；下一步 P6 跨 source-target 验证。,T7
