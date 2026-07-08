@@ -2,7 +2,7 @@
 
 ## 汇报主线
 
-这次汇报不按“尝试过哪些模型”展开，而按系统逻辑展开：真实部署 route 下，F6 分类基座提供 route 与 risk context；H2.3+ 作为稳健目标域 calibration anchor；H8+C4 作为 CO-priority rescue stream；最后用 validation-selected per-client threshold guard 安全选择输出。
+这次汇报不按“尝试过哪些模型”展开，而按系统逻辑展开：长期部署/FCL 底座先给出分类基座冻结原则；当前主线继承这个原则，用最新 F6 分类基座提供 route 与 risk context；H2.3+ 作为稳健目标域 calibration anchor；H8+C4 作为 CO-priority rescue stream；最后用 validation-selected per-client threshold guard 安全选择输出。
 
 ## 先讲的主结果
 
@@ -47,7 +47,7 @@ P4 threshold guard 在 Accepted+Review ALL 上达到 5.850 / 0.0339，相对 H2.
 | slide | title | content | assets |
 | --- | --- | --- | --- |
 | 1 | 问题与一句话主线 | 真实部署 route 下，目标域回归需要 profile calibration + guarded rescue。 | K1/K2 claims |
-| 2 | 系统主线图 | F6 real-route -> H2.3+ anchor / H8+C4 rescue -> threshold guard -> QC Accepted+Review。 | F1 |
+| 2 | 系统主线图 | FCL/backbone freeze -> F6 real-route -> H2.3+ anchor / H8+C4 rescue -> threshold guard -> QC Accepted+Review。 | F1 |
 | 3 | 主结果 | P4 Accepted+Review ALL/C3/C4/C5 全部优于 H2.3+。 | T3 + F2 |
 | 4 | 为什么 guard 安全 | CO 上允许 rescue，nonCO H8 usage=0。 | F3 |
 | 5 | 阈值来源与无泄漏 | tau_C3/C4/C5 由 validation/calibration 选择，test 只做最终审计。 | T4 |

@@ -4,6 +4,7 @@ from run_current_base_submission_docs_pack import (
     build_archive_inventory,
     build_document_index,
     build_method_chapter_sections,
+    build_source_document_synthesis,
     summarize_archive_inventory,
     write_archive_plan,
     write_method_chapter,
@@ -83,9 +84,13 @@ def test_method_sections_keep_formula_metrics_and_reporting_boundaries():
     sections = build_method_chapter_sections(sample_headline_rows(), sample_modules(), sample_params(), sample_sequence_rows())
     by_id = {row["section_id"]: row for row in sections}
 
+    assert "single-machine simulated federated continual learning" in by_id["S2"]["core_text"]
+    assert "CLS-FlowerExpB-TimeAware2080" in by_id["S3"]["core_text"]
     assert "H8+C4" in by_id["S5"]["core_text"]
+    assert "g_i" in by_id["S5"]["core_text"]
     assert "tau_c" in by_id["S5"]["core_text"]
     assert "5.850 / 0.0339" in by_id["S8"]["core_text"]
+    assert "S_CC" in by_id["S9"]["core_text"]
     assert by_id["S9"]["role"] == "writing boundary"
 
 
@@ -102,6 +107,17 @@ def test_document_index_covers_teacher_method_system_and_figures():
     assert "results/current_base_teacher_briefing_pack_20260708/figures/F1_system_pipeline.svg" in paths
     assert "results/current_base_submission_docs_pack_20260708/paper_method_chapter_draft.zh.md" in paths
     assert any(row["artifact_id"] == "TFS" for row in rows)
+
+
+def test_source_document_synthesis_preserves_backbone_freeze_and_qc_v2_boundaries():
+    rows = build_source_document_synthesis()
+    by_id = {row["source_id"]: row for row in rows}
+
+    assert "server_latest_adapted.pth + logits" in by_id["CLS"]["usable_takeaway"]
+    assert "0.989444" in by_id["CLS"]["usable_takeaway"]
+    assert "F6" in by_id["CLS"]["current_base_update"]
+    assert "single-machine simulated federated continual learning" in by_id["FCL"]["usable_takeaway"]
+    assert "candidate risk signal" in by_id["QCV2"]["current_base_update"]
 
 
 def test_archive_inventory_marks_core_outputs_and_review_candidates(tmp_path: Path):
@@ -151,13 +167,31 @@ def test_docs_are_written_with_expected_sections(tmp_path: Path):
         {"path": "diagnose_old_probe.py", "kind": "script", "status": "archive_candidate_unreviewed", "archive_bucket": "_local_archive_20260708/scripts_exploratory", "reason": "old", "recommended_action": "review_then_move"},
     ]
 
-    write_method_chapter(method_path, sections=sections, modules=sample_modules(), params=sample_params(), sequence_rows=sample_sequence_rows())
-    write_system_index(system_path, document_rows=doc_index, commands=sample_commands(), params=sample_params(), sequence_rows=sample_sequence_rows())
+    write_method_chapter(
+        method_path,
+        sections=sections,
+        modules=sample_modules(),
+        params=sample_params(),
+        sequence_rows=sample_sequence_rows(),
+        source_rows=build_source_document_synthesis(),
+    )
+    write_system_index(
+        system_path,
+        document_rows=doc_index,
+        commands=sample_commands(),
+        params=sample_params(),
+        sequence_rows=sample_sequence_rows(),
+        source_rows=build_source_document_synthesis(),
+    )
     write_archive_plan(archive_path, archive_rows=archive_rows, summary_rows=summarize_archive_inventory(archive_rows))
 
     assert "论文方法章节草稿" in method_path.read_text(encoding="utf-8")
-    assert "ŷ_i" in method_path.read_text(encoding="utf-8")
+    assert "g_i = I" in method_path.read_text(encoding="utf-8")
+    assert "S_{AR}" in method_path.read_text(encoding="utf-8")
+    assert "S_{CC}" in method_path.read_text(encoding="utf-8")
+    assert "CLS-FlowerExpB-TimeAware2080" in method_path.read_text(encoding="utf-8")
     assert "系统文档目录化索引" in system_path.read_text(encoding="utf-8")
     assert "T1-T7 / F1-F5" in system_path.read_text(encoding="utf-8")
+    assert "source document synthesis" in system_path.read_text(encoding="utf-8")
     assert "中间文件归档清单" in archive_path.read_text(encoding="utf-8")
     assert "只移动、不删除" in archive_path.read_text(encoding="utf-8")

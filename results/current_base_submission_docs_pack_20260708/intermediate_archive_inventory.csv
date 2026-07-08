@@ -569,9 +569,13 @@ summarize_regression_candidates_20260624.py,py,archive_candidate_unreviewed,_loc
 summarize_regression_model_only.py,py,archive_candidate_unreviewed,_local_archive_20260708/scripts_exploratory,探索阶段分析/诊断脚本，当前冻结主线未直接依赖,review_then_move
 summarize_target_direct_head_mainline.py,py,archive_candidate_unreviewed,_local_archive_20260708/scripts_exploratory,探索阶段分析/诊断脚本，当前冻结主线未直接依赖,review_then_move
 sweep_t8_multirisk_qc.py,py,archive_candidate_unreviewed,_local_archive_20260708/scripts_exploratory,探索阶段分析/诊断脚本，当前冻结主线未直接依赖,review_then_move
+CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 docs/superpowers/reports/2026-07-05-current-base-paper-story-pack.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 docs/superpowers/reports/2026-07-08-current-base-evidence-freeze.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
+docs/superpowers/reports/2026-07-08-current-base-intermediate-archive-plan.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 docs/superpowers/reports/2026-07-08-current-base-method-story.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
+docs/superpowers/reports/2026-07-08-current-base-paper-method-chapter-draft.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
+docs/superpowers/reports/2026-07-08-current-base-system-doc-index.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 docs/superpowers/reports/2026-07-08-current-base-system-docs.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 docs/superpowers/reports/2026-07-08-current-base-teacher-briefing.zh.md,md,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 export_real_route_threshold_guard_deployment_candidate.py,py,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
@@ -606,6 +610,8 @@ tests/test_real_route_c5_selector_validation.py,py,keep_current_core,,当前论�
 tests/test_real_route_selector_low_cal_stress.py,py,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 tests/test_real_route_threshold_guard_deployment_candidate.py,py,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
 tests/test_route_gap_audit.py,py,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
+面向气体传感器长期部署的单机模拟联邦持续学习系统技术报告草稿.docx,docx,keep_current_core,,当前论文/汇报/复现主线需要保留,keep
+README.md,md,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 Start-Codex-With-Shell-Proxy.cmd,cmd,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 adaptation.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 benchmark_runtime_profiles.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
@@ -617,6 +623,7 @@ codex_shell_proxy_setup.ps1,ps1,manual_review_required,_local_archive_20260708/m
 codex_web_profile_reset.ps1,ps1,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 config.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 data_scheduler.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
+deployment_experience_notebook.md,md,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 docs/superpowers/reports/2026-06-30-classification-correct-regression-mainline.zh.md,md,manual_review_required,_local_archive_20260708/docs_superseded,旧报告可能仍含可追溯讨论，人工确认后再归档,review_before_move
 docs/superpowers/reports/2026-06-30-f6-profile-calibration-system-review.zh.md,md,manual_review_required,_local_archive_20260708/docs_superseded,旧报告可能仍含可追溯讨论，人工确认后再归档,review_before_move
 docs/superpowers/reports/2026-06-30-guarded-profile-selector-story.zh.md,md,manual_review_required,_local_archive_20260708/docs_superseded,旧报告可能仍含可追溯讨论，人工确认后再归档,review_before_move
@@ -746,3 +753,4 @@ validate_feature_schema.py,py,manual_review_required,_local_archive_20260708/mis
 validate_matrix_command_config.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 validate_package_runtime.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
 validate_rich_residual_runtime_candidate.py,py,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move
+代码文件介绍.md,md,manual_review_required,_local_archive_20260708/misc_review,不属于当前冻结主线，但用途不明确,review_before_move

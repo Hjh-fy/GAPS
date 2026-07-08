@@ -73,8 +73,8 @@ def write_f1_system_pipeline(path: Path, policy: dict[str, Any]) -> Path:
     lines = svg_header(1320, 760)
     lines.extend(
         [
-            svg_text(660, 46, "F1 System Pipeline: Real-route Profile Calibration + Guarded CO Rescue", size=24, weight="700"),
-            svg_text(660, 78, "主线：真实部署 route 下，用 H2.3+ 稳健 anchor + H8+C4 CO rescue，再由 validation-selected threshold guard 安全选择", size=15, fill="#475569"),
+            svg_text(660, 46, "F1 System Pipeline: FCL Backbone Freeze -> Guarded CO Rescue", size=24, weight="700"),
+            svg_text(660, 78, "主线：长期部署/FCL 底座冻结分类 route provider；当前 F6 route 接 H2.3+ anchor + H8+C4 rescue + threshold guard", size=15, fill="#475569"),
             svg_rect(70, 160, 180, 92, "#e0f2fe", "#0284c7"),
             svg_text(160, 190, "Target samples", size=16, weight="700"),
             svg_text(160, 216, "C3 / C4 / C5", size=14),
@@ -112,6 +112,7 @@ def write_f1_system_pipeline(path: Path, policy: dict[str, Any]) -> Path:
             svg_text(735, 594, "test labels only for final audit", size=13, fill="#475569"),
             svg_arrow(735, 505, 1010, 338, "#7c3aed"),
             svg_text(660, 706, "Runtime excludes true labels, test labels, oracle route, and oracle-best selector.", size=14, weight="700", fill="#334155"),
+            svg_text(660, 732, "Backbone freeze principle: do not retrain classifier for local regression rescue; update target regression profiles and guards instead.", size=13, fill="#475569"),
             "</svg>",
         ]
     )
@@ -283,7 +284,7 @@ def build_table_figure_sequence(table_rows: Sequence[dict[str, Any]], figure_row
 def build_slide_outline() -> list[dict[str, str]]:
     return [
         {"slide": "1", "title": "问题与一句话主线", "content": "真实部署 route 下，目标域回归需要 profile calibration + guarded rescue。", "assets": "K1/K2 claims"},
-        {"slide": "2", "title": "系统主线图", "content": "F6 real-route -> H2.3+ anchor / H8+C4 rescue -> threshold guard -> QC Accepted+Review。", "assets": "F1"},
+        {"slide": "2", "title": "系统主线图", "content": "FCL/backbone freeze -> F6 real-route -> H2.3+ anchor / H8+C4 rescue -> threshold guard -> QC Accepted+Review。", "assets": "F1"},
         {"slide": "3", "title": "主结果", "content": "P4 Accepted+Review ALL/C3/C4/C5 全部优于 H2.3+。", "assets": "T3 + F2"},
         {"slide": "4", "title": "为什么 guard 安全", "content": "CO 上允许 rescue，nonCO H8 usage=0。", "assets": "F3"},
         {"slide": "5", "title": "阈值来源与无泄漏", "content": "tau_C3/C4/C5 由 validation/calibration 选择，test 只做最终审计。", "assets": "T4"},
@@ -335,7 +336,7 @@ def write_teacher_briefing(
         "",
         "## 汇报主线",
         "",
-        "这次汇报不按“尝试过哪些模型”展开，而按系统逻辑展开：真实部署 route 下，F6 分类基座提供 route 与 risk context；H2.3+ 作为稳健目标域 calibration anchor；H8+C4 作为 CO-priority rescue stream；最后用 validation-selected per-client threshold guard 安全选择输出。",
+        "这次汇报不按“尝试过哪些模型”展开，而按系统逻辑展开：长期部署/FCL 底座先给出分类基座冻结原则；当前主线继承这个原则，用最新 F6 分类基座提供 route 与 risk context；H2.3+ 作为稳健目标域 calibration anchor；H8+C4 作为 CO-priority rescue stream；最后用 validation-selected per-client threshold guard 安全选择输出。",
         "",
         "## 先讲的主结果",
         "",

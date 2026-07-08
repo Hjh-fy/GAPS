@@ -69,6 +69,7 @@ def test_f1_system_pipeline_contains_runtime_nodes_and_thresholds(tmp_path: Path
 
     text = path.read_text(encoding="utf-8")
     assert "F6 real-route" in text
+    assert "Backbone freeze principle" in text
     assert "H2.3+ target profile" in text
     assert "H8+C4 formal rescue" in text
     assert "Per-client threshold guard" in text

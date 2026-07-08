@@ -34,6 +34,8 @@
 | TBR | teacher briefing | results/current_base_teacher_briefing_pack_20260708/teacher_briefing.zh.md | 给老师看的汇报版 | Briefing | source |
 | TFS | teacher briefing | results/current_base_teacher_briefing_pack_20260708/table_figure_sequence.csv | T1-T7 / F1-F5 汇报顺序 | Briefing | source |
 | SLD | teacher briefing | results/current_base_teacher_briefing_pack_20260708/teacher_slide_outline.csv | 8 页汇报提纲 | Briefing | source |
+| SRC1 | source document | CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md | 分类基座冻结、time-aware 20/80 协议、R3aK16 历史主线和 QC v2 边界 | SourceReview | source |
+| SRC2 | source document | 面向气体传感器长期部署的单机模拟联邦持续学习系统技术报告草稿.docx | 单机模拟联邦持续学习系统、原型/漂移/QC 闭环的方法学底座 | SourceReview | source |
 | F1 | paper figures | results/current_base_teacher_briefing_pack_20260708/figures/F1_system_pipeline.svg | F1 论文/汇报图 | Briefing | source |
 | F2 | paper figures | results/current_base_teacher_briefing_pack_20260708/figures/F2_threshold_guard_gains.svg | F2 论文/汇报图 | Briefing | source |
 | F3 | paper figures | results/current_base_teacher_briefing_pack_20260708/figures/F3_co_nonco_safety.svg | F3 论文/汇报图 | Briefing | source |
@@ -42,6 +44,15 @@
 | PMD | paper draft | results/current_base_submission_docs_pack_20260708/paper_method_chapter_draft.zh.md | 论文方法章节中文草稿 | SubmissionDocs | generated |
 | SDX | system index | results/current_base_submission_docs_pack_20260708/system_documentation_index.zh.md | 系统文档目录化索引 | SubmissionDocs | generated |
 | ARC | archive plan | results/current_base_submission_docs_pack_20260708/intermediate_archive_plan.zh.md | 中间文件归档建议 | SubmissionDocs | generated |
+
+## source document synthesis
+
+| id | source | usable takeaway | current-base update | paper role |
+| --- | --- | --- | --- | --- |
+| FCL | 面向气体传感器长期部署的单机模拟联邦持续学习系统技术报告草稿.docx | The system should be described as a single-machine simulated federated continual learning loop: client-local training uploads parameters/prototypes/statistics, the server aligns representation and drift statistics, and deployment adds online adaptation, calibration, and QC. | Use this as the method-level architecture layer before the current F6 -> H2.3+/H8+C4 -> threshold guard story; do not claim distributed RPC in the current local simulation. | System motivation and full pipeline formula. |
+| CLS | CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md | CLS-FlowerExpB-TimeAware2080 freezes server_latest_adapted.pth + logits under C12->C345 time-aware 20/80 protocol; clean rerun weighted accuracy is 0.989444, NLL 0.107643, ECE 0.009875. | Treat this as the classification-backbone freeze principle. The current paper pack uses the latest F6 real-route base as the deployed route provider, so CLS/F6 should be written as lineage, not as two competing claims. | Classification route-contract and no-retrain justification. |
+| REG | CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md | REG-R3aK16-AutoV2-TimeAware2080 was the earlier regression freeze: source C1/C2 FedAvg plus per-client auto_v2/QC; it located C5-CO as the weak cell. | Current P4 evidence supersedes this regression branch with H2.3+ anchor plus H8+C4 guarded rescue. r3ak16 remains historical evidence and an efficiency decision, not a retraining target. | Negative/legacy result and motivation for guarded CO rescue. |
+| QCV2 | CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md | QC v2 can generate 40-D response descriptors and risk signals, but single composite/route thresholds did not beat old QC v1 guardrails. | Keep QC v2 as a candidate risk signal and diagnostic module. The current P4 threshold guard still reports validation-selected per-client thresholds and Accepted+Review metrics. | QC boundary and deployment-risk caveat. |
 
 ## 实验命令索引
 

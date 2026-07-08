@@ -28,6 +28,8 @@ DEFAULT_ARCHIVE_PLAN_DOC = Path("docs/superpowers/reports/2026-07-08-current-bas
 
 
 CORE_KEEP_PATHS = {
+    "CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md",
+    "面向气体传感器长期部署的单机模拟联邦持续学习系统技术报告草稿.docx",
     "export_real_route_threshold_guard_deployment_candidate.py",
     "run_current_base_evidence_freeze.py",
     "run_current_base_method_story.py",
@@ -97,6 +99,39 @@ def threshold_text(params: Sequence[dict[str, str]]) -> str:
     return " / ".join(f"{name}={by_name.get(name, '')}" for name in ["tau_C3", "tau_C4", "tau_C5"])
 
 
+def build_source_document_synthesis() -> list[dict[str, str]]:
+    return [
+        {
+            "source_id": "FCL",
+            "source_file": "面向气体传感器长期部署的单机模拟联邦持续学习系统技术报告草稿.docx",
+            "usable_takeaway": "The system should be described as a single-machine simulated federated continual learning loop: client-local training uploads parameters/prototypes/statistics, the server aligns representation and drift statistics, and deployment adds online adaptation, calibration, and QC.",
+            "current_base_update": "Use this as the method-level architecture layer before the current F6 -> H2.3+/H8+C4 -> threshold guard story; do not claim distributed RPC in the current local simulation.",
+            "paper_role": "System motivation and full pipeline formula.",
+        },
+        {
+            "source_id": "CLS",
+            "source_file": "CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md",
+            "usable_takeaway": "CLS-FlowerExpB-TimeAware2080 freezes server_latest_adapted.pth + logits under C12->C345 time-aware 20/80 protocol; clean rerun weighted accuracy is 0.989444, NLL 0.107643, ECE 0.009875.",
+            "current_base_update": "Treat this as the classification-backbone freeze principle. The current paper pack uses the latest F6 real-route base as the deployed route provider, so CLS/F6 should be written as lineage, not as two competing claims.",
+            "paper_role": "Classification route-contract and no-retrain justification.",
+        },
+        {
+            "source_id": "REG",
+            "source_file": "CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md",
+            "usable_takeaway": "REG-R3aK16-AutoV2-TimeAware2080 was the earlier regression freeze: source C1/C2 FedAvg plus per-client auto_v2/QC; it located C5-CO as the weak cell.",
+            "current_base_update": "Current P4 evidence supersedes this regression branch with H2.3+ anchor plus H8+C4 guarded rescue. r3ak16 remains historical evidence and an efficiency decision, not a retraining target.",
+            "paper_role": "Negative/legacy result and motivation for guarded CO rescue.",
+        },
+        {
+            "source_id": "QCV2",
+            "source_file": "CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md",
+            "usable_takeaway": "QC v2 can generate 40-D response descriptors and risk signals, but single composite/route thresholds did not beat old QC v1 guardrails.",
+            "current_base_update": "Keep QC v2 as a candidate risk signal and diagnostic module. The current P4 threshold guard still reports validation-selected per-client thresholds and Accepted+Review metrics.",
+            "paper_role": "QC boundary and deployment-risk caveat.",
+        },
+    ]
+
+
 def build_method_chapter_sections(
     headline_rows: Sequence[dict[str, Any]],
     modules: Sequence[dict[str, str]],
@@ -119,17 +154,17 @@ def build_method_chapter_sections(
         },
         {
             "section_id": "S2",
-            "title": "系统总览：F6 real-route 到双回归流",
+            "title": "系统总览：长期部署底座到 F6 real-route 双回归流",
             "role": "system overview",
-            "core_text": f"系统由 {module_names} 组成。F6 分类基座先给出 real-route/risk context，H2.3+ 作为稳健目标域 anchor，H8+C4 作为 CO-priority rescue stream，最后由 per-client threshold guard 做输出选择。",
+            "core_text": f"完整系统应先写成 single-machine simulated federated continual learning 底座：数据预处理/设备划分产生客户端窗口，训练期同步参数、语义原型、漂移统计和设备残差，部署期再做目标端校准与 QC。当前可提交主线在这个底座上抽象为 {module_names}：F6 分类基座给出 real-route/risk context，H2.3+ 作为稳健目标域 anchor，H8+C4 作为 CO-priority rescue stream，最后由 per-client threshold guard 做输出选择。",
             "evidence_refs": "F1",
-            "write_note": "这里放 F1，并明确 runtime 不能使用 true label、test label 或 oracle route。",
+            "write_note": "这里放 F1，并明确当前实验不是完整重跑联邦持续学习闭环，而是把冻结/最新分类基座输出接入回归选择器；runtime 不能使用 true label、test label 或 oracle route。",
         },
         {
             "section_id": "S3",
             "title": "F6 分类基座：可部署 route context",
             "role": "classification base",
-            "core_text": "F6 的作用不是直接改善回归数值，而是在部署时提供 route_class 与风险上下文，决定后续是否允许进入 CO rescue。论文中应强调 real-route 是主线，oracle-route/classification-correct 只用于机制解释或附录对照。",
+            "core_text": "旧手册中的 CLS-FlowerExpB-TimeAware2080 给出了分类基座冻结原则：使用 server_latest_adapted.pth + logits，分类基座一旦达到可部署精度就不再为了回归局部问题反复重训。当前论文包延续这个原则，但具体 route provider 升级为最新 F6 real-route base。F6 的作用不是直接改善回归数值，而是在部署时提供 route_class 与风险上下文，决定后续是否允许进入 CO rescue。",
             "evidence_refs": "F1, T6, F5",
             "write_note": "老师已强调重点报告分类正确下的回归性能，但主线仍要守住 real-route，可把 classification-correct 作为机制补充。",
         },
@@ -145,7 +180,7 @@ def build_method_chapter_sections(
             "section_id": "S5",
             "title": "Per-client threshold guard：验证集选择的安全门控",
             "role": "selector formula",
-            "core_text": f"对客户端 c 的样本 i，记 F6 给出的 route 为 r_i，风险分数为 q_i，验证集选择阈值为 tau_c，则 ŷ_i = H8+C4_i if r_i=CO and q_i>=tau_c; otherwise ŷ_i = H2.3+_i。当前阈值为 {taus}。这个公式把 H8+C4 限制在 CO rescue 条件内，避免 nonCO 被高风险回归头误伤。",
+            "core_text": f"对客户端 c 的样本 i，记 F6 给出的 route 为 r_i，风险分数为 q_i，验证集选择阈值为 tau_c。先定义门控变量 g_i = I[r_i=CO] * I[q_i>=tau_c]，再写成 ŷ_i = (1-g_i) * ŷ_i^H2.3+ + g_i * ŷ_i^H8+C4。当前阈值为 {taus}。这个公式把 H8+C4 限制在 CO rescue 条件内，避免 nonCO 被高风险回归头误伤。",
             "evidence_refs": "T4",
             "write_note": "必须写清 tau_c 来自 calibration/validation，不来自 test tuning。",
         },
@@ -153,7 +188,7 @@ def build_method_chapter_sections(
             "section_id": "S6",
             "title": "QC Accepted+Review：论文主报告切片",
             "role": "reporting protocol",
-            "core_text": "Accepted+Review 是当前论文主报告切片，因为它对应系统认为可报告或需人工复核但仍可纳入分析的样本；Reject 保留为风险暴露和部署边界，不作为主性能口径。",
+            "core_text": "Accepted+Review 是当前论文主报告切片，因为它对应系统认为可报告或需人工复核但仍可纳入分析的样本；Reject 保留为风险暴露和部署边界，不作为主性能口径。QC v2 的 40-D response descriptor 可以写作候选风险信号，但旧手册已经说明它不能直接替代稳定 QC v1/P4 guardrail，因此当前主报告仍以 P4 validation-selected threshold guard 为准。",
             "evidence_refs": "T2, T3",
             "write_note": "这一段回应老师要求：重点报告分类正确/可报告路径下的回归指标，同时保留 full-set 作为端到端难度背景。",
         },
@@ -177,7 +212,7 @@ def build_method_chapter_sections(
             "section_id": "S9",
             "title": "写作边界与后续验证",
             "role": "writing boundary",
-            "core_text": f"当前证据边界是 current-base C12->C345，图表顺序为 {figure_table_ids}。P5 route-gap 是附录解释，不替代 real-route 主线。下一步 P6 应扩展不同 source-target 组合，用同一套 T/F 结构复现结论。",
+            "core_text": f"当前证据边界是 current-base C12->C345，图表顺序为 {figure_table_ids}。P5 route-gap 是附录解释，不替代 real-route 主线。报告口径建议同时保留 S_AR={{i | qc_i in accept/review}} 与 S_CC={{i | r_i=y_i^cls}}：real-route Accepted+Review 是部署主线，classification-correct Accepted+Review 是老师关心的机制切片。下一步 P6 应扩展不同 source-target 组合，用同一套 T/F 结构复现结论。",
             "evidence_refs": "T6, T7, F5",
             "write_note": "结尾要主动讲边界，避免老师追问时显得是在回避泛化问题。",
         },
@@ -262,6 +297,22 @@ def build_document_index(
             "path": norm_path(teacher_dir / "teacher_slide_outline.csv"),
             "purpose": "8 页汇报提纲",
             "stage": "Briefing",
+            "status": "source",
+        },
+        {
+            "artifact_id": "SRC1",
+            "category": "source document",
+            "path": "CLS_ExpB_StrongDA_2080_Classification_Backbone_Freeze_Manual.md",
+            "purpose": "分类基座冻结、time-aware 20/80 协议、R3aK16 历史主线和 QC v2 边界",
+            "stage": "SourceReview",
+            "status": "source",
+        },
+        {
+            "artifact_id": "SRC2",
+            "category": "source document",
+            "path": "面向气体传感器长期部署的单机模拟联邦持续学习系统技术报告草稿.docx",
+            "purpose": "单机模拟联邦持续学习系统、原型/漂移/QC 闭环的方法学底座",
+            "stage": "SourceReview",
             "status": "source",
         },
     ]
@@ -383,6 +434,8 @@ def build_archive_inventory(root: Path) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     candidates: list[Path] = []
     candidates.extend(sorted(root.glob("*.py")))
+    candidates.extend(sorted(root.glob("*.md")))
+    candidates.extend(sorted(root.glob("*.docx")))
     candidates.extend(sorted(root.glob("*.ps1")))
     candidates.extend(sorted(root.glob("*.cmd")))
     candidates.extend(sorted((root / "scripts").glob("*")) if (root / "scripts").exists() else [])
@@ -418,6 +471,7 @@ def write_method_chapter(
     modules: Sequence[dict[str, str]],
     params: Sequence[dict[str, str]],
     sequence_rows: Sequence[dict[str, str]],
+    source_rows: Sequence[dict[str, str]],
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -427,18 +481,29 @@ def write_method_chapter(
         "",
         "## 章节主线",
         "",
-        "本文方法部分建议围绕一个核心句展开：在真实部署 route 下，目标域气体回归需要以 F6 分类基座提供的 route/risk context 为入口，以 H2.3+ 作为稳健 target calibration anchor，以 H8+C4 作为 CO-priority rescue stream，再通过 validation-selected per-client threshold guard 选择最终输出。",
+        "本文方法部分建议围绕一个核心句展开：在长期部署的 single-machine simulated federated continual learning 底座上，先冻结/继承可部署分类 route provider，再在真实部署 route 下让目标域气体回归以 F6 分类基座提供的 route/risk context 为入口，以 H2.3+ 作为稳健 target calibration anchor，以 H8+C4 作为 CO-priority rescue stream，再通过 validation-selected per-client threshold guard 选择最终输出。",
         "",
-        "## 方法公式",
+        "## 完整公式流程",
         "",
-        "对客户端 `c` 的样本 `i`，记 F6 输出的 route 为 `r_i`，风险分数为 `q_i`，客户端阈值为 `tau_c`：",
+        "先把长期部署系统写成四层：预处理/划分、分类基座冻结、双回归流、QC/reporting。",
         "",
         "```text",
-        "ŷ_i = H8+C4_i,  if r_i = CO and q_i >= tau_c",
-        "ŷ_i = H2.3+_i, otherwise",
+        "x_{u,j}(t) -> z_i in R^{100 x 8}, client c_i, gas label y_i^cls, ppm label y_i",
+        "(theta_cls*, M*) = FCL_train(D_source_train, D_target_cal)",
+        "r_i = argmax softmax(f_cls(z_i; theta_cls*))",
+        "q_i = Q(z_i, r_i, classifier uncertainty, response risk)",
+        "ŷ_i^A = H2.3+(z_i, c_i, r_i)",
+        "ŷ_i^R = H8+C4(z_i, c_i, r_i)",
+        "g_i = I[r_i = CO] * I[q_i >= tau_{c_i}]",
+        "ŷ_i = (1 - g_i) * ŷ_i^A + g_i * ŷ_i^R",
+        "qc_i = QC(ŷ_i, q_i; eta_accept, eta_review)",
+        "S_{AR} = {i | qc_i in {accept, review}}",
+        "S_{CC} = {i | r_i = y_i^cls}",
         "```",
         "",
-        f"当前阈值：{threshold_text(params)}。阈值只来自 calibration/validation，test 仅用于最终 audit。",
+        "其中 `theta_cls*` 对应冻结/继承的分类 route provider；旧手册里的 `CLS-FlowerExpB-TimeAware2080` 说明了为什么分类基座一旦可用就不应为了局部回归误差反复重训，当前主线则使用最新 F6 real-route base。`M*` 表示联邦持续学习底座中维护的语义原型、漂移统计和设备残差等记忆项；当前 P4 不重新训练这部分，只消费已冻结/最新分类输出。",
+        "",
+        f"当前 threshold guard 阈值：{threshold_text(params)}。阈值只来自 calibration/validation，test 仅用于最终 audit。论文报告时可同时给出 `S_{{AR}}` 和 `S_{{AR}} ∩ S_{{CC}}`：前者对应真实部署 real-route 主线，后者对应老师强调的 classification-correct 机制切片。",
         "",
         "## 可直接改写的章节段落",
         "",
@@ -458,6 +523,19 @@ def write_method_chapter(
         )
     lines.extend(
         [
+            "## 源文档综合",
+            "",
+            *markdown_table(
+                source_rows,
+                [
+                    ("id", "source_id"),
+                    ("source", "source_file"),
+                    ("usable takeaway", "usable_takeaway"),
+                    ("current-base update", "current_base_update"),
+                    ("paper role", "paper_role"),
+                ],
+            ),
+            "",
             "## 模块-方法对应表",
             "",
             *markdown_table(
@@ -489,6 +567,8 @@ def write_method_chapter(
             "- real-route 是主线，oracle-route/classification-correct 只作为机制解释或附录。",
             "- H8+C4 是受控 CO rescue，不是全量替换 H2.3+。",
             "- r3ak16 当前不进入主线复训，除非后续 P6 发现新的 source-target 组合需要额外候选。",
+            "- CLS-FlowerExpB-TimeAware2080 是分类基座冻结原则和历史路线来源；当前指标主线以最新 F6 real-route base + P4 threshold guard 为准。",
+            "- QC v2 40-D response descriptor 只写成候选风险信号，不写成已替代 P4/old-QC 的主策略。",
             "- P5 route-gap 用来解释 full-set 难度，不替代 Accepted+Review 主结果。",
         ]
     )
@@ -502,6 +582,7 @@ def write_system_index(
     commands: Sequence[dict[str, str]],
     params: Sequence[dict[str, str]],
     sequence_rows: Sequence[dict[str, str]],
+    source_rows: Sequence[dict[str, str]],
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -535,6 +616,19 @@ def write_system_index(
                 ("purpose", "purpose"),
                 ("stage", "stage"),
                 ("status", "status"),
+            ],
+        ),
+        "",
+        "## source document synthesis",
+        "",
+        *markdown_table(
+            source_rows,
+            [
+                ("id", "source_id"),
+                ("source", "source_file"),
+                ("usable takeaway", "usable_takeaway"),
+                ("current-base update", "current_base_update"),
+                ("paper role", "paper_role"),
             ],
         ),
         "",
@@ -660,11 +754,13 @@ def run(args: argparse.Namespace) -> None:
     sequence_rows = read_csv(teacher_dir / "table_figure_sequence.csv")
 
     sections = build_method_chapter_sections(headline_rows, modules, params, sequence_rows)
+    source_rows = build_source_document_synthesis()
     document_rows = build_document_index(freeze_dir=freeze_dir, method_dir=method_dir, teacher_dir=teacher_dir, output_dir=out_dir)
     archive_rows = build_archive_inventory(Path(args.workspace_root))
     summary_rows = summarize_archive_inventory(archive_rows)
 
     write_csv(out_dir / "paper_method_chapter_sections.csv", sections)
+    write_csv(out_dir / "source_document_synthesis.csv", source_rows)
     write_csv(out_dir / "system_document_index.csv", document_rows)
     write_csv(out_dir / "intermediate_archive_inventory.csv", archive_rows)
     write_csv(out_dir / "archive_plan_summary.csv", summary_rows)
@@ -672,14 +768,14 @@ def run(args: argparse.Namespace) -> None:
     method_path = out_dir / "paper_method_chapter_draft.zh.md"
     system_path = out_dir / "system_documentation_index.zh.md"
     archive_path = out_dir / "intermediate_archive_plan.zh.md"
-    write_method_chapter(method_path, sections=sections, modules=modules, params=params, sequence_rows=sequence_rows)
-    write_system_index(system_path, document_rows=document_rows, commands=commands, params=params, sequence_rows=sequence_rows)
+    write_method_chapter(method_path, sections=sections, modules=modules, params=params, sequence_rows=sequence_rows, source_rows=source_rows)
+    write_system_index(system_path, document_rows=document_rows, commands=commands, params=params, sequence_rows=sequence_rows, source_rows=source_rows)
     write_archive_plan(archive_path, archive_rows=archive_rows, summary_rows=summary_rows)
 
     if args.method_doc:
-        write_method_chapter(Path(args.method_doc), sections=sections, modules=modules, params=params, sequence_rows=sequence_rows)
+        write_method_chapter(Path(args.method_doc), sections=sections, modules=modules, params=params, sequence_rows=sequence_rows, source_rows=source_rows)
     if args.system_index_doc:
-        write_system_index(Path(args.system_index_doc), document_rows=document_rows, commands=commands, params=params, sequence_rows=sequence_rows)
+        write_system_index(Path(args.system_index_doc), document_rows=document_rows, commands=commands, params=params, sequence_rows=sequence_rows, source_rows=source_rows)
     if args.archive_plan_doc:
         write_archive_plan(Path(args.archive_plan_doc), archive_rows=archive_rows, summary_rows=summary_rows)
 
@@ -689,6 +785,7 @@ def run(args: argparse.Namespace) -> None:
         "teacher_dir": str(teacher_dir),
         "outputs": [
             "paper_method_chapter_sections.csv",
+            "source_document_synthesis.csv",
             "system_document_index.csv",
             "intermediate_archive_inventory.csv",
             "archive_plan_summary.csv",
