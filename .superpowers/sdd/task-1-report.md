@@ -83,3 +83,35 @@ The manifest remains `incomplete` solely because the controller has not copied `
 ## Commit
 
 Task implementation commit: `7d3213a` (`feat: freeze IoT-J experiment inputs`).
+
+## Matrix Recovery Fix (2026-07-11)
+
+The controller recovered all six clean-matrix directories into `results/source_target_classification_matrix_20260708_clean/`. The first recovered-artifact audit exposed a resolver defect: it unioned short priority IDs (`F4`, `F5`, `R1`-`R4`) with discovered full directory names, producing 12 rows and six false missing aliases.
+
+### Regression Test
+
+Added `test_audit_inputs_uses_full_priority_matrix_directory_names_without_duplicates`. It creates all six recovered full-name directories, each with `run_config.json` and `server_latest_adapted.pth`, plus a present H2.3+ input. Before the fix, the focused suite failed as expected:
+
+```text
+..F.
+AssertionError: assert 'incomplete' == 'complete'
+```
+
+The audit now maps the six priority IDs to their canonical directory names and unions discovered directories with those full names, never the short IDs. Focused verification after the fix:
+
+```text
+python -m pytest tests/test_iotj_experiment_input_audit.py -q --basetemp .tmp_pytest
+....                                                                     [100%]
+4 passed in 0.32s
+```
+
+### Recovered Manifest
+
+```text
+python scripts/audit_iotj_experiment_inputs.py --output results/iotj_experiment_freeze_20260711/input_manifest.json
+Wrote results\iotj_experiment_freeze_20260711\input_manifest.json: 1207 artifacts, 6 matrix runs, status=complete
+```
+
+The regenerated manifest records 1,207 present artifacts, zero missing artifacts, and exactly six complete canonical matrix rows: `F4_C1234_to_C5_fixed_da_strong_r25`, `F5_C1_to_C2345_fixed_da_strong_r25`, `R1_C5_to_C1_fixed_da_strong_r25`, `R2_C45_to_C1_fixed_da_strong_r25`, `R3_C345_to_C1_fixed_da_strong_r25`, and `R4_C2345_to_C1_fixed_da_strong_r25`.
+
+Task 1 status is now DONE. The retained environment note is that pytest requires `--basetemp .tmp_pytest` in this worker session because its default system temporary base is inaccessible.

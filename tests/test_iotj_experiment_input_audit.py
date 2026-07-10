@@ -52,6 +52,36 @@ def test_audit_inputs_marks_missing_matrix_requirements(tmp_path: Path) -> None:
     assert checkpoint["status"] == "missing"
 
 
+def test_audit_inputs_uses_full_priority_matrix_directory_names_without_duplicates(
+    tmp_path: Path,
+) -> None:
+    matrix_root = tmp_path / "source_target_classification_matrix_20260708_clean"
+    full_run_names = [
+        "F4_C1234_to_C5_fixed_da_strong_r25",
+        "F5_C1_to_C2345_fixed_da_strong_r25",
+        "R1_C5_to_C1_fixed_da_strong_r25",
+        "R2_C45_to_C1_fixed_da_strong_r25",
+        "R3_C345_to_C1_fixed_da_strong_r25",
+        "R4_C2345_to_C1_fixed_da_strong_r25",
+    ]
+    for run_name in full_run_names:
+        run_dir = matrix_root / run_name
+        run_dir.mkdir(parents=True)
+        (run_dir / "run_config.json").write_text("{}\n", encoding="utf-8")
+        (run_dir / "server_latest_adapted.pth").write_bytes(b"checkpoint")
+    h23_stream = tmp_path / "h2_3_stream.json"
+    h23_stream.write_text("{}\n", encoding="utf-8")
+
+    manifest = audit_inputs([h23_stream, matrix_root])
+
+    assert manifest["status"] == "complete"
+    assert [run["run_id"] for run in manifest["matrix_runs"]] == full_run_names
+    assert all(run["status"] == "complete" for run in manifest["matrix_runs"])
+    assert not {"F4", "F5", "R1", "R2", "R3", "R4"}.intersection(
+        run["run_id"] for run in manifest["matrix_runs"]
+    )
+
+
 def test_summarize_primary_dataset_counts_target_calibration_by_class_and_concentration(
     tmp_path: Path,
 ) -> None:

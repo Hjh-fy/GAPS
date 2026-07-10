@@ -28,7 +28,14 @@ DEFAULT_OUTPUT = Path("results/iotj_experiment_freeze_20260711/input_manifest.js
 
 SOURCE_CLIENTS = (1, 2)
 TARGET_CLIENTS = (3, 4, 5)
-MATRIX_PRIORITY_RUN_IDS = ("F4", "F5", "R1", "R2", "R3", "R4")
+MATRIX_PRIORITY_RUN_DIRECTORIES = {
+    "F4": "F4_C1234_to_C5_fixed_da_strong_r25",
+    "F5": "F5_C1_to_C2345_fixed_da_strong_r25",
+    "R1": "R1_C5_to_C1_fixed_da_strong_r25",
+    "R2": "R2_C45_to_C1_fixed_da_strong_r25",
+    "R3": "R3_C345_to_C1_fixed_da_strong_r25",
+    "R4": "R4_C2345_to_C1_fixed_da_strong_r25",
+}
 MATRIX_REQUIRED_FILES = ("server_latest_adapted.pth", "run_config.json")
 HASH_CHUNK_SIZE = 1024 * 1024
 CALIBRATION_FIT_RATIO = 0.75
@@ -93,7 +100,7 @@ def _audit_matrix_root(root: Path, entries: list[dict[str, Any]]) -> list[dict[s
     discovered = []
     if resolved_root.is_dir():
         discovered = [item.name for item in resolved_root.iterdir() if item.is_dir()]
-    run_ids = sorted(set(discovered).union(MATRIX_PRIORITY_RUN_IDS))
+    run_ids = sorted(set(discovered).union(MATRIX_PRIORITY_RUN_DIRECTORIES.values()))
     runs: list[dict[str, Any]] = []
 
     for run_id in run_ids:
