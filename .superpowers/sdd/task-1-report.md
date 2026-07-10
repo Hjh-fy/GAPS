@@ -1,117 +1,91 @@
-# Task 1 Report: IoT-J Input Freeze
+# Task 1 Report: Corrected C12-to-C5 Input Freeze
 
 Date: 2026-07-11
 
 ## Status
 
-DONE_WITH_CONCERNS. The read-only local audit, focused tests, and frozen manifest are complete. The clean matrix artifacts remain controller-owned and unavailable locally.
+DONE. The corrected C1/C2 source and C5-only target inputs are validated and frozen. No local simulated training was run.
 
-## Changed Files
+## Owned Files
 
-- `scripts/audit_iotj_experiment_inputs.py`: read-only SHA-256 inventory, primary split summary, and required matrix-run gate.
-- `tests/test_iotj_experiment_input_audit.py`: manifest-field, missing-matrix, and primary split-count coverage.
-- `results/iotj_experiment_freeze_20260711/input_manifest.json`: generated immutable local input manifest.
-- `docs/experiments/iotj_system_experiment_notebook.md`: Task 1 command, output, finding, failure, and next-action record.
-- `.superpowers/sdd/task-1-report.md`: this report.
+- `scripts/audit_iotj_experiment_inputs.py`
+- `tests/test_iotj_experiment_input_audit.py`
+- `results/iotj_experiment_freeze_20260711/input_manifest.json`
+- `docs/experiments/iotj_system_experiment_notebook.md`
+- `.superpowers/sdd/task-1-report.md`
+
+## Reviewer Fixes
+
+1. Replaced matrix-root name heuristics with `audit_matrix_run(run_dir, expected)`. Arbitrary directory names receive required-file and config validation.
+2. Switched dataset authority to structured `split_info.json`. Completion now rejects missing metadata, wrong C5 target, wrong seed, wrong ratios, target training, wrong stratification, missing active splits, and wrong C5 counts.
+3. Made canonical F2 the only required run. Sibling directories are `inventory_only` and cannot change primary completeness.
+4. Added protected-output validation. The output cannot equal an input artifact or be contained by the dataset or run directory.
+5. Made `build_manifest` deterministic. The wall-clock value is isolated under `provenance.generated_at_utc` by `with_provenance`.
+6. Restricted primary dataset summaries and artifacts to C1, C2, and C5. C3/C4 remain shared-root source arrays but are absent from primary clients, target rows, and artifact paths.
 
 ## TDD Evidence
 
-1. Initial focused test command:
+Initial red run against the old implementation:
 
-   ```text
-   python -m pytest tests/test_iotj_experiment_input_audit.py -q
-   ModuleNotFoundError: No module named 'scripts.audit_iotj_experiment_inputs'
-   ```
+```text
+python -m pytest tests/test_iotj_experiment_input_audit.py -q --basetemp .tmp_pytest/task1-c12-c5
+.FFFFFFFFFFFFFFFFFFFFFFFFFFF                                             [100%]
+27 failed, 1 passed in 2.34s
+```
 
-   This was the expected red state before the audit module existed.
+The failures covered missing explicit run APIs, missing metadata/config validation, old C345 client selection, extra-run gating, output collisions, and nondeterministic payload structure.
 
-2. Protocol-freeze assertion added after the first green state:
+Green run after implementation:
 
-   ```text
-   ..F
-   KeyError: 'calibration_fit_ratio'
-   ```
-
-   This was the expected red state before the manifest explicitly recorded the fixed `75%/25%` calibration fit/validation partition.
-
-3. Final focused verification:
-
-   ```text
-   python -m pytest tests/test_iotj_experiment_input_audit.py -q --basetemp .tmp_pytest
-   ...                                                                      [100%]
-   3 passed in 0.21s
-   ```
-
-4. Compile check:
-
-   ```text
-   python -m py_compile scripts/audit_iotj_experiment_inputs.py
-   Exit code: 0
-   ```
-
-The unmodified default pytest command cannot create its `tmp_path` fixtures because the system temporary base raises `WinError 5` before test execution. The focused suite passes with the workspace-local `--basetemp .tmp_pytest` override; no production behavior depends on that override.
+```text
+python -m pytest tests/test_iotj_experiment_input_audit.py -q --basetemp .tmp_pytest/task1-c12-c5
+............................                                             [100%]
+28 passed in 3.90s
+```
 
 ## Generated Manifest
 
-Command:
+Command and exact output:
 
 ```text
-python scripts/audit_iotj_experiment_inputs.py --output results/iotj_experiment_freeze_20260711/input_manifest.json
-Wrote results\iotj_experiment_freeze_20260711\input_manifest.json: 109 artifacts, 6 matrix runs, status=incomplete
+python scripts/audit_iotj_experiment_inputs.py --data-root dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid --run-dir results/source_target_classification_matrix_20260630/F2_C12_to_C5_fixed_da_strong_r25 --output results/iotj_experiment_freeze_20260711/input_manifest.json
+Wrote results\iotj_experiment_freeze_20260711\input_manifest.json: 228 artifacts, 1 required run, status=complete
 ```
 
-Summary:
+Manifest summary:
 
-- Primary dataset status: `complete`; data root is `dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid`.
-- Protocol freeze: source clients `C1,C2`; target clients `C3,C4,C5`; seed `42`; calibration/test `20%/80%`; inner calibration fit/validation `75%/25%`.
-- Target calibration/test counts: C3 `680/2680`, C4 `320/1360`, C5 `320/1360`.
-- Artifact records: 97 present and 12 missing, each with resolved path, role, existence, byte size, SHA-256, and status.
-- Matrix inventory: F4, F5, R1, R2, R3, and R4 are each `missing` both `server_latest_adapted.pth` and `run_config.json`.
+- Overall status: `complete`.
+- Artifacts: 228 present, 0 missing, 228 valid 64-character SHA-256 hashes.
+- Active clients: exactly C1, C2, and C5; inactive C3/C4 artifact paths: 0.
+- Dataset validation: `complete`, 0 errors, 1 warning.
+- Warning: `split_info.protocol` is stale; structured target and split fields are authoritative.
+- C5 calibration/test: 320/1360 windows.
+- C5 calibration classes: 80/80/80/80; test classes: 340/340/340/340.
+- Required runs: exactly one canonical F2 row, `complete`.
+- F2 inventory: 183 files, 11,522,104 bytes; required config, history, and adapted checkpoint present.
+- F2 config: rounds 25, strategy `gaps`, profile `strong_cls`, source validation C1/C2 only, target calibration C5 only, DA enabled, 100 steps, target CE 0, adapted weights used globally.
+- Extra required runs: none. F5 and reverse R1-R4 do not participate in completeness.
 
-## Self-Review
+## Self-Review Checklist
 
-- Confirmed the script uses chunked `hashlib.sha256` reads and writes only the selected manifest output.
-- Confirmed unavailable matrix files remain explicit manifest records instead of removing unrelated local inputs.
-- Confirmed primary split counts derive from saved feature, classification-label, and regression-label arrays without changing them.
-- Reviewed the staged task-only diff and ran `git diff --cached --check` successfully.
-- Verified the generated JSON parses, reports a complete primary dataset, preserves the calibration partition, and reports exactly six missing priority matrix runs.
+- [x] Read the corrected brief, current plan, and current experiment notebook before editing.
+- [x] Preserved the visibly superseded C12-to-C345 notebook findings.
+- [x] Kept `audit_inputs(paths)` for generic file hashing without matrix-name inference.
+- [x] Tested arbitrary-name run validation and all three required F2 files.
+- [x] Tested every structured dataset contract and exact C5 counts.
+- [x] Tested every required F2 config field, including rejection of C3/C4 target calibration.
+- [x] Tested that extra run directories are inventory-only.
+- [x] Tested output equality and containment before writing.
+- [x] Tested stable payload equality with provenance timestamps isolated.
+- [x] Verified every present manifest artifact has a SHA-256 hash.
+- [x] Verified no C3/C4 primary artifact paths or client summaries exist.
+- [x] Ran no local simulated training, SSH, or SCP.
+- [x] Reviewed only Task 1 owned-file diffs and ran whitespace checks.
 
-## Concerns and Next Action
+## Concerns
 
-The manifest remains `incomplete` solely because the controller has not copied `/root/GAPS/results/source_target_classification_matrix_20260708_clean/` to `results/source_target_classification_matrix_20260708_clean/`. No SSH/SCP or other cloud transfer was attempted. After controller recovery, rerun the manifest command to freeze the recovered checkpoints and configs.
+No blocking concerns. The single validation warning is intentional: the free-text `split_info.protocol` label is stale, while all binding structured fields pass.
 
 ## Commit
 
-Task implementation commit: `7d3213a` (`feat: freeze IoT-J experiment inputs`).
-
-## Matrix Recovery Fix (2026-07-11)
-
-The controller recovered all six clean-matrix directories into `results/source_target_classification_matrix_20260708_clean/`. The first recovered-artifact audit exposed a resolver defect: it unioned short priority IDs (`F4`, `F5`, `R1`-`R4`) with discovered full directory names, producing 12 rows and six false missing aliases.
-
-### Regression Test
-
-Added `test_audit_inputs_uses_full_priority_matrix_directory_names_without_duplicates`. It creates all six recovered full-name directories, each with `run_config.json` and `server_latest_adapted.pth`, plus a present H2.3+ input. Before the fix, the focused suite failed as expected:
-
-```text
-..F.
-AssertionError: assert 'incomplete' == 'complete'
-```
-
-The audit now maps the six priority IDs to their canonical directory names and unions discovered directories with those full names, never the short IDs. Focused verification after the fix:
-
-```text
-python -m pytest tests/test_iotj_experiment_input_audit.py -q --basetemp .tmp_pytest
-....                                                                     [100%]
-4 passed in 0.32s
-```
-
-### Recovered Manifest
-
-```text
-python scripts/audit_iotj_experiment_inputs.py --output results/iotj_experiment_freeze_20260711/input_manifest.json
-Wrote results\iotj_experiment_freeze_20260711\input_manifest.json: 1207 artifacts, 6 matrix runs, status=complete
-```
-
-The regenerated manifest records 1,207 present artifacts, zero missing artifacts, and exactly six complete canonical matrix rows: `F4_C1234_to_C5_fixed_da_strong_r25`, `F5_C1_to_C2345_fixed_da_strong_r25`, `R1_C5_to_C1_fixed_da_strong_r25`, `R2_C45_to_C1_fixed_da_strong_r25`, `R3_C345_to_C1_fixed_da_strong_r25`, and `R4_C2345_to_C1_fixed_da_strong_r25`.
-
-Task 1 status is now DONE. The retained environment note is that pytest requires `--basetemp .tmp_pytest` in this worker session because its default system temporary base is inaccessible.
+Implementation commit: `719f353` (`fix: freeze corrected C12-to-C5 inputs`).
