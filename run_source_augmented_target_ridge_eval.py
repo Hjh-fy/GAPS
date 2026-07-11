@@ -255,6 +255,7 @@ def main() -> None:
     parser.add_argument("--mlp-hidden-grid", default="16")
     parser.add_argument("--mlp-alphas", default="0.01,0.1")
     parser.add_argument("--route-rescue-artifact", default="results/deployment_candidates_20260624/c12_c345_a1_rich_residual_plus_c4_rescue.json")
+    parser.add_argument("--disable-c4-rescue", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", default="results/source_augmented_target_ridge_20260625_lite")
     args = parser.parse_args()
@@ -361,52 +362,60 @@ def main() -> None:
         "target_ridge_plus_source_preds",
     )
 
-    gate = selected_c4_gate(args.route_rescue_artifact)
-    target_rich_phase = attach_response_phase(target_rich, data_root)
-    target_aug_phase = attach_response_phase(target_aug, data_root)
-    target_rich_rescue = apply_c4_rescue(
-        target_rich_phase,
-        "target_ridge_rich_only_ppm",
-        "target_ridge_rich_only_plus_c4_rescue_ppm",
-        gate,
-    )
-    target_aug_rescue = apply_c4_rescue(
-        target_aug_phase,
-        "target_ridge_plus_source_preds_ppm",
-        "target_ridge_plus_source_preds_plus_c4_rescue_ppm",
-        gate,
-    )
-    validation_rich_rescue = apply_c4_rescue(
-        attach_response_phase(validation_rich, data_root),
-        "target_ridge_rich_only_ppm",
-        "target_ridge_rich_only_plus_c4_rescue_ppm",
-        gate,
-    )
-    validation_aug_rescue = apply_c4_rescue(
-        attach_response_phase(validation_aug, data_root),
-        "target_ridge_plus_source_preds_ppm",
-        "target_ridge_plus_source_preds_plus_c4_rescue_ppm",
-        gate,
-    )
+    gate = None
+    target_rich_rescue: list[dict[str, Any]] = []
+    target_aug_rescue: list[dict[str, Any]] = []
+    validation_rich_rescue: list[dict[str, Any]] = []
+    validation_aug_rescue: list[dict[str, Any]] = []
+    if not args.disable_c4_rescue:
+        gate = selected_c4_gate(args.route_rescue_artifact)
+        target_rich_phase = attach_response_phase(target_rich, data_root)
+        target_aug_phase = attach_response_phase(target_aug, data_root)
+        target_rich_rescue = apply_c4_rescue(
+            target_rich_phase,
+            "target_ridge_rich_only_ppm",
+            "target_ridge_rich_only_plus_c4_rescue_ppm",
+            gate,
+        )
+        target_aug_rescue = apply_c4_rescue(
+            target_aug_phase,
+            "target_ridge_plus_source_preds_ppm",
+            "target_ridge_plus_source_preds_plus_c4_rescue_ppm",
+            gate,
+        )
+        validation_rich_rescue = apply_c4_rescue(
+            attach_response_phase(validation_rich, data_root),
+            "target_ridge_rich_only_ppm",
+            "target_ridge_rich_only_plus_c4_rescue_ppm",
+            gate,
+        )
+        validation_aug_rescue = apply_c4_rescue(
+            attach_response_phase(validation_aug, data_root),
+            "target_ridge_plus_source_preds_ppm",
+            "target_ridge_plus_source_preds_plus_c4_rescue_ppm",
+            gate,
+        )
 
     summary: list[dict[str, Any]] = []
     summary.extend(summarize(target_test, "baseline_final_ppm", "baseline_final_ppm", "test"))
     summary.extend(summarize(target_rich, "target_ridge_rich_only_ppm", "target_ridge_rich_only", "test"))
-    summary.extend(summarize(target_rich_rescue, "target_ridge_rich_only_plus_c4_rescue_ppm", "target_ridge_rich_only_plus_c4_rescue", "test"))
     summary.extend(summarize(target_aug, "target_ridge_plus_source_preds_ppm", "target_ridge_plus_source_preds", "test"))
-    summary.extend(summarize(target_aug_rescue, "target_ridge_plus_source_preds_plus_c4_rescue_ppm", "target_ridge_plus_source_preds_plus_c4_rescue", "test"))
+    if not args.disable_c4_rescue:
+        summary.extend(summarize(target_rich_rescue, "target_ridge_rich_only_plus_c4_rescue_ppm", "target_ridge_rich_only_plus_c4_rescue", "test"))
+        summary.extend(summarize(target_aug_rescue, "target_ridge_plus_source_preds_plus_c4_rescue_ppm", "target_ridge_plus_source_preds_plus_c4_rescue", "test"))
 
     write_csv(out / "target_summary.csv", summary)
     write_csv(out / "fit_audit.csv", fit_audit)
     write_csv(out / "validation_fit_audit.csv", [*validation_rich_audit, *validation_aug_audit])
     write_csv(out / "target_predictions_rich_only.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_rich])
     write_csv(out / "target_predictions_plus_source_preds.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_aug])
-    write_csv(out / "target_predictions_rich_only_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_rich_rescue])
-    write_csv(out / "target_predictions_plus_source_preds_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_aug_rescue])
     write_csv(out / "target_validation_rich_only.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_rich])
     write_csv(out / "target_validation_plus_source_preds.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_aug])
-    write_csv(out / "target_validation_rich_only_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_rich_rescue])
-    write_csv(out / "target_validation_plus_source_preds_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_aug_rescue])
+    if not args.disable_c4_rescue:
+        write_csv(out / "target_predictions_rich_only_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_rich_rescue])
+        write_csv(out / "target_predictions_plus_source_preds_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_aug_rescue])
+        write_csv(out / "target_validation_rich_only_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_rich_rescue])
+        write_csv(out / "target_validation_plus_source_preds_plus_c4_rescue.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_aug_rescue])
     write_report(out, summary, fit_audit)
     (out / "manifest.json").write_text(
         json.dumps(
@@ -419,7 +428,8 @@ def main() -> None:
                 "mlp_hidden_grid": [list(item) for item in mlp_hiddens],
                 "mlp_alphas": mlp_alphas,
                 "source_prediction_features": pred_keys,
-                "route_rescue_artifact": args.route_rescue_artifact,
+                "route_rescue_artifact": None if args.disable_c4_rescue else args.route_rescue_artifact,
+                "c4_rescue_enabled": not args.disable_c4_rescue,
                 "selected_c4_gate": gate,
                 "rich_feature_count": len(rich_feature_names),
                 "augmented_feature_count": len(aug_feature_names),
@@ -427,8 +437,14 @@ def main() -> None:
                 "validation_outputs": [
                     "target_validation_rich_only.csv",
                     "target_validation_plus_source_preds.csv",
-                    "target_validation_rich_only_plus_c4_rescue.csv",
-                    "target_validation_plus_source_preds_plus_c4_rescue.csv",
+                    *(
+                        []
+                        if args.disable_c4_rescue
+                        else [
+                            "target_validation_rich_only_plus_c4_rescue.csv",
+                            "target_validation_plus_source_preds_plus_c4_rescue.csv",
+                        ]
+                    ),
                     "validation_fit_audit.csv",
                 ],
             },

@@ -32,14 +32,15 @@ This is the durable engineering and research record for the IoT-J system experim
 | 2026-07-11 | Require real cloud-edge topology for every reportable training run | Preserve deployment realism; local simulation is permitted only for tests and frozen-artifact analysis | User instruction |
 | 2026-07-11 | Change the primary protocol to C1/C2 source and C5-only target | C3/C4 must not participate as target domains; incompatible C12-to-C345 evidence becomes historical only | User correction |
 | 2026-07-11 | Continue with the existing `c1234src_c5tgt` data root | The user accepted the shared-root preprocessing; the Flower classification loaders explicitly use `normalize=False`, so `norm_stats.npz` is not consumed by this training/evaluation path | User decision plus `gaps_flower/task.py` and `federated_dataset.py` code check |
+| 2026-07-11 | Keep C5-only H8 as a primary regression candidate and P4 as an ablation until new-run confirmation | Historical F2 replay shows the calibration-selected risk gate does not generalize as well as H8 on test | `results/iotj_c5_p4_f2_historical_smoke_20260711` |
 
 ## Stage Ledger
 
 | Stage | Status | Entry criteria | Exit evidence |
 |---|---|---|---|
-| 1. Input freeze and metric contract | in progress | Main plan approved | Frozen manifest, corrected S_CC tables, clean tests |
+| 1. Input freeze and metric contract | complete | Main plan approved | Frozen manifest, corrected S_CC tables, clean tests |
 | 2. Classification ablation | in progress | Dataset/input contract frozen | Seed-42 screen, five-seed key groups, classification report |
-| 3. Regression and expert selection | pending | Frozen classifier outputs | R0-R7 aligned S_CC and real-route tables |
+| 3. Regression and expert selection | in progress | Frozen classifier outputs | C5-only input builder and candidate evaluators are ready; new A-run streams pending |
 | 4. QC and low-calibration reliability | pending | Aligned P4 streams | Risk-coverage, fixed-coverage, budget statistics |
 | 5. C5 source-count generalization | pending | F1/F2 cloud artifacts recovered | C5-only classification and regression source-count table; F3/F4 appendix optional |
 | 6. Runtime and IoT system validation | pending | Final P4 policy frozen | Runtime parity, edge latency, memory, communication |
@@ -55,6 +56,10 @@ This is the durable engineering and research record for the IoT-J system experim
 | CLS-CONFIG-001 | 2026-07-11 | A0-A7 can be generated without role/config drift | Existing C12-to-C5 data root; seeds 42-46 | `python scripts/generate_iotj_classification_ablation_commands.py --include-confirmation-seeds` | `results/iotj_classification_ablation_20260711_commands` | complete | 24 manifests generated: 23 scheduled real training runs and one A1 contract-only row; protocol validation found zero invalid manifests. |
 | CLS-RUN-001 | 2026-07-11 | Seed-42 screening can start on the real ECS/Pi/PC topology | Generated command manifests | Connectivity preflight | Pending cloud/Pi outputs | blocked | ECS and C5 calibration data are reachable; Raspberry Pi SSH currently times out at both recorded addresses, so no partial training run was started. |
 | CLS-EVAL-001 | 2026-07-11 | One evaluator can produce true classification metrics and aligned C5 streams | Historical F2 adapted checkpoint used only for numerical parity | `evaluate_checkpoint_stream(..., split='test')` | In-memory 1360-row check plus evaluator tests | complete | Exact parity with prior F2 summary: N=1360, accuracy=0.9882353, macro-F1=0.9882675, NLL=0.1000582, ECE=0.0111189. The same code will evaluate new A-runs. |
+| REG-INPUT-001 | 2026-07-11 | The confirmed C5 classifier can feed the regression candidates without C3/C4 leakage | Historical F2 classifier plus C1/C2 source regression reference, smoke only | `python scripts/build_iotj_c5_regression_inputs.py ...` | `results/iotj_c5_regression_inputs_f2_historical_smoke_20260711` | complete | Contract produced exactly C5 calibration/test 320/1360 rows and exported aligned backbone/source-reference features; no new training was performed. |
+| REG-H23-001 | 2026-07-11 | A C5-only H2.3+ anchor/blend can be selected on calibration-validation only | REG-INPUT-001 historical smoke stream | `python scripts/run_iotj_c5_h23_plus.py ...` | `results/iotj_c5_h23_plus_f2_historical_smoke_20260711` | complete | Historical test RMSE 21.2182; S_CC N=1344, RMSE 12.3807. Selected blend weight was zero, so the expanded H2.3+ collapsed to its MLP anchor in this replay. |
+| REG-H8-001 | 2026-07-11 | H8 can be evaluated for C5 without the obsolete C4 rescue path | REG-INPUT-001 historical smoke stream | `python run_source_augmented_target_ridge_eval.py ... --disable-c4-rescue` | `results/iotj_c5_h8_no_rescue_f2_historical_smoke_20260711` | complete | Historical H8 test RMSE 16.6166; S_CC N=1344, RMSE 11.5028. Manifest records `c4_rescue_enabled=false`. |
+| REG-P4-001 | 2026-07-11 | Calibration-selected risk routing improves over both fixed experts | Historical H2.3+/H8 streams, smoke only | `python scripts/select_iotj_c5_p4.py ...` | `results/iotj_c5_p4_f2_historical_smoke_20260711` | complete-negative | Threshold 0.00904 used H8 for 5.22% of test rows. Test RMSE 17.3559: better than H2.3+ (21.2182), worse than fixed H8 (16.6166). P4 is not supported as the main method by this replay. |
 
 ## Review Findings and Risks
 
@@ -69,7 +74,8 @@ This is the durable engineering and research record for the IoT-J system experim
 | 2026-07-11 | High | F6/H2.3+/P4 primary evidence was generated with C3/C4/C5 as targets | Reclassify as historical diagnostic; rebuild C5 regression, expert selector, and QC from the F2 C12-to-C5 classifier |
 | 2026-07-11 | High | Task 1 audit used name-based matrix heuristics, weak dataset validation, and unsafe output handling | Resolved with explicit F2 run auditing, structured `split_info.json` validation, F2-only completion, deterministic payload separation, and protected-output checks; 28 focused tests pass. |
 | 2026-07-11 | Low | Shared data root `norm_stats.npz` was fitted more broadly than C1/C2 | Accepted for this experiment after code verification: Flower `load_client_loaders` passes `normalize=False` for both source training and client testing, so the file does not affect classifier tensors. Keep this statement scoped to the Flower path. |
-| 2026-07-11 | Blocking environment | Raspberry Pi is unreachable at `192.168.31.184` and `172.31.139.224` | Do not substitute local simulation. Retry connectivity and start seed-42 queue only after Pi preflight passes. |
+| 2026-07-11 | Blocking environment | Raspberry Pi SSH is unreachable at the current address `192.168.31.184`; old `172.31.139.224` is retired | Background controller PID is recorded under `results/iotj_classification_ablation_20260711_controller_pi_newip` and retries only the current address every 60 seconds. Do not substitute local simulation. |
+| 2026-07-11 | Medium | P4 threshold selection improved historical calibration-validation but underperformed fixed H8 on test | Keep P4 as an ablation/negative result; do not promote it without multi-seed new-run evidence and a stronger, predeclared selector. |
 
 ## Task 2 Metric Slice Contract (2026-07-11)
 
@@ -115,3 +121,13 @@ This is the durable engineering and research record for the IoT-J system experim
 1. Restore Raspberry Pi SSH connectivity, deploy the tested profile/seed changes to ECS and Pi, and start the A0/A2/A3/A4/A5/A6/A7 seed-42 queue.
 2. Evaluate every final C5 checkpoint, then run seeds 43-46 for A0/A4/A5/A7.
 3. Rebuild C5-only Ridge/MLP/H2.3+/H8/P4 streams from the confirmed classifier; do not filter old F6 predictions into the new main table.
+
+## C5 Regression Closure Smoke (2026-07-11)
+
+- Scope: engineering and historical-artifact parity only. These numbers do not replace the pending real cloud-edge A-run results.
+- The new input builder enforces source C1/C2, target C5, and exact C5 counts of 320 calibration plus 1360 test windows. It exports aligned classifier backbone features and the existing R3aK16 C1/C2 source-reference prediction as candidate inputs.
+- H2.3+ uses a calibration fit/validation split of 75%/25%, expanded MLP/Ridge grids, and a constrained blend selected without test labels. Historical selection chose blend weight 0; test RMSE was 21.2182 and S_CC RMSE was 12.3807.
+- H8 was rerun with `--disable-c4-rescue`, making the target contract genuinely C5-only. Its historical test RMSE was 16.6166 and S_CC RMSE was 11.5028.
+- P4 searches risk thresholds only on 80 calibration-validation rows. The selected threshold 0.0090404 routed 71/1360 test windows (5.22%) to H8 and produced test RMSE 17.3559. The fixed H8 expert remained better at 16.6166, while the unattainable per-window oracle was 14.8724.
+- Interpretation: the fixed C5 target Ridge with source-reference features is currently the strongest regression candidate. `risk_score` alone does not provide a stable expert selector in this replay. The new classifier seeds must confirm this ordering before the paper method is frozen.
+- Verification: `python -m pytest tests/test_iotj_c5_regression_inputs.py tests/test_iotj_c5_h23_plus.py tests/test_iotj_c5_p4.py -q`; direct CLI execution is covered for P4 so pytest path injection cannot mask import failures.
