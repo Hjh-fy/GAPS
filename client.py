@@ -618,6 +618,16 @@ class Client:
                 scheduler.step()
 
         # ========= 3. 训练后均值 + 方差 + 差分隐私噪声  =========
+        if not getattr(config, "UPLOAD_PROTO_STATS", True):
+            return (
+                self.get_parameters(skip_reg=False, partial_personalize=False),
+                {},
+                {},
+                torch.empty(0),
+                None,
+                {},
+            )
+
         post_mu, count_dict, post_var = self._compute_feature_means(return_var=True)
         noisy_mu = {}
         noisy_var = {}

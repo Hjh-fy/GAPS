@@ -108,8 +108,10 @@ class GapsFlowerClient(fl.client.NumPyClient):
             parameters, self.parameter_keys, self.model.state_dict()
         )
         if self.config.USE_REPLAY_DISTILL:
-            prev_state = self.last_server_state or current_server_state
-            set_prev_model_from_state(self.gaps_client, prev_state)
+            if self.last_server_state is not None:
+                set_prev_model_from_state(self.gaps_client, self.last_server_state)
+            else:
+                self.gaps_client.prev_model = None
         set_parameters(self.model, parameters, self.parameter_keys)
         self.last_server_state = {
             key: value.detach().cpu().clone()

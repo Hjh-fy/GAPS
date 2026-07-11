@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from run_regression_head_ablation import metrics
 from scripts.select_iotj_c5_p4 import merge_streams, select_threshold
 
 
@@ -75,3 +76,17 @@ def test_p4_script_is_directly_executable() -> None:
 
     assert result.returncode == 0, result.stderr
     assert "C5-only P4 risk gate" in result.stdout
+
+
+def test_regression_metrics_reports_r2_and_handles_constant_truth() -> None:
+    varying = [
+        {"true_ppm": 0.0, "pred_ppm": 0.0, "true_class": 0},
+        {"true_ppm": 10.0, "pred_ppm": 10.0, "true_class": 0},
+    ]
+    constant = [
+        {"true_ppm": 5.0, "pred_ppm": 4.0, "true_class": 0},
+        {"true_ppm": 5.0, "pred_ppm": 6.0, "true_class": 0},
+    ]
+
+    assert metrics(varying, "pred_ppm")["R2"] == pytest.approx(1.0)
+    assert metrics(constant, "pred_ppm")["R2"] is None

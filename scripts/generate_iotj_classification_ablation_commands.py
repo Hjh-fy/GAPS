@@ -23,8 +23,15 @@ DA_STEPS = 100
 DA_LR = 5e-4
 SCREENING_SEED = 42
 CONFIRMATION_SEEDS = (42, 43, 44, 45, 46)
-CONFIRMATION_GROUPS = frozenset({"A0", "A4", "A5", "A7"})
-TRAINING_GROUPS = ("A0", "A2", "A3", "A4", "A5", "A6", "A7")
+CONFIRMATION_GROUPS = frozenset({"A0", "A0T", "A4", "A4S", "A5", "A7"})
+CORE_SCREENING_GROUPS = ("A0", "A0T", "A2", "A3", "A4", "A4S", "A5", "A6", "A7")
+APPENDIX_GROUPS = (
+    "A7-noCORAL",
+    "A7-noMMD",
+    "A7-noADV",
+    "A7-noSemantic",
+    "A7-noStage",
+)
 
 
 @dataclass(frozen=True)
@@ -49,16 +56,24 @@ class AblationSpec:
     da_lambda_residual: float = 0.0
     da_lambda_proto_mmd: float = 0.0
     da_lambda_stage_mmd: float = 0.0
+    da_lambda_target_ce: float = 0.0
 
 
 SPECS = {
     "A0": AblationSpec("A0", "ce_only", "fedavg", False, False, False, "none"),
+    "A0T": AblationSpec(
+        "A0T", "ce_only", "gaps", False, False, True, "none",
+        da_lambda_target_ce=1.0,
+    ),
     "A1": AblationSpec("A1", "ce_only", "gaps", False, False, False, "none"),
-    "A2": AblationSpec("A2", "proto_only", "gaps", True, True, False, "none"),
-    "A3": AblationSpec("A3", "replay_only", "gaps", True, True, False, "none"),
-    "A4": AblationSpec("A4", "proto_replay", "gaps", True, True, False, "none"),
+    # These groups use GAPS only to exchange prototypes. With selective
+    # aggregation disabled, parameter aggregation is FedAvg-equivalent.
+    "A2": AblationSpec("A2", "align_only", "gaps", False, False, False, "none"),
+    "A3": AblationSpec("A3", "replay_only", "gaps", False, False, False, "none"),
+    "A4": AblationSpec("A4", "align_replay", "gaps", False, False, False, "none"),
+    "A4S": AblationSpec("A4S", "align_replay", "gaps", True, False, False, "none"),
     "A5": AblationSpec(
-        "A5", "proto_replay", "gaps", True, True, True, "none",
+        "A5", "align_replay", "gaps", True, False, True, "none",
         da_use_coral=True,
         da_use_mmd=True,
         da_use_adversarial=True,
@@ -68,7 +83,7 @@ SPECS = {
         da_lambda_adv=0.5,
     ),
     "A6": AblationSpec(
-        "A6", "proto_replay", "gaps", True, True, True, "none",
+        "A6", "proto_replay", "gaps", True, False, True, "none",
         da_lambda_proto_anchor=0.3,
         da_lambda_proto=0.05,
         da_lambda_consistency=2.0,
@@ -76,7 +91,7 @@ SPECS = {
         da_lambda_proto_mmd=0.2,
     ),
     "A7": AblationSpec(
-        "A7", "proto_replay", "gaps", True, True, True, "fixed_da_strong",
+        "A7", "proto_replay", "gaps", True, False, True, "fixed_da_strong",
         da_use_coral=True,
         da_use_mmd=True,
         da_use_adversarial=True,
@@ -90,6 +105,47 @@ SPECS = {
         da_lambda_residual=0.1,
         da_lambda_proto_mmd=0.2,
         da_lambda_stage_mmd=0.2,
+    ),
+    "A7-noCORAL": AblationSpec(
+        "A7-noCORAL", "proto_replay", "gaps", True, False, True, "none",
+        da_use_mmd=True, da_use_adversarial=True,
+        da_lambda_global_mmd=0.5, da_lambda_class_mmd=0.5,
+        da_lambda_proto_anchor=0.3, da_lambda_adv=0.5,
+        da_lambda_proto=0.05, da_lambda_consistency=2.0,
+        da_lambda_residual=0.1, da_lambda_proto_mmd=0.2,
+        da_lambda_stage_mmd=0.2,
+    ),
+    "A7-noMMD": AblationSpec(
+        "A7-noMMD", "proto_replay", "gaps", True, False, True, "none",
+        da_use_coral=True, da_use_adversarial=True,
+        da_lambda_coral=0.5, da_lambda_proto_anchor=0.3,
+        da_lambda_adv=0.5, da_lambda_proto=0.05,
+        da_lambda_consistency=2.0, da_lambda_residual=0.1,
+    ),
+    "A7-noADV": AblationSpec(
+        "A7-noADV", "proto_replay", "gaps", True, False, True, "none",
+        da_use_coral=True, da_use_mmd=True,
+        da_lambda_coral=0.5, da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5, da_lambda_proto_anchor=0.3,
+        da_lambda_proto=0.05, da_lambda_consistency=2.0,
+        da_lambda_residual=0.1, da_lambda_proto_mmd=0.2,
+        da_lambda_stage_mmd=0.2,
+    ),
+    "A7-noSemantic": AblationSpec(
+        "A7-noSemantic", "align_replay", "gaps", True, False, True, "none",
+        da_use_coral=True, da_use_mmd=True, da_use_adversarial=True,
+        da_lambda_coral=0.5, da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5, da_lambda_adv=0.5,
+        da_lambda_stage_mmd=0.2,
+    ),
+    "A7-noStage": AblationSpec(
+        "A7-noStage", "proto_replay", "gaps", True, False, True, "none",
+        da_use_coral=True, da_use_mmd=True, da_use_adversarial=True,
+        da_lambda_coral=0.5, da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5, da_lambda_proto_anchor=0.3,
+        da_lambda_adv=0.5, da_lambda_proto=0.05,
+        da_lambda_consistency=2.0, da_lambda_residual=0.1,
+        da_lambda_proto_mmd=0.2,
     ),
 }
 
@@ -161,7 +217,7 @@ def _server_command(spec: AblationSpec, run_name: str, seed: int, results_root: 
         "--da-lambda-class-mmd", str(spec.da_lambda_class_mmd),
         "--da-lambda-proto-anchor", str(spec.da_lambda_proto_anchor),
         "--da-lambda-adv", str(spec.da_lambda_adv),
-        "--da-lambda-target-ce", "0.0",
+        "--da-lambda-target-ce", str(spec.da_lambda_target_ce),
         "--da-lambda-proto", str(spec.da_lambda_proto),
         "--da-lambda-consistency", str(spec.da_lambda_consistency),
         "--da-lambda-residual", str(spec.da_lambda_residual),
@@ -212,12 +268,21 @@ def build_run_manifest(
     run_name = _run_name(group_id, seed)
     data_root = repo_root / "dataset" / DATA_ROOT_NAME
     scheduled = group_id != "A1"
+    if group_id == "A1":
+        execution_stage = "contract_only"
+    elif group_id in APPENDIX_GROUPS:
+        execution_stage = "appendix_conditional"
+    elif seed == SCREENING_SEED:
+        execution_stage = "core_screening"
+    else:
+        execution_stage = "confirmation"
     manifest = {
         "schema_version": 1,
         "group_id": group_id,
         "run_name": run_name,
         "scheduled_for_training": scheduled,
         "contract_only": group_id == "A1",
+        "execution_stage": execution_stage,
         "protocol": {
             "source_clients": list(SOURCE_CLIENTS),
             "target_clients": list(TARGET_CLIENTS),
@@ -235,6 +300,28 @@ def build_run_manifest(
             "use_selective_agg": spec.use_selective_agg,
             "use_proto_mmd_diagnostics": spec.use_proto_mmd_diagnostics,
         },
+        "causal_factors": {
+            "prototype_alignment": spec.profile in {
+                "align_only", "align_replay", "proto_only", "proto_replay"
+            },
+            "replay_distillation": spec.profile in {
+                "replay_only", "align_replay", "proto_replay"
+            },
+            "device_residual_statistics": spec.profile in {"proto_only", "proto_replay"},
+            "selective_aggregation": spec.use_selective_agg,
+            "server_distribution_adaptation": bool(
+                spec.da_use_coral or spec.da_use_mmd or spec.da_use_adversarial
+            ),
+            "server_semantic_adaptation": bool(
+                spec.da_lambda_proto_anchor
+                or spec.da_lambda_proto
+                or spec.da_lambda_consistency
+                or spec.da_lambda_residual
+                or spec.da_lambda_proto_mmd
+            ),
+            "server_stage_mmd": bool(spec.da_lambda_stage_mmd),
+            "target_supervised_ce": bool(spec.da_lambda_target_ce),
+        },
         "server_adaptation": {
             "enabled": spec.use_domain_adapt,
             "preset": spec.da_preset,
@@ -248,7 +335,7 @@ def build_run_manifest(
             "lambda_class_mmd": spec.da_lambda_class_mmd,
             "lambda_proto_anchor": spec.da_lambda_proto_anchor,
             "lambda_adv": spec.da_lambda_adv,
-            "lambda_target_ce": 0.0,
+            "lambda_target_ce": spec.da_lambda_target_ce,
             "lambda_proto": spec.da_lambda_proto,
             "lambda_consistency": spec.da_lambda_consistency,
             "lambda_residual": spec.da_lambda_residual,
@@ -304,8 +391,18 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         raise ValueError("classification optimizer contract changed")
     if adaptation["steps"] != 100 or adaptation["lr"] != 5e-4:
         raise ValueError("server adaptation optimizer contract changed")
-    if adaptation["lambda_target_ce"] != 0.0:
-        raise ValueError("target CE must remain disabled")
+    group_id = manifest["group_id"]
+    if group_id == "A0T":
+        if adaptation["lambda_target_ce"] != 1.0:
+            raise ValueError("A0T must use the frozen target CE weight")
+    elif adaptation["lambda_target_ce"] != 0.0:
+        raise ValueError("target CE must remain disabled outside A0T")
+    if group_id in {"A2", "A3", "A4"} and training["use_selective_agg"]:
+        raise ValueError(f"{group_id} must isolate client losses from selective aggregation")
+    if group_id in {"A4S", "A5", "A6", "A7"} and not training["use_selective_agg"]:
+        raise ValueError(f"{group_id} requires the selective-aggregation base")
+    if training["use_proto_mmd_diagnostics"]:
+        raise ValueError("timing-neutral primary runs keep prototype MMD diagnostics disabled")
 
 
 def _write_command_files(run_dir: Path, manifest: dict[str, Any]) -> None:
@@ -375,11 +472,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("results/iotj_classification_ablation_20260711_commands"),
+        default=Path("results/iotj_classification_ablation_20260711_v2_commands"),
     )
     parser.add_argument(
         "--results-root",
-        default="results/iotj_classification_ablation_20260711",
+        default="results/iotj_classification_ablation_20260711_v2",
     )
     parser.add_argument("--include-confirmation-seeds", action="store_true")
     args = parser.parse_args(argv)

@@ -18,13 +18,15 @@ import torch
 from client import Client
 from config import FLConfig
 from federated_dataset import create_client_test_only_loader, create_train_loader
-from utils import create_model_by_config, evaluate_model, set_random_seed
+from utils import create_model_by_config, set_random_seed
 
 
 NDArrays = List[np.ndarray]
 
 CLASSIFICATION_PROFILE_FLAGS = {
     "ce_only": {"align": False, "replay": False, "decouple": False},
+    "align_only": {"align": True, "replay": False, "decouple": False},
+    "align_replay": {"align": True, "replay": True, "decouple": False},
     "proto_only": {"align": True, "replay": False, "decouple": True},
     "replay_only": {"align": False, "replay": True, "decouple": False},
     "proto_replay": {"align": True, "replay": True, "decouple": True},
@@ -127,6 +129,7 @@ def make_config(
     config.USE_CONTRASTIVE_ALIGN = flags["align"]
     config.USE_REPLAY_DISTILL = flags["replay"]
     config.USE_PROTO_DECOUPLING = flags["decouple"]
+    config.UPLOAD_PROTO_STATS = bool(flags["align"] or flags["decouple"])
 
     set_random_seed(config.SEED)
     return config
@@ -294,33 +297,58 @@ def train_one_round(
     metrics = {
         "client_id": int(gaps_client.client_id),
         "num_examples": int(num_examples),
-        "proto_examples": int(proto_examples),
         "local_epochs": int(gaps_client.config.LOCAL_EPOCHS),
-        "class_phase_counts_json": serialize_counts(count_dict or {}),
-        "prototype_json": serialize_tensor_dict(prototypes or {}),
-        "prototype_count": int(len(prototypes or {})),
-        "prototype_var_json": serialize_tensor_dict(proto_vars or {}),
-        "prototype_var_count": int(len(proto_vars or {})),
         "received_global_prototypes": int(len(global_protos)),
         "use_align": int(bool(gaps_client.config.USE_ALIGN and global_protos)),
         "use_replay_distill": int(bool(gaps_client.config.USE_REPLAY_DISTILL and gaps_client.prev_model is not None)),
         "has_prev_model": int(gaps_client.prev_model is not None),
         "use_proto_decoupling": int(bool(gaps_client.config.USE_PROTO_DECOUPLING and semantic_protos)),
+        "proto_stats_uploaded": int(bool(gaps_client.config.UPLOAD_PROTO_STATS)),
     }
-    if device_residual is not None:
-        vec = device_residual.detach().cpu().float().view(-1)
-        metrics["device_residual_json"] = json.dumps(vec.tolist(), ensure_ascii=False)
-        metrics["device_residual_norm"] = float(torch.norm(vec, p=2).item())
-    metrics.update(summarize_feature_vector(global_feature))
+    if gaps_client.config.UPLOAD_PROTO_STATS:
+        metrics.update({
+            "proto_examples": int(proto_examples),
+            "class_phase_counts_json": serialize_counts(count_dict or {}),
+            "prototype_json": serialize_tensor_dict(prototypes or {}),
+            "prototype_count": int(len(prototypes or {})),
+            "prototype_var_json": serialize_tensor_dict(proto_vars or {}),
+            "prototype_var_count": int(len(proto_vars or {})),
+        })
+        if device_residual is not None:
+            vec = device_residual.detach().cpu().float().view(-1)
+            metrics["device_residual_json"] = json.dumps(vec.tolist(), ensure_ascii=False)
+            metrics["device_residual_norm"] = float(torch.norm(vec, p=2).item())
+        metrics.update(summarize_feature_vector(global_feature))
     return arrays, num_examples, metrics
 
 
 def evaluate(model: torch.nn.Module, test_loader, config: FLConfig, client_id: int | None = None) -> Tuple[float, int, dict]:
-    acc = evaluate_model(model, test_loader, torch.device(config.DEVICE))
-    num_examples = len(test_loader.dataset)
-    loss = float(1.0 - acc)
+    device = torch.device(config.DEVICE)
+    model.eval()
+    correct = 0
+    num_examples = 0
+    nll_sum = 0.0
+    with torch.no_grad():
+        for batch in test_loader:
+            if len(batch) == 4:
+                x, y_cls, _, _ = batch
+            elif len(batch) == 2 and isinstance(batch[1], tuple):
+                x, (_, y_cls) = batch
+            else:
+                raise ValueError(f"Unexpected batch format: {len(batch)}")
+            x = x.to(device)
+            y_cls = y_cls.to(device).long()
+            logits, _, _ = model(x)
+            nll_sum += float(
+                torch.nn.functional.cross_entropy(logits, y_cls, reduction="sum").item()
+            )
+            correct += int((logits.argmax(dim=1) == y_cls).sum().item())
+            num_examples += int(y_cls.numel())
+    loss = nll_sum / max(num_examples, 1)
+    acc = correct / max(num_examples, 1)
     metrics = {
         "accuracy": float(acc),
+        "nll": float(loss),
         "num_examples": int(num_examples),
     }
     if client_id is not None:

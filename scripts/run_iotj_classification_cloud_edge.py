@@ -14,10 +14,10 @@ from typing import Any, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DATA_ROOT_NAME = "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
-DEFAULT_COMMAND_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_20260711_commands"
-DEFAULT_LOCAL_RESULTS_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_20260711"
-DEFAULT_LOCAL_LOG_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_20260711_local_client_logs"
-DEFAULT_GROUPS = ("A0", "A2", "A3", "A4", "A5", "A6", "A7")
+DEFAULT_COMMAND_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_20260711_v2_commands"
+DEFAULT_LOCAL_RESULTS_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_20260711_v2"
+DEFAULT_LOCAL_LOG_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_20260711_v2_local_client_logs"
+DEFAULT_GROUPS = ("A0", "A0T", "A2", "A3", "A4", "A4S", "A5", "A6", "A7")
 PI_SYNC_ROOT_FILES = ("client.py", "config.py", "federated_dataset.py", "model.py", "utils.py")
 PI_SYNC_FLOWER_FILES = ("task.py", "client_app.py")
 
@@ -417,7 +417,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--ecs-project", default="/root/GAPS")
     parser.add_argument("--pi-project", default="/home/gaps/GAPS/flower_runtime")
     parser.add_argument("--command-root", type=Path, default=DEFAULT_COMMAND_ROOT)
-    parser.add_argument("--results-root", default="results/iotj_classification_ablation_20260711")
+    parser.add_argument("--results-root", default="results/iotj_classification_ablation_20260711_v2")
     parser.add_argument("--local-results-root", type=Path, default=DEFAULT_LOCAL_RESULTS_ROOT)
     parser.add_argument("--local-log-root", type=Path, default=DEFAULT_LOCAL_LOG_ROOT)
     parser.add_argument("--groups", default=",".join(DEFAULT_GROUPS))

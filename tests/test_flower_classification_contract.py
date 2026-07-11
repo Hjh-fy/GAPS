@@ -5,9 +5,12 @@ import pytest
 import torch
 import flwr as fl
 from flwr.common import Code, FitRes, Status, ndarrays_to_parameters, parameters_to_ndarrays
+from torch.utils.data import DataLoader, TensorDataset
 
+import gaps_flower.client_app as flower_client_module
+from gaps_flower.client_app import GapsFlowerClient
 from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy
-from gaps_flower.task import create_model, get_parameters, make_config, set_parameters
+from gaps_flower.task import create_model, evaluate, get_parameters, make_config, set_parameters
 from scripts.generate_iotj_classification_ablation_commands import (
     SPECS,
     build_run_manifest,
@@ -39,6 +42,8 @@ def test_flower_config_is_simplified_classifier_only() -> None:
     ("profile", "use_align", "use_replay", "use_decouple"),
     [
         ("ce_only", False, False, False),
+        ("align_only", True, False, False),
+        ("align_replay", True, True, False),
         ("proto_only", True, False, True),
         ("replay_only", False, True, False),
         ("proto_replay", True, True, True),
@@ -58,6 +63,7 @@ def test_classification_ablation_profiles_have_exact_switches(
     assert cfg.USE_CONTRASTIVE_ALIGN is use_align
     assert cfg.USE_REPLAY_DISTILL is use_replay
     assert cfg.USE_PROTO_DECOUPLING is use_decouple
+    assert cfg.UPLOAD_PROTO_STATS is (use_align or use_decouple)
 
 
 @pytest.mark.parametrize("alias", ["smoke", "strong_cls", "gaps_cls"])
@@ -148,7 +154,7 @@ def test_domain_adapted_arrays_can_be_returned_as_next_global_parameters(tmp_pat
     assert not np.array_equal(returned_arrays[0], arrays[0])
 
 
-@pytest.mark.parametrize("group_id", ["A0", "A1", "A2", "A3", "A4", "A5", "A6", "A7"])
+@pytest.mark.parametrize("group_id", sorted(SPECS))
 def test_ablation_manifests_freeze_c12_to_c5_protocol(tmp_path, group_id: str) -> None:
     data_root = tmp_path / "dataset" / "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
     data_root.mkdir(parents=True)
@@ -171,12 +177,122 @@ def test_ablation_manifests_freeze_c12_to_c5_protocol(tmp_path, group_id: str) -
     assert manifest["training"]["client_lr"] == 5e-4
     assert manifest["server_adaptation"]["steps"] == 100
     assert manifest["server_adaptation"]["lr"] == 5e-4
-    assert manifest["server_adaptation"]["lambda_target_ce"] == 0.0
+    expected_target_ce = 1.0 if group_id == "A0T" else 0.0
+    assert manifest["server_adaptation"]["lambda_target_ce"] == expected_target_ce
     assert any("client_5" in arg for arg in manifest["commands"]["server_ecs"])
     assert all("client_3" not in str(command) and "client_4" not in str(command) for command in manifest["commands"].values())
     assert manifest["commands"]["client_c1_pi"][-1] == "42"
     assert "cpu" in manifest["commands"]["client_c1_pi"]
     assert "cpu" in manifest["commands"]["client_c2_pc"]
+
+
+def test_primary_ablation_factors_are_causally_separated(tmp_path) -> None:
+    manifests = {
+        group: build_run_manifest(group, 42, repo_root=tmp_path, results_root="results/test")
+        for group in ("A0", "A0T", "A2", "A3", "A4", "A4S", "A5", "A6", "A7")
+    }
+
+    assert all(
+        manifests[group]["training"]["use_selective_agg"] is False
+        for group in ("A0", "A2", "A3", "A4")
+    )
+    assert all(
+        manifests[group]["training"]["use_selective_agg"] is True
+        for group in ("A4S", "A5", "A6", "A7")
+    )
+    assert manifests["A2"]["causal_factors"]["prototype_alignment"] is True
+    assert manifests["A2"]["causal_factors"]["device_residual_statistics"] is False
+    assert manifests["A2"]["causal_factors"]["replay_distillation"] is False
+    assert manifests["A3"]["causal_factors"]["prototype_alignment"] is False
+    assert manifests["A3"]["causal_factors"]["replay_distillation"] is True
+    assert manifests["A5"]["causal_factors"]["device_residual_statistics"] is False
+    assert manifests["A6"]["causal_factors"]["device_residual_statistics"] is True
+    assert manifests["A0T"]["causal_factors"]["target_supervised_ce"] is True
+    assert all(
+        manifests[group]["causal_factors"]["target_supervised_ce"] is False
+        for group in ("A0", "A2", "A3", "A4", "A4S", "A5", "A6", "A7")
+    )
+    assert all(
+        manifest["training"]["use_proto_mmd_diagnostics"] is False
+        for manifest in manifests.values()
+    )
+
+
+def test_leave_one_group_out_specs_remove_only_declared_da_group(tmp_path) -> None:
+    manifests = {
+        group: build_run_manifest(group, 42, repo_root=tmp_path, results_root="results/test")
+        for group in ("A7-noCORAL", "A7-noMMD", "A7-noADV", "A7-noSemantic", "A7-noStage")
+    }
+
+    assert manifests["A7-noCORAL"]["server_adaptation"]["use_coral"] is False
+    no_mmd = manifests["A7-noMMD"]["server_adaptation"]
+    assert no_mmd["use_mmd"] is False
+    assert all(no_mmd[key] == 0.0 for key in (
+        "lambda_global_mmd", "lambda_class_mmd", "lambda_proto_mmd", "lambda_stage_mmd"
+    ))
+    assert manifests["A7-noADV"]["server_adaptation"]["use_adversarial"] is False
+    assert manifests["A7-noSemantic"]["causal_factors"]["server_semantic_adaptation"] is False
+    assert manifests["A7-noSemantic"]["causal_factors"]["server_stage_mmd"] is True
+    assert manifests["A7-noStage"]["causal_factors"]["server_semantic_adaptation"] is True
+    assert manifests["A7-noStage"]["causal_factors"]["server_stage_mmd"] is False
+
+
+def test_flower_evaluate_returns_true_cross_entropy() -> None:
+    class FixedLogitModel(torch.nn.Module):
+        def forward(self, x):
+            return x, x, x
+
+    logits = torch.tensor([[2.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]])
+    labels = torch.tensor([0, 1])
+    loader = DataLoader(
+        TensorDataset(logits, labels, torch.zeros(2, 4), torch.zeros(2, dtype=torch.long)),
+        batch_size=2,
+    )
+    cfg = make_config(device="cpu")
+
+    loss, count, metrics = evaluate(FixedLogitModel(), loader, cfg)
+
+    expected = torch.nn.functional.cross_entropy(logits, labels).item()
+    assert count == 2
+    assert loss == pytest.approx(expected)
+    assert metrics["nll"] == pytest.approx(expected)
+    assert metrics["accuracy"] == 1.0
+
+
+def test_replay_teacher_starts_from_second_round(monkeypatch) -> None:
+    cfg = make_config(profile="replay_only", seed=42)
+    model = create_model(cfg)
+    arrays, keys = get_parameters(model)
+    client = GapsFlowerClient.__new__(GapsFlowerClient)
+    client.client_id = 1
+    client.profile = "replay_only"
+    client.canonical_profile = "replay_only"
+    client.seed = 42
+    client.config = cfg
+    client.model = model
+    client.parameter_keys = keys
+    client.gaps_client = type("Stub", (), {"prev_model": object()})()
+    client.last_server_state = None
+    client.train_samples = 1
+    installed: list[dict[str, torch.Tensor]] = []
+
+    monkeypatch.setattr(
+        flower_client_module,
+        "train_one_round",
+        lambda *_args, **_kwargs: (arrays, 1, {}),
+    )
+    monkeypatch.setattr(
+        flower_client_module,
+        "set_prev_model_from_state",
+        lambda _client, state: installed.append(state),
+    )
+
+    client.fit(arrays, {"server_round": 1})
+    assert installed == []
+    assert client.gaps_client.prev_model is None
+
+    client.fit(arrays, {"server_round": 2})
+    assert len(installed) == 1
 
 
 def test_a1_is_contract_only_and_not_scheduled(tmp_path) -> None:
@@ -189,6 +305,17 @@ def test_a1_is_contract_only_and_not_scheduled(tmp_path) -> None:
     assert SPECS["A1"].strategy == "gaps"
     assert SPECS["A1"].use_selective_agg is False
     assert SPECS["A1"].use_domain_adapt is False
+    assert manifest["execution_stage"] == "contract_only"
+
+
+def test_manifest_execution_stages_prevent_one_shot_queueing(tmp_path) -> None:
+    core = build_run_manifest("A4S", 42, repo_root=tmp_path, results_root="results/test")
+    confirmation = build_run_manifest("A4S", 43, repo_root=tmp_path, results_root="results/test")
+    appendix = build_run_manifest("A7-noStage", 42, repo_root=tmp_path, results_root="results/test")
+
+    assert core["execution_stage"] == "core_screening"
+    assert confirmation["execution_stage"] == "confirmation"
+    assert appendix["execution_stage"] == "appendix_conditional"
 
 
 def test_a1_gaps_aggregation_matches_fedavg_when_optional_features_are_off(tmp_path) -> None:

@@ -380,10 +380,12 @@ def metrics(rows: Sequence[dict[str, Any]], pred_key: str) -> dict[str, Any]:
     true = true[mask]
     cls = cls[mask]
     if pred.size == 0:
-        return {"N": 0, "RMSE": None, "MAE": None, "NRMSE": None, "Bias": None, "P90AE": None}
+        return {"N": 0, "RMSE": None, "MAE": None, "NRMSE": None, "Bias": None, "P90AE": None, "R2": None}
     err = pred - true
     ranges = np.asarray([CLASS_RANGES.get(int(c), np.nan) for c in cls], dtype=np.float64)
     range_mask = np.isfinite(ranges) & (ranges > 0)
+    centered = true - np.mean(true)
+    ss_tot = float(np.sum(centered * centered))
     return {
         "N": int(pred.size),
         "RMSE": float(np.sqrt(np.mean(err * err))),
@@ -391,6 +393,7 @@ def metrics(rows: Sequence[dict[str, Any]], pred_key: str) -> dict[str, Any]:
         "NRMSE": float(np.sqrt(np.mean((err[range_mask] / ranges[range_mask]) ** 2))) if np.any(range_mask) else None,
         "Bias": float(np.mean(err)),
         "P90AE": float(np.percentile(np.abs(err), 90)),
+        "R2": float(1.0 - np.sum(err * err) / ss_tot) if ss_tot > 1e-12 else None,
     }
 
 
