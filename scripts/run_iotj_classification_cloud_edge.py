@@ -411,7 +411,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--ecs-host", default="root@121.40.139.213")
     parser.add_argument(
         "--pi-hosts",
-        default="gaps@192.168.31.184,gaps@172.31.139.224",
+        default="gaps@192.168.31.184",
         help="Comma-separated Raspberry Pi SSH endpoints tried in order",
     )
     parser.add_argument("--ecs-project", default="/root/GAPS")
