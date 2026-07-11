@@ -161,6 +161,7 @@ Run seeds `42,43,44,45,46` only for A0, A0T, A4, A4S, A5, and A7. Screening-only
 - [ ] **Step 7: Verify generated commands**
 
 Each command must freeze rounds 25, local epochs 5, batch 32, client LR `5e-4`, DA steps 100, DA LR `5e-4`, source clients C1/C2, target calibration client C5 only, and the primary C12-to-C5 data root. Target CE must equal 0 except in the separately named A0T equal-label-budget baseline, where it is exactly 1.0.
+Before opening tunnels, the controller must verify ECS is idle, synchronize the committed root runtime, server runtime, and exact command-manifest directory to ECS, then run an import/profile preflight. It must separately synchronize the client runtime and the same manifest directory to Pi. A run may not combine local v2 commands with stale remote code.
 
 ### Task 4: Evaluate Classification Ablations and Generalization
 

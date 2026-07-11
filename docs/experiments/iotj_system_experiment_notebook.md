@@ -90,6 +90,7 @@ This is the durable engineering and research record for the IoT-J system experim
 | 2026-07-11 | High | A5-A7 consume target calibration class labels but lacked an equal-label-budget supervised baseline | Resolved in v2 design: A0T uses the same 100 steps/round and C5 calibration labels with source rehearsal CE + target CE, while all proposed alignment terms remain off. |
 | 2026-07-11 | High | Replay distillation installed the current server model as a teacher in round 1 despite being defined as previous-round replay | Resolved before training: round 1 only caches the incoming state; the frozen teacher activates from round 2. |
 | 2026-07-11 | High | CE-only FedAvg still computed and uploaded unused prototype statistics, invalidating runtime/communication comparison | Resolved before training: CE-only and replay-only profiles skip the extra statistics pass and JSON payload; alignment profiles upload prototypes, while device residuals are limited to semantic-DA groups. |
+| 2026-07-11 | Blocking code | Cloud-edge controller synchronized runtime/manifests to Pi but assumed ECS already had the same code and command root | Resolved before training: controller checks ECS idle, uploads committed root/server runtime plus the exact v2 command directory, and reruns code preflight before waiting for Pi. |
 
 ## Task 2 Metric Slice Contract (2026-07-11)
 

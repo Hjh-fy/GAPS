@@ -20,6 +20,8 @@ DEFAULT_LOCAL_LOG_ROOT = REPO_ROOT / "results" / "iotj_classification_ablation_2
 DEFAULT_GROUPS = ("A0", "A0T", "A2", "A3", "A4", "A4S", "A5", "A6", "A7")
 PI_SYNC_ROOT_FILES = ("client.py", "config.py", "federated_dataset.py", "model.py", "utils.py")
 PI_SYNC_FLOWER_FILES = ("task.py", "client_app.py")
+ECS_SYNC_ROOT_FILES = PI_SYNC_ROOT_FILES
+ECS_SYNC_FLOWER_FILES = ("task.py", "server_app.py", "strategy.py", "domain_adaptation.py")
 
 
 def _run(
@@ -122,19 +124,28 @@ def _sync_pi(pi_host: str, command_root: Path, pi_project: str) -> None:
     )
 
 
-def _preflight_ecs(ecs_host: str, ecs_project: str) -> None:
+def _sync_ecs(ecs_host: str, command_root: Path, ecs_project: str) -> None:
+    _ssh(
+        ecs_host,
+        f"mkdir -p '{ecs_project}/gaps_flower' '{ecs_project}/results'",
+    )
+    _scp_to_remote(
+        [REPO_ROOT / name for name in ECS_SYNC_ROOT_FILES],
+        f"{ecs_host}:{ecs_project}/",
+    )
+    _scp_to_remote(
+        [REPO_ROOT / "gaps_flower" / name for name in ECS_SYNC_FLOWER_FILES],
+        f"{ecs_host}:{ecs_project}/gaps_flower/",
+    )
+    _run(
+        ["scp", "-pr", str(command_root), f"{ecs_host}:{ecs_project}/results/"],
+        timeout=180,
+    )
+
+
+def _preflight_ecs_environment(ecs_host: str, ecs_project: str) -> None:
     data_path = f"{ecs_project}/dataset/{DATA_ROOT_NAME}/client_5/calibration_features.npy"
     _ssh(ecs_host, f"test -f '{data_path}'")
-    source = (
-        f"import os\nos.chdir({ecs_project!r})\n"
-        "from gaps_flower.task import make_config\n"
-        "c=make_config(profile='proto_only',seed=43)\n"
-        "assert c.SEED==43 and c.USE_ALIGN and not c.USE_REPLAY_DISTILL and not c.USE_REG_LOSS\n"
-        "print('ECS_CODE_OK')\n"
-    )
-    output = _remote_python(ecs_host, "/root/gaps_env/bin/python", source)
-    if "ECS_CODE_OK" not in output:
-        raise RuntimeError(f"unexpected ECS code preflight output: {output}")
     busy = _ssh(
         ecs_host,
         "ps -eo pid,args | grep '[g]aps_flower.server_app' || true",
@@ -142,6 +153,20 @@ def _preflight_ecs(ecs_host: str, ecs_project: str) -> None:
     ).stdout.strip()
     if busy:
         raise RuntimeError(f"an ECS Flower server is already running:\n{busy}")
+
+
+def _preflight_ecs(ecs_host: str, ecs_project: str) -> None:
+    _preflight_ecs_environment(ecs_host, ecs_project)
+    source = (
+        f"import os\nos.chdir({ecs_project!r})\n"
+        "from gaps_flower.task import make_config\n"
+        "c=make_config(profile='align_only',seed=43)\n"
+        "assert c.SEED==43 and c.USE_ALIGN and not c.USE_REPLAY_DISTILL and not c.USE_PROTO_DECOUPLING and not c.USE_REG_LOSS\n"
+        "print('ECS_CODE_OK')\n"
+    )
+    output = _remote_python(ecs_host, "/root/gaps_env/bin/python", source)
+    if "ECS_CODE_OK" not in output:
+        raise RuntimeError(f"unexpected ECS code preflight output: {output}")
 
 
 def _preflight_pi(pi_host: str, pi_project: str) -> None:
@@ -427,6 +452,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--wait-for-pi-minutes", type=int, default=360)
     parser.add_argument("--pi-retry-seconds", type=int, default=60)
     parser.add_argument("--skip-pi-sync", action="store_true")
+    parser.add_argument("--skip-ecs-sync", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -439,6 +465,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     _preflight_pc()
+    _preflight_ecs_environment(args.ecs_host, args.ecs_project)
+    if not args.skip_ecs_sync:
+        _sync_ecs(args.ecs_host, args.command_root, args.ecs_project)
     _preflight_ecs(args.ecs_host, args.ecs_project)
     pi_hosts = tuple(item.strip() for item in args.pi_hosts.split(",") if item.strip())
     pi_host = _wait_for_pi(pi_hosts, args.wait_for_pi_minutes, args.pi_retry_seconds)
