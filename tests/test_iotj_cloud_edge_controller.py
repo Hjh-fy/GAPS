@@ -40,3 +40,20 @@ def test_ecs_sync_uploads_runtime_and_frozen_commands(monkeypatch, tmp_path: Pat
     uploaded_names = {path.name for paths, _destination in scp_calls for path in paths}
     assert {"client.py", "task.py", "server_app.py", "strategy.py", "domain_adaptation.py"} <= uploaded_names
     assert ["scp", "-pr", str(command_root), "root@example:/root/GAPS/results/"] in run_calls
+
+
+def test_remote_launcher_normalizes_shell_line_endings(monkeypatch) -> None:
+    captured: list[str] = []
+
+    def fake_remote_python(_host: str, _python_bin: str, source: str) -> str:
+        captured.append(source)
+        return "1234"
+
+    monkeypatch.setattr(controller, "_remote_python", fake_remote_python)
+
+    pid = controller._remote_launch_script(
+        "host", "python", "/project", "/project/run.sh", "/project/run.log"
+    )
+
+    assert pid == 1234
+    assert "replace(b'\\r\\n', b'\\n').replace(b'\\r', b'\\n')" in captured[0]

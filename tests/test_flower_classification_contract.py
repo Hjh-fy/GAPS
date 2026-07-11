@@ -13,6 +13,7 @@ from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy
 from gaps_flower.task import create_model, evaluate, get_parameters, make_config, set_parameters
 from scripts.generate_iotj_classification_ablation_commands import (
     SPECS,
+    _write_command_files,
     build_run_manifest,
 )
 
@@ -316,6 +317,18 @@ def test_manifest_execution_stages_prevent_one_shot_queueing(tmp_path) -> None:
     assert core["execution_stage"] == "core_screening"
     assert confirmation["execution_stage"] == "confirmation"
     assert appendix["execution_stage"] == "appendix_conditional"
+
+
+def test_generated_remote_shell_scripts_use_lf_only(tmp_path) -> None:
+    manifest = build_run_manifest("A0", 42, repo_root=tmp_path, results_root="results/test")
+    run_dir = tmp_path / "commands" / manifest["run_name"]
+
+    _write_command_files(run_dir, manifest)
+
+    for name in ("server_command.sh", "client_c1_pi_command.sh"):
+        payload = (run_dir / name).read_bytes()
+        assert b"\r" not in payload
+        assert payload.startswith(b"#!/usr/bin/env bash\nset -euo pipefail\n")
 
 
 def test_a1_gaps_aggregation_matches_fedavg_when_optional_features_are_off(tmp_path) -> None:

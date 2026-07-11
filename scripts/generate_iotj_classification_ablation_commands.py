@@ -154,6 +154,11 @@ def _bool(value: bool) -> str:
     return "true" if value else "false"
 
 
+def _write_text_lf(path: Path, content: str) -> None:
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(content)
+
+
 def _sha256(path: Path) -> str | None:
     if not path.is_file():
         return None
@@ -407,27 +412,27 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
 def _write_command_files(run_dir: Path, manifest: dict[str, Any]) -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "command_manifest.json").write_text(
+    _write_text_lf(
+        run_dir / "command_manifest.json",
         json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
-        encoding="utf-8",
     )
     commands = manifest["commands"]
-    (run_dir / "server_command.sh").write_text(
+    _write_text_lf(
+        run_dir / "server_command.sh",
         "#!/usr/bin/env bash\nset -euo pipefail\ncd /root/GAPS\n" + shlex.join(commands["server_ecs"]) + "\n",
-        encoding="utf-8",
     )
-    (run_dir / "client_c1_pi_command.sh").write_text(
+    _write_text_lf(
+        run_dir / "client_c1_pi_command.sh",
         "#!/usr/bin/env bash\nset -euo pipefail\ncd /home/gaps/GAPS/flower_runtime\n"
         + shlex.join(commands["client_c1_pi"])
         + "\n",
-        encoding="utf-8",
     )
     pc_args = ",\n    ".join(json.dumps(arg) for arg in commands["client_c2_pc"])
-    (run_dir / "client_c2_pc_command.ps1").write_text(
+    _write_text_lf(
+        run_dir / "client_c2_pc_command.ps1",
         "$ErrorActionPreference = \"Stop\"\n$argsList = @(\n    "
         + pc_args
         + "\n)\n& $argsList[0] $argsList[1..($argsList.Count - 1)]\n",
-        encoding="utf-8",
     )
 
 

@@ -264,6 +264,10 @@ project = Path({project!r})
 script = Path({script_path!r})
 log_path = Path({log_path!r})
 log_path.parent.mkdir(parents=True, exist_ok=True)
+payload = script.read_bytes()
+normalized = payload.replace(b'\\r\\n', b'\\n').replace(b'\\r', b'\\n')
+if normalized != payload:
+    script.write_bytes(normalized)
 log = log_path.open('ab', buffering=0)
 process = subprocess.Popen(
     ['bash', str(script)],
