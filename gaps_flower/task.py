@@ -23,6 +23,30 @@ from utils import create_model_by_config, evaluate_model, set_random_seed
 
 NDArrays = List[np.ndarray]
 
+CLASSIFICATION_PROFILE_FLAGS = {
+    "ce_only": {"align": False, "replay": False, "decouple": False},
+    "proto_only": {"align": True, "replay": False, "decouple": True},
+    "replay_only": {"align": False, "replay": True, "decouple": False},
+    "proto_replay": {"align": True, "replay": True, "decouple": True},
+}
+
+CLASSIFICATION_PROFILE_ALIASES = {
+    "smoke": "ce_only",
+    "gaps": "proto_replay",
+    "gaps_cls": "proto_replay",
+    "gaps_classification": "proto_replay",
+    "classification": "proto_replay",
+    "strong_cls": "proto_replay",
+}
+
+
+def canonical_profile(profile: str) -> str:
+    profile_key = str(profile or "ce_only").lower()
+    profile_key = CLASSIFICATION_PROFILE_ALIASES.get(profile_key, profile_key)
+    if profile_key not in CLASSIFICATION_PROFILE_FLAGS:
+        raise ValueError(f"Unsupported Flower runtime profile: {profile}")
+    return profile_key
+
 
 def serialize_counts(count_dict: dict) -> str:
     """Serialize class-phase sample counts for Flower metrics."""
@@ -59,6 +83,7 @@ def make_config(
     local_epochs: int = 1,
     batch_size: int = 32,
     profile: str = "smoke",
+    seed: int = 42,
 ) -> FLConfig:
     """Create the runtime config used by Flower clients and the DA server.
 
@@ -75,6 +100,7 @@ def make_config(
     config.DEVICE = device
     config.LOCAL_EPOCHS = local_epochs
     config.BATCH_SIZE = batch_size
+    config.SEED = int(seed)
 
     # Always keep the Flower classification path independent from regression.
     # Regression has a separate offline/FedAvg-style script path in this package.
@@ -82,6 +108,7 @@ def make_config(
 
     # Conservative defaults: exact smoke-test behavior.
     config.USE_ALIGN = False
+    config.USE_CONTRASTIVE_ALIGN = False
     config.USE_REPLAY_DISTILL = False
     config.USE_SERVER_OPT = False
     config.USE_LEARNABLE_AGG = False
@@ -94,20 +121,12 @@ def make_config(
     config.USE_ADVERSARIAL_DOMAIN = False
     config.USE_MMD_ALIGNMENT = False
 
-    profile_key = str(profile or "smoke").lower()
-    if profile_key in {"gaps", "gaps_cls", "gaps_classification", "classification", "strong_cls"}:
-        # Match the single-machine classification client more closely: after
-        # round-1 prototype bootstrapping, local training uses global prototypes
-        # as an alignment regularizer.  Replay distillation is enabled by the
-        # Flower client through a local cache of the previously received server
-        # model, so no large previous-state payload needs to be broadcast.
-        config.USE_ALIGN = True
-        config.USE_CONTRASTIVE_ALIGN = True
-        config.USE_REPLAY_DISTILL = True
-        config.USE_PROTO_DECOUPLING = True
-        config.USE_SENSOR_AUG = False
-    elif profile_key != "smoke":
-        raise ValueError(f"Unsupported Flower runtime profile: {profile}")
+    profile_key = canonical_profile(profile)
+    flags = CLASSIFICATION_PROFILE_FLAGS[profile_key]
+    config.USE_ALIGN = flags["align"]
+    config.USE_CONTRASTIVE_ALIGN = flags["align"]
+    config.USE_REPLAY_DISTILL = flags["replay"]
+    config.USE_PROTO_DECOUPLING = flags["decouple"]
 
     set_random_seed(config.SEED)
     return config

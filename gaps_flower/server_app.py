@@ -11,10 +11,17 @@ import flwr as fl
 from flwr.common import ndarrays_to_parameters
 
 from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, weighted_average
-from gaps_flower.task import create_model, get_parameters, make_config
+from gaps_flower.task import CLASSIFICATION_PROFILE_FLAGS, create_model, get_parameters, make_config
 
 DEFAULT_STRATEGIES = ("fedavg", "gaps")
-PROFILE_CHOICES = ("smoke", "gaps_cls", "gaps", "gaps_classification", "classification", "strong_cls")
+PROFILE_CHOICES = tuple(CLASSIFICATION_PROFILE_FLAGS) + (
+    "smoke",
+    "gaps_cls",
+    "gaps",
+    "gaps_classification",
+    "classification",
+    "strong_cls",
+)
 DA_PRESETS = ("none", "default", "fixed_da_strong")
 FIXED_DA_STRONG = {
     "domain_adapt_steps": 100,
@@ -83,6 +90,7 @@ def main() -> None:
     parser.add_argument("--min-clients", type=int, default=1)
     parser.add_argument("--output-dir", default="results/flower_server")
     parser.add_argument("--run-name", default="flower_smoke")
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--profile", choices=PROFILE_CHOICES, default="smoke",
                         help="Server model/config profile; keep this aligned with client --profile for matrix runs")
     parser.add_argument("--save-history", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
@@ -153,7 +161,13 @@ def main() -> None:
     apply_da_preset(args, explicit_dests)
     save_run_config(args, explicit_dests)
 
-    config = make_config(device="cpu", local_epochs=1, batch_size=32, profile=args.profile)
+    config = make_config(
+        device="cpu",
+        local_epochs=1,
+        batch_size=32,
+        profile=args.profile,
+        seed=args.seed,
+    )
     model = create_model(config)
     initial_arrays, parameter_keys = get_parameters(model)
 

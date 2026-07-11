@@ -31,13 +31,14 @@ This is the durable engineering and research record for the IoT-J system experim
 | 2026-07-11 | Downgrade A1 to an aggregation contract check | With CE-only clients and no DA, GAPS and FedAvg parameter aggregation should be equivalent; prototype diagnostics alone do not justify a full experiment | Pending deterministic equivalence test |
 | 2026-07-11 | Require real cloud-edge topology for every reportable training run | Preserve deployment realism; local simulation is permitted only for tests and frozen-artifact analysis | User instruction |
 | 2026-07-11 | Change the primary protocol to C1/C2 source and C5-only target | C3/C4 must not participate as target domains; incompatible C12-to-C345 evidence becomes historical only | User correction |
+| 2026-07-11 | Continue with the existing `c1234src_c5tgt` data root | The user accepted the shared-root preprocessing; the Flower classification loaders explicitly use `normalize=False`, so `norm_stats.npz` is not consumed by this training/evaluation path | User decision plus `gaps_flower/task.py` and `federated_dataset.py` code check |
 
 ## Stage Ledger
 
 | Stage | Status | Entry criteria | Exit evidence |
 |---|---|---|---|
 | 1. Input freeze and metric contract | in progress | Main plan approved | Frozen manifest, corrected S_CC tables, clean tests |
-| 2. Classification ablation | pending | Stage 1 complete | Seed-42 screen, five-seed key groups, classification report |
+| 2. Classification ablation | in progress | Dataset/input contract frozen | Seed-42 screen, five-seed key groups, classification report |
 | 3. Regression and expert selection | pending | Frozen classifier outputs | R0-R7 aligned S_CC and real-route tables |
 | 4. QC and low-calibration reliability | pending | Aligned P4 streams | Risk-coverage, fixed-coverage, budget statistics |
 | 5. C5 source-count generalization | pending | F1/F2 cloud artifacts recovered | C5-only classification and regression source-count table; F3/F4 appendix optional |
@@ -50,7 +51,9 @@ This is the durable engineering and research record for the IoT-J system experim
 |---|---|---|---|---|---|---|---|
 | AUDIT-001 | 2026-07-11 | Current artifacts can be frozen under the corrected C12-to-C5 protocol | C12-to-C5 dataset and F2 cloud run | `python scripts/audit_iotj_experiment_inputs.py --data-root dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid --run-dir results/source_target_classification_matrix_20260630/F2_C12_to_C5_fixed_da_strong_r25 --output results/iotj_experiment_freeze_20260711/input_manifest.json` | `results/iotj_experiment_freeze_20260711/input_manifest.json` | complete | 228 artifacts hashed; active clients are exactly C1/C2/C5; C5 calibration/test is 320/1360; canonical F2 is complete with 183 files. |
 | METRIC-001 | 2026-07-11 | Pure S_CC differs from S_AR intersect S_CC | P4 test outputs | Task 2 pending | Final metric consolidation | pending | Manual audit: P4 S_CC N=5301, RMSE=8.3269; S_AR N=4228, RMSE=5.8497 |
-| CONTRACT-A01 | 2026-07-11 | CE-only GAPS aggregation equals FedAvg aggregation when DA and client prototype use are disabled | Synthetic identical FitRes; any training smoke must use the real cloud-edge topology | Task 3 pending | Contract audit | pending | Pending |
+| CONTRACT-A01 | 2026-07-11 | CE-only GAPS aggregation equals FedAvg aggregation when selective aggregation, prototype diagnostics, and DA are disabled | Two deterministic synthetic FitRes with 30/70 sample weights | `python -m pytest tests/test_flower_classification_contract.py -q --basetemp .tmp_pytest_cls_equivalence_20260711` | Contract audit | complete | All tensors match FedAvg within absolute tolerance `1e-7`; A1 is not scheduled for full training. |
+| CLS-CONFIG-001 | 2026-07-11 | A0-A7 can be generated without role/config drift | Existing C12-to-C5 data root; seeds 42-46 | `python scripts/generate_iotj_classification_ablation_commands.py --include-confirmation-seeds` | `results/iotj_classification_ablation_20260711_commands` | complete | 24 manifests generated: 23 scheduled real training runs and one A1 contract-only row; protocol validation found zero invalid manifests. |
+| CLS-RUN-001 | 2026-07-11 | Seed-42 screening can start on the real ECS/Pi/PC topology | Generated command manifests | Connectivity preflight | Pending cloud/Pi outputs | blocked | ECS and C5 calibration data are reachable; Raspberry Pi SSH currently times out at both recorded addresses, so no partial training run was started. |
 
 ## Review Findings and Risks
 
@@ -64,6 +67,8 @@ This is the durable engineering and research record for the IoT-J system experim
 | 2026-07-11 | Medium | Initial matrix inventory used short aliases beside recovered full directory names, creating six false missing rows | Resolved: priority aliases now map to the six canonical full directory names; regenerated manifest has six complete rows and no missing artifacts. |
 | 2026-07-11 | High | F6/H2.3+/P4 primary evidence was generated with C3/C4/C5 as targets | Reclassify as historical diagnostic; rebuild C5 regression, expert selector, and QC from the F2 C12-to-C5 classifier |
 | 2026-07-11 | High | Task 1 audit used name-based matrix heuristics, weak dataset validation, and unsafe output handling | Resolved with explicit F2 run auditing, structured `split_info.json` validation, F2-only completion, deterministic payload separation, and protected-output checks; 28 focused tests pass. |
+| 2026-07-11 | Low | Shared data root `norm_stats.npz` was fitted more broadly than C1/C2 | Accepted for this experiment after code verification: Flower `load_client_loaders` passes `normalize=False` for both source training and client testing, so the file does not affect classifier tensors. Keep this statement scoped to the Flower path. |
+| 2026-07-11 | Blocking environment | Raspberry Pi is unreachable at `192.168.31.184` and `172.31.139.224` | Do not substitute local simulation. Retry connectivity and start seed-42 queue only after Pi preflight passes. |
 
 ## Task 1 Input Freeze, Current Protocol (2026-07-11)
 
@@ -99,5 +104,6 @@ This is the durable engineering and research record for the IoT-J system experim
 
 ## Next Actions
 
-1. Rebuild S_CC/S_AR metrics from the F2 classifier and new C5-only regression streams; do not merely filter old F6 predictions.
-2. Implement and verify the A0/A1 aggregation equivalence contract before scheduling real cloud-edge ablations.
+1. Restore Raspberry Pi SSH connectivity, deploy the tested profile/seed changes to ECS and Pi, and start the A0/A2/A3/A4/A5/A6/A7 seed-42 queue.
+2. Evaluate every final C5 checkpoint, then run seeds 43-46 for A0/A4/A5/A7.
+3. Rebuild C5-only Ridge/MLP/H2.3+/H8/P4 streams from the confirmed classifier; do not filter old F6 predictions into the new main table.

@@ -11,6 +11,8 @@ import flwr as fl
 import torch
 
 from gaps_flower.task import (
+    CLASSIFICATION_PROFILE_FLAGS,
+    canonical_profile,
     create_model,
     evaluate,
     get_parameters,
@@ -41,11 +43,18 @@ class GapsFlowerClient(fl.client.NumPyClient):
         local_epochs: int,
         batch_size: int,
         profile: str = "smoke",
+        seed: int = 42,
     ):
         self.client_id = client_id
         self.profile = profile
+        self.canonical_profile = canonical_profile(profile)
+        self.seed = int(seed)
         self.config = make_config(
-            device=device, local_epochs=local_epochs, batch_size=batch_size, profile=profile
+            device=device,
+            local_epochs=local_epochs,
+            batch_size=batch_size,
+            profile=profile,
+            seed=seed,
         )
         self.model = create_model(self.config)
         self.parameter_keys = get_parameters(self.model)[1]
@@ -60,13 +69,14 @@ class GapsFlowerClient(fl.client.NumPyClient):
         self.test_samples = len(test_loader.dataset)
         self.last_server_state: Optional[dict[str, torch.Tensor]] = None
         logger.info(
-            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s",
+            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s, seed=%d",
             client_id,
             self.train_samples,
             self.test_samples,
             device,
             local_epochs,
             profile,
+            self.seed,
         )
 
     def get_parameters(self, config):
@@ -117,7 +127,11 @@ class GapsFlowerClient(fl.client.NumPyClient):
             "local_epochs": int(self.config.LOCAL_EPOCHS),
             "train_samples": int(self.train_samples),
             "profile": self.profile,
+            "canonical_profile": self.canonical_profile,
+            "seed": self.seed,
+            "align_enabled": int(bool(self.config.USE_ALIGN)),
             "replay_distill_enabled": int(bool(self.config.USE_REPLAY_DISTILL)),
+            "proto_decoupling_enabled": int(bool(self.config.USE_PROTO_DECOUPLING)),
         })
         logger.info(
             "[GAPS client %d] fit round=%d DONE: samples=%d, seconds=%.2f",
@@ -162,9 +176,17 @@ def main() -> None:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--local-epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--profile",
-        choices=("smoke", "gaps_cls", "gaps", "gaps_classification", "classification", "strong_cls"),
+        choices=tuple(CLASSIFICATION_PROFILE_FLAGS) + (
+            "smoke",
+            "gaps_cls",
+            "gaps",
+            "gaps_classification",
+            "classification",
+            "strong_cls",
+        ),
         default="smoke",
         help="Client training profile: smoke=CE-only, gaps_cls/strong_cls=CE + server prototype alignment + replay distill",
     )
@@ -183,6 +205,7 @@ def main() -> None:
         local_epochs=args.local_epochs,
         batch_size=args.batch_size,
         profile=args.profile,
+        seed=args.seed,
     )
     fl.client.start_numpy_client(server_address=args.server_address, client=client)
 

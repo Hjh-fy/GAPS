@@ -1,0 +1,402 @@
+"""Generate frozen C1/C2-to-C5 cloud-edge classification commands."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import shlex
+import subprocess
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable, Sequence
+
+
+DATA_ROOT_NAME = "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
+SOURCE_CLIENTS = (1, 2)
+TARGET_CLIENTS = (5,)
+ROUNDS = 25
+LOCAL_EPOCHS = 5
+BATCH_SIZE = 32
+CLIENT_LR = 5e-4
+DA_STEPS = 100
+DA_LR = 5e-4
+SCREENING_SEED = 42
+CONFIRMATION_SEEDS = (42, 43, 44, 45, 46)
+CONFIRMATION_GROUPS = frozenset({"A0", "A4", "A5", "A7"})
+TRAINING_GROUPS = ("A0", "A2", "A3", "A4", "A5", "A6", "A7")
+
+
+@dataclass(frozen=True)
+class AblationSpec:
+    group_id: str
+    profile: str
+    strategy: str
+    use_selective_agg: bool
+    use_proto_mmd_diagnostics: bool
+    use_domain_adapt: bool
+    da_preset: str
+    da_use_coral: bool = False
+    da_use_mmd: bool = False
+    da_use_adversarial: bool = False
+    da_lambda_coral: float = 0.0
+    da_lambda_global_mmd: float = 0.0
+    da_lambda_class_mmd: float = 0.0
+    da_lambda_proto_anchor: float = 0.0
+    da_lambda_adv: float = 0.0
+    da_lambda_proto: float = 0.0
+    da_lambda_consistency: float = 0.0
+    da_lambda_residual: float = 0.0
+    da_lambda_proto_mmd: float = 0.0
+    da_lambda_stage_mmd: float = 0.0
+
+
+SPECS = {
+    "A0": AblationSpec("A0", "ce_only", "fedavg", False, False, False, "none"),
+    "A1": AblationSpec("A1", "ce_only", "gaps", False, False, False, "none"),
+    "A2": AblationSpec("A2", "proto_only", "gaps", True, True, False, "none"),
+    "A3": AblationSpec("A3", "replay_only", "gaps", True, True, False, "none"),
+    "A4": AblationSpec("A4", "proto_replay", "gaps", True, True, False, "none"),
+    "A5": AblationSpec(
+        "A5", "proto_replay", "gaps", True, True, True, "none",
+        da_use_coral=True,
+        da_use_mmd=True,
+        da_use_adversarial=True,
+        da_lambda_coral=0.5,
+        da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5,
+        da_lambda_adv=0.5,
+    ),
+    "A6": AblationSpec(
+        "A6", "proto_replay", "gaps", True, True, True, "none",
+        da_lambda_proto_anchor=0.3,
+        da_lambda_proto=0.05,
+        da_lambda_consistency=2.0,
+        da_lambda_residual=0.1,
+        da_lambda_proto_mmd=0.2,
+    ),
+    "A7": AblationSpec(
+        "A7", "proto_replay", "gaps", True, True, True, "fixed_da_strong",
+        da_use_coral=True,
+        da_use_mmd=True,
+        da_use_adversarial=True,
+        da_lambda_coral=0.5,
+        da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5,
+        da_lambda_proto_anchor=0.3,
+        da_lambda_adv=0.5,
+        da_lambda_proto=0.05,
+        da_lambda_consistency=2.0,
+        da_lambda_residual=0.1,
+        da_lambda_proto_mmd=0.2,
+        da_lambda_stage_mmd=0.2,
+    ),
+}
+
+
+def _bool(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def _sha256(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _git_revision(repo_root: Path) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo_root, text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+
+
+def _client_paths(data_root: str, clients: Iterable[int]) -> str:
+    return ",".join(f"dataset/{data_root}/client_{client}" for client in clients)
+
+
+def _run_name(group_id: str, seed: int) -> str:
+    spec = SPECS[group_id]
+    da_label = "full_da" if group_id == "A7" else ("server_da" if spec.use_domain_adapt else "no_da")
+    return f"{group_id}_{spec.profile}_{da_label}_c12_to_c5_s{seed}_r25"
+
+
+def _server_command(spec: AblationSpec, run_name: str, seed: int, results_root: str) -> list[str]:
+    command = [
+        "/root/gaps_env/bin/python",
+        "-m",
+        "gaps_flower.server_app",
+        "--server-address", "0.0.0.0:8080",
+        "--rounds", str(ROUNDS),
+        "--min-clients", str(len(SOURCE_CLIENTS)),
+        "--strategy", spec.strategy,
+        "--profile", spec.profile,
+        "--seed", str(seed),
+        "--run-name", run_name,
+        "--output-dir", f"{results_root}/{run_name}",
+        "--save-history", "true",
+        "--use-selective-agg", _bool(spec.use_selective_agg),
+        "--use-proto-mmd", _bool(spec.use_proto_mmd_diagnostics),
+        "--da-preset", spec.da_preset,
+        "--use-domain-adapt", _bool(spec.use_domain_adapt),
+        "--server-val-data", _client_paths(DATA_ROOT_NAME, SOURCE_CLIENTS),
+        "--server-calib-data", _client_paths(DATA_ROOT_NAME, TARGET_CLIENTS),
+        "--domain-adapt-steps", str(DA_STEPS),
+        "--domain-adapt-warmup", "0",
+        "--da-use-coral", _bool(spec.da_use_coral),
+        "--da-use-mmd", _bool(spec.da_use_mmd),
+        "--da-use-adversarial", _bool(spec.da_use_adversarial),
+        "--da-coral-class-conditional", "true",
+        "--strict-calibration-split", "true",
+        "--da-device", "cpu",
+        "--use-adapted-as-global", _bool(spec.use_domain_adapt),
+        "--da-lambda-coral", str(spec.da_lambda_coral),
+        "--da-lambda-global-mmd", str(spec.da_lambda_global_mmd),
+        "--da-lambda-class-mmd", str(spec.da_lambda_class_mmd),
+        "--da-lambda-proto-anchor", str(spec.da_lambda_proto_anchor),
+        "--da-lambda-adv", str(spec.da_lambda_adv),
+        "--da-lambda-target-ce", "0.0",
+        "--da-lambda-proto", str(spec.da_lambda_proto),
+        "--da-lambda-consistency", str(spec.da_lambda_consistency),
+        "--da-lambda-residual", str(spec.da_lambda_residual),
+        "--da-lambda-proto-mmd", str(spec.da_lambda_proto_mmd),
+        "--da-lambda-stage-mmd", str(spec.da_lambda_stage_mmd),
+        "--da-target-ce-label-smoothing", "0.0",
+        "--da-target-ce-class-balanced", "false",
+        "--da-server-opt-lr", str(DA_LR),
+    ]
+    return command
+
+
+def _client_command(
+    client_id: int,
+    profile: str,
+    seed: int,
+    data_root: str,
+    python_bin: str,
+    device: str,
+) -> list[str]:
+    return [
+        python_bin,
+        "-m",
+        "gaps_flower.client_app",
+        "--server-address", "127.0.0.1:18080",
+        "--client-id", str(client_id),
+        "--data-root", data_root,
+        "--device", device,
+        "--local-epochs", str(LOCAL_EPOCHS),
+        "--batch-size", str(BATCH_SIZE),
+        "--profile", profile,
+        "--seed", str(seed),
+    ]
+
+
+def build_run_manifest(
+    group_id: str,
+    seed: int,
+    *,
+    repo_root: Path,
+    results_root: str,
+) -> dict[str, Any]:
+    if group_id not in SPECS:
+        raise ValueError(f"unknown group: {group_id}")
+    if seed not in CONFIRMATION_SEEDS:
+        raise ValueError(f"unsupported seed: {seed}")
+    spec = SPECS[group_id]
+    run_name = _run_name(group_id, seed)
+    data_root = repo_root / "dataset" / DATA_ROOT_NAME
+    scheduled = group_id != "A1"
+    manifest = {
+        "schema_version": 1,
+        "group_id": group_id,
+        "run_name": run_name,
+        "scheduled_for_training": scheduled,
+        "contract_only": group_id == "A1",
+        "protocol": {
+            "source_clients": list(SOURCE_CLIENTS),
+            "target_clients": list(TARGET_CLIENTS),
+            "data_root": DATA_ROOT_NAME,
+            "split_seed": 42,
+            "training_seed": seed,
+        },
+        "training": {
+            "rounds": ROUNDS,
+            "local_epochs": LOCAL_EPOCHS,
+            "batch_size": BATCH_SIZE,
+            "client_lr": CLIENT_LR,
+            "profile": spec.profile,
+            "strategy": spec.strategy,
+            "use_selective_agg": spec.use_selective_agg,
+            "use_proto_mmd_diagnostics": spec.use_proto_mmd_diagnostics,
+        },
+        "server_adaptation": {
+            "enabled": spec.use_domain_adapt,
+            "preset": spec.da_preset,
+            "steps": DA_STEPS,
+            "lr": DA_LR,
+            "use_coral": spec.da_use_coral,
+            "use_mmd": spec.da_use_mmd,
+            "use_adversarial": spec.da_use_adversarial,
+            "lambda_coral": spec.da_lambda_coral,
+            "lambda_global_mmd": spec.da_lambda_global_mmd,
+            "lambda_class_mmd": spec.da_lambda_class_mmd,
+            "lambda_proto_anchor": spec.da_lambda_proto_anchor,
+            "lambda_adv": spec.da_lambda_adv,
+            "lambda_target_ce": 0.0,
+            "lambda_proto": spec.da_lambda_proto,
+            "lambda_consistency": spec.da_lambda_consistency,
+            "lambda_residual": spec.da_lambda_residual,
+            "lambda_proto_mmd": spec.da_lambda_proto_mmd,
+            "lambda_stage_mmd": spec.da_lambda_stage_mmd,
+        },
+        "topology": {
+            "server": "Alibaba Cloud ECS",
+            "C1": "physical Raspberry Pi CPU",
+            "C2": "physical Windows PC CPU",
+            "C5": "server-side calibration only; no target test labels in training",
+        },
+        "commands": {
+            "server_ecs": _server_command(spec, run_name, seed, results_root),
+            "client_c1_pi": _client_command(
+                1,
+                spec.profile,
+                seed,
+                f"/home/gaps/GAPS/flower_runtime/dataset/{DATA_ROOT_NAME}",
+                "/home/gaps/GAPS/gaps_rpi_env/bin/python",
+                "cpu",
+            ),
+            "client_c2_pc": _client_command(
+                2,
+                spec.profile,
+                seed,
+                str(data_root.resolve()),
+                "python",
+                "cpu",
+            ),
+        },
+        "provenance": {
+            "code_revision": _git_revision(repo_root),
+            "split_info_sha256": _sha256(data_root / "split_info.json"),
+            "norm_stats_sha256": _sha256(data_root / "norm_stats.npz"),
+        },
+    }
+    validate_manifest(manifest)
+    return manifest
+
+
+def validate_manifest(manifest: dict[str, Any]) -> None:
+    protocol = manifest["protocol"]
+    training = manifest["training"]
+    adaptation = manifest["server_adaptation"]
+    if protocol["source_clients"] != [1, 2] or protocol["target_clients"] != [5]:
+        raise ValueError("primary protocol must be C1/C2 source and C5-only target")
+    if any(client in protocol["target_clients"] for client in (3, 4)):
+        raise ValueError("C3/C4 cannot be primary targets")
+    if training["rounds"] != 25 or training["local_epochs"] != 5:
+        raise ValueError("classification schedule must be 25 rounds and 5 local epochs")
+    if training["batch_size"] != 32 or training["client_lr"] != 5e-4:
+        raise ValueError("classification optimizer contract changed")
+    if adaptation["steps"] != 100 or adaptation["lr"] != 5e-4:
+        raise ValueError("server adaptation optimizer contract changed")
+    if adaptation["lambda_target_ce"] != 0.0:
+        raise ValueError("target CE must remain disabled")
+
+
+def _write_command_files(run_dir: Path, manifest: dict[str, Any]) -> None:
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "command_manifest.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    commands = manifest["commands"]
+    (run_dir / "server_command.sh").write_text(
+        "#!/usr/bin/env bash\nset -euo pipefail\ncd /root/GAPS\n" + shlex.join(commands["server_ecs"]) + "\n",
+        encoding="utf-8",
+    )
+    (run_dir / "client_c1_pi_command.sh").write_text(
+        "#!/usr/bin/env bash\nset -euo pipefail\ncd /home/gaps/GAPS/flower_runtime\n"
+        + shlex.join(commands["client_c1_pi"])
+        + "\n",
+        encoding="utf-8",
+    )
+    pc_args = ",\n    ".join(json.dumps(arg) for arg in commands["client_c2_pc"])
+    (run_dir / "client_c2_pc_command.ps1").write_text(
+        "$ErrorActionPreference = \"Stop\"\n$argsList = @(\n    "
+        + pc_args
+        + "\n)\n& $argsList[0] $argsList[1..($argsList.Count - 1)]\n",
+        encoding="utf-8",
+    )
+
+
+def generate_manifests(
+    output_root: Path,
+    *,
+    repo_root: Path,
+    results_root: str,
+    include_confirmation_seeds: bool,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    schedule: list[tuple[str, int]] = [(group, SCREENING_SEED) for group in SPECS]
+    if include_confirmation_seeds:
+        schedule.extend(
+            (group, seed)
+            for group in sorted(CONFIRMATION_GROUPS)
+            for seed in CONFIRMATION_SEEDS
+            if seed != SCREENING_SEED
+        )
+    for group_id, seed in schedule:
+        manifest = build_run_manifest(
+            group_id, seed, repo_root=repo_root, results_root=results_root
+        )
+        _write_command_files(output_root / manifest["run_name"], manifest)
+        rows.append(manifest)
+    index = {
+        "schema_version": 1,
+        "protocol": "C1/C2 source -> C5 target only",
+        "training_runs": [row["run_name"] for row in rows if row["scheduled_for_training"]],
+        "contract_only_runs": [row["run_name"] for row in rows if row["contract_only"]],
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    (output_root / "command_index.json").write_text(
+        json.dumps(index, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return rows
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-root",
+        type=Path,
+        default=Path("results/iotj_classification_ablation_20260711_commands"),
+    )
+    parser.add_argument(
+        "--results-root",
+        default="results/iotj_classification_ablation_20260711",
+    )
+    parser.add_argument("--include-confirmation-seeds", action="store_true")
+    args = parser.parse_args(argv)
+    repo_root = Path(__file__).resolve().parents[1]
+    rows = generate_manifests(
+        args.output_root,
+        repo_root=repo_root,
+        results_root=args.results_root,
+        include_confirmation_seeds=args.include_confirmation_seeds,
+    )
+    training_count = sum(row["scheduled_for_training"] for row in rows)
+    print(
+        f"Wrote {len(rows)} manifests to {args.output_root}; "
+        f"{training_count} scheduled training runs"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
