@@ -25,8 +25,9 @@ DEFAULT_RUN_ROOT = Path("results/iotj_classification_ablation_20260711")
 DEFAULT_OUTPUT_ROOT = Path("results/iotj_classification_ablation_20260711_summary")
 FINAL_ROUND = 25
 NUM_CLASSES = 4
-CONFIRMATION_GROUPS = ("A0", "A4", "A5", "A7")
+CONFIRMATION_GROUPS = ("A0", "A0T", "A4", "A4S", "A5", "A7")
 CONFIRMATION_SEEDS = (42, 43, 44, 45, 46)
+RUN_NAME_PATTERN = re.compile(r"(A(?:0T|4S|[0-7]))_.*_s(\d+)_r25$")
 
 
 def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
@@ -40,7 +41,7 @@ def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
 
 
 def _run_identity(run_dir: Path) -> tuple[str, int]:
-    match = re.match(r"(A[0-7])_.*_s(\d+)_r25$", run_dir.name)
+    match = RUN_NAME_PATTERN.fullmatch(run_dir.name)
     if not match:
         raise ValueError(f"cannot parse ablation identity from {run_dir.name}")
     return match.group(1), int(match.group(2))
@@ -288,7 +289,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_dirs = sorted(
         path
         for path in args.run_root.iterdir()
-        if path.is_dir() and re.match(r"A[0-7]_.*_s\d+_r25$", path.name)
+        if path.is_dir() and RUN_NAME_PATTERN.fullmatch(path.name)
     ) if args.run_root.is_dir() else []
     if not run_dirs:
         raise FileNotFoundError(f"no completed ablation run directories under {args.run_root}")

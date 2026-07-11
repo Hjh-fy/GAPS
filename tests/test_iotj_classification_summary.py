@@ -1,11 +1,28 @@
 import numpy as np
 import pytest
+from pathlib import Path
 
 from scripts.summarize_iotj_classification_ablation import (
+    _run_identity,
     aggregate_groups,
     classification_metrics,
     validate_confirmation_seeds,
 )
+
+
+@pytest.mark.parametrize(
+    ("run_name", "expected"),
+    [
+        ("A0_ce_only_no_da_c12_to_c5_s42_r25", ("A0", 42)),
+        ("A0T_ce_only_server_da_c12_to_c5_s43_r25", ("A0T", 43)),
+        ("A4S_align_replay_no_da_c12_to_c5_s44_r25", ("A4S", 44)),
+        ("A7_proto_replay_full_da_c12_to_c5_s46_r25", ("A7", 46)),
+    ],
+)
+def test_run_identity_accepts_all_scheduled_group_id_shapes(
+    run_name: str, expected: tuple[str, int]
+) -> None:
+    assert _run_identity(Path(run_name)) == expected
 
 
 def test_classification_metrics_reports_macro_f1_nll_ece_and_recall() -> None:
@@ -65,7 +82,7 @@ def test_group_aggregation_uses_seed_mean_and_sample_std() -> None:
 def test_confirmation_seed_validation_rejects_missing_seed() -> None:
     rows = [
         {"group_id": group, "seed": seed}
-        for group in ("A0", "A4", "A5", "A7")
+        for group in ("A0", "A0T", "A4", "A4S", "A5", "A7")
         for seed in (42, 43, 44, 45, 46)
         if not (group == "A7" and seed == 46)
     ]
