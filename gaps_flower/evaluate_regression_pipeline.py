@@ -165,13 +165,23 @@ def load_regression_model(
     config = make_regression_config_from_checkpoint(ckpt, device, batch_size, args)
     model = create_regression_model(config).to(device)
     state = _extract_state(ckpt)
-    missing, unexpected = model.load_state_dict(state, strict=False)
-    if missing:
-        print(f"[regression] missing keys: {len(missing)}")
-    if unexpected:
-        print(f"[regression] unexpected keys: {len(unexpected)}")
+    _load_state_exact(model, state, checkpoint_path)
     model.eval()
     return model, config, ckpt if isinstance(ckpt, dict) else {}
+
+
+def _load_state_exact(
+    model: torch.nn.Module,
+    state: object,
+    checkpoint_path: str | Path,
+) -> None:
+    try:
+        model.load_state_dict(state, strict=True)
+    except (RuntimeError, TypeError) as exc:
+        raise ValueError(
+            f"Regression evaluation asset is incompatible with the configured model: "
+            f"{checkpoint_path}: {exc}"
+        ) from exc
 
 
 def load_specialist_models(
@@ -180,20 +190,28 @@ def load_specialist_models(
     device: torch.device,
     config: FLConfig,
 ) -> dict[int, torch.nn.Module]:
-    if not specialist_dir:
+    required_classes = {
+        int(class_id)
+        for class_id, mode in selected_modes.items()
+        if mode in {"specialist", "specialist_full"}
+    }
+    if not required_classes:
         return {}
+    if not specialist_dir:
+        raise ValueError(
+            "Routing selects specialist models, but no specialist directory was provided"
+        )
     root = Path(specialist_dir)
     out: dict[int, torch.nn.Module] = {}
-    for class_id, mode in selected_modes.items():
-        if mode not in {"specialist", "specialist_full"}:
-            continue
+    for class_id in sorted(required_classes):
         path = root / f"class_{class_id}.pth"
         if not path.exists():
-            print(f"[warning] selected specialist class {class_id} but checkpoint missing: {path}")
-            continue
+            raise ValueError(
+                f"Routing selects specialist class {class_id}, but checkpoint is missing: {path}"
+            )
         ckpt = torch.load(path, map_location=device, weights_only=False)
         model = create_regression_model(config).to(device)
-        model.load_state_dict(_extract_state(ckpt), strict=False)
+        _load_state_exact(model, _extract_state(ckpt), path)
         model.eval()
         out[int(class_id)] = model
     return out
@@ -203,16 +221,23 @@ def load_full_model(
     full_model_path: str | None,
     device: torch.device,
     config: FLConfig,
+    *,
+    required: bool = False,
 ) -> torch.nn.Module | None:
     if not full_model_path:
+        if required:
+            raise ValueError(
+                "Routing selects the full model, but no full model checkpoint was provided"
+            )
         return None
     path = Path(full_model_path)
     if not path.exists():
-        print(f"[warning] full model checkpoint missing: {path}")
+        if required:
+            raise ValueError(f"Selected full model checkpoint is missing: {path}")
         return None
     ckpt = torch.load(path, map_location=device, weights_only=False)
     model = create_regression_model(config).to(device)
-    model.load_state_dict(_extract_state(ckpt), strict=False)
+    _load_state_exact(model, _extract_state(ckpt), path)
     model.eval()
     return model
 
@@ -649,7 +674,12 @@ def main() -> None:
     if args.specialist_dir:
         root = Path(args.specialist_dir)
         specialist_root = str(root / "specialists") if (root / "specialists").exists() else str(root)
-    full_model = load_full_model(args.full_model or None, device, reg_config)
+    full_model = load_full_model(
+        args.full_model or None,
+        device,
+        reg_config,
+        required=any(mode == "full" for mode in selected_modes.values()),
+    )
     specialist_models = load_specialist_models(specialist_root or None, selected_modes, device, reg_config)
 
     client_ids = parse_client_ids(args.client_ids)
