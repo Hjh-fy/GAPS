@@ -12,6 +12,7 @@
       "target_client": 5,
       "executors": {"1": "pi"},
       "expected_source_train": {"1": 2360},
+      "expected_source_calibration": {"1": 320},
       "expected_target_counts": {"calibration": 320, "test": 1360}
     },
     {
@@ -21,6 +22,7 @@
       "target_client": 1,
       "executors": {"5": "pi"},
       "expected_source_train": {"5": 1200},
+      "expected_source_calibration": {"5": 160},
       "expected_target_counts": {"calibration": 680, "test": 2680}
     },
     {
@@ -30,6 +32,7 @@
       "target_client": 1,
       "executors": {"4": "pi", "5": "pc"},
       "expected_source_train": {"4": 1200, "5": 1200},
+      "expected_source_calibration": {"4": 160, "5": 160},
       "expected_target_counts": {"calibration": 680, "test": 2680}
     }
   ]

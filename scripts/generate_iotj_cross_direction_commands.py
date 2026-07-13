@@ -60,6 +60,7 @@ class DirectionSpec:
     target_client: int
     executors: dict[int, str]
     expected_source_train: dict[int, int]
+    expected_source_calibration: dict[int, int]
     expected_target_counts: dict[str, int]
     split_seed: int
 
@@ -117,6 +118,13 @@ def load_direction_specs(path: Path) -> tuple[DirectionSpec, ...]:
                 raw["expected_source_train"], field="expected_source_train"
             ).items()
         }
+        expected_source_calibration = {
+            client_id: int(count)
+            for client_id, count in _int_mapping(
+                raw["expected_source_calibration"],
+                field="expected_source_calibration",
+            ).items()
+        }
         spec = DirectionSpec(
             direction_id=str(raw["direction_id"]),
             data_root=str(raw["data_root"]),
@@ -124,6 +132,7 @@ def load_direction_specs(path: Path) -> tuple[DirectionSpec, ...]:
             target_client=int(raw["target_client"]),
             executors=executors,
             expected_source_train=expected_source,
+            expected_source_calibration=expected_source_calibration,
             expected_target_counts={
                 str(key): int(value)
                 for key, value in raw["expected_target_counts"].items()
@@ -152,6 +161,10 @@ def _validate_direction_spec(spec: DirectionSpec) -> None:
         raise ValueError(f"{spec.direction_id} executor mapping does not match sources")
     if set(spec.expected_source_train) != set(spec.source_clients):
         raise ValueError(f"{spec.direction_id} source counts do not match sources")
+    if set(spec.expected_source_calibration) != set(spec.source_clients):
+        raise ValueError(
+            f"{spec.direction_id} source calibration counts do not match sources"
+        )
     if set(spec.executors.values()) - {"pi", "pc"}:
         raise ValueError(f"{spec.direction_id} has an unsupported executor")
     if list(spec.executors.values()).count("pi") > 1:
@@ -199,6 +212,11 @@ def validate_direction_data(spec: DirectionSpec, repo_root: Path) -> Path:
             raise FileNotFoundError(data_root / name)
     for client_id, expected_n in spec.expected_source_train.items():
         _validate_split_arrays(data_root / f"client_{client_id}", "train", expected_n)
+        _validate_split_arrays(
+            data_root / f"client_{client_id}",
+            "calibration",
+            spec.expected_source_calibration[client_id],
+        )
     for split, expected_n in spec.expected_target_counts.items():
         _validate_split_arrays(
             data_root / f"client_{spec.target_client}", split, expected_n
@@ -277,15 +295,16 @@ def _server_command(
 def _active_file_hashes(direction: DirectionSpec, data_root: Path) -> dict[str, str]:
     paths = [data_root / "split_info.json", data_root / "norm_stats.npz"]
     for client_id in direction.source_clients:
-        paths.extend(
-            data_root / f"client_{client_id}" / f"train_{suffix}.npy"
-            for suffix in (
-                "features",
-                "classification_labels",
-                "phase_labels",
-                "regression_labels",
+        for split in ("train", "calibration"):
+            paths.extend(
+                data_root / f"client_{client_id}" / f"{split}_{suffix}.npy"
+                for suffix in (
+                    "features",
+                    "classification_labels",
+                    "phase_labels",
+                    "regression_labels",
+                )
             )
-        )
     for split in ("calibration", "test"):
         paths.extend(
             data_root / f"client_{direction.target_client}" / f"{split}_{suffix}.npy"
@@ -365,6 +384,10 @@ def build_run_manifest(
             "training_seed": seed,
             "expected_source_train": {
                 str(key): value for key, value in direction.expected_source_train.items()
+            },
+            "expected_source_calibration": {
+                str(key): value
+                for key, value in direction.expected_source_calibration.items()
             },
             "expected_target_counts": direction.expected_target_counts,
         },

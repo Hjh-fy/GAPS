@@ -32,8 +32,10 @@ def test_frozen_directions_counts_and_device_assignments() -> None:
     assert specs[1].executors == {5: "pi"}
     assert specs[2].executors == {4: "pi", 5: "pc"}
     assert specs[0].expected_source_train == {1: 2360}
+    assert specs[0].expected_source_calibration == {1: 320}
     assert specs[0].expected_target_counts == {"calibration": 320, "test": 1360}
     assert specs[1].expected_source_train == {5: 1200}
+    assert specs[1].expected_source_calibration == {5: 160}
     assert specs[1].expected_target_counts == {"calibration": 680, "test": 2680}
 
 
@@ -108,6 +110,10 @@ def test_manifest_commands_match_protocol_and_executor() -> None:
 
     assert manifest["protocol"]["source_clients"] == [4, 5]
     assert manifest["protocol"]["target_clients"] == [1]
+    assert manifest["protocol"]["expected_source_calibration"] == {
+        "4": 160,
+        "5": 160,
+    }
     server = manifest["commands"]["server_ecs"]
     assert server[server.index("--min-clients") + 1] == "2"
     assert server[server.index("--server-calib-data") + 1].endswith("/client_1")
@@ -120,6 +126,9 @@ def test_manifest_commands_match_protocol_and_executor() -> None:
         command = row["command"]
         assert int(command[command.index("--client-id") + 1]) == row["client_id"]
         assert direction.data_root in command[command.index("--data-root") + 1]
+    hashes = manifest["provenance"]["active_file_sha256"]
+    assert "client_4/calibration_features.npy" in hashes
+    assert "client_5/calibration_classification_labels.npy" in hashes
 
 
 def test_generator_emits_exact_approved_seed42_order(tmp_path: Path) -> None:
