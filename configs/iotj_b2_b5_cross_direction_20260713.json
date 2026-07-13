@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "split_seed": 42,
+  "screening_seed": 42,
+  "confirmation_seeds": [43, 44, 45, 46],
+  "groups": ["B2", "B5"],
+  "directions": [
+    {
+      "direction_id": "F1_C1_TO_C5",
+      "data_root": "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+      "source_clients": [1],
+      "target_client": 5,
+      "executors": {"1": "pi"},
+      "expected_source_train": {"1": 2360},
+      "expected_target_counts": {"calibration": 320, "test": 1360}
+    },
+    {
+      "direction_id": "R1_C5_TO_C1",
+      "data_root": "client_data_c2345src_c1tgt_2080_timeaware_60_170_window_fullgrid",
+      "source_clients": [5],
+      "target_client": 1,
+      "executors": {"5": "pi"},
+      "expected_source_train": {"5": 1200},
+      "expected_target_counts": {"calibration": 680, "test": 2680}
+    },
+    {
+      "direction_id": "R2_C45_TO_C1",
+      "data_root": "client_data_c2345src_c1tgt_2080_timeaware_60_170_window_fullgrid",
+      "source_clients": [4, 5],
+      "target_client": 1,
+      "executors": {"4": "pi", "5": "pc"},
+      "expected_source_train": {"4": 1200, "5": 1200},
+      "expected_target_counts": {"calibration": 680, "test": 2680}
+    }
+  ]
+}
