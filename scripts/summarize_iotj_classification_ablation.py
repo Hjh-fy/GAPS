@@ -1,4 +1,4 @@
-"""Evaluate and summarize frozen C12-to-C5 classification checkpoints."""
+"""Evaluate and summarize frozen IoT-J classification checkpoints."""
 from __future__ import annotations
 
 import argparse
@@ -130,6 +130,7 @@ def evaluate_checkpoint_stream(
     checkpoint_path: Path,
     *,
     data_root: Path,
+    target_client: int = 5,
     split: str,
     device: torch.device,
     batch_size: int,
@@ -139,7 +140,7 @@ def evaluate_checkpoint_stream(
     )
     if int(checkpoint.get("round", -1)) != FINAL_ROUND:
         raise ValueError(f"expected round {FINAL_ROUND}: {checkpoint_path}")
-    loader = make_loader(data_root, 5, split, config.BATCH_SIZE)
+    loader = make_loader(data_root, target_client, split, config.BATCH_SIZE)
     rows: list[dict[str, Any]] = []
     all_true: list[int] = []
     all_probs: list[np.ndarray] = []
@@ -162,7 +163,7 @@ def evaluate_checkpoint_stream(
             margin_np = margin.detach().cpu().numpy()
             for idx in range(len(true_np)):
                 row = {
-                    "client": "C5",
+                    "client": f"C{target_client}",
                     "split": split,
                     "sample_index": sample_index,
                     "true_class": int(true_np[idx]),
@@ -186,6 +187,7 @@ def evaluate_run(
     run_dir: Path,
     *,
     data_root: Path,
+    target_client: int = 5,
     output_root: Path,
     device: torch.device,
     batch_size: int,
@@ -203,6 +205,7 @@ def evaluate_run(
         rows, metrics = evaluate_checkpoint_stream(
             checkpoint,
             data_root=data_root,
+            target_client=target_client,
             split=split,
             device=device,
             batch_size=batch_size,
@@ -216,7 +219,7 @@ def evaluate_run(
         "checkpoint": str(checkpoint.resolve()),
         "checkpoint_label": checkpoint_label,
         "round": FINAL_ROUND,
-        "target_clients": [5],
+        "target_clients": [target_client],
         "metrics": split_metrics,
     }
     run_output.mkdir(parents=True, exist_ok=True)
@@ -288,6 +291,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-root", type=Path, default=DEFAULT_RUN_ROOT)
     parser.add_argument("--data-root", type=Path, default=DATA_ROOT)
+    parser.add_argument("--target-client", type=int, default=5)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=32)
@@ -307,6 +311,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         evaluate_run(
             run_dir,
             data_root=args.data_root,
+            target_client=args.target_client,
             output_root=args.output_root,
             device=device,
             batch_size=args.batch_size,

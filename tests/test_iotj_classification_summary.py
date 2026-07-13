@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
+import torch
 from pathlib import Path
 
+import scripts.summarize_iotj_classification_ablation as classification_summary
 from scripts.summarize_iotj_classification_ablation import (
     _run_identity,
     aggregate_groups,
@@ -99,3 +101,47 @@ def test_expected_group_validation_rejects_silently_missing_b_group() -> None:
 
     with pytest.raises(ValueError, match="missing expected groups: B4"):
         validate_expected_groups(rows, ("B1", "B2", "B3", "B4", "B5"))
+
+
+def test_checkpoint_stream_uses_explicit_target_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class DummyConfig:
+        BATCH_SIZE = 2
+
+    class DummyModel:
+        def eval(self):
+            return self
+
+        def __call__(self, features: torch.Tensor):
+            logits = torch.tensor(
+                [[4.0, 1.0, 0.0, 0.0], [0.0, 4.0, 1.0, 0.0]],
+                dtype=torch.float32,
+            )
+            return logits, torch.zeros((len(features), 1)), torch.zeros((len(features), 1))
+
+    captured: dict[str, int] = {}
+    monkeypatch.setattr(
+        classification_summary,
+        "load_checkpoint_model",
+        lambda *_args, **_kwargs: (DummyModel(), DummyConfig(), {"round": 25}),
+    )
+
+    def fake_loader(_data_root, client_id: int, _split: str, _batch_size: int):
+        captured["client_id"] = client_id
+        return [(torch.zeros((2, 100, 8)), torch.tensor([0, 1]))]
+
+    monkeypatch.setattr(classification_summary, "make_loader", fake_loader)
+
+    rows, metrics = classification_summary.evaluate_checkpoint_stream(
+        Path("checkpoint.pth"),
+        data_root=Path("dataset"),
+        target_client=1,
+        split="test",
+        device=torch.device("cpu"),
+        batch_size=2,
+    )
+
+    assert captured["client_id"] == 1
+    assert {row["client"] for row in rows} == {"C1"}
+    assert metrics["N"] == 2
