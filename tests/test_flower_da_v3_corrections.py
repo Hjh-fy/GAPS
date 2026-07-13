@@ -207,6 +207,37 @@ def test_corrected_adversarial_mode_decreases_gap_without_critic_gradient() -> N
     assert critic.weight.grad is None
 
 
+def test_class_conditional_adversarial_no_shared_class_returns_connected_zero() -> None:
+    trainer = bare_trainer(
+        {
+            "ADV_CRITIC_ITERS": 1,
+            "ADV_GRADIENT_PENALTY": 0.0,
+            "ADV_CLASS_CONDITIONAL": True,
+            "ADV_FEATURE_OBJECTIVE": "wasserstein_min",
+            "NUM_CLASSES": 2,
+        }
+    )
+    trainer.domain_discriminator = torch.nn.Linear(8, 1)
+    trainer.disc_optimizer = torch.optim.SGD(
+        trainer.domain_discriminator.parameters(), lr=0.1
+    )
+    trainer.grl = GradientReversalLayer(lambda_grl=1.0)
+    source = torch.randn(4, 8, requires_grad=True)
+    target = torch.randn(4, 8, requires_grad=True)
+    source_labels = torch.zeros(4, dtype=torch.long)
+    target_labels = torch.ones(4, dtype=torch.long)
+
+    loss = trainer._compute_adversarial_loss(
+        source, source_labels, target, target_labels
+    )
+
+    assert loss.item() == 0.0
+    assert loss.requires_grad
+    loss.backward()
+    assert source.grad is not None
+    assert target.grad is not None
+
+
 def test_gaps_strategy_records_corrected_da_modes(tmp_path) -> None:
     model = torch.nn.Linear(2, 1)
     strategy = GapsStrategy(

@@ -13,6 +13,11 @@ import torch
 from flwr.common import EvaluateRes, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
 from flwr.server.client_proxy import ClientProxy
 
+from gaps_flower.domain_adaptation_inputs import (
+    load_domain_adaptation_arrays,
+    validate_domain_adaptation_request,
+)
+
 
 class CheckpointFedAvg(fl.server.strategy.FedAvg):
     """FedAvg strategy that saves checkpoints, history, and client statistics."""
@@ -396,6 +401,23 @@ class GapsStrategy(CheckpointFedAvg):
         self._da_trainer = None
         self._val_loader = None
         self._calib_loader = None
+        self._da_source_arrays = None
+        self._da_target_arrays = None
+        if self.use_domain_adapt:
+            source_dirs, target_dirs = validate_domain_adaptation_request(
+                "gaps",
+                True,
+                self.server_val_data,
+                self.server_calib_data,
+            )
+            self._da_source_arrays = load_domain_adaptation_arrays(
+                source_dirs,
+                strict=self.strict_calibration_split,
+            )
+            self._da_target_arrays = load_domain_adaptation_arrays(
+                target_dirs,
+                strict=self.strict_calibration_split,
+            )
 
     def _semantic_protos_json(self) -> str:
         """Serialize current semantic prototypes for client-side alignment."""
@@ -1081,89 +1103,21 @@ class GapsStrategy(CheckpointFedAvg):
         return model.to(device)
 
     def _init_domain_adapt_loaders(self) -> None:
-        """初始化服务端数据加载器 (val_loader, calib_loader)
-
-        支持两种目录格式:
-          1. 单个客户端目录 (含 calibration_features.npy 等带前缀的文件)
-          2. 逗号分隔的多个目录，自动合并
-          3. 裸目录 (含 features.npy classification_labels.npy 等)
-
-        对应原单机模拟:
-          val_loader  ← 源域 training clients 的 calibration_features.npy (sensor 1-2)
-          calib_loader ← 目标域 test clients 的 calibration_features.npy (sensor 3-5)
-
-        注意: 两个数据加载器都使用 calibration_features.npy，
-        区别仅在于来自不同传感器组的客户端。
-        限制采样 500 个样本以避免服务端域适应耗时过长。
-        """
-        from pathlib import Path
+        """Construct DA loaders only from arrays validated during strategy startup."""
         from federated_dataset import GasSensorWindowDataset
         from torch.utils.data import DataLoader, Subset
-        import numpy as np
 
-        batch_size = 32
-
-        def _load_from_dirs(data_dirs_spec: str) -> DataLoader:
-            """从单个或多个目录加载 calibration 数据并合并
-
-            Args:
-                data_dirs_spec: 逗号分隔的目录路径或单个路径
-            """
-            dirs = [d.strip() for d in data_dirs_spec.split(",") if d.strip()]
-            all_features = []
-            all_cls_labels = []
-            all_phase_labels = []
-
-            for data_dir in dirs:
-                dp = Path(data_dir)
-                # 主实验协议要求服务端 DA 只使用 calibration split。
-                # strict_calibration_split=True 时禁止 fallback 到 test/train，防止数据泄漏。
-                prefix = None
-                if getattr(self, "strict_calibration_split", True):
-                    feat_path = dp / "calibration_features.npy"
-                    if feat_path.exists():
-                        prefix = "calibration_"
-                    else:
-                        raise FileNotFoundError(
-                            f"严格 calibration split 模式下，目录 {data_dir} 缺少 calibration_features.npy"
-                        )
-                else:
-                    for candidate in ("calibration_", "test_", "train_", ""):
-                        feat_path = dp / f"{candidate}features.npy"
-                        if feat_path.exists():
-                            prefix = candidate
-                            break
-                    if prefix is None:
-                        raise FileNotFoundError(
-                            f"在目录 {data_dir} 中找不到任何 features.npy"
-                        )
-
-                features = np.load(dp / f"{prefix}features.npy")
-                cls_path = dp / f"{prefix}classification_labels.npy"
-                if not cls_path.exists():
-                    cls_path = dp / "classification_labels.npy"
-                cls_labels = np.load(cls_path)
-                phase_path = dp / f"{prefix}phase_labels.npy"
-                if phase_path.exists():
-                    phase_labels = np.load(phase_path, allow_pickle=True)
-                else:
-                    phase_labels = np.full(len(features), -1, dtype=np.int64)
-
-                all_features.append(features)
-                all_cls_labels.append(cls_labels)
-                all_phase_labels.append(phase_labels)
-                print(f"[GAPS]   + {data_dir} ({prefix}features.npy): "
-                      f"{len(features)} samples")
-
-            merged_features = np.concatenate(all_features, axis=0)
-            merged_cls_labels = np.concatenate(all_cls_labels, axis=0)
-            merged_phase_labels = np.concatenate(all_phase_labels, axis=0)
-
+        def _make_loader(arrays, domain: str) -> DataLoader:
+            if arrays is None:
+                raise RuntimeError(
+                    f"Validated {domain} domain adaptation arrays are unavailable"
+                )
+            features, cls_labels, phase_labels = arrays
             dataset = GasSensorWindowDataset(
-                features=merged_features,
-                regression_labels=np.zeros((len(merged_features), 4), dtype=np.float32),
-                classification_labels=merged_cls_labels,
-                phase_labels=merged_phase_labels,
+                features=features,
+                regression_labels=np.zeros((len(features), 4), dtype=np.float32),
+                classification_labels=cls_labels,
+                phase_labels=phase_labels,
                 normalize=False,
                 mean_std=None,
             )
@@ -1173,25 +1127,17 @@ class GapsStrategy(CheckpointFedAvg):
             )
             return DataLoader(
                 Subset(dataset, indices),
-                batch_size=batch_size, shuffle=True, num_workers=0,
+                batch_size=32,
+                shuffle=True,
+                num_workers=0,
             )
 
-        if self.server_val_data:
-            print(f"[GAPS] Loading source-domain val data from: {self.server_val_data}")
-            self._val_loader = _load_from_dirs(self.server_val_data)
-            print(f"[GAPS]   → val_loader: {len(self._val_loader.dataset)} samples "
-                  f"(source domain, from calibration split)")
-        else:
-            self._val_loader = None
-
-        if self.server_calib_data:
-            print(f"[GAPS] Loading target-domain calib data from: {self.server_calib_data}")
-            self._calib_loader = _load_from_dirs(self.server_calib_data)
-            print(f"[GAPS]   → calib_loader: {len(self._calib_loader.dataset)} samples "
-                  f"(target domain, from calibration split)")
-        else:
-            self._calib_loader = None
-
+        self._val_loader = _make_loader(self._da_source_arrays, "source")
+        self._calib_loader = _make_loader(self._da_target_arrays, "target")
+        print(
+            f"[GAPS] DA loaders: source={len(self._val_loader.dataset)}, "
+            f"target={len(self._calib_loader.dataset)}"
+        )
 
 def weighted_average(metrics):
     """Weighted average for numeric Flower metrics."""

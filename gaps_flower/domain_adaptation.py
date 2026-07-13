@@ -986,10 +986,20 @@ class ServerDomainAdaptation:
         class_cond = self.hp.get('ADV_CLASS_CONDITIONAL', True)
         y_s_ids = self._as_class_ids(y_s)
         y_t_ids = self._as_class_ids(y_t)
+        if class_cond and y_s_ids is not None and y_t_ids is not None:
+            num_cls = int(self.hp.get('NUM_CLASSES', 4))
+            shared_classes = [
+                class_id
+                for class_id in range(num_cls)
+                if (y_s_ids == class_id).any() and (y_t_ids == class_id).any()
+            ]
+            if not shared_classes:
+                self.disc_optimizer.zero_grad(set_to_none=True)
+                return (feat_s.sum() + feat_t.sum()) * 0.0
 
         # n_critic 步判别器更新
         for _ in range(n_critic):
-            self.disc_optimizer.zero_grad()
+            self.disc_optimizer.zero_grad(set_to_none=True)
 
             if class_cond and y_s_ids is not None and y_t_ids is not None:
                 disc_loss = torch.tensor(0.0, device=self.device)

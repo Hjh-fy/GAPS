@@ -10,6 +10,7 @@ from pathlib import Path
 import flwr as fl
 from flwr.common import ndarrays_to_parameters
 
+from gaps_flower.domain_adaptation_inputs import validate_domain_adaptation_request
 from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, weighted_average
 from gaps_flower.task import CLASSIFICATION_PROFILE_FLAGS, create_model, get_parameters, make_config
 
@@ -165,6 +166,12 @@ def main() -> None:
     args = parser.parse_args()
     explicit_dests = _explicit_cli_dests(parser, sys.argv[1:])
     apply_da_preset(args, explicit_dests)
+    validate_domain_adaptation_request(
+        args.strategy,
+        args.use_domain_adapt,
+        args.server_val_data,
+        args.server_calib_data,
+    )
     save_run_config(args, explicit_dests)
 
     config = make_config(
