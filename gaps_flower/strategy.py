@@ -328,6 +328,9 @@ class GapsStrategy(CheckpointFedAvg):
         da_use_coral: bool = True,
         da_use_mmd: bool = True,
         da_use_adversarial: bool = False,
+        da_mmd_objective: str = "legacy_quartic",
+        da_stage_alignment: str = "legacy_intra_domain",
+        da_adv_feature_objective: str = "legacy_grl_plus",
         da_coral_class_conditional: bool = True,
         da_use_align_reg_legacy: bool = False,
         da_lambda_align_reg_legacy: float = 0.05,
@@ -367,6 +370,9 @@ class GapsStrategy(CheckpointFedAvg):
         self.da_use_coral = da_use_coral
         self.da_use_mmd = da_use_mmd
         self.da_use_adversarial = da_use_adversarial
+        self.da_mmd_objective = da_mmd_objective
+        self.da_stage_alignment = da_stage_alignment
+        self.da_adv_feature_objective = da_adv_feature_objective
         self.da_coral_class_conditional = da_coral_class_conditional
         self.da_use_align_reg_legacy = da_use_align_reg_legacy
         self.da_lambda_align_reg_legacy = da_lambda_align_reg_legacy
@@ -926,6 +932,9 @@ class GapsStrategy(CheckpointFedAvg):
                 "USE_DEEP_CORAL": self.da_use_coral,
                 "USE_MMD_ALIGNMENT": self.da_use_mmd,
                 "USE_ADVERSARIAL_DOMAIN": self.da_use_adversarial,
+                "MMD_OBJECTIVE": self.da_mmd_objective,
+                "STAGE_ALIGNMENT": self.da_stage_alignment,
+                "ADV_FEATURE_OBJECTIVE": self.da_adv_feature_objective,
                 "LAMBDA_DEEP_CORAL": self.da_lambda_coral,
                 "LAMBDA_GLOBAL_MMD": self.da_lambda_global_mmd,
                 "LAMBDA_CLASS_MMD": self.da_lambda_class_mmd,

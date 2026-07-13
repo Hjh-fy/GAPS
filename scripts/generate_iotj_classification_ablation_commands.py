@@ -25,6 +25,8 @@ SCREENING_SEED = 42
 CONFIRMATION_SEEDS = (42, 43, 44, 45, 46)
 CONFIRMATION_GROUPS = frozenset({"A0", "A0T", "A4", "A4S", "A5", "A7"})
 CORE_SCREENING_GROUPS = ("A0", "A0T", "A2", "A3", "A4", "A4S", "A5", "A6", "A7")
+V3_SCREENING_GROUPS = ("B1", "B2", "B3", "B4", "B5")
+V3_CONFIRMATION_GROUPS = ("A0", "A0T", "A6", "B5")
 APPENDIX_GROUPS = (
     "A7-noCORAL",
     "A7-noMMD",
@@ -57,6 +59,9 @@ class AblationSpec:
     da_lambda_proto_mmd: float = 0.0
     da_lambda_stage_mmd: float = 0.0
     da_lambda_target_ce: float = 0.0
+    da_mmd_objective: str = "legacy_quartic"
+    da_stage_alignment: str = "legacy_intra_domain"
+    da_adv_feature_objective: str = "legacy_grl_plus"
 
 
 SPECS = {
@@ -150,6 +155,60 @@ SPECS = {
 }
 
 
+_V3_COMMON = {
+    "da_lambda_proto_anchor": 0.3,
+    "da_lambda_proto": 0.05,
+    "da_lambda_consistency": 2.0,
+    "da_lambda_residual": 0.1,
+    "da_lambda_proto_mmd": 0.0,
+    "da_mmd_objective": "mmd2",
+    "da_stage_alignment": "cross_domain_same_class_phase",
+    "da_adv_feature_objective": "wasserstein_min",
+}
+
+V3_SPECS = {
+    "B1": AblationSpec(
+        "B1", "proto_replay", "gaps", True, False, True, "none",
+        da_use_coral=True,
+        da_lambda_coral=0.5,
+        **_V3_COMMON,
+    ),
+    "B2": AblationSpec(
+        "B2", "proto_replay", "gaps", True, False, True, "none",
+        da_use_mmd=True,
+        da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5,
+        **_V3_COMMON,
+    ),
+    "B3": AblationSpec(
+        "B3", "proto_replay", "gaps", True, False, True, "none",
+        da_use_mmd=True,
+        da_lambda_stage_mmd=0.2,
+        **_V3_COMMON,
+    ),
+    "B4": AblationSpec(
+        "B4", "proto_replay", "gaps", True, False, True, "none",
+        da_use_adversarial=True,
+        da_lambda_adv=0.5,
+        **_V3_COMMON,
+    ),
+    "B5": AblationSpec(
+        "B5", "proto_replay", "gaps", True, False, True, "none",
+        da_use_coral=True,
+        da_use_mmd=True,
+        da_use_adversarial=True,
+        da_lambda_coral=0.5,
+        da_lambda_global_mmd=0.5,
+        da_lambda_class_mmd=0.5,
+        da_lambda_adv=0.5,
+        da_lambda_stage_mmd=0.2,
+        **_V3_COMMON,
+    ),
+}
+
+ALL_SPECS = {**SPECS, **V3_SPECS}
+
+
 def _bool(value: bool) -> str:
     return "true" if value else "false"
 
@@ -183,8 +242,13 @@ def _client_paths(data_root: str, clients: Iterable[int]) -> str:
 
 
 def _run_name(group_id: str, seed: int) -> str:
-    spec = SPECS[group_id]
-    da_label = "full_da" if group_id == "A7" else ("server_da" if spec.use_domain_adapt else "no_da")
+    spec = ALL_SPECS[group_id]
+    if group_id == "B5":
+        da_label = "corrected_full_da"
+    elif group_id.startswith("B"):
+        da_label = "corrected_server_da"
+    else:
+        da_label = "full_da" if group_id == "A7" else ("server_da" if spec.use_domain_adapt else "no_da")
     return f"{group_id}_{spec.profile}_{da_label}_c12_to_c5_s{seed}_r25"
 
 
@@ -213,6 +277,9 @@ def _server_command(spec: AblationSpec, run_name: str, seed: int, results_root: 
         "--da-use-coral", _bool(spec.da_use_coral),
         "--da-use-mmd", _bool(spec.da_use_mmd),
         "--da-use-adversarial", _bool(spec.da_use_adversarial),
+        "--da-mmd-objective", spec.da_mmd_objective,
+        "--da-stage-alignment", spec.da_stage_alignment,
+        "--da-adv-feature-objective", spec.da_adv_feature_objective,
         "--da-coral-class-conditional", "true",
         "--strict-calibration-split", "true",
         "--da-device", "cpu",
@@ -265,11 +332,11 @@ def build_run_manifest(
     repo_root: Path,
     results_root: str,
 ) -> dict[str, Any]:
-    if group_id not in SPECS:
+    if group_id not in ALL_SPECS:
         raise ValueError(f"unknown group: {group_id}")
     if seed not in CONFIRMATION_SEEDS:
         raise ValueError(f"unsupported seed: {seed}")
-    spec = SPECS[group_id]
+    spec = ALL_SPECS[group_id]
     run_name = _run_name(group_id, seed)
     data_root = repo_root / "dataset" / DATA_ROOT_NAME
     scheduled = group_id != "A1"
@@ -277,6 +344,10 @@ def build_run_manifest(
         execution_stage = "contract_only"
     elif group_id in APPENDIX_GROUPS:
         execution_stage = "appendix_conditional"
+    elif group_id in V3_SCREENING_GROUPS and seed == SCREENING_SEED:
+        execution_stage = "v3_correction_screening"
+    elif group_id in V3_SCREENING_GROUPS:
+        execution_stage = "v3_confirmation"
     elif seed == SCREENING_SEED:
         execution_stage = "core_screening"
     else:
@@ -284,6 +355,7 @@ def build_run_manifest(
     manifest = {
         "schema_version": 1,
         "group_id": group_id,
+        "method_version": "v3_corrected" if group_id.startswith("B") else "v2_legacy",
         "run_name": run_name,
         "scheduled_for_training": scheduled,
         "contract_only": group_id == "A1",
@@ -335,6 +407,9 @@ def build_run_manifest(
             "use_coral": spec.da_use_coral,
             "use_mmd": spec.da_use_mmd,
             "use_adversarial": spec.da_use_adversarial,
+            "mmd_objective": spec.da_mmd_objective,
+            "stage_alignment": spec.da_stage_alignment,
+            "adv_feature_objective": spec.da_adv_feature_objective,
             "lambda_coral": spec.da_lambda_coral,
             "lambda_global_mmd": spec.da_lambda_global_mmd,
             "lambda_class_mmd": spec.da_lambda_class_mmd,
@@ -404,10 +479,21 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         raise ValueError("target CE must remain disabled outside A0T")
     if group_id in {"A2", "A3", "A4"} and training["use_selective_agg"]:
         raise ValueError(f"{group_id} must isolate client losses from selective aggregation")
-    if group_id in {"A4S", "A5", "A6", "A7"} and not training["use_selective_agg"]:
+    if group_id in {"A4S", "A5", "A6", "A7", *V3_SCREENING_GROUPS} and not training["use_selective_agg"]:
         raise ValueError(f"{group_id} requires the selective-aggregation base")
     if training["use_proto_mmd_diagnostics"]:
         raise ValueError("timing-neutral primary runs keep prototype MMD diagnostics disabled")
+    if group_id in V3_SCREENING_GROUPS:
+        if adaptation["lambda_proto_mmd"] != 0.0:
+            raise ValueError("v3 correction groups must disable detached prototype pair-L2")
+        expected_modes = {
+            "mmd_objective": "mmd2",
+            "stage_alignment": "cross_domain_same_class_phase",
+            "adv_feature_objective": "wasserstein_min",
+        }
+        for key, expected in expected_modes.items():
+            if adaptation[key] != expected:
+                raise ValueError(f"{group_id} requires {key}={expected}")
 
 
 def _write_command_files(run_dir: Path, manifest: dict[str, Any]) -> None:
@@ -442,13 +528,24 @@ def generate_manifests(
     repo_root: Path,
     results_root: str,
     include_confirmation_seeds: bool,
+    suite: str = "v2",
 ) -> list[dict[str, Any]]:
+    if suite not in {"v2", "v3"}:
+        raise ValueError(f"unsupported suite: {suite}")
     rows: list[dict[str, Any]] = []
-    schedule: list[tuple[str, int]] = [(group, SCREENING_SEED) for group in SPECS]
+    screening_groups = tuple(SPECS) if suite == "v2" else V3_SCREENING_GROUPS
+    confirmation_groups = (
+        tuple(sorted(CONFIRMATION_GROUPS))
+        if suite == "v2"
+        else V3_CONFIRMATION_GROUPS
+    )
+    schedule: list[tuple[str, int]] = [
+        (group, SCREENING_SEED) for group in screening_groups
+    ]
     if include_confirmation_seeds:
         schedule.extend(
             (group, seed)
-            for group in sorted(CONFIRMATION_GROUPS)
+            for group in confirmation_groups
             for seed in CONFIRMATION_SEEDS
             if seed != SCREENING_SEED
         )
@@ -460,6 +557,7 @@ def generate_manifests(
         rows.append(manifest)
     index = {
         "schema_version": 1,
+        "suite": suite,
         "protocol": "C1/C2 source -> C5 target only",
         "training_runs": [row["run_name"] for row in rows if row["scheduled_for_training"]],
         "contract_only_runs": [row["run_name"] for row in rows if row["contract_only"]],
@@ -483,6 +581,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--results-root",
         default="results/iotj_classification_ablation_20260711_v2",
     )
+    parser.add_argument("--suite", choices=("v2", "v3"), default="v2")
     parser.add_argument("--include-confirmation-seeds", action="store_true")
     args = parser.parse_args(argv)
     repo_root = Path(__file__).resolve().parents[1]
@@ -491,6 +590,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         repo_root=repo_root,
         results_root=args.results_root,
         include_confirmation_seeds=args.include_confirmation_seeds,
+        suite=args.suite,
     )
     training_count = sum(row["scheduled_for_training"] for row in rows)
     print(

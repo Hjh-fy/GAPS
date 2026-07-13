@@ -636,6 +636,44 @@ def compute_mmd(features1: torch.Tensor, features2: torch.Tensor, seed: int = 42
     return mmd  # 不调用 .item()，保留梯度流
 
 
+def compute_mmd2(
+    features1: torch.Tensor,
+    features2: torch.Tensor,
+    seed: int = 42,
+) -> torch.Tensor:
+    """Return the biased empirical Gaussian-kernel MMD-squared estimate.
+
+    This corrected variant keeps subsampling deterministic without resetting
+    PyTorch's process-wide RNG. ``compute_mmd`` remains unchanged for replaying
+    legacy experiment definitions.
+    """
+    if features1.ndim != 2 or features2.ndim != 2:
+        raise ValueError("MMD inputs must be two-dimensional feature matrices")
+    if len(features1) == 0 or len(features2) == 0:
+        raise ValueError("MMD inputs must contain at least one row")
+    if features1.device != features2.device:
+        raise ValueError("MMD inputs must be on the same device")
+
+    batch_size = min(1000, len(features1), len(features2))
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(int(seed))
+
+    def sample_rows(features: torch.Tensor) -> torch.Tensor:
+        if len(features) == batch_size:
+            return features
+        indices = torch.randperm(
+            len(features), generator=generator, device="cpu"
+        )[:batch_size].to(features.device)
+        return features.index_select(0, indices)
+
+    x = sample_rows(features1)
+    y = sample_rows(features2)
+    k_xx = torch.exp(-(torch.cdist(x, x) ** 2) / 2.0).mean()
+    k_yy = torch.exp(-(torch.cdist(y, y) ** 2) / 2.0).mean()
+    k_xy = torch.exp(-(torch.cdist(x, y) ** 2) / 2.0).mean()
+    return k_xx + k_yy - 2.0 * k_xy
+
+
 def evaluate_model_with_phase_and_soft_agg(model: FedGasModel, data_loader: torch.utils.data.DataLoader,
                                           device: torch.device, semantic_protos=None, device_residuals=None,
                                           soft_agg_temp=0.5, prior_weight=0.1, num_classes=4,

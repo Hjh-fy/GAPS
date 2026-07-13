@@ -15,6 +15,7 @@ from scripts.generate_iotj_classification_ablation_commands import (
     SPECS,
     _write_command_files,
     build_run_manifest,
+    generate_manifests,
 )
 
 
@@ -236,6 +237,59 @@ def test_leave_one_group_out_specs_remove_only_declared_da_group(tmp_path) -> No
     assert manifests["A7-noSemantic"]["causal_factors"]["server_stage_mmd"] is True
     assert manifests["A7-noStage"]["causal_factors"]["server_semantic_adaptation"] is True
     assert manifests["A7-noStage"]["causal_factors"]["server_stage_mmd"] is False
+
+
+def test_v3_b_specs_are_predeclared_single_factor_and_full_corrections(tmp_path) -> None:
+    manifests = {
+        group: build_run_manifest(group, 42, repo_root=tmp_path, results_root="results/v3")
+        for group in ("B1", "B2", "B3", "B4", "B5")
+    }
+
+    for manifest in manifests.values():
+        training = manifest["training"]
+        adaptation = manifest["server_adaptation"]
+        assert training["profile"] == "proto_replay"
+        assert training["use_selective_agg"] is True
+        assert adaptation["enabled"] is True
+        assert adaptation["lambda_proto_anchor"] == 0.3
+        assert adaptation["lambda_proto"] == 0.05
+        assert adaptation["lambda_consistency"] == 2.0
+        assert adaptation["lambda_residual"] == 0.1
+        assert adaptation["lambda_proto_mmd"] == 0.0
+        assert adaptation["mmd_objective"] == "mmd2"
+        assert adaptation["stage_alignment"] == "cross_domain_same_class_phase"
+        assert adaptation["adv_feature_objective"] == "wasserstein_min"
+        command = manifest["commands"]["server_ecs"]
+        assert command[command.index("--da-mmd-objective") + 1] == "mmd2"
+        assert command[command.index("--da-stage-alignment") + 1] == "cross_domain_same_class_phase"
+        assert command[command.index("--da-adv-feature-objective") + 1] == "wasserstein_min"
+
+    assert manifests["B1"]["server_adaptation"]["use_coral"] is True
+    assert manifests["B1"]["server_adaptation"]["use_mmd"] is False
+    assert manifests["B1"]["server_adaptation"]["use_adversarial"] is False
+    assert manifests["B2"]["server_adaptation"]["lambda_global_mmd"] == 0.5
+    assert manifests["B2"]["server_adaptation"]["lambda_class_mmd"] == 0.5
+    assert manifests["B3"]["server_adaptation"]["lambda_stage_mmd"] == 0.2
+    assert manifests["B3"]["server_adaptation"]["lambda_global_mmd"] == 0.0
+    assert manifests["B4"]["server_adaptation"]["lambda_adv"] == 0.5
+    assert manifests["B5"]["server_adaptation"]["use_coral"] is True
+    assert manifests["B5"]["server_adaptation"]["use_mmd"] is True
+    assert manifests["B5"]["server_adaptation"]["use_adversarial"] is True
+    assert manifests["B5"]["server_adaptation"]["lambda_stage_mmd"] == 0.2
+
+
+def test_generate_v3_suite_contains_only_five_seed42_b_runs(tmp_path) -> None:
+    rows = generate_manifests(
+        tmp_path / "commands",
+        repo_root=tmp_path,
+        results_root="results/v3",
+        include_confirmation_seeds=False,
+        suite="v3",
+    )
+
+    assert [row["group_id"] for row in rows] == ["B1", "B2", "B3", "B4", "B5"]
+    assert all(row["protocol"]["training_seed"] == 42 for row in rows)
+    assert all(row["execution_stage"] == "v3_correction_screening" for row in rows)
 
 
 def test_flower_evaluate_returns_true_cross_entropy() -> None:

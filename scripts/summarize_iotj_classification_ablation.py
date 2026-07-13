@@ -27,7 +27,7 @@ FINAL_ROUND = 25
 NUM_CLASSES = 4
 CONFIRMATION_GROUPS = ("A0", "A0T", "A4", "A4S", "A5", "A7")
 CONFIRMATION_SEEDS = (42, 43, 44, 45, 46)
-RUN_NAME_PATTERN = re.compile(r"(A(?:0T|4S|[0-7]))_.*_s(\d+)_r25$")
+RUN_NAME_PATTERN = re.compile(r"((?:A(?:0T|4S|[0-7])|B[1-5]))_.*_s(\d+)_r25$")
 
 
 def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
@@ -275,6 +275,15 @@ def validate_confirmation_seeds(rows: Sequence[dict[str, Any]]) -> None:
             )
 
 
+def validate_expected_groups(
+    rows: Sequence[dict[str, Any]], expected_groups: Sequence[str]
+) -> None:
+    found = {str(row["group_id"]) for row in rows}
+    missing = [group for group in expected_groups if group not in found]
+    if missing:
+        raise ValueError(f"missing expected groups: {','.join(missing)}")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-root", type=Path, default=DEFAULT_RUN_ROOT)
@@ -283,6 +292,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--require-confirmation-seeds", action="store_true")
+    parser.add_argument("--expected-groups", default="")
     args = parser.parse_args(argv)
 
     device = resolve_device(args.device)
@@ -304,6 +314,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         for run_dir in run_dirs
     ]
     rows = [flatten_test_metrics(payload) for payload in payloads]
+    expected_groups = tuple(
+        item.strip() for item in args.expected_groups.split(",") if item.strip()
+    )
+    if expected_groups:
+        validate_expected_groups(rows, expected_groups)
     if args.require_confirmation_seeds:
         validate_confirmation_seeds(rows)
     summaries = aggregate_groups(rows)

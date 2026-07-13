@@ -60,6 +60,39 @@ def convert_pipeline_record(row: dict[str, Any], split: str) -> dict[str, Any]:
     pred_class = _as_int(row.get("pred_cls", row.get("pred_class")))
     final_ppm = _as_float(row.get("final_calibrated_ppm", row.get("pred_cal_ppm")))
     converted = dict(row)
+    legacy_composite = _as_float(row.get("composite_response_risk", 0.0))
+    legacy_route_response = _as_float(row.get("route_response_risk", 0.0))
+    deployment_entropy = _as_float(
+        row.get(
+            "deployment_risk_classifier_entropy",
+            row.get("classifier_entropy_risk", 0.0),
+        )
+    )
+    deployment_margin = _as_float(
+        row.get(
+            "deployment_risk_margin",
+            max(0.0, 1.0 - _as_float(row.get("class_margin", 0.0))),
+        )
+    )
+    deployment_route_response = _as_float(
+        row.get("deployment_risk_route_response", 0.0)
+    )
+    deployment_composite = _as_float(
+        row.get(
+            "deployment_risk_composite",
+            max(deployment_entropy, deployment_margin, deployment_route_response),
+        )
+    )
+    for ambiguous_key in (
+        "risk_score",
+        "risk_classifier_uncertainty",
+        "risk_margin_risk",
+        "risk_route_response_risk",
+        "composite_response_risk",
+        "route_response_risk",
+        "classifier_entropy_risk",
+    ):
+        converted.pop(ambiguous_key, None)
     converted.update(
         {
             "client": "C5",
@@ -78,10 +111,12 @@ def convert_pipeline_record(row: dict[str, Any], split: str) -> dict[str, Any]:
             "confidence": _as_float(row.get("class_confidence", 0.0)),
             "top1_confidence": _as_float(row.get("class_confidence", 0.0)),
             "confidence_margin": _as_float(row.get("class_margin", 0.0)),
-            "risk_score": _as_float(row.get("composite_response_risk", 0.0)),
-            "risk_classifier_uncertainty": _as_float(row.get("classifier_entropy_risk", 0.0)),
-            "risk_margin_risk": max(0.0, 1.0 - _as_float(row.get("class_margin", 0.0))),
-            "risk_route_response_risk": _as_float(row.get("route_response_risk", 0.0)),
+            "deployment_risk_classifier_entropy": deployment_entropy,
+            "deployment_risk_margin": deployment_margin,
+            "deployment_risk_route_response": deployment_route_response,
+            "deployment_risk_composite": deployment_composite,
+            "legacy_true_range_composite_risk": legacy_composite,
+            "legacy_true_range_route_response_risk": legacy_route_response,
         }
     )
     return converted

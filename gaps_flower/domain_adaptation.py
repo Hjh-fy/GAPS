@@ -29,9 +29,62 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from model import DomainDiscriminator, GradientReversalLayer
-from utils import compute_mmd, deep_coral_loss, deep_coral_loss_class_conditional
+from utils import compute_mmd, compute_mmd2, deep_coral_loss, deep_coral_loss_class_conditional
 
 logger = logging.getLogger('gaps.server')
+
+
+def cross_domain_same_class_phase_mmd2(
+    feat_s: torch.Tensor,
+    y_s: torch.Tensor,
+    phase_s: torch.Tensor,
+    feat_t: torch.Tensor,
+    y_t: torch.Tensor,
+    phase_t: torch.Tensor,
+    *,
+    num_classes: int,
+) -> torch.Tensor:
+    """Average MMD-squared across matched source/target class-phase cells."""
+    y_s_ids = y_s.view(-1).long()
+    y_t_ids = y_t.view(-1).long()
+    phase_s_ids = phase_s.view(-1).long()
+    phase_t_ids = phase_t.view(-1).long()
+    terms = []
+    for class_id in range(int(num_classes)):
+        source_phases = torch.unique(phase_s_ids[y_s_ids == class_id])
+        target_phases = torch.unique(phase_t_ids[y_t_ids == class_id])
+        if source_phases.numel() == 0 or target_phases.numel() == 0:
+            continue
+        phases = sorted(
+            set(int(value.item()) for value in source_phases)
+            & set(int(value.item()) for value in target_phases)
+        )
+        for phase_id in phases:
+            source_mask = (y_s_ids == class_id) & (phase_s_ids == phase_id)
+            target_mask = (y_t_ids == class_id) & (phase_t_ids == phase_id)
+            if int(source_mask.sum()) < 2 or int(target_mask.sum()) < 2:
+                continue
+            terms.append(compute_mmd2(feat_s[source_mask], feat_t[target_mask]))
+    if terms:
+        return torch.stack(terms).mean()
+    return torch.zeros((), device=feat_s.device, dtype=feat_s.dtype)
+
+
+def wasserstein_feature_objective(
+    discriminator: nn.Module,
+    feat_s: torch.Tensor,
+    feat_t: torch.Tensor,
+) -> torch.Tensor:
+    """Return the critic gap for encoder minimization with a frozen critic."""
+    parameters = list(discriminator.parameters())
+    requires_grad = [parameter.requires_grad for parameter in parameters]
+    try:
+        for parameter in parameters:
+            parameter.requires_grad_(False)
+        return discriminator(feat_s).mean() - discriminator(feat_t).mean()
+    finally:
+        for parameter, enabled in zip(parameters, requires_grad):
+            parameter.requires_grad_(enabled)
 
 
 class ServerDomainAdaptation:
@@ -103,6 +156,24 @@ class ServerDomainAdaptation:
         self.target_ce_class_weights = self._build_target_ce_class_weights()
 
         self.logger = logger
+
+    def _method_definition(self) -> dict:
+        return {
+            "mmd_objective": str(
+                self.hp.get('MMD_OBJECTIVE', 'legacy_quartic')
+            ),
+            "stage_alignment": str(
+                self.hp.get('STAGE_ALIGNMENT', 'legacy_intra_domain')
+            ),
+            "adv_feature_objective": str(
+                self.hp.get('ADV_FEATURE_OBJECTIVE', 'legacy_grl_plus')
+            ),
+            "proto_pair_l2_enabled": bool(
+                self.hp.get('USE_PROTO_MMD', False)
+                and float(self.hp.get('LAMBDA_PROTO_MMD', 0.0)) > 0.0
+            ),
+            "proto_pair_l2_trainable": False,
+        }
 
     def _set_semantic_protos(self, semantic_protos: Dict[str, torch.Tensor]) -> None:
         self.semantic_protos = nn.ParameterDict()
@@ -391,6 +462,24 @@ class ServerDomainAdaptation:
         """Stage-wise MMD inside each class, using source and target if available."""
         if not bool(self.hp.get('USE_MMD_ALIGNMENT', True)):
             return torch.tensor(0.0, device=self.device)
+        mode = str(self.hp.get('STAGE_ALIGNMENT', 'legacy_intra_domain'))
+        if mode == 'cross_domain_same_class_phase':
+            if any(
+                value is None
+                for value in (feat_s, y_s, phase_s, feat_t, y_t, phase_t)
+            ):
+                return torch.tensor(0.0, device=self.device)
+            return cross_domain_same_class_phase_mmd2(
+                feat_s,
+                self._as_class_ids(y_s),
+                self._as_class_ids(phase_s),
+                feat_t,
+                self._as_class_ids(y_t),
+                self._as_class_ids(phase_t),
+                num_classes=int(self.hp.get('NUM_CLASSES', 4)),
+            )
+        if mode != 'legacy_intra_domain':
+            raise ValueError(f"unsupported STAGE_ALIGNMENT: {mode}")
         terms = []
         num_classes = int(self.hp.get('NUM_CLASSES', 4))
         for feats, labels, phases in ((feat_s, y_s, phase_s), (feat_t, y_t, phase_t)):
@@ -643,6 +732,7 @@ class ServerDomainAdaptation:
             key: float(torch.tensor(values).mean().item()) if values else 0.0
             for key, values in diagnostics.items()
         }
+        summary.update(self._method_definition())
         summary["num_steps"] = num_steps
         summary["lambda_coral"] = float(self.hp.get('LAMBDA_DEEP_CORAL', 0.1))
         summary["lambda_global_mmd"] = float(self.hp.get('LAMBDA_GLOBAL_MMD', 0.5))
@@ -794,6 +884,18 @@ class ServerDomainAdaptation:
             return None
         return torch.stack(protos, dim=0).mean(dim=0)
 
+    def _distribution_mmd(
+        self,
+        features1: torch.Tensor,
+        features2: torch.Tensor,
+    ) -> torch.Tensor:
+        mode = str(self.hp.get('MMD_OBJECTIVE', 'legacy_quartic'))
+        if mode == 'legacy_quartic':
+            return compute_mmd(features1, features2) ** 2
+        if mode == 'mmd2':
+            return compute_mmd2(features1, features2)
+        raise ValueError(f"unsupported MMD_OBJECTIVE: {mode}")
+
     def _compute_mmd_losses(
         self,
         feat_s: Optional[torch.Tensor],
@@ -825,7 +927,7 @@ class ServerDomainAdaptation:
 
         # 全局 MMD must obey --da-use-mmd / USE_MMD_ALIGNMENT.
         if use_mmd:
-            g_mmd = compute_mmd(feat_s, feat_t) ** 2
+            g_mmd = self._distribution_mmd(feat_s, feat_t)
 
         num_classes = self.hp.get('NUM_CLASSES', 4)
         use_class_labels = y_s is not None and y_t is not None
@@ -840,7 +942,9 @@ class ServerDomainAdaptation:
                 tgt_mask = (y_t_ids == c)
                 if src_mask.sum() > 1 and tgt_mask.sum() > 1:
                     if use_mmd:
-                        c_mmd += compute_mmd(feat_s[src_mask], feat_t[tgt_mask]) ** 2
+                        c_mmd += self._distribution_mmd(
+                            feat_s[src_mask], feat_t[tgt_mask]
+                        )
                     class_count += 1
                     if use_proto_anchor:
                         mu_sem = self._semantic_class_proto(c)
@@ -922,7 +1026,35 @@ class ServerDomainAdaptation:
             )
             self.disc_optimizer.step()
 
-        # GRL updates the feature extractor; run_adaptation applies lambda_adv.
+        feature_objective = str(
+            self.hp.get('ADV_FEATURE_OBJECTIVE', 'legacy_grl_plus')
+        )
+        if feature_objective == 'wasserstein_min':
+            if class_cond and y_s_ids is not None and y_t_ids is not None:
+                terms = []
+                for c in range(int(self.hp.get('NUM_CLASSES', 4))):
+                    src_m = y_s_ids == c
+                    tgt_m = y_t_ids == c
+                    if src_m.sum() > 0 and tgt_m.sum() > 0:
+                        terms.append(
+                            wasserstein_feature_objective(
+                                self.domain_discriminator,
+                                feat_s[src_m],
+                                feat_t[tgt_m],
+                            )
+                        )
+                if terms:
+                    return torch.stack(terms).mean()
+                return torch.tensor(0.0, device=self.device)
+            return wasserstein_feature_objective(
+                self.domain_discriminator, feat_s, feat_t
+            )
+        if feature_objective != 'legacy_grl_plus':
+            raise ValueError(
+                f"unsupported ADV_FEATURE_OBJECTIVE: {feature_objective}"
+            )
+
+        # Legacy v2 path: GRL updates the feature extractor.
         if class_cond and y_s_ids is not None and y_t_ids is not None:
             adv = torch.tensor(0.0, device=self.device)
             valid = 0

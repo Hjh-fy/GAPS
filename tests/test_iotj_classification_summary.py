@@ -7,6 +7,7 @@ from scripts.summarize_iotj_classification_ablation import (
     aggregate_groups,
     classification_metrics,
     validate_confirmation_seeds,
+    validate_expected_groups,
 )
 
 
@@ -17,6 +18,8 @@ from scripts.summarize_iotj_classification_ablation import (
         ("A0T_ce_only_server_da_c12_to_c5_s43_r25", ("A0T", 43)),
         ("A4S_align_replay_no_da_c12_to_c5_s44_r25", ("A4S", 44)),
         ("A7_proto_replay_full_da_c12_to_c5_s46_r25", ("A7", 46)),
+        ("B1_proto_replay_corrected_server_da_c12_to_c5_s42_r25", ("B1", 42)),
+        ("B5_proto_replay_corrected_full_da_c12_to_c5_s45_r25", ("B5", 45)),
     ],
 )
 def test_run_identity_accepts_all_scheduled_group_id_shapes(
@@ -89,3 +92,10 @@ def test_confirmation_seed_validation_rejects_missing_seed() -> None:
 
     with pytest.raises(ValueError, match="A7 confirmation seeds"):
         validate_confirmation_seeds(rows)
+
+
+def test_expected_group_validation_rejects_silently_missing_b_group() -> None:
+    rows = [{"group_id": group, "seed": 42} for group in ("B1", "B2", "B3", "B5")]
+
+    with pytest.raises(ValueError, match="missing expected groups: B4"):
+        validate_expected_groups(rows, ("B1", "B2", "B3", "B4", "B5"))

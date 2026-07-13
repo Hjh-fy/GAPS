@@ -1,6 +1,6 @@
 param(
     [string]$EcsHost = "root@121.40.139.213",
-    [string]$PiHost = "gaps@172.31.139.224",
+    [string]$PiHost = "gaps@192.168.31.184",
     [string]$EcsProject = "/root/GAPS",
     [string]$PiProject = "/home/gaps/GAPS/flower_runtime",
     [string]$EcsResultsRoot = "results/source_target_classification_matrix_20260630",
@@ -38,6 +38,12 @@ function SshEcs([string]$Command) {
 
 function SshPi([string]$Command) {
     & ssh -n -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 $PiHost $Command
+}
+
+function Remote-PythonCommand([string]$PythonCode) {
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($PythonCode)
+    $encoded = [Convert]::ToBase64String($bytes)
+    return "python3 -c 'import base64; exec(base64.b64decode(`"$encoded`").decode(`"utf-8`"))'"
 }
 
 function Ensure-Tunnels {
@@ -88,17 +94,78 @@ function Server-Pids([string]$RunId) {
 }
 
 function Launch-Server([string]$RunId) {
-    $cmd = "cd '$EcsProject' && mkdir -p '$EcsResultsRoot/$RunId' && sed -i 's/\r$//' '$CommandRoot/$RunId/server_command.sh' && setsid nohup bash '$CommandRoot/$RunId/server_command.sh' > '$EcsResultsRoot/$RunId/server_launch.log' 2>&1 < /dev/null & echo `$!"
+    $py = @"
+import os
+import subprocess
+
+cwd = r'''$EcsProject'''
+run_id = r'''$RunId'''
+output_dir = os.path.join(cwd, r'''$EcsResultsRoot''', run_id)
+command_script = os.path.join(cwd, r'''$CommandRoot''', run_id, "server_command.sh")
+os.makedirs(output_dir, exist_ok=True)
+subprocess.run(["sed", "-i", "s/\\r$//", command_script], check=False)
+log = open(os.path.join(output_dir, "server_launch.log"), "ab", buffering=0)
+p = subprocess.Popen(
+    ["bash", command_script],
+    cwd=cwd,
+    stdin=subprocess.DEVNULL,
+    stdout=log,
+    stderr=log,
+    start_new_session=True,
+    close_fds=True,
+)
+print(p.pid)
+"@
+    $cmd = Remote-PythonCommand $py
     $out = SshEcs $cmd
-    Log "server launched run=$RunId output=$($out -join ' ')"
+    Log "server launch requested run=$RunId output=$($out -join ' ')"
     Start-Sleep -Seconds 15
 }
 
 function Launch-Client([string]$RunId, [string]$DataRoot, [int]$ClientId) {
-    $logPath = "$PiLogRoot/$RunId/client_$ClientId.log"
-    $cmd = "cd '$PiProject' && mkdir -p '$PiLogRoot/$RunId' && setsid nohup /home/gaps/GAPS/gaps_rpi_env/bin/python -m gaps_flower.client_app --server-address 127.0.0.1:18080 --client-id $ClientId --data-root '$PiProject/dataset/$DataRoot' --device cpu --local-epochs 5 --batch-size 32 --profile strong_cls > '$logPath' 2>&1 < /dev/null & echo `$!"
+    $py = @"
+import os
+import subprocess
+
+cwd = r'''$PiProject'''
+run_id = r'''$RunId'''
+client_id = "$ClientId"
+log_dir = os.path.join(cwd, r'''$PiLogRoot''', run_id)
+os.makedirs(log_dir, exist_ok=True)
+log = open(os.path.join(log_dir, f"client_{client_id}.log"), "ab", buffering=0)
+cmd = [
+    "/home/gaps/GAPS/gaps_rpi_env/bin/python",
+    "-m",
+    "gaps_flower.client_app",
+    "--server-address",
+    "127.0.0.1:18080",
+    "--client-id",
+    client_id,
+    "--data-root",
+    os.path.join(cwd, "dataset", r'''$DataRoot'''),
+    "--device",
+    "cpu",
+    "--local-epochs",
+    "5",
+    "--batch-size",
+    "32",
+    "--profile",
+    "strong_cls",
+]
+p = subprocess.Popen(
+    cmd,
+    cwd=cwd,
+    stdin=subprocess.DEVNULL,
+    stdout=log,
+    stderr=log,
+    start_new_session=True,
+    close_fds=True,
+)
+print(p.pid)
+"@
+    $cmd = Remote-PythonCommand $py
     $out = SshPi $cmd
-    Log "client launched run=$RunId C$ClientId output=$($out -join ' ')"
+    Log "client launch requested run=$RunId C$ClientId output=$($out -join ' ')"
 }
 
 function Start-Run($Run) {

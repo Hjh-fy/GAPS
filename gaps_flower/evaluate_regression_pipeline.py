@@ -275,6 +275,41 @@ def class_range(class_id: int) -> float:
     return max(float(stats["max"] - stats["min"]), 1e-12)
 
 
+def deployment_risk_components(
+    *,
+    probabilities: np.ndarray,
+    margin: float,
+    route_class: int,
+    base_raw_ppm: float,
+    routed_ppm: float,
+    calibrated_ppm: float,
+) -> dict[str, float]:
+    """Compute risk features using only values available at deployment."""
+    probs = np.asarray(probabilities, dtype=np.float64).reshape(-1)
+    if probs.size == 0 or not np.isfinite(probs).all():
+        raise ValueError("probabilities must be a finite non-empty vector")
+    route_range = class_range(int(route_class))
+    entropy = float(-(probs * np.log(np.maximum(probs, 1e-12))).sum())
+    entropy_risk = float(
+        entropy / max(math.log(max(int(probs.size), 2)), 1e-12)
+    )
+    margin_risk = float(max(0.0, 1.0 - float(margin)))
+    response_gap = float(abs(float(calibrated_ppm) - float(routed_ppm)) / route_range)
+    route_gap = float(abs(float(routed_ppm) - float(base_raw_ppm)) / route_range)
+    route_response = float(max(response_gap, route_gap))
+    return {
+        "deployment_route_range_ppm": route_range,
+        "deployment_risk_classifier_entropy": entropy_risk,
+        "deployment_risk_margin": margin_risk,
+        "deployment_risk_response_gap": response_gap,
+        "deployment_risk_route_gap": route_gap,
+        "deployment_risk_route_response": route_response,
+        "deployment_risk_composite": float(
+            max(entropy_risk, margin_risk, route_response)
+        ),
+    }
+
+
 def load_routing_config(path: str | None) -> dict[str, Any]:
     if not path:
         return {"selected_modes": {}, "affine_params": {}, "phase_affine_params": {}}
@@ -495,6 +530,14 @@ def collect_records(
                 margin_risk = float(max(0.0, 1.0 - margin_np[i]))
                 entropy_risk = float(entropy / max(math.log(max(prob_np.shape[1], 2)), 1e-12))
                 route_response_risk = float(max(response_gap, route_gap))
+                deployment_risks = deployment_risk_components(
+                    probabilities=prob_np[i],
+                    margin=float(margin_np[i]),
+                    route_class=int(route_np[i]),
+                    base_raw_ppm=float(base_raw_np[i]),
+                    routed_ppm=float(routed_np[i]),
+                    calibrated_ppm=float(pred_cal_np[i]),
+                )
                 records.append(
                     {
                         "client_id": int(client_np[i]),
@@ -535,6 +578,7 @@ def collect_records(
                         "route_response_risk": route_response_risk,
                         "classifier_entropy_risk": entropy_risk,
                         "composite_response_risk": float(max(response_gap, route_gap, margin_risk, entropy_risk)),
+                        **deployment_risks,
                     }
                 )
     return records

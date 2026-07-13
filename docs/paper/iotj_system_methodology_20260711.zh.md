@@ -694,3 +694,52 @@ for round t = 1...T:
 ## 17. 参考原理来源建议
 
 论文定稿时至少补齐以下原始文献，并按 IEEE 格式统一编号：FedAvg、Deep CORAL、kernel two-sample MMD、domain-adversarial learning、WGAN-GP、FedProx、selective prediction/risk-coverage。本文档中的公式以当前仓库实现为准；当代码与经典定义不一致时，正文必须优先描述真实实现，并把经典版本作为对照消融。
+
+## 18. 2026-07-13 可执行方法修订
+
+本节对应 `results/iotj_c5_formal_regression_20260713_v2` 的实际执行代码；与前文历史 P4、旧 `risk_score` 或风险最大值定义冲突时，以本节为准。
+
+### 18.1 正式 R0-R7 回归阶梯
+
+- R0：冻结的 C1/C2 R3aK16 source reference。
+- R1：仅使用 C5 rich features 的分气体 Ridge。
+- R2：仅使用 C5 rich features 的分气体浅层 MLP，即 H2.3 anchor。
+- R3：由 calibration-validation 选择权重的 H2.3+，融合 R2 与 reg-feature Ridge。
+- R4：固定 H8，即 C1/C2 Ridge、per-gas MLP 和 shared MLP 预测增强的 C5 Ridge，关闭 C4 rescue。
+- R5：若预测类别为 CO 则使用 R4，否则使用 R3。
+- R6：仅在 calibration-validation 上选择风险阈值；预测为 CO 且风险不低于阈值时使用 R4，否则使用 R3。
+- R7：逐测试样本选择 R3/R4 中绝对误差较小者，仅作为不可部署 oracle 上界。
+
+R6 的阈值和 R3 的融合权重均不读取 test 标签。R7 必须带有 `uses_test_truth_at_runtime=1`，其余 R0-R6 必须为 0。任一 R0-R4 预测缺失或非有限时，整套实验直接失败。
+
+### 18.2 部署可见风险
+
+所有原始风险只读取预测类别、阶段、分类概率、分类特征和专家预测。令 calibration-validation 上的经验百分位映射为 $F_k(\cdot)$，则
+
+\[
+q_{conf}=F_{conf}(\max(q_{entropy},q_{margin})),
+\]
+
+\[
+q_{feat}=\frac{F_{proto}(q_{proto})+F_{support}(q_{support})}{2},
+\]
+
+\[
+q_{dis}=\frac{F_{expert}(q_{expert})+F_{source}(q_{source})}{2},
+\]
+
+\[
+q_{full}=\frac{q_{conf}+q_{feat}+q_{dis}}{3}.
+\]
+
+其中 prototype/support 距离按预测类别与阶段的 calibration reference 计算；H2.3+/H8 分歧和三个 source head 的离散度均按预测类别量程归一化。修改 `true_class`、`true_ppm`、正确性标志或误差列不得改变上述风险和 QC 决策。
+
+FULL 全部 accept。HC95 的 accept/reject 阈值分别取 calibration-validation 风险的 0.95/0.9875 分位数；HC90 分别取 0.90/0.975 分位数。测试集只报告实际 accept/review/reject 数量与覆盖率，不强制达到名义比例。固定测试覆盖率曲线仅用于排序诊断，不属于可部署阈值。
+
+### 18.3 当前结果边界
+
+预声明的 A6/B5 seed-42 对比支持“分类路由质量决定端到端回归尾部”的解释：A6 与 B5 在 S_CC 下的 R4 RMSE 都约为 11.389 ppm，但 B5 的分类错误从 27 条减少到 15 条，使 S_ALL R4 RMSE 从 28.014 降至 17.447 ppm。B5-HC95 实际自动覆盖率 96.25%，accepted RMSE 15.908 ppm，并标记 7/15 个分类错误。
+
+B2 是在 B1-B5 分类 test 排名打开后追加的同流程下游重放，因此只能作为 post-screen 探索性证据。B2 有 10 条分类错误；固定 H8（R4）的 S_ALL RMSE 为 14.656 ppm，S_CC N=1350、RMSE 为 11.329 ppm。它与 B5 的 S_CC 差异仅 0.060 ppm，说明主要收益仍来自更少且破坏性更低的错路由，而不是正确路由回归器本身发生显著变化。R5 和 R6 分别为 15.008/15.495 ppm，均未超过 R4，故当前点估计应保留固定 H8；R7 的 12.639 ppm 只表示不可部署的专家选择上界。
+
+B2-HC95 的 accept/review/reject 为 1301/35/24，实际自动覆盖率 95.66%，accepted RMSE 12.673 ppm；它标记 7/10 个分类错误和 23/132 个高误差窗口，而匹配随机拒绝的平均召回率分别为 4.02% 和 4.26%。这支持 QC 作为高覆盖率风险分流层，但不表示 QC 修复了被 review/reject 的预测。所有 B2/B5 优劣仍需种子 43-46 的配对确认，不得写成统计显著结论。

@@ -19,6 +19,10 @@ def base_record(client: str = "C5") -> dict[str, object]:
         "composite_response_risk": 0.2,
         "classifier_entropy_risk": 0.1,
         "route_response_risk": 0.05,
+        "deployment_risk_classifier_entropy": 0.1,
+        "deployment_risk_margin": 0.3,
+        "deployment_risk_route_response": 0.05,
+        "deployment_risk_composite": 0.3,
         "phase": 2,
     }
 
@@ -39,3 +43,21 @@ def test_convert_pipeline_record_builds_c5_target_head_contract() -> None:
 def test_convert_pipeline_record_rejects_non_c5_target() -> None:
     with pytest.raises(ValueError, match="only C5"):
         convert_pipeline_record(base_record("C4"), "test")
+
+
+def test_deployment_risk_schema_is_truth_invariant_and_not_legacy_aliased() -> None:
+    first = base_record()
+    second = dict(first)
+    second["true_class"] = 3
+    second["true_ppm"] = 250.0
+
+    first_out = convert_pipeline_record(first, "test")
+    second_out = convert_pipeline_record(second, "test")
+    risk_keys = sorted(key for key in first_out if key.startswith("deployment_risk_"))
+
+    assert risk_keys
+    assert {key: first_out[key] for key in risk_keys} == {
+        key: second_out[key] for key in risk_keys
+    }
+    assert "risk_score" not in first_out
+    assert first_out["legacy_true_range_composite_risk"] == 0.2

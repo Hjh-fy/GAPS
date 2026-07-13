@@ -126,6 +126,31 @@ def row_key(row: dict[str, Any]) -> tuple[str, str, int]:
     )
 
 
+def attach_prediction_column(
+    rows: list[dict[str, Any]],
+    prediction_rows: list[dict[str, Any]],
+    prediction_key: str,
+) -> list[dict[str, Any]]:
+    by_key: dict[tuple[str, str, int], dict[str, Any]] = {}
+    for row in prediction_rows:
+        key = row_key(row)
+        if key in by_key:
+            raise ValueError(f"duplicate prediction row for {prediction_key}: {key}")
+        by_key[key] = row
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        key = row_key(row)
+        prediction_row = by_key.pop(key, None)
+        if prediction_row is None or prediction_key not in prediction_row:
+            raise ValueError(f"missing prediction {prediction_key}: {key}")
+        item = dict(row)
+        item[prediction_key] = fnum(prediction_row[prediction_key])
+        output.append(item)
+    if by_key:
+        raise ValueError(f"unmatched prediction rows for {prediction_key}: {len(by_key)}")
+    return output
+
+
 def fit_target_ridge_holdout_predictions(
     training_feature_rows: list[dict[str, Any]],
     validation_feature_rows: list[dict[str, Any]],
@@ -360,6 +385,16 @@ def main() -> None:
         ridge_alphas,
         0.25,
         "target_ridge_plus_source_preds",
+    )
+    target_aug = attach_prediction_column(
+        target_aug,
+        target_rich,
+        "target_ridge_rich_only_ppm",
+    )
+    validation_aug = attach_prediction_column(
+        validation_aug,
+        validation_rich,
+        "target_ridge_rich_only_ppm",
     )
 
     gate = None

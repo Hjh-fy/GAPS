@@ -23,6 +23,9 @@ PROFILE_CHOICES = tuple(CLASSIFICATION_PROFILE_FLAGS) + (
     "strong_cls",
 )
 DA_PRESETS = ("none", "default", "fixed_da_strong")
+MMD_OBJECTIVES = ("legacy_quartic", "mmd2")
+STAGE_ALIGNMENTS = ("legacy_intra_domain", "cross_domain_same_class_phase")
+ADV_FEATURE_OBJECTIVES = ("legacy_grl_plus", "wasserstein_min")
 FIXED_DA_STRONG = {
     "domain_adapt_steps": 100,
     "domain_adapt_warmup": 0,
@@ -125,6 +128,9 @@ def main() -> None:
                         help="域适应是否启用 MMD 对齐损失")
     parser.add_argument("--da-use-adversarial", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
                         help="域适应是否启用对抗训练 (WGAN-GP + GRL)")
+    parser.add_argument("--da-mmd-objective", choices=MMD_OBJECTIVES, default="legacy_quartic")
+    parser.add_argument("--da-stage-alignment", choices=STAGE_ALIGNMENTS, default="legacy_intra_domain")
+    parser.add_argument("--da-adv-feature-objective", choices=ADV_FEATURE_OBJECTIVES, default="legacy_grl_plus")
     parser.add_argument("--da-coral-class-conditional", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
                         help="Deep CORAL 是否按类别分别对齐；单机强分类基座默认使用 class-conditional CORAL")
     parser.add_argument("--da-use-align-reg-legacy", type=lambda v: v.lower() in ("true", "1", "yes"), default=False,
@@ -203,6 +209,9 @@ def main() -> None:
             da_use_coral=args.da_use_coral,
             da_use_mmd=args.da_use_mmd,
             da_use_adversarial=args.da_use_adversarial,
+            da_mmd_objective=args.da_mmd_objective,
+            da_stage_alignment=args.da_stage_alignment,
+            da_adv_feature_objective=args.da_adv_feature_objective,
             da_coral_class_conditional=args.da_coral_class_conditional,
             da_use_align_reg_legacy=args.da_use_align_reg_legacy,
             da_lambda_align_reg_legacy=args.da_lambda_align_reg_legacy,
