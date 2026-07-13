@@ -179,7 +179,9 @@ def build_package(
 
     routing_raw = load_json_object(routing_src, "routing_config.json")
     routing = normalize_and_validate_routing_config(
-        routing_raw, int(model_config["num_classes"])
+        routing_raw,
+        int(model_config["num_classes"]),
+        int(model_config.get("num_phases", 3)),
     )
     selected_modes = routing["selected_modes"]
     full_required = any(mode == "full" for mode in selected_modes.values())

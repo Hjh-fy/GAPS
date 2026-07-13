@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Dict, Mapping
 
@@ -133,9 +134,85 @@ def _normalize_class_mapping(raw: Any, label: str) -> Dict[int, Any]:
     return normalized
 
 
+def _finite_number(value: Any, label: str) -> float:
+    if isinstance(value, bool):
+        raise DeploymentPackageError(f"{label} must be numeric")
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise DeploymentPackageError(f"{label} must be numeric") from exc
+    if not math.isfinite(number):
+        raise DeploymentPackageError(f"{label} must be finite")
+    return number
+
+
+def _validate_affine_params(
+    raw: Any,
+    label: str,
+    *,
+    selected_mode: str | None = None,
+) -> Dict[str, Any]:
+    if not isinstance(raw, Mapping):
+        raise DeploymentPackageError(f"{label} must be a mapping")
+    if "a" not in raw or "b" not in raw:
+        raise DeploymentPackageError(f"{label} must contain finite a and b params")
+    normalized = dict(raw)
+    normalized["a"] = _finite_number(raw["a"], f"{label}.a")
+    normalized["b"] = _finite_number(raw["b"], f"{label}.b")
+    if selected_mode is not None:
+        raw_mode = str(raw.get("mode", selected_mode)).strip().lower()
+        if raw_mode != selected_mode:
+            raise DeploymentPackageError(
+                f"{label}.mode {raw_mode!r} disagrees with selected mode {selected_mode!r}"
+            )
+        normalized["mode"] = selected_mode
+    for metric in ("calib_r2", "calib_mae"):
+        if metric in raw:
+            normalized[metric] = _finite_number(raw[metric], f"{label}.{metric}")
+    return normalized
+
+
+def _validate_phase_affine_params(
+    raw: Any,
+    label: str,
+    num_phases: int,
+) -> Dict[str, Any]:
+    if not isinstance(raw, Mapping):
+        raise DeploymentPackageError(f"{label} must be a mapping")
+    raw_num_phases = raw.get("num_phases")
+    if (
+        isinstance(raw_num_phases, bool)
+        or not isinstance(raw_num_phases, int)
+        or raw_num_phases != num_phases
+    ):
+        raise DeploymentPackageError(
+            f"{label}.num_phases must equal {num_phases}"
+        )
+    phases = _normalize_class_mapping(
+        raw.get("phase_calibrators"), f"{label}.phase_calibrators"
+    )
+    expected = set(range(num_phases))
+    if set(phases) != expected:
+        raise DeploymentPackageError(
+            f"{label}.phase_calibrators must cover exactly phases "
+            f"{sorted(expected)}, got {sorted(phases)}"
+        )
+    normalized = dict(raw)
+    normalized["num_phases"] = num_phases
+    normalized["phase_calibrators"] = {
+        phase: _validate_affine_params(
+            params,
+            f"{label}.phase_calibrators[{phase}]",
+        )
+        for phase, params in phases.items()
+    }
+    return normalized
+
+
 def normalize_and_validate_routing_config(
     raw: Mapping[str, Any],
     num_classes: int,
+    num_phases: int = 3,
 ) -> Dict[str, Any]:
     if not isinstance(raw, Mapping):
         raise DeploymentPackageError("routing_config must be a mapping")
@@ -170,10 +247,38 @@ def normalize_and_validate_routing_config(
                 f"phase_affine_params for class {class_id}"
             )
 
+    unknown_affine_classes = sorted(set(affine) - expected)
+    unknown_phase_classes = sorted(set(phase_affine) - expected)
+    if unknown_affine_classes or unknown_phase_classes:
+        raise DeploymentPackageError(
+            "routing_config params contain out-of-range classes: "
+            f"affine={unknown_affine_classes}, phase_affine={unknown_phase_classes}"
+        )
+    normalized_affine = {
+        class_id: _validate_affine_params(
+            params,
+            f"routing_config affine_params[{class_id}]",
+            selected_mode=(
+                selected[class_id]
+                if selected[class_id] in {"bias_only", "affine_only"}
+                else None
+            ),
+        )
+        for class_id, params in affine.items()
+    }
+    normalized_phase_affine = {
+        class_id: _validate_phase_affine_params(
+            params,
+            f"routing_config phase_affine_params[{class_id}]",
+            num_phases,
+        )
+        for class_id, params in phase_affine.items()
+    }
+
     normalized = dict(raw)
     normalized["selected_modes"] = selected
-    normalized["affine_params"] = affine
-    normalized["phase_affine_params"] = phase_affine
+    normalized["affine_params"] = normalized_affine
+    normalized["phase_affine_params"] = normalized_phase_affine
     return normalized
 
 

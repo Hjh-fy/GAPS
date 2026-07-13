@@ -85,6 +85,40 @@ CONC_STATS: Dict[int, Dict[str, float]] = {
 }
 
 
+def normalize_phase_ids(
+    phase: Union[int, Sequence[int], np.ndarray],
+    n_samples: int,
+    num_phases: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return raw phase ids and model-safe ids, mapping only unknown ``-1`` to 0."""
+    if n_samples < 0:
+        raise ValueError("phase batch size must be non-negative")
+    if num_phases <= 0:
+        raise ValueError("num_phases must be positive")
+
+    values = [phase] * n_samples if np.isscalar(phase) else np.asarray(phase).reshape(-1).tolist()
+    if len(values) != n_samples:
+        raise ValueError(
+            f"phase length {len(values)} does not match batch size {n_samples}"
+        )
+    raw_values: List[int] = []
+    for value in values:
+        if isinstance(value, (bool, np.bool_)) or not isinstance(
+            value, (int, np.integer)
+        ):
+            raise ValueError(f"phase must contain integer ids, got {value!r}")
+        phase_id = int(value)
+        if phase_id != -1 and not 0 <= phase_id < num_phases:
+            raise ValueError(
+                f"phase id {phase_id} is outside allowed values -1..{num_phases - 1}"
+            )
+        raw_values.append(phase_id)
+
+    raw = np.asarray(raw_values, dtype=np.int64)
+    model = np.where(raw == -1, 0, raw).astype(np.int64)
+    return raw, model
+
+
 @dataclass
 class DeployResult:
     """单窗口部署推理结果
@@ -281,7 +315,9 @@ class DeployPredictor:
             config.routing_config_path or "calibration/routing_config.json"
         )
         routing_raw = load_json_object(routing_path, "routing_config.json")
-        routing_config = normalize_and_validate_routing_config(routing_raw, num_classes)
+        routing_config = normalize_and_validate_routing_config(
+            routing_raw, num_classes, config.num_phases
+        )
 
         qc_policy_path = deploy_dir / (config.qc_policy_path or "qc/selected_policy.json")
         require_file(qc_policy_path, "selected_policy.json")
@@ -407,7 +443,9 @@ class DeployPredictor:
         qc_policy_path = require_file(Path(config.qc_policy_path), "qc_policy_path")
         num_classes = int(config.model_config.get("num_classes", config.num_classes))
         routing_config = normalize_and_validate_routing_config(
-            load_json_object(routing_path, "routing_config.json"), num_classes
+            load_json_object(routing_path, "routing_config.json"),
+            num_classes,
+            config.num_phases,
         )
         model_A = cls._create_classifier_model(config.model_config, config)
         model_B = cls._create_regression_model(config.model_config, config)
@@ -718,8 +756,11 @@ class DeployPredictor:
         if features.ndim == 2:
             features = features[np.newaxis, ...]  # (T, C) → (1, T, C)
 
-        phase_raw = self._normalize_phase_input(phase, len(features))
-        phase_for_model = np.where(phase_raw < 0, 0, phase_raw).astype(np.int64)
+        phase_raw, phase_for_model = normalize_phase_ids(
+            phase,
+            n_samples=len(features),
+            num_phases=self.config.num_phases,
+        )
         x = torch.from_numpy(features).to(self.device)
 
         with torch.no_grad():
@@ -928,21 +969,6 @@ class DeployPredictor:
             })
         return corrected, meta
 
-    @staticmethod
-    def _normalize_phase_input(
-        phase: Union[int, Sequence[int], np.ndarray],
-        n_samples: int,
-    ) -> np.ndarray:
-        """Return per-sample phase ids, preserving -1 for unknown phases."""
-        if np.isscalar(phase):
-            return np.full(n_samples, int(phase), dtype=np.int64)
-        phase_arr = np.asarray(phase, dtype=np.int64).reshape(-1)
-        if len(phase_arr) != n_samples:
-            raise ValueError(
-                f"phase length {len(phase_arr)} does not match batch size {n_samples}"
-            )
-        return phase_arr
-
     def predict_generator(
         self,
         data_loader: torch.utils.data.DataLoader,
@@ -967,6 +993,12 @@ class DeployPredictor:
         with torch.no_grad():
             for x, y_cls, y_reg_full, y_phase in data_loader:
                 x = x.to(self.device)
+                phase_raw, phase_for_model = normalize_phase_ids(
+                    y_phase.detach().cpu().numpy(),
+                    n_samples=len(x),
+                    num_phases=self.config.num_phases,
+                )
+                phase_tensor = torch.from_numpy(phase_for_model).long().to(self.device)
 
                 logits, cls_feat, reg_feat = self.model_A(x)
                 probs = torch.softmax(logits, dim=1)
@@ -979,10 +1011,9 @@ class DeployPredictor:
                 base_pred_norm = self.model_B.forward_reg(
                     reg_feat_b,
                     y_cls=top1_ids,
-                    y_phase=y_phase.to(self.device),
+                    y_phase=phase_tensor,
                 )
                 pred_norm = base_pred_norm.clone()
-                y_phase_device = y_phase.to(self.device)
                 if self.full_model is not None:
                     for class_id, mode in self.calibrator.selected_modes.items():
                         if mode != "full":
@@ -994,7 +1025,7 @@ class DeployPredictor:
                         pred_norm[mask] = self.full_model.forward_reg(
                             full_feat,
                             y_cls=top1_ids[mask],
-                            y_phase=y_phase_device[mask],
+                            y_phase=phase_tensor[mask],
                         )
                 for class_id, specialist_model in self.specialist_models.items():
                     mode = self.calibrator.selected_modes.get(int(class_id), "none")
@@ -1007,7 +1038,7 @@ class DeployPredictor:
                     pred_norm[mask] = specialist_model.forward_reg(
                         specialist_feat,
                         y_cls=top1_ids[mask],
-                        y_phase=y_phase_device[mask],
+                        y_phase=phase_tensor[mask],
                     )
 
                 logits_np = logits.cpu().numpy()
@@ -1017,11 +1048,12 @@ class DeployPredictor:
                 top1_np = top1_vals.cpu().numpy().ravel()
                 top2_np = top2_vals.cpu().numpy().ravel()
                 features_np = x.cpu().numpy()
-                y_phase_np = y_phase.cpu().numpy().ravel()
                 base_pred_ppm_np = self._denormalize_by_class(base_pred_norm_np, pred_cls_np)
                 pred_ppm_np = self._denormalize_by_class(pred_norm_np, pred_cls_np)
 
-                calibrated_ppm = self.calibrator.calibrate(pred_ppm_np, pred_cls_np, y_phase_np)
+                calibrated_ppm = self.calibrator.calibrate(
+                    pred_ppm_np, pred_cls_np, phase_for_model
+                )
 
                 risk_scores_list = self.risk_computer.compute_batch(
                     logits_batch=logits_np,
@@ -1040,7 +1072,7 @@ class DeployPredictor:
                     decisions=decisions,
                     features_np=features_np,
                     client_id=client_id,
-                    phase_raw=y_phase_np,
+                    phase_raw=phase_raw,
                     top1_np=top1_np,
                     top2_np=top2_np,
                     risk_scores_list=risk_scores_list,
@@ -1066,7 +1098,7 @@ class DeployPredictor:
                         top1_confidence=float(top1_np[i]),
                         top2_confidence=float(top2_np[i]),
                         confidence_margin=margin,
-                        phase=int(y_phase_np[i]),
+                        phase=int(phase_raw[i]),
                         r4a_applied=int(r4a_meta[i]["applied"]),
                         r4a_delta=float(r4a_meta[i]["delta"]),
                         r4a_raw_delta=float(r4a_meta[i]["raw_delta"]),
