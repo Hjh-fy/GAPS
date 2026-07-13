@@ -103,7 +103,7 @@ class DeployResult:
     routed_pred_ppm: float = 0.0
     final_ppm: float = 0.0
     qc_status: str = "accept"
-    risk_score: float = 0.0
+    risk_score: Optional[float] = None
     risk_reasons: List[str] = field(default_factory=list)
     model_version: str = ""
     client_id: str = ""
@@ -801,6 +801,14 @@ class DeployPredictor:
         meta: List[Dict[str, Any]] = []
         for i in range(len(corrected)):
             margin = float(top1_np[i] - top2_np[i])
+            if decisions[i].risk_ratio is None:
+                meta.append({
+                    "applied": 0,
+                    "delta": 0.0,
+                    "raw_delta": 0.0,
+                    "target_class": -1,
+                })
+                continue
             new_ppm, delta, raw_delta, applied, target_class = self.r4a_artifacts.apply(
                 calibrated_ppm=float(corrected[i]),
                 pred_class=int(pred_cls_np[i]),
@@ -812,7 +820,7 @@ class DeployPredictor:
                 top1_confidence=float(top1_np[i]),
                 top2_confidence=float(top2_np[i]),
                 confidence_margin=margin,
-                risk_score=float(decisions[i].risk_ratio),
+                risk_score=decisions[i].risk_ratio,
                 risk_scores=risk_scores_list[i],
             )
             corrected[i] = new_ppm

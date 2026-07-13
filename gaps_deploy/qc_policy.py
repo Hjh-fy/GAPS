@@ -38,11 +38,34 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+SUPPORTED_QC_SCORES = frozenset({
+    "classifier_uncertainty",
+    "margin_risk",
+    "response_signature_norm",
+    "response_conc_gap_norm",
+    "response_mean_conc_gap_norm",
+    "class_response_rank_risk",
+    "class_response_margin_risk",
+    "route_response_risk",
+    "composite_response_risk",
+})
+
+RESPONSE_DEPENDENT_SCORES = frozenset({
+    "response_signature_norm",
+    "response_conc_gap_norm",
+    "response_mean_conc_gap_norm",
+    "class_response_rank_risk",
+    "class_response_margin_risk",
+    "route_response_risk",
+    "composite_response_risk",
+})
 
 
 @dataclass
@@ -86,6 +109,105 @@ class QCPolicy:
         )
 
 
+def validate_qc_policy(policy: QCPolicy) -> None:
+    """Validate one QC policy before it can make production decisions."""
+    if not isinstance(policy.scores, list) or not policy.scores:
+        raise ValueError("QC policy scores must be a non-empty list")
+    if any(not isinstance(name, str) or not name for name in policy.scores):
+        raise ValueError("QC policy score names must be non-empty strings")
+    if len(set(policy.scores)) != len(policy.scores):
+        raise ValueError("QC policy scores must be unique")
+    unknown = sorted(set(policy.scores) - SUPPORTED_QC_SCORES)
+    if unknown:
+        raise ValueError(f"QC policy contains unsupported scores: {unknown}")
+    if not isinstance(policy.thresholds, dict):
+        raise ValueError("QC policy thresholds must be a mapping")
+    if set(policy.thresholds) != set(policy.scores):
+        raise ValueError("QC policy thresholds must exactly match scores")
+    try:
+        low_ratio = float(policy.low_ratio)
+        high_ratio = float(policy.high_ratio)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("QC policy ratio bounds must be numeric") from exc
+    if not np.isfinite(low_ratio) or not np.isfinite(high_ratio):
+        raise ValueError("QC policy ratio bounds must be finite")
+    if not 0.0 <= low_ratio < high_ratio:
+        raise ValueError("QC policy ratio bounds must satisfy 0 <= low < high")
+    for name in policy.scores:
+        try:
+            threshold = float(policy.thresholds[name])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"QC policy threshold must be numeric: {name}") from exc
+        if not np.isfinite(threshold) or threshold <= 0.0:
+            raise ValueError(f"QC policy threshold must be finite and positive: {name}")
+
+
+def validate_calibration_refs(
+    refs: Mapping[int, Any],
+    num_classes: int,
+) -> None:
+    """Validate response references required by response-dependent QC scores."""
+    if not isinstance(refs, Mapping):
+        raise ValueError("QC calibration refs must be a mapping")
+    normalized: Dict[int, Any] = {}
+    for raw_key, value in refs.items():
+        try:
+            key = int(raw_key)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"QC calibration ref has invalid class key: {raw_key!r}") from exc
+        if key in normalized:
+            raise ValueError(f"QC calibration refs contain duplicate class {key}")
+        normalized[key] = value
+    expected = set(range(int(num_classes)))
+    if set(normalized) != expected:
+        raise ValueError(
+            "QC calibration refs must cover exactly classes "
+            f"{sorted(expected)}, got {sorted(normalized)}"
+        )
+    expected_dim: Optional[int] = None
+    for class_id in sorted(expected):
+        ref = normalized[class_id]
+        if not isinstance(ref, Mapping):
+            raise ValueError(f"QC calibration ref class {class_id} must be a mapping")
+        center = np.asarray(ref.get("center", []), dtype=np.float64).reshape(-1)
+        scale = np.asarray(ref.get("scale", []), dtype=np.float64).reshape(-1)
+        z_sigs = np.asarray(ref.get("z_sigs", []), dtype=np.float64)
+        rows = ref.get("rows", [])
+        if center.size == 0 or scale.size != center.size:
+            raise ValueError(f"QC calibration ref class {class_id} has invalid center/scale")
+        if expected_dim is None:
+            expected_dim = int(center.size)
+        if center.size != expected_dim:
+            raise ValueError("QC calibration ref dimensions must match across classes")
+        if not np.all(np.isfinite(center)) or not np.all(np.isfinite(scale)):
+            raise ValueError(f"QC calibration ref class {class_id} contains non-finite values")
+        if np.any(scale <= 0.0):
+            raise ValueError(f"QC calibration ref class {class_id} scale must be positive")
+        if z_sigs.ndim != 2 or z_sigs.shape[0] == 0 or z_sigs.shape[1] != center.size:
+            raise ValueError(f"QC calibration ref class {class_id} has invalid z_sigs")
+        if not np.all(np.isfinite(z_sigs)):
+            raise ValueError(f"QC calibration ref class {class_id} z_sigs must be finite")
+        try:
+            loocv_p90 = float(ref.get("loocv_p90"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"QC calibration ref class {class_id} has invalid loocv_p90") from exc
+        if not np.isfinite(loocv_p90) or loocv_p90 <= 0.0:
+            raise ValueError(f"QC calibration ref class {class_id} loocv_p90 must be positive")
+        if not isinstance(rows, list) or len(rows) != z_sigs.shape[0]:
+            raise ValueError(f"QC calibration ref class {class_id} rows must align with z_sigs")
+        for row in rows:
+            try:
+                concentration = float(row["concentration"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"QC calibration ref class {class_id} row has invalid concentration"
+                ) from exc
+            if not np.isfinite(concentration):
+                raise ValueError(
+                    f"QC calibration ref class {class_id} concentration must be finite"
+                )
+
+
 @dataclass
 class QCDecision:
     """单窗口 QC 决策结果
@@ -98,7 +220,7 @@ class QCDecision:
         policy_name: 使用的策略名称
     """
     decision: str = "accept"
-    risk_ratio: float = 0.0
+    risk_ratio: Optional[float] = None
     risk_scores: Dict[str, float] = field(default_factory=dict)
     risk_reasons: List[str] = field(default_factory=list)
     policy_name: str = ""
@@ -155,7 +277,12 @@ class RiskScoreComputer:
                     "rows": [...]           # 校准集样本
                 }}
         """
-        self.calib_refs = calib_refs or {}
+        self.calib_refs: Dict[int, Any] = {}
+        for raw_key, ref in (calib_refs or {}).items():
+            try:
+                self.calib_refs[int(raw_key)] = ref
+            except (TypeError, ValueError):
+                logger.warning("忽略无法解析类别的 QC calibration ref: %r", raw_key)
 
     def compute(
         self,
@@ -186,53 +313,51 @@ class RiskScoreComputer:
             top2 = float(np.sort(probs)[-2]) if len(probs) > 1 else 0.0
             scores["classifier_uncertainty"] = float(1.0 - top1)
             scores["margin_risk"] = float(1.0 - (top1 - top2))
-        else:
-            scores["classifier_uncertainty"] = 0.0
-            scores["margin_risk"] = 0.0
-
         # 2. 响应签名风险 (需要 features 和 calib_refs)
         if features is not None and self.calib_refs:
             self._compute_response_scores(scores, features, pred_ppm, class_id)
-        else:
-            for key in [
-                "response_signature_norm",
-                "response_conc_gap_norm",
-                "response_mean_conc_gap_norm",
-                "class_response_rank_risk",
-                "class_response_margin_risk",
-                "class_response_rank",
-                "class_response_margin",
-                "best_response_class",
-                "best_response_norm",
-                "pred_response_norm",
-            ]:
-                if key not in scores:
-                    scores[key] = 0.0
 
         # 3. 从 extra_info 补充
-        if extra_info:
+        if extra_info and self.calib_refs:
             for key in ["response_signature_norm", "response_conc_gap_norm",
                         "response_mean_conc_gap_norm", "class_response_rank_risk",
                         "class_response_margin_risk"]:
                 if key in extra_info and key not in scores:
-                    scores[key] = float(extra_info.get(key, 0.0))
+                    value = float(extra_info[key])
+                    if np.isfinite(value):
+                        scores[key] = value
 
         # 4. 路由响应风险: max(rank_risk, margin_risk, 10 * uncertainty)
-        scores["route_response_risk"] = float(np.nanmax([
-            scores.get("class_response_rank_risk", 0.0),
-            scores.get("class_response_margin_risk", 0.0),
-            scores.get("classifier_uncertainty", 0.0) * 10.0,
-        ]))
+        route_inputs = (
+            "class_response_rank_risk",
+            "class_response_margin_risk",
+            "classifier_uncertainty",
+        )
+        if all(key in scores and np.isfinite(scores[key]) for key in route_inputs):
+            scores["route_response_risk"] = float(max(
+                scores["class_response_rank_risk"],
+                scores["class_response_margin_risk"],
+                scores["classifier_uncertainty"] * 10.0,
+            ))
 
         # 5. 综合风险: max of all
-        scores["composite_response_risk"] = float(np.nanmax([
-            scores.get("response_signature_norm", 0.0),
-            scores.get("response_conc_gap_norm", 0.0),
-            scores.get("response_mean_conc_gap_norm", 0.0),
-            scores.get("class_response_rank_risk", 0.0),
-            scores.get("class_response_margin_risk", 0.0),
-            scores.get("classifier_uncertainty", 0.0) * 10.0,
-        ]))
+        composite_inputs = (
+            "response_signature_norm",
+            "response_conc_gap_norm",
+            "response_mean_conc_gap_norm",
+            "class_response_rank_risk",
+            "class_response_margin_risk",
+            "classifier_uncertainty",
+        )
+        if all(key in scores and np.isfinite(scores[key]) for key in composite_inputs):
+            scores["composite_response_risk"] = float(max(
+                scores["response_signature_norm"],
+                scores["response_conc_gap_norm"],
+                scores["response_mean_conc_gap_norm"],
+                scores["class_response_rank_risk"],
+                scores["class_response_margin_risk"],
+                scores["classifier_uncertainty"] * 10.0,
+            ))
 
         return scores
 
@@ -283,16 +408,20 @@ class RiskScoreComputer:
             if np.isfinite(nearest_conc):
                 scores["response_conc_gap_norm"] = float(abs(pred_ppm - nearest_conc) / 25.0)
                 scores["nearest_calib_conc"] = float(nearest_conc)
-            else:
-                scores["response_conc_gap_norm"] = 0.0
-                scores["nearest_calib_conc"] = float("nan")
             scores["nearest_calib_idx"] = float(pred_item["nearest_idx"])
-        elif pred_ref is not None:
-            scores["response_signature_norm"] = 0.0
-            scores["response_conc_gap_norm"] = 0.0
-        else:
-            scores["response_signature_norm"] = 0.0
-            scores["response_conc_gap_norm"] = 0.0
+            concentrations: List[float] = []
+            if isinstance(pred_ref, Mapping):
+                for row in pred_ref.get("rows", []):
+                    try:
+                        concentration = float(row["concentration"])
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    if np.isfinite(concentration):
+                        concentrations.append(concentration)
+            if concentrations:
+                scores["response_mean_conc_gap_norm"] = float(
+                    abs(pred_ppm - float(np.mean(concentrations))) / 25.0
+                )
 
         if ranking_enabled and ranked_items and pred_item is not None:
             classes = [int(item["class"]) for item in ranked_items]
@@ -309,7 +438,7 @@ class RiskScoreComputer:
             scores["class_response_margin"] = float(margin)
             scores["class_response_margin_risk"] = float(max(0.0, margin))
             scores["best_response_nearest_calib_conc"] = float(best["nearest_conc"])
-        else:
+        elif pred_item is not None:
             scores["best_response_class"] = -1.0
             scores["best_response_norm"] = 0.0
             scores["pred_response_norm"] = 0.0
@@ -391,11 +520,16 @@ class RiskScoreComputer:
         scale = np.asarray(ref.get("scale", np.ones(target_dim)), dtype=np.float64).reshape(-1)
         if center.size != target_dim or scale.size != target_dim or sig.size != target_dim:
             return None
-        scale = np.where(np.abs(scale) < 1e-8, 1.0, scale)
+        if not np.all(np.isfinite(center)) or not np.all(np.isfinite(scale)):
+            return None
+        if np.any(scale <= 0.0) or not np.all(np.isfinite(sig)):
+            return None
         z_sig = (sig - center) / scale
 
         z_sigs = np.asarray(ref.get("z_sigs", []), dtype=np.float64)
         if z_sigs.ndim != 2 or z_sigs.shape[1] != target_dim or z_sigs.shape[0] == 0:
+            return None
+        if not np.all(np.isfinite(z_sigs)):
             return None
 
         dists = np.linalg.norm(z_sigs - z_sig.reshape(1, -1), axis=1)
@@ -405,9 +539,14 @@ class RiskScoreComputer:
                 dists = np.where(zero_mask, np.inf, dists)
         nearest_idx = int(np.argmin(dists))
         sig_dist = float(dists[nearest_idx])
-        loocv_p90 = float(ref.get("loocv_p90", 1.0))
+        if not np.isfinite(sig_dist):
+            return None
+        try:
+            loocv_p90 = float(ref.get("loocv_p90", 1.0))
+        except (TypeError, ValueError):
+            return None
         if not np.isfinite(loocv_p90) or loocv_p90 < 1e-8:
-            loocv_p90 = 1.0
+            return None
 
         rows = ref.get("rows", [])
         nearest_conc = float("nan")
@@ -492,6 +631,7 @@ class TwoThresholdDecider:
         参数:
             policy: QCPolicy 对象
         """
+        validate_qc_policy(policy)
         self.policies[policy.group] = policy
         if policy.group == "ALL":
             self.default_policy = policy
@@ -525,30 +665,81 @@ class TwoThresholdDecider:
         policy = self.get_policy(client_id)
         if policy is None:
             return QCDecision(
-                decision="accept",
-                risk_ratio=0.0,
+                decision="reject",
+                risk_ratio=None,
                 risk_scores=risk_scores,
-                risk_reasons=[],
+                risk_reasons=["qc_policy_missing"],
                 policy_name="no_policy",
             )
+
+        if not isinstance(policy.scores, list) or not policy.scores:
+            return self._invalid_decision(risk_scores, policy, "qc_policy_invalid")
+        if any(not isinstance(name, str) or not name for name in policy.scores):
+            return self._invalid_decision(risk_scores, policy, "qc_policy_invalid")
+        if len(set(policy.scores)) != len(policy.scores):
+            return self._invalid_decision(risk_scores, policy, "qc_policy_invalid")
+        if not isinstance(policy.thresholds, Mapping):
+            return self._invalid_decision(risk_scores, policy, "qc_policy_invalid")
+        try:
+            low_ratio = float(policy.low_ratio)
+            high_ratio = float(policy.high_ratio)
+        except (TypeError, ValueError):
+            return self._invalid_decision(risk_scores, policy, "qc_ratio_invalid")
+        if (
+            not np.isfinite(low_ratio)
+            or not np.isfinite(high_ratio)
+            or not 0.0 <= low_ratio < high_ratio
+        ):
+            return self._invalid_decision(risk_scores, policy, "qc_ratio_invalid")
+        if not isinstance(risk_scores, Mapping):
+            return self._invalid_decision({}, policy, "qc_scores_invalid")
 
         # 计算风险比: max(score_i / threshold_i)
         max_ratio = 0.0
         risk_reasons: List[str] = []
         for score_name in policy.scores:
-            value = risk_scores.get(score_name, 0.0)
-            threshold = policy.thresholds.get(score_name, np.inf)
-            if np.isfinite(value) and np.isfinite(threshold) and abs(threshold) > 1e-12:
-                ratio = value / threshold
-                if ratio > max_ratio:
-                    max_ratio = ratio
-                if ratio > policy.high_ratio:
-                    risk_reasons.append(score_name)
+            if score_name not in SUPPORTED_QC_SCORES:
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_score_unknown:{score_name}"
+                )
+            if score_name not in policy.thresholds:
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_threshold_invalid:{score_name}"
+                )
+            try:
+                threshold = float(policy.thresholds[score_name])
+            except (TypeError, ValueError):
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_threshold_invalid:{score_name}"
+                )
+            if not np.isfinite(threshold) or threshold <= 0.0:
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_threshold_invalid:{score_name}"
+                )
+            if score_name not in risk_scores:
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_score_missing:{score_name}"
+                )
+            try:
+                value = float(risk_scores[score_name])
+            except (TypeError, ValueError):
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_score_nonfinite:{score_name}"
+                )
+            if not np.isfinite(value):
+                return self._invalid_decision(
+                    risk_scores, policy, f"qc_score_nonfinite:{score_name}"
+                )
+            ratio = value / threshold
+            if ratio > max_ratio:
+                max_ratio = ratio
+            if ratio > high_ratio:
+                risk_reasons.append(score_name)
 
         # 双阈值决策
-        if max_ratio <= policy.low_ratio:
+        if max_ratio <= low_ratio:
             decision = "accept"
-        elif max_ratio > policy.high_ratio:
+        elif max_ratio > high_ratio:
             decision = "reject"
         else:
             decision = "review"
@@ -558,6 +749,20 @@ class TwoThresholdDecider:
             risk_ratio=float(max_ratio),
             risk_scores=risk_scores,
             risk_reasons=risk_reasons,
+            policy_name=policy.policy_name,
+        )
+
+    @staticmethod
+    def _invalid_decision(
+        risk_scores: Mapping[str, float],
+        policy: QCPolicy,
+        reason: str,
+    ) -> QCDecision:
+        return QCDecision(
+            decision="reject",
+            risk_ratio=None,
+            risk_scores=dict(risk_scores),
+            risk_reasons=[reason],
             policy_name=policy.policy_name,
         )
 
