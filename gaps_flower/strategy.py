@@ -404,6 +404,10 @@ class GapsStrategy(CheckpointFedAvg):
         self._da_source_arrays = None
         self._da_target_arrays = None
         if self.use_domain_adapt:
+            if self.strict_calibration_split is not True:
+                raise ValueError(
+                    "Production domain adaptation requires strict calibration split inputs"
+                )
             source_dirs, target_dirs = validate_domain_adaptation_request(
                 "gaps",
                 True,
@@ -412,11 +416,11 @@ class GapsStrategy(CheckpointFedAvg):
             )
             self._da_source_arrays = load_domain_adaptation_arrays(
                 source_dirs,
-                strict=self.strict_calibration_split,
+                strict=True,
             )
             self._da_target_arrays = load_domain_adaptation_arrays(
                 target_dirs,
-                strict=self.strict_calibration_split,
+                strict=True,
             )
 
     def _semantic_protos_json(self) -> str:

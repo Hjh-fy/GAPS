@@ -319,9 +319,17 @@ class RiskScoreComputer:
 
         # 3. 从 extra_info 补充
         if extra_info and self.calib_refs:
-            for key in ["response_signature_norm", "response_conc_gap_norm",
-                        "response_mean_conc_gap_norm", "class_response_rank_risk",
-                        "class_response_margin_risk"]:
+            extra_keys = [
+                "response_signature_norm",
+                "response_conc_gap_norm",
+                "response_mean_conc_gap_norm",
+            ]
+            if self._response_ranking_enabled():
+                extra_keys.extend([
+                    "class_response_rank_risk",
+                    "class_response_margin_risk",
+                ])
+            for key in extra_keys:
                 if key in extra_info and key not in scores:
                     value = float(extra_info[key])
                     if np.isfinite(value):
@@ -438,15 +446,6 @@ class RiskScoreComputer:
             scores["class_response_margin"] = float(margin)
             scores["class_response_margin_risk"] = float(max(0.0, margin))
             scores["best_response_nearest_calib_conc"] = float(best["nearest_conc"])
-        elif pred_item is not None:
-            scores["best_response_class"] = -1.0
-            scores["best_response_norm"] = 0.0
-            scores["pred_response_norm"] = 0.0
-            scores["class_response_rank"] = 0.0
-            scores["class_response_rank_risk"] = 0.0
-            scores["class_response_margin"] = 0.0
-            scores["class_response_margin_risk"] = 0.0
-
     def _response_ranking_enabled(self) -> bool:
         """Return whether class-wise response ranking should affect QC.
 

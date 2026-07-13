@@ -139,6 +139,28 @@ def test_valid_da_directories_are_merged_with_exact_row_counts(tmp_path) -> None
     assert phases.shape == (5,)
 
 
+def test_production_da_rejects_non_strict_calibration_split(tmp_path) -> None:
+    cfg = make_config(device="cpu", local_epochs=1, batch_size=4)
+    model = create_model(cfg)
+    _arrays, keys = get_parameters(model)
+    source = _write_da_split(tmp_path / "source")
+    target = _write_da_split(tmp_path / "target")
+
+    with pytest.raises(ValueError, match="strict.*calibration|calibration.*strict"):
+        GapsStrategy(
+            parameter_keys=keys,
+            reference_state=model.state_dict(),
+            output_dir=str(tmp_path / "output"),
+            run_name="unsafe_non_strict_da",
+            use_selective_agg=False,
+            use_proto_mmd=False,
+            use_domain_adapt=True,
+            server_val_data=str(source),
+            server_calib_data=str(target),
+            strict_calibration_split=False,
+        )
+
+
 def test_flower_config_is_simplified_classifier_only() -> None:
     cfg = make_config(device="cpu", local_epochs=1, batch_size=4)
 

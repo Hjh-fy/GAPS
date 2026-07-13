@@ -164,6 +164,41 @@ def test_invalid_response_reference_cannot_produce_a_low_risk_score() -> None:
     assert "composite_response_risk" not in scores
 
 
+def test_legacy_reference_without_ranking_cannot_synthesize_zero_risk() -> None:
+    refs = {
+        class_id: {
+            "center": [0.0] * 8,
+            "scale": [1.0] * 8,
+            "z_sigs": [[0.0] * 8],
+            "loocv_p90": 1.0,
+            "rows": [{"concentration": 50.0}],
+        }
+        for class_id in range(4)
+    }
+    scores = RiskScoreComputer(refs).compute(
+        logits=np.asarray([3.0, 1.0, 0.0, -1.0]),
+        pred_ppm=50.0,
+        class_id=0,
+        features=np.ones((100, 8), dtype=np.float32),
+        extra_info={
+            "class_response_rank_risk": 0.0,
+            "class_response_margin_risk": 0.0,
+        },
+    )
+
+    assert "response_signature_norm" in scores
+    assert "class_response_rank_risk" not in scores
+    assert "class_response_margin_risk" not in scores
+    assert "route_response_risk" not in scores
+    assert "composite_response_risk" not in scores
+
+    decider = TwoThresholdDecider()
+    decider.load_policy(_response_policy())
+    decision = decider.decide(scores)
+    assert decision.decision == "reject"
+    assert decision.risk_reasons == ["qc_score_missing:composite_response_risk"]
+
+
 def test_final_runtime_never_auto_outputs_reject_and_emits_json_null() -> None:
     result = DeployResult(
         pred_gas="CO",

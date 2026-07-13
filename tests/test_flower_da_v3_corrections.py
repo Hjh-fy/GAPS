@@ -269,6 +269,30 @@ def test_server_cli_exposes_versioned_da_modes() -> None:
     assert "--da-adv-feature-objective" in result.stdout
 
 
+def test_server_cli_rejects_non_strict_production_da() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "gaps_flower.server_app",
+            "--use-domain-adapt",
+            "true",
+            "--server-val-data",
+            "missing-source",
+            "--server-calib-data",
+            "missing-target",
+            "--strict-calibration-split",
+            "false",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode != 0
+    assert "strict-calibration-split true" in result.stderr
+
+
 def test_da_method_definition_marks_detached_pair_l2_as_non_trainable() -> None:
     trainer = bare_trainer(
         {

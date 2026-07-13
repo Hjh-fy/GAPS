@@ -166,6 +166,10 @@ def main() -> None:
     args = parser.parse_args()
     explicit_dests = _explicit_cli_dests(parser, sys.argv[1:])
     apply_da_preset(args, explicit_dests)
+    if args.use_domain_adapt and not args.strict_calibration_split:
+        parser.error(
+            "--use-domain-adapt requires --strict-calibration-split true"
+        )
     validate_domain_adaptation_request(
         args.strategy,
         args.use_domain_adapt,
