@@ -51,11 +51,23 @@ import torch.nn as nn
 
 from .calibration import RegressionCalibrator
 from .deploy_config import DeployConfig
+from .package_contract import (
+    DeploymentPackageError,
+    load_checkpoint_state,
+    load_json_object,
+    load_state_dict_strict,
+    normalize_and_validate_routing_config,
+    require_file,
+    validate_checkpoint_model_config,
+    validate_model_config,
+)
 from .qc_policy import (
     QCDecision,
     QCPolicy,
+    RESPONSE_DEPENDENT_SCORES,
     RiskScoreComputer,
     TwoThresholdDecider,
+    validate_calibration_refs,
 )
 from .r4a_residual import R4AArtifactSet
 
@@ -247,65 +259,76 @@ class DeployPredictor:
             DeployPredictor 实例
         """
         deploy_dir = Path(deploy_dir)
+        if not deploy_dir.is_dir():
+            raise DeploymentPackageError(f"Deployment package directory is missing: {deploy_dir}")
 
         # 加载配置
         config_path = deploy_dir / "config" / "deploy_config.json"
-        if config_path.exists():
-            config = DeployConfig.from_json(str(config_path))
-        else:
-            config = DeployConfig()
+        require_file(config_path, "deploy_config.json")
+        config = DeployConfig.from_dict(load_json_object(config_path, "deploy_config.json"))
+        config.device = device
 
         # 加载模型配置
         model_config_path = deploy_dir / "models" / "model_config.json"
-        if model_config_path.exists():
-            with open(model_config_path, "r", encoding="utf-8") as f:
-                model_config = json.load(f)
-        else:
-            model_config = {"num_classes": 4, "feat_dim": 64, "encoder_type": "tcn", "transformer_d_model": 48}
+        model_config = load_json_object(model_config_path, "model_config.json")
+        validate_model_config(model_config)
 
         num_classes = int(model_config.get("num_classes", config.num_classes))
+        if num_classes <= 0:
+            raise DeploymentPackageError("model_config num_classes must be positive")
+
+        routing_path = deploy_dir / (
+            config.routing_config_path or "calibration/routing_config.json"
+        )
+        routing_raw = load_json_object(routing_path, "routing_config.json")
+        routing_config = normalize_and_validate_routing_config(routing_raw, num_classes)
+
+        qc_policy_path = deploy_dir / (config.qc_policy_path or "qc/selected_policy.json")
+        require_file(qc_policy_path, "selected_policy.json")
+        qc_decider = TwoThresholdDecider()
+        qc_decider.load_policies_json(str(qc_policy_path))
+        if not qc_decider.policies:
+            raise DeploymentPackageError(f"No QC policies loaded from {qc_policy_path}")
+
         model_A = cls._create_classifier_model(model_config, config)
         model_B = cls._create_regression_model(model_config, config)
 
         # 加载 checkpoint
-        cls_ckpt = deploy_dir / "models" / "classification_model.pth"
-        reg_ckpt = deploy_dir / "models" / "regression_model.pth"
+        cls_ckpt = deploy_dir / (
+            config.classifier_checkpoint or "models/classification_model.pth"
+        )
+        reg_ckpt = deploy_dir / (
+            config.regression_checkpoint or "models/regression_model.pth"
+        )
         model_version: Union[str, int] = "unknown"
 
-        if cls_ckpt.exists():
-            state = torch.load(cls_ckpt, map_location="cpu", weights_only=False)
-            model_A.load_state_dict(cls._extract_model_state(state), strict=False)
-            model_version = state.get("round", state.get("model_version", "unknown"))
-            logger.info(f"加载分类模型: {cls_ckpt}, version={model_version}")
-
-        if reg_ckpt.exists():
-            state = torch.load(reg_ckpt, map_location="cpu", weights_only=False)
-            missing, unexpected = model_B.load_state_dict(
-                cls._extract_model_state(state),
-                strict=False,
+        cls_checkpoint, cls_state = load_checkpoint_state(cls_ckpt)
+        validate_checkpoint_model_config(cls_checkpoint, model_config, cls_ckpt)
+        load_state_dict_strict(model_A, cls_state, cls_ckpt)
+        if isinstance(cls_checkpoint, dict):
+            model_version = cls_checkpoint.get(
+                "round", cls_checkpoint.get("model_version", "unknown")
             )
-            if missing:
-                logger.info(f"回归模型加载: {len(missing)} 个缺失键")
-            if unexpected:
-                logger.warning(f"回归模型加载: {len(unexpected)} 个多余键")
-            logger.info(f"加载回归模型: {reg_ckpt}")
+        logger.info(f"加载分类模型: {cls_ckpt}, version={model_version}")
+
+        reg_checkpoint, reg_state = load_checkpoint_state(reg_ckpt)
+        validate_checkpoint_model_config(reg_checkpoint, model_config, reg_ckpt)
+        load_state_dict_strict(model_B, reg_state, reg_ckpt)
+        logger.info(f"加载回归模型: {reg_ckpt}")
 
         full_model = None
+        selected_modes = routing_config["selected_modes"]
+        full_required = any(mode == "full" for mode in selected_modes.values())
         if config.full_model_checkpoint:
             full_ckpt = deploy_dir / config.full_model_checkpoint
         else:
             full_ckpt = deploy_dir / "models" / "full_model.pth"
-        if full_ckpt.exists():
+        if full_required or config.full_model_checkpoint:
+            require_file(full_ckpt, "full_model.pth")
             full_model = cls._create_regression_model(model_config, config)
-            state = torch.load(full_ckpt, map_location="cpu", weights_only=False)
-            missing, unexpected = full_model.load_state_dict(
-                cls._extract_model_state(state),
-                strict=False,
-            )
-            if missing:
-                logger.info(f"full 校准模型加载: {len(missing)} 个缺失键")
-            if unexpected:
-                logger.warning(f"full 校准模型加载: {len(unexpected)} 个多余键")
+            full_checkpoint, full_state = load_checkpoint_state(full_ckpt)
+            validate_checkpoint_model_config(full_checkpoint, model_config, full_ckpt)
+            load_state_dict_strict(full_model, full_state, full_ckpt)
             logger.info(f"加载 full 校准模型: {full_ckpt}")
 
         # 加载校准器
@@ -314,34 +337,38 @@ class DeployPredictor:
             num_phases=config.num_phases,
             conc_ranges=config.class_concentration_ranges,
         )
-        routing_path = deploy_dir / "calibration" / "routing_config.json"
-        if routing_path.exists():
-            calibrator.load_routing_config_json(str(routing_path))
-            logger.info(f"加载校准路由配置: {routing_path}")
+        calibrator.load_routing_config(routing_config)
+        logger.info(f"加载校准路由配置: {routing_path}")
 
         # 加载校准参考数据 (用于响应签名比较)
         calib_refs = {}
         calib_stats_path = deploy_dir / "calibration" / "calibration_stats.json"
-        if calib_stats_path.exists():
+        response_qc_required = any(
+            set(policy.scores) & RESPONSE_DEPENDENT_SCORES
+            for policy in qc_decider.policies.values()
+        )
+        if response_qc_required:
+            require_file(calib_stats_path, "calibration_stats.json")
+        if calib_stats_path.is_file():
             calib_refs = cls._load_calibration_refs(calib_stats_path)
-            if calib_refs:
-                logger.info(f"加载校准参考数据: {calib_stats_path}")
-            else:
-                logger.info(f"校准统计文件不含 response refs, QC 响应风险跳过: {calib_stats_path}")
+        if response_qc_required:
+            validate_calibration_refs(calib_refs, num_classes)
+        if calib_refs:
+            logger.info(f"加载校准参考数据: {calib_stats_path}")
 
         risk_computer = RiskScoreComputer(calib_refs=calib_refs)
+        logger.info(f"加载 QC 策略: {qc_policy_path}")
 
-        # 加载 QC 策略
-        qc_decider = TwoThresholdDecider()
-        qc_policy_path = deploy_dir / "qc" / "selected_policy.json"
-        if qc_policy_path.exists():
-            qc_decider.load_policies_json(str(qc_policy_path))
-            logger.info(f"加载 QC 策略: {qc_policy_path}")
-
+        specialist_required = sorted(
+            class_id
+            for class_id, mode in selected_modes.items()
+            if mode in {"specialist", "specialist_full"}
+        )
         specialist_models = cls._load_specialist_models(
             deploy_dir / "models" / "specialists",
             model_config,
             config,
+            required_classes=specialist_required,
         )
         r4a_artifacts = R4AArtifactSet.from_dir(deploy_dir / "r4a")
 
@@ -363,37 +390,106 @@ class DeployPredictor:
     @classmethod
     def from_config(cls, config: DeployConfig) -> "DeployPredictor":
         """从 DeployConfig 对象加载 (用于自定义路径)"""
+        if not config.classifier_checkpoint:
+            raise DeploymentPackageError("classifier_checkpoint is required")
+        if not config.regression_checkpoint:
+            raise DeploymentPackageError("regression_checkpoint is required")
+        if not isinstance(config.model_config, dict) or not config.model_config:
+            raise DeploymentPackageError("model_config is required")
+        validate_model_config(config.model_config)
+        if not config.routing_config_path:
+            raise DeploymentPackageError("routing_config_path is required")
+        if not config.qc_policy_path:
+            raise DeploymentPackageError("qc_policy_path is required")
+        require_file(Path(config.classifier_checkpoint), "classifier_checkpoint")
+        require_file(Path(config.regression_checkpoint), "regression_checkpoint")
+        routing_path = require_file(Path(config.routing_config_path), "routing_config_path")
+        qc_policy_path = require_file(Path(config.qc_policy_path), "qc_policy_path")
         num_classes = int(config.model_config.get("num_classes", config.num_classes))
+        routing_config = normalize_and_validate_routing_config(
+            load_json_object(routing_path, "routing_config.json"), num_classes
+        )
         model_A = cls._create_classifier_model(config.model_config, config)
         model_B = cls._create_regression_model(config.model_config, config)
 
-        if config.classifier_checkpoint:
-            state = torch.load(config.classifier_checkpoint, map_location="cpu", weights_only=False)
-            model_A.load_state_dict(cls._extract_model_state(state), strict=False)
-
-        if config.regression_checkpoint:
-            state = torch.load(config.regression_checkpoint, map_location="cpu", weights_only=False)
-            model_B.load_state_dict(cls._extract_model_state(state), strict=False)
+        classifier_checkpoint, classifier_state = load_checkpoint_state(
+            Path(config.classifier_checkpoint)
+        )
+        validate_checkpoint_model_config(
+            classifier_checkpoint,
+            config.model_config,
+            Path(config.classifier_checkpoint),
+        )
+        load_state_dict_strict(
+            model_A, classifier_state, Path(config.classifier_checkpoint)
+        )
+        regression_checkpoint, regression_state = load_checkpoint_state(
+            Path(config.regression_checkpoint)
+        )
+        validate_checkpoint_model_config(
+            regression_checkpoint,
+            config.model_config,
+            Path(config.regression_checkpoint),
+        )
+        load_state_dict_strict(
+            model_B, regression_state, Path(config.regression_checkpoint)
+        )
 
         full_model = None
+        full_required = any(
+            mode == "full" for mode in routing_config["selected_modes"].values()
+        )
+        if full_required and not config.full_model_checkpoint:
+            raise DeploymentPackageError(
+                "full_model_checkpoint is required by routing_config"
+            )
         if config.full_model_checkpoint:
+            full_path = require_file(
+                Path(config.full_model_checkpoint), "full_model_checkpoint"
+            )
             full_model = cls._create_regression_model(config.model_config, config)
-            state = torch.load(config.full_model_checkpoint, map_location="cpu", weights_only=False)
-            full_model.load_state_dict(cls._extract_model_state(state), strict=False)
+            full_checkpoint, full_state = load_checkpoint_state(full_path)
+            validate_checkpoint_model_config(
+                full_checkpoint, config.model_config, full_path
+            )
+            load_state_dict_strict(full_model, full_state, full_path)
+
+        specialist_classes = [
+            class_id
+            for class_id, mode in routing_config["selected_modes"].items()
+            if mode in {"specialist", "specialist_full"}
+        ]
+        if specialist_classes:
+            raise DeploymentPackageError(
+                "from_config cannot load selected specialist classes; use from_package"
+            )
 
         calibrator = RegressionCalibrator(
             num_classes=num_classes,
             num_phases=config.num_phases,
             conc_ranges=config.class_concentration_ranges,
         )
-        if config.routing_config_path:
-            calibrator.load_routing_config_json(config.routing_config_path)
-
-        risk_computer = RiskScoreComputer()
+        calibrator.load_routing_config(routing_config)
 
         qc_decider = TwoThresholdDecider()
-        if config.qc_policy_path:
-            qc_decider.load_policies_json(config.qc_policy_path)
+        qc_decider.load_policies_json(str(qc_policy_path))
+        response_qc_required = any(
+            set(policy.scores) & RESPONSE_DEPENDENT_SCORES
+            for policy in qc_decider.policies.values()
+        )
+        calib_refs: Dict[int, Dict[str, Any]] = {}
+        if response_qc_required:
+            if not config.calibration_ref_dir:
+                raise DeploymentPackageError(
+                    "calibration_ref_dir is required by response-dependent QC"
+                )
+            ref_path = Path(config.calibration_ref_dir)
+            if ref_path.is_dir():
+                ref_path = ref_path / "calibration_stats.json"
+            require_file(ref_path, "calibration_stats.json")
+            calib_refs = cls._load_calibration_refs(ref_path)
+            validate_calibration_refs(calib_refs, num_classes)
+        risk_computer = RiskScoreComputer(calib_refs=calib_refs)
 
         return cls(
             model_A=model_A,
@@ -527,28 +623,28 @@ class DeployPredictor:
         specialist_dir: Path,
         model_config: Dict[str, Any],
         deploy_config: DeployConfig,
+        required_classes: Sequence[int] = (),
     ) -> Dict[int, nn.Module]:
-        """Load optional per-class specialist regression models."""
+        """Load every specialist selected by the routing contract."""
         models: Dict[int, nn.Module] = {}
-        if not specialist_dir.exists():
+        required = sorted({int(class_id) for class_id in required_classes})
+        if not required:
             return models
-        for ckpt_path in sorted(specialist_dir.glob("*.pth")):
-            stem = ckpt_path.stem
-            digits = "".join(ch for ch in stem if ch.isdigit())
-            if not digits:
-                logger.warning(f"跳过无法解析 class id 的 specialist checkpoint: {ckpt_path}")
-                continue
-            class_id = int(digits)
-            model = cls._create_regression_model(model_config, deploy_config)
-            state = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-            missing, unexpected = model.load_state_dict(
-                cls._extract_model_state(state),
-                strict=False,
+        if not specialist_dir.is_dir():
+            raise DeploymentPackageError(
+                "Selected specialist class "
+                f"{required[0] if len(required) == 1 else required} but directory is missing: "
+                f"{specialist_dir}"
             )
-            if missing:
-                logger.info(f"specialist class {class_id}: {len(missing)} 个缺失键")
-            if unexpected:
-                logger.warning(f"specialist class {class_id}: {len(unexpected)} 个多余键")
+        for class_id in required:
+            ckpt_path = specialist_dir / f"class_{class_id}.pth"
+            require_file(ckpt_path, f"specialist class {class_id}")
+            model = cls._create_regression_model(model_config, deploy_config)
+            checkpoint, state = load_checkpoint_state(ckpt_path)
+            validate_checkpoint_model_config(
+                checkpoint, model_config, ckpt_path
+            )
+            load_state_dict_strict(model, state, ckpt_path)
             models[class_id] = model
             logger.info(f"加载 specialist class {class_id}: {ckpt_path}")
         return models
