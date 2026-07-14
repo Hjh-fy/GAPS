@@ -19,9 +19,14 @@ from scripts.run_iotj_c5_regression_cloud import (
     merge_cloud_manifest,
     parse_classifier_spec,
 )
-from run_source_augmented_target_ridge_eval import attach_prediction_column, force_oracle_routes
+from run_source_augmented_target_ridge_eval import (
+    apply_oracle_h8_predictions,
+    attach_prediction_column,
+    force_oracle_routes,
+)
 from scripts.summarize_iotj_c5_formal_regression import (
     _report,
+    collect_qc_oracle_sources,
     flatten_operational_qc,
     validate_ladder_summary,
 )
@@ -212,12 +217,90 @@ def test_h8_augmented_stream_receives_aligned_rich_only_prediction() -> None:
     assert [row["target_ridge_rich_only_ppm"] for row in merged] == [21.0, 31.0]
 
 
-def test_force_oracle_routes_copies_rows_and_replaces_only_route() -> None:
-    source = [{"client": "C5", "sample_index": 7, "pred_class": 1, "true_class": 3, "route_class": 1}]
+def test_force_oracle_routes_copies_rows_and_updates_route_metadata() -> None:
+    source = [
+        {
+            "client": "C5",
+            "sample_index": 7,
+            "pred_class": 1,
+            "true_class": 3,
+            "route_class": 1,
+            "route_cls": 1,
+            "route_gas": "CO",
+            "route_correct": 0,
+            "route_source": "predicted",
+        }
+    ]
     result = force_oracle_routes(source)
     assert result[0]["route_class"] == 3
+    assert result[0]["route_cls"] == 3
+    assert result[0]["route_gas"] == "Methane"
+    assert result[0]["route_correct"] == 1
+    assert result[0]["route_source"] == "oracle_true_class"
+    assert result[0]["actual_route_class"] == 1
+    assert result[0]["actual_route_gas"] == "CO"
     assert result[0]["pred_class"] == 1
     assert source[0]["route_class"] == 1
+
+
+class _ConstantRidge:
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def predict(self, rows, clip=True):
+        return np.full(len(rows), self.value, dtype=np.float64)
+
+
+class _ConstantMlp:
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def predict(self, rows):
+        return np.full(len(rows), self.value, dtype=np.float64)
+
+
+class _RouteAwareSharedMlp:
+    def predict(self, rows):
+        return np.asarray(
+            [3000.0 + float(row["route_class"]) for row in rows], dtype=np.float64
+        )
+
+
+def test_apply_oracle_h8_predictions_routes_every_head_by_true_class() -> None:
+    rows = [
+        {
+            "client": "C5",
+            "sample_index": 7,
+            "pred_class": 1,
+            "true_class": 3,
+            "route_class": 1,
+            "route_cls": 1,
+            "route_gas": "CO",
+            "route_correct": 0,
+            "route_source": "predicted",
+            "feature_dict": {"feature": 1.0},
+            "final_ppm": 50.0,
+        }
+    ]
+    ridge_models = {class_id: _ConstantRidge(1000.0 + class_id) for class_id in range(4)}
+    mlp_models = {class_id: _ConstantMlp(2000.0 + class_id) for class_id in range(4)}
+    target_models = {
+        ("C5", class_id): _ConstantRidge(4000.0 + class_id)
+        for class_id in range(4)
+    }
+
+    result = apply_oracle_h8_predictions(
+        rows,
+        ridge_models,
+        mlp_models,
+        _RouteAwareSharedMlp(),
+        target_models,
+    )
+
+    assert result[0]["H1_source_ridge_ppm"] == 1003.0
+    assert result[0]["H2_source_per_gas_mlp_ppm"] == 2003.0
+    assert result[0]["H3_source_shared_mlp_ppm"] == 3003.0
+    assert result[0]["target_ridge_plus_source_preds_oracle_route_ppm"] == 4003.0
 
 
 def test_ladder_fails_closed_when_a_required_base_prediction_is_missing() -> None:
@@ -337,8 +420,7 @@ def test_formal_summary_validator_requires_complete_r0_r7_contract() -> None:
 
 
 def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -> None:
-    operational = {
-        "HC95": {
+    workpoint = {
             "N": 1360,
             "accept_N": 1309,
             "nonreject_N": 1342,
@@ -359,24 +441,63 @@ def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -
                 "high_error_recall": {"mean": 0.04},
             },
         }
+    operational = {
+        "FULL": dict(workpoint),
+        "HC95": dict(workpoint),
+        "HC90": dict(workpoint),
     }
 
     rows = flatten_operational_qc("B5", operational)
+    hc95 = next(row for row in rows if row["workpoint"] == "HC95")
 
-    assert rows[0]["classifier_id"] == "B5"
-    assert rows[0]["workpoint"] == "HC95"
-    assert rows[0]["automatic_yield"] == pytest.approx(1309 / 1360)
-    assert rows[0]["random_accept_RMSE_mean"] == 17.4
-    assert rows[0]["nonreject_N"] == 1342
-    assert rows[0]["nonreject_RMSE"] == 16.2
-    assert rows[0]["nonreject_NRMSE"] == 0.13
-    assert rows[0]["oracle_accept_RMSE"] == 10.9
-    assert rows[0]["oracle_accept_NRMSE"] == 0.08
-    assert rows[0]["oracle_nonreject_RMSE"] == 11.2
-    assert rows[0]["oracle_nonreject_NRMSE"] == 0.09
+    assert len(rows) == 3
+    assert hc95["classifier_id"] == "B5"
+    assert hc95["automatic_yield"] == pytest.approx(1309 / 1360)
+    assert hc95["random_accept_RMSE_mean"] == 17.4
+    assert hc95["nonreject_N"] == 1342
+    assert hc95["nonreject_RMSE"] == 16.2
+    assert hc95["nonreject_NRMSE"] == 0.13
+    assert hc95["oracle_accept_RMSE"] == 10.9
+    assert hc95["oracle_accept_NRMSE"] == 0.08
+    assert hc95["oracle_nonreject_RMSE"] == 11.2
+    assert hc95["oracle_nonreject_NRMSE"] == 0.09
 
     report = _report([], rows)
     assert "Actual Accepted RMSE" in report
     assert "Actual Nonreject NRMSE" in report
     assert "Oracle Accepted RMSE" in report
     assert "Oracle Nonreject NRMSE" in report
+    assert "forced-true-class routing diagnostic under frozen QC masks" in report
+
+
+def test_formal_qc_flattening_requires_all_workpoints() -> None:
+    with pytest.raises(ValueError, match="missing QC workpoints"):
+        flatten_operational_qc("B5", {"HC95": {}})
+
+
+def test_qc_oracle_source_manifest_requires_and_hashes_extension_files(
+    tmp_path: Path,
+) -> None:
+    required = (
+        "h8_no_rescue/target_predictions_plus_source_preds.csv",
+        "h8_no_rescue/target_predictions_plus_source_preds_oracle_route.csv",
+        "high_coverage_qc/manifest.json",
+        "high_coverage_qc/operational_summary.json",
+        "high_coverage_qc/risk_policy.json",
+        "high_coverage_qc/risk_selection.json",
+        "high_coverage_qc/test_full_records.csv",
+        "high_coverage_qc/test_hc95_records.csv",
+        "high_coverage_qc/test_hc90_records.csv",
+    )
+    for relative in required:
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(relative, encoding="utf-8")
+
+    result = collect_qc_oracle_sources(tmp_path)
+
+    assert set(result) == set(required)
+    assert all(len(item["sha256"]) == 64 for item in result.values())
+    (tmp_path / required[1]).unlink()
+    with pytest.raises(FileNotFoundError, match="oracle_route"):
+        collect_qc_oracle_sources(tmp_path)

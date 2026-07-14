@@ -13,6 +13,18 @@ from typing import Any, Iterable, Sequence
 MODES = tuple(f"R{index}" for index in range(8))
 SCOPES = ("S_ALL", "S_CC", "S_CW", "gas_0", "gas_1", "gas_2", "gas_3")
 METRICS = ("RMSE", "NRMSE", "MAE", "P90AE")
+QC_WORKPOINTS = ("FULL", "HC95", "HC90")
+QC_ORACLE_EXTENSION_FILES = (
+    "h8_no_rescue/target_predictions_plus_source_preds.csv",
+    "h8_no_rescue/target_predictions_plus_source_preds_oracle_route.csv",
+    "high_coverage_qc/manifest.json",
+    "high_coverage_qc/operational_summary.json",
+    "high_coverage_qc/risk_policy.json",
+    "high_coverage_qc/risk_selection.json",
+    "high_coverage_qc/test_full_records.csv",
+    "high_coverage_qc/test_hc95_records.csv",
+    "high_coverage_qc/test_hc90_records.csv",
+)
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -36,6 +48,20 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def collect_qc_oracle_sources(root: Path) -> dict[str, dict[str, Any]]:
+    sources: dict[str, dict[str, Any]] = {}
+    for relative in QC_ORACLE_EXTENSION_FILES:
+        path = root / relative
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        sources[relative] = {
+            "path": str(path),
+            "sha256": _sha256(path),
+            "bytes": path.stat().st_size,
+        }
+    return sources
 
 
 def validate_ladder_summary(rows: Sequence[dict[str, Any]], classifier_id: str) -> None:
@@ -69,10 +95,11 @@ def flatten_operational_qc(
     classifier_id: str,
     operational: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
+    missing = [workpoint for workpoint in QC_WORKPOINTS if workpoint not in operational]
+    if missing:
+        raise ValueError(f"{classifier_id}: missing QC workpoints: {missing}")
     output: list[dict[str, Any]] = []
-    for workpoint in ("FULL", "HC95", "HC90"):
-        if workpoint not in operational:
-            continue
+    for workpoint in QC_WORKPOINTS:
         item = operational[workpoint]
         accepted = item["accept_metrics"]
         nonreject = item["nonreject_metrics"]
@@ -117,6 +144,7 @@ def _report(ladder: Sequence[dict[str, Any]], qc: Sequence[dict[str, Any]]) -> s
         "",
         "All model fitting and policy fitting represented here ran on Alibaba Cloud ECS.",
         "R7 is an offline per-row oracle and is not deployment-visible.",
+        "QC oracle columns are an offline forced-true-class routing diagnostic under frozen QC masks; they retain the actual-route accept/review/reject decisions and are not deployable performance.",
         "",
         "## Coverage-1 Regression",
         "",
@@ -154,6 +182,7 @@ def main() -> int:
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--classifiers", default="A6,B5")
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--code-revision", default="unrecorded")
     args = parser.parse_args()
     classifier_ids = [item.strip() for item in args.classifiers.split(",") if item.strip()]
     ladder_rows: list[dict[str, Any]] = []
@@ -185,6 +214,7 @@ def main() -> int:
             "qc_sha256": _sha256(qc_path),
             "suite_manifest": str(suite_path),
             "suite_manifest_sha256": _sha256(suite_path),
+            "qc_oracle_extension": collect_qc_oracle_sources(root),
         }
     args.output_dir.mkdir(parents=True, exist_ok=True)
     _write_csv(args.output_dir / "r0_r7_comparison.csv", ladder_rows)
@@ -193,11 +223,19 @@ def main() -> int:
         _report(ladder_rows, qc_rows), encoding="utf-8"
     )
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "protocol": {"source_clients": [1, 2], "target_clients": [5]},
         "classifiers": classifier_ids,
         "training_location": "Alibaba Cloud ECS",
+        "code_revision": args.code_revision,
         "ladder_contract": {"modes": list(MODES), "scopes": list(SCOPES)},
+        "qc_oracle_contract": {
+            "scope": "offline forced-true-class routing diagnostic under frozen QC masks",
+            "qc_masks": "actual-route accept/review/reject decisions",
+            "uses_test_truth_at_runtime": True,
+            "workpoints": list(QC_WORKPOINTS),
+            "expected_test_rows": 1360,
+        },
         "sources": sources,
     }
     (args.output_dir / "manifest.json").write_text(

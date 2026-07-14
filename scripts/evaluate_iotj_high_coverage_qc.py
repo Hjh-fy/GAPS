@@ -370,22 +370,17 @@ def _regression_metrics(
     truth = np.asarray([_to_float(row.get("true_ppm"), np.nan) for row in selected])
     pred = np.asarray([_to_float(row.get(pred_key), np.nan) for row in selected])
     classes = np.asarray([_to_int(row.get("true_class")) for row in selected])
-    valid = np.isfinite(truth) & np.isfinite(pred)
-    truth = truth[valid]
-    pred = pred[valid]
-    classes = classes[valid]
-    if truth.size == 0:
-        return {
-            "N": 0,
-            "RMSE": None,
-            "MAE": None,
-            "NRMSE": None,
-            "P90AE": None,
-            "Bias": None,
-            "R2": None,
-        }
+    invalid_values = np.flatnonzero(~np.isfinite(truth) | ~np.isfinite(pred))
+    if invalid_values.size:
+        raise ValueError(
+            f"non-finite regression value for {pred_key} at row indices "
+            f"{invalid_values[:10].tolist()}"
+        )
+    unknown_classes = sorted(set(int(value) for value in classes) - set(CLASS_RANGES))
+    if unknown_classes:
+        raise ValueError(f"unknown true_class values: {unknown_classes}")
     error = pred - truth
-    ranges = np.asarray([CLASS_RANGES.get(int(cls), 1.0) for cls in classes])
+    ranges = np.asarray([CLASS_RANGES[int(cls)] for cls in classes])
     ss_tot = float(np.sum((truth - truth.mean()) ** 2))
     return {
         "N": int(truth.size),
@@ -444,6 +439,7 @@ def evaluate_workpoint(
     normalized_error = np.abs(pred - truth) / np.maximum(ranges, 1e-12)
     high_error = np.isfinite(normalized_error) & (normalized_error >= 0.10)
     class_correct = ~route_wrong
+    full_metrics = _regression_metrics(selected, pred_key)
 
     def take(mask: np.ndarray) -> list[dict[str, Any]]:
         return [row for row, keep in zip(selected, mask.tolist()) if keep]
@@ -478,7 +474,7 @@ def evaluate_workpoint(
         "review_rate": float(review_mask.mean()) if total else 0.0,
         "reject_rate": float(reject_mask.mean()) if total else 0.0,
         "nonreject_coverage": float(nonreject_mask.mean()) if total else 0.0,
-        "full_metrics": _regression_metrics(selected, pred_key),
+        "full_metrics": full_metrics,
         "accept_metrics": _regression_metrics(take(accept_mask), pred_key),
         "nonreject_metrics": _regression_metrics(take(nonreject_mask), pred_key),
         "review_metrics": _regression_metrics(take(review_mask), pred_key),

@@ -45,6 +45,13 @@ from run_source_lightweight_regression_head_ablation import (
 )
 
 
+SOURCE_PRED_KEYS = (
+    "H1_source_ridge_ppm",
+    "H2_source_per_gas_mlp_ppm",
+    "H3_source_shared_mlp_ppm",
+)
+
+
 def add_pred_features(rows: list[dict[str, Any]], pred_keys: list[str]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for row in rows:
@@ -64,9 +71,46 @@ def force_oracle_routes(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
         true_class = inum(item.get("true_class"), -1)
         if true_class not in CLASS_NAMES:
             raise ValueError(f"invalid true_class for oracle route: {true_class}")
+        actual_route = inum(item.get("route_class", item.get("pred_class")), -1)
+        item["actual_route_class"] = actual_route
+        item["actual_route_cls"] = inum(item.get("route_cls"), actual_route)
+        item["actual_route_gas"] = item.get(
+            "route_gas", CLASS_NAMES.get(actual_route, "unknown")
+        )
+        item["actual_route_correct"] = inum(
+            item.get("route_correct"), int(actual_route == true_class)
+        )
+        item["actual_route_source"] = item.get("route_source", "predicted")
         item["route_class"] = true_class
+        item["route_cls"] = true_class
+        item["route_gas"] = CLASS_NAMES[true_class]
+        item["route_correct"] = 1
+        item["route_source"] = "oracle_true_class"
+        item["oracle_route_diagnostic"] = 1
+        item["oracle_route_uses_test_truth"] = 1
+        item["oracle_qc_mask_source"] = "actual_route"
         output.append(item)
     return output
+
+
+def apply_oracle_h8_predictions(
+    rows: Sequence[dict[str, Any]],
+    ridge_models: dict[int, Any],
+    mlp_models: dict[int, Any],
+    shared_model: Any,
+    target_models: dict[tuple[str, int], Any],
+) -> list[dict[str, Any]]:
+    """Re-route every H8 head by true class for an offline diagnostic stream."""
+    oracle_rows = force_oracle_routes(rows)
+    oracle_with_source = attach_source_predictions(
+        oracle_rows, ridge_models, mlp_models, shared_model
+    )
+    oracle_augmented = add_pred_features(oracle_with_source, list(SOURCE_PRED_KEYS))
+    return apply_client_models(
+        oracle_augmented,
+        target_models,
+        "target_ridge_plus_source_preds_oracle_route",
+    )
 
 
 def fit_source_heads(
@@ -331,7 +375,7 @@ def main() -> None:
     target_cal_with_src = attach_source_predictions(target_cal, ridge_models, mlp_models, shared_model)
     target_cal_route_with_src = attach_source_predictions(target_cal_route, ridge_models, mlp_models, shared_model)
     target_test_with_src = attach_source_predictions(target_test, ridge_models, mlp_models, shared_model)
-    pred_keys = ["H1_source_ridge_ppm", "H2_source_per_gas_mlp_ppm", "H3_source_shared_mlp_ppm"]
+    pred_keys = list(SOURCE_PRED_KEYS)
     target_cal_aug = add_pred_features(target_cal_with_src, pred_keys)
     target_cal_route_aug = add_pred_features(target_cal_route_with_src, pred_keys)
     target_test_aug = add_pred_features(target_test_with_src, pred_keys)
@@ -403,15 +447,12 @@ def main() -> None:
         target_rich,
         "target_ridge_rich_only_ppm",
     )
-    target_test_oracle = force_oracle_routes(target_test)
-    target_test_oracle_with_src = attach_source_predictions(
-        target_test_oracle, ridge_models, mlp_models, shared_model
-    )
-    target_test_oracle_aug = add_pred_features(target_test_oracle_with_src, pred_keys)
-    target_oracle_aug = apply_client_models(
-        target_test_oracle_aug,
+    target_oracle_aug = apply_oracle_h8_predictions(
+        target_test,
+        ridge_models,
+        mlp_models,
+        shared_model,
         aug_models,
-        "target_ridge_plus_source_preds_oracle_route",
     )
     validation_aug = attach_prediction_column(
         validation_aug,

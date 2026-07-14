@@ -215,6 +215,36 @@ def test_workpoint_reports_nonreject_and_oracle_metrics() -> None:
     assert report["oracle_nonreject_metrics"]["RMSE"] == pytest.approx((5.0 / 2.0) ** 0.5)
 
 
+@pytest.mark.parametrize(
+    ("row", "message"),
+    [
+        (
+            {
+                "true_class": 0,
+                "true_ppm": 10.0,
+                "pred_ppm": float("nan"),
+                "qc_decision": "accept",
+            },
+            "non-finite regression value",
+        ),
+        (
+            {
+                "true_class": 9,
+                "true_ppm": 10.0,
+                "pred_ppm": 11.0,
+                "qc_decision": "accept",
+            },
+            "unknown true_class",
+        ),
+    ],
+)
+def test_workpoint_metrics_fail_closed_on_invalid_regression_rows(
+    row: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        evaluate_workpoint([row], "pred_ppm", n_random=0)
+
+
 def test_workpoint_rejects_invalid_qc_decision_before_metrics() -> None:
     rows = [
         {"qc_decision": "hold", "true_class": 0, "pred_class": 0, "true_ppm": 10.0, "pred_ppm": 10.0},
