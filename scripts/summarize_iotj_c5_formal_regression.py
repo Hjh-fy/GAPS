@@ -75,6 +75,9 @@ def flatten_operational_qc(
             continue
         item = operational[workpoint]
         accepted = item["accept_metrics"]
+        nonreject = item["nonreject_metrics"]
+        oracle_accept = item["oracle_accept_metrics"]
+        oracle_nonreject = item["oracle_nonreject_metrics"]
         random_control = item["random_control"]
         output.append(
             {
@@ -82,6 +85,7 @@ def flatten_operational_qc(
                 "workpoint": workpoint,
                 "N": item["N"],
                 "accept_N": item["accept_N"],
+                "nonreject_N": item["nonreject_N"],
                 "review_N": item["review_N"],
                 "reject_N": item["reject_N"],
                 "automatic_yield": item["automatic_yield"],
@@ -90,6 +94,12 @@ def flatten_operational_qc(
                 "accept_NRMSE": accepted["NRMSE"],
                 "accept_MAE": accepted["MAE"],
                 "accept_P90AE": accepted["P90AE"],
+                "nonreject_RMSE": nonreject["RMSE"],
+                "nonreject_NRMSE": nonreject["NRMSE"],
+                "oracle_accept_RMSE": oracle_accept["RMSE"],
+                "oracle_accept_NRMSE": oracle_accept["NRMSE"],
+                "oracle_nonreject_RMSE": oracle_nonreject["RMSE"],
+                "oracle_nonreject_NRMSE": oracle_nonreject["NRMSE"],
                 "route_wrong_recall": item["route_wrong_recall"],
                 "high_error_recall": item["high_error_recall"],
                 "class_correct_false_flag_rate": item["class_correct_false_flag_rate"],
@@ -126,13 +136,13 @@ def _report(ladder: Sequence[dict[str, Any]], qc: Sequence[dict[str, Any]]) -> s
             "",
             "## Operational QC",
             "",
-            "| Classifier | Workpoint | Accept/Review/Reject | Yield | Nonreject | Accept RMSE | Route-error recall | High-error recall | Random RMSE |",
-            "|---|---|---:|---:|---:|---:|---:|---:|---:|",
+            "| Classifier | Workpoint | Accept/Review/Reject | Yield | Nonreject | Actual Accepted RMSE | Actual Accepted NRMSE | Actual Nonreject RMSE | Actual Nonreject NRMSE | Oracle Accepted RMSE | Oracle Accepted NRMSE | Oracle Nonreject RMSE | Oracle Nonreject NRMSE | Route-error recall | High-error recall | Random RMSE |",
+            "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
     for row in qc:
         lines.append(
-            "| {classifier_id} | {workpoint} | {accept_N}/{review_N}/{reject_N} | {automatic_yield:.4f} | {nonreject_coverage:.4f} | {accept_RMSE:.4f} | {route_wrong_recall:.4f} | {high_error_recall:.4f} | {random_accept_RMSE_mean:.4f} |".format(
+            "| {classifier_id} | {workpoint} | {accept_N}/{review_N}/{reject_N} | {automatic_yield:.4f} | {nonreject_coverage:.4f} | {accept_RMSE:.4f} | {accept_NRMSE:.4f} | {nonreject_RMSE:.4f} | {nonreject_NRMSE:.4f} | {oracle_accept_RMSE:.4f} | {oracle_accept_NRMSE:.4f} | {oracle_nonreject_RMSE:.4f} | {oracle_nonreject_NRMSE:.4f} | {route_wrong_recall:.4f} | {high_error_recall:.4f} | {random_accept_RMSE_mean:.4f} |".format(
                 **row
             )
         )

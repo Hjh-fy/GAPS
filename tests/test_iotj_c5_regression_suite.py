@@ -21,6 +21,7 @@ from scripts.run_iotj_c5_regression_cloud import (
 )
 from run_source_augmented_target_ridge_eval import attach_prediction_column, force_oracle_routes
 from scripts.summarize_iotj_c5_formal_regression import (
+    _report,
     flatten_operational_qc,
     validate_ladder_summary,
 )
@@ -112,6 +113,10 @@ def test_regression_suite_commands_run_inputs_h23_h8_and_qc_in_order(tmp_path: P
     assert commands[2][1].endswith("run_source_augmented_target_ridge_eval.py")
     assert "--disable-c4-rescue" in commands[2]
     assert commands[3][1].endswith("evaluate_iotj_high_coverage_qc.py")
+    oracle_h8_test = commands[3][commands[3].index("--h8-test-oracle") + 1]
+    assert Path(oracle_h8_test).as_posix().endswith(
+        "h8_no_rescue/target_predictions_plus_source_preds_oracle_route.csv"
+    )
     assert commands[3][commands[3].index("--n-random") + 1] == "1000"
     assert commands[4][1].endswith("assemble_iotj_c5_regression_ladder.py")
     risk_selection = Path(commands[4][commands[4].index("--risk-selection") + 1])
@@ -336,6 +341,7 @@ def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -
         "HC95": {
             "N": 1360,
             "accept_N": 1309,
+            "nonreject_N": 1342,
             "review_N": 33,
             "reject_N": 18,
             "automatic_yield": 1309 / 1360,
@@ -344,6 +350,9 @@ def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -
             "high_error_recall": 0.2,
             "class_correct_false_flag_rate": 0.03,
             "accept_metrics": {"RMSE": 15.9, "NRMSE": 0.12, "MAE": 7.2, "P90AE": 16.4},
+            "nonreject_metrics": {"RMSE": 16.2, "NRMSE": 0.13, "MAE": 7.5, "P90AE": 16.8},
+            "oracle_accept_metrics": {"RMSE": 10.9, "NRMSE": 0.08, "MAE": 5.2, "P90AE": 11.4},
+            "oracle_nonreject_metrics": {"RMSE": 11.2, "NRMSE": 0.09, "MAE": 5.5, "P90AE": 11.8},
             "random_control": {
                 "accept_RMSE": {"mean": 17.4},
                 "route_wrong_recall": {"mean": 0.04},
@@ -358,3 +367,16 @@ def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -
     assert rows[0]["workpoint"] == "HC95"
     assert rows[0]["automatic_yield"] == pytest.approx(1309 / 1360)
     assert rows[0]["random_accept_RMSE_mean"] == 17.4
+    assert rows[0]["nonreject_N"] == 1342
+    assert rows[0]["nonreject_RMSE"] == 16.2
+    assert rows[0]["nonreject_NRMSE"] == 0.13
+    assert rows[0]["oracle_accept_RMSE"] == 10.9
+    assert rows[0]["oracle_accept_NRMSE"] == 0.08
+    assert rows[0]["oracle_nonreject_RMSE"] == 11.2
+    assert rows[0]["oracle_nonreject_NRMSE"] == 0.09
+
+    report = _report([], rows)
+    assert "Actual Accepted RMSE" in report
+    assert "Actual Nonreject NRMSE" in report
+    assert "Oracle Accepted RMSE" in report
+    assert "Oracle Nonreject NRMSE" in report

@@ -88,6 +88,8 @@ def build_suite_commands(
             str(h8 / "target_validation_plus_source_preds.csv"),
             "--h8-test",
             str(h8 / "target_predictions_plus_source_preds.csv"),
+            "--h8-test-oracle",
+            str(h8 / "target_predictions_plus_source_preds_oracle_route.csv"),
             "--backbone-calibration",
             str(backbone_calibration),
             "--backbone-test",
