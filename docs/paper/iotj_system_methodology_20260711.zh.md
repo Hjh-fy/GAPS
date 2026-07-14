@@ -736,6 +736,17 @@ q_{full}=\frac{q_{conf}+q_{feat}+q_{dis}}{3}.
 
 FULL 全部 accept。HC95 的 accept/reject 阈值分别取 calibration-validation 风险的 0.95/0.9875 分位数；HC90 分别取 0.90/0.975 分位数。测试集只报告实际 accept/review/reject 数量与覆盖率，不强制达到名义比例。固定测试覆盖率曲线仅用于排序诊断，不属于可部署阈值。
 
+令测试窗口总数为 $N$，则自动输出收益率和非拒绝覆盖率分别为
+
+\[
+Y_{auto}=\frac{N_{accept}}{N},\qquad
+C_{nonreject}=\frac{N_{accept}+N_{review}}{N}.
+\]
+
+Accepted 指标衡量无需人工介入即可自动输出的窗口；Nonreject 指标在同一策略下合并 accept 与 review，衡量仅剔除明确 reject 后仍可保留的总体性能。两种口径都必须同时给出样本数、RMSE 和 NRMSE，不能只报告误差而隐藏覆盖率。
+
+为分离分类路由误差与回归器数值误差，另构造仅用于诊断的 oracle-route 流：保留全部原始窗口和 QC 决策不变，只把回归路由设为 $\hat c_i^{oracle}=c_i$ 后重新计算 H8 预测。它不同于 $S_{CC}$：$S_{CC}$ 删除分类错误窗口，而 oracle-route 保留并重新路由这些窗口。因此 oracle-route 只表示“分类路由完全正确时”的离线上界，不可作为部署性能。
+
 ### 18.3 当前结果边界
 
 预声明的 A6/B5 seed-42 对比支持“分类路由质量决定端到端回归尾部”的解释：A6 与 B5 在 S_CC 下的 R4 RMSE 都约为 11.389 ppm，但 B5 的分类错误从 27 条减少到 15 条，使 S_ALL R4 RMSE 从 28.014 降至 17.447 ppm。B5-HC95 实际自动覆盖率 96.25%，accepted RMSE 15.908 ppm，并标记 7/15 个分类错误。
@@ -743,3 +754,5 @@ FULL 全部 accept。HC95 的 accept/reject 阈值分别取 calibration-validati
 B2 是在 B1-B5 分类 test 排名打开后追加的同流程下游重放，因此只能作为 post-screen 探索性证据。B2 有 10 条分类错误；固定 H8（R4）的 S_ALL RMSE 为 14.656 ppm，S_CC N=1350、RMSE 为 11.329 ppm。它与 B5 的 S_CC 差异仅 0.060 ppm，说明主要收益仍来自更少且破坏性更低的错路由，而不是正确路由回归器本身发生显著变化。R5 和 R6 分别为 15.008/15.495 ppm，均未超过 R4，故当前点估计应保留固定 H8；R7 的 12.639 ppm 只表示不可部署的专家选择上界。
 
 B2-HC95 的 accept/review/reject 为 1301/35/24，实际自动覆盖率 95.66%，accepted RMSE 12.673 ppm；它标记 7/10 个分类错误和 23/132 个高误差窗口，而匹配随机拒绝的平均召回率分别为 4.02% 和 4.26%。这支持 QC 作为高覆盖率风险分流层，但不表示 QC 修复了被 review/reject 的预测。所有 B2/B5 优劣仍需种子 43-46 的配对确认，不得写成统计显著结论。
+
+扩展后的 FULL oracle-route 在 A6/B5/B2 上均使用全部 1360 条 test 窗口，并得到相同的 RMSE/NRMSE `11.9082/0.0690`。相同结果验证了三组实验共享同一套 H8 回归训练，覆盖率 1 下实际路由 RMSE `28.0144/17.4473/14.6564` 的差异主要来自分类路由。B2-HC95 的 Nonreject N 为 1336（覆盖率 98.24%），实际路由 RMSE/NRMSE 为 `12.8614/0.0858`；Accepted N 为 1301（自动收益率 95.66%），对应 `12.6729/0.0857`。因此论文应同时呈现自动输出线与人工复核线，而不能把 review 隐含并入“拒绝”。
