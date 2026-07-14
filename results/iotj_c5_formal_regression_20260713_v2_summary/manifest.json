@@ -1,0 +1,218 @@
+{
+  "schema_version": 2,
+  "protocol": {
+    "source_clients": [
+      1,
+      2
+    ],
+    "target_clients": [
+      5
+    ]
+  },
+  "classifiers": [
+    "A6",
+    "B5",
+    "B2"
+  ],
+  "training_location": "Alibaba Cloud ECS",
+  "code_revision": "7106e5c",
+  "ladder_contract": {
+    "modes": [
+      "R0",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "R5",
+      "R6",
+      "R7"
+    ],
+    "scopes": [
+      "S_ALL",
+      "S_CC",
+      "S_CW",
+      "gas_0",
+      "gas_1",
+      "gas_2",
+      "gas_3"
+    ]
+  },
+  "qc_oracle_contract": {
+    "scope": "offline forced-true-class routing diagnostic under frozen QC masks",
+    "qc_masks": "actual-route accept/review/reject decisions",
+    "uses_test_truth_at_runtime": true,
+    "workpoints": [
+      "FULL",
+      "HC95",
+      "HC90"
+    ],
+    "expected_test_rows": 1360
+  },
+  "sources": {
+    "A6": {
+      "ladder": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\r0_r7\\r0_r7_summary.csv",
+      "ladder_sha256": "9d053b8c224265ac8a003678f097a9d0e63e8b6b385a11a8c247bba176256652",
+      "qc": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\operational_summary.json",
+      "qc_sha256": "99838c114a60fa8b41bdce5d5339f601cf3fce67ecf6c5f1542fbf0441c7e615",
+      "suite_manifest": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\suite_manifest.json",
+      "suite_manifest_sha256": "d61c11cd94d67b32c269fd97696f6ea53a9787ba3ee55830dbc5a243c233c99d",
+      "qc_oracle_extension": {
+        "h8_no_rescue/target_predictions_plus_source_preds.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\h8_no_rescue\\target_predictions_plus_source_preds.csv",
+          "sha256": "3c460444979c7bcac8810273aafcbaa0c49ac6bbbed739217201fd8e4f230279",
+          "bytes": 1018756
+        },
+        "h8_no_rescue/target_predictions_plus_source_preds_oracle_route.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\h8_no_rescue\\target_predictions_plus_source_preds_oracle_route.csv",
+          "sha256": "7015c73877a2673f515f836758c5d5e9be52b4b536efcdceb7d86b327ef07ed3",
+          "bytes": 1061513
+        },
+        "high_coverage_qc/manifest.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\manifest.json",
+          "sha256": "0c1d5e41e041349936ed102309a31b98fd8f5de52a7e04d3bfa70eb1f4b8422a",
+          "bytes": 1650
+        },
+        "high_coverage_qc/operational_summary.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\operational_summary.json",
+          "sha256": "99838c114a60fa8b41bdce5d5339f601cf3fce67ecf6c5f1542fbf0441c7e615",
+          "bytes": 8335
+        },
+        "high_coverage_qc/risk_policy.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\risk_policy.json",
+          "sha256": "3c0c4f3988c1cbb2d390ed8297cc34734fcceeae721b127a732e41ddd96c47a5",
+          "bytes": 679
+        },
+        "high_coverage_qc/risk_selection.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\risk_selection.json",
+          "sha256": "06d26a1ffb5cd7435f85d231faf9203c341143d63cec0914c9daeee467414dfb",
+          "bytes": 16792
+        },
+        "high_coverage_qc/test_full_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\test_full_records.csv",
+          "sha256": "0f8a4aacd5686b050e8c84d8931e640e73da02772b95808d7afa8e42762d453a",
+          "bytes": 11955508
+        },
+        "high_coverage_qc/test_hc95_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\test_hc95_records.csv",
+          "sha256": "02641880cb33dbdef124fbee7c3ed906f3e0334c0803b793fe862148f5e78fe9",
+          "bytes": 11955508
+        },
+        "high_coverage_qc/test_hc90_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\A6\\high_coverage_qc\\test_hc90_records.csv",
+          "sha256": "f92ca62ca3c042ae2a99850f7378692030adade3a638ec42ba74c2457334241e",
+          "bytes": 11955508
+        }
+      }
+    },
+    "B5": {
+      "ladder": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\r0_r7\\r0_r7_summary.csv",
+      "ladder_sha256": "cdeb75a5eef0dcdd819280bc350655be178638232d529056286b367132e0c7ba",
+      "qc": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\operational_summary.json",
+      "qc_sha256": "15c6ba9fd7762f63b4c7b734e6e7859668d5004cc17ba67c2e210993bdf4515c",
+      "suite_manifest": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\suite_manifest.json",
+      "suite_manifest_sha256": "28d0a6a12f124a2f62daebf39eda1a72bc5dc379a8639191497cad520da3a7d2",
+      "qc_oracle_extension": {
+        "h8_no_rescue/target_predictions_plus_source_preds.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\h8_no_rescue\\target_predictions_plus_source_preds.csv",
+          "sha256": "d521001f038380060db202c16fc60dfbe42e7f2215dfc2063a8c38b18696c8b2",
+          "bytes": 997435
+        },
+        "h8_no_rescue/target_predictions_plus_source_preds_oracle_route.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\h8_no_rescue\\target_predictions_plus_source_preds_oracle_route.csv",
+          "sha256": "923f0510e46e151a3873467ad3331d340402e7c5d2c4e305f06008c8d272921e",
+          "bytes": 1039978
+        },
+        "high_coverage_qc/manifest.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\manifest.json",
+          "sha256": "abafe3d9c8a3f60cd00d0fe6c85a1677152ce21010439e7e33f2e66938ec8043",
+          "bytes": 1650
+        },
+        "high_coverage_qc/operational_summary.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\operational_summary.json",
+          "sha256": "15c6ba9fd7762f63b4c7b734e6e7859668d5004cc17ba67c2e210993bdf4515c",
+          "bytes": 8327
+        },
+        "high_coverage_qc/risk_policy.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\risk_policy.json",
+          "sha256": "b7bf16e84c68e150af9ef9dd5722f017bd073793ddc51cc323a8972ecbecbbfe",
+          "bytes": 679
+        },
+        "high_coverage_qc/risk_selection.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\risk_selection.json",
+          "sha256": "e1bccb2a2a96a08b0d02e04201bf13989c1b01c425fbc1da151404c7c285011f",
+          "bytes": 16812
+        },
+        "high_coverage_qc/test_full_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\test_full_records.csv",
+          "sha256": "fe72f3109f22df4010a1b1eeb21cdc913a2a416bb36c3bb2dd3a3edde1447aee",
+          "bytes": 11912439
+        },
+        "high_coverage_qc/test_hc95_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\test_hc95_records.csv",
+          "sha256": "bcabe101b4ba2c75282a5ae861c2bc59102eab29f70a3a9fac34a9b74122fd72",
+          "bytes": 11912439
+        },
+        "high_coverage_qc/test_hc90_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B5\\high_coverage_qc\\test_hc90_records.csv",
+          "sha256": "ff464bd31bb15ec34f0867dc968d28a86a43f3c3846353c6caa71d31f90357e1",
+          "bytes": 11912439
+        }
+      }
+    },
+    "B2": {
+      "ladder": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\r0_r7\\r0_r7_summary.csv",
+      "ladder_sha256": "1119f4cbf6476c58baa15975e12d4ee128a883afd17a0a6a13076b4750d5c5e6",
+      "qc": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\operational_summary.json",
+      "qc_sha256": "2dbada60bb74305011a6b9d830002b1863ee9095431048f3883d6acb53384d0e",
+      "suite_manifest": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\suite_manifest.json",
+      "suite_manifest_sha256": "ddfa40d6949c05ceaa918ee6aa9a74399561c23bf29705f566dd074063e14718",
+      "qc_oracle_extension": {
+        "h8_no_rescue/target_predictions_plus_source_preds.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\h8_no_rescue\\target_predictions_plus_source_preds.csv",
+          "sha256": "195fc381608ffcb6203cd19d920dcee13c35a7e2460fe5177f119680ae1bbab1",
+          "bytes": 1003227
+        },
+        "h8_no_rescue/target_predictions_plus_source_preds_oracle_route.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\h8_no_rescue\\target_predictions_plus_source_preds_oracle_route.csv",
+          "sha256": "3c464ee02c876d667f3d4b922d39aef82e5e1c0ff560459b1937d72877dfd2b0",
+          "bytes": 1045515
+        },
+        "high_coverage_qc/manifest.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\manifest.json",
+          "sha256": "356c932ff50b5af7ab82d5d6ff61924d8e7656cd9ca8aa181aefe881a91a2a1c",
+          "bytes": 1650
+        },
+        "high_coverage_qc/operational_summary.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\operational_summary.json",
+          "sha256": "2dbada60bb74305011a6b9d830002b1863ee9095431048f3883d6acb53384d0e",
+          "bytes": 8237
+        },
+        "high_coverage_qc/risk_policy.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\risk_policy.json",
+          "sha256": "a7981340c59706a6c84ec9800730732d0cbb3965423dbbfd922c0821e42ba16c",
+          "bytes": 679
+        },
+        "high_coverage_qc/risk_selection.json": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\risk_selection.json",
+          "sha256": "d1932eeb33eb6a755a2e032bfb29628b0bfcaba5e81a8481bc08a472a131dab1",
+          "bytes": 16645
+        },
+        "high_coverage_qc/test_full_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\test_full_records.csv",
+          "sha256": "f851ca2ed07613ddd5d7991933868181969351a7b0f409bc7f61f104e6beeb29",
+          "bytes": 11918179
+        },
+        "high_coverage_qc/test_hc95_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\test_hc95_records.csv",
+          "sha256": "cabf4012509eca0fec2a294f0bd16de10b1b3944f6a88c960e4243e1d27c2df6",
+          "bytes": 11918179
+        },
+        "high_coverage_qc/test_hc90_records.csv": {
+          "path": "results\\iotj_c5_formal_regression_20260713_v2\\B2\\high_coverage_qc\\test_hc90_records.csv",
+          "sha256": "deba0db938c74468f783b8eace96c5b51b24324495a6adf45e568baa395a879b",
+          "bytes": 11918179
+        }
+      }
+    }
+  }
+}

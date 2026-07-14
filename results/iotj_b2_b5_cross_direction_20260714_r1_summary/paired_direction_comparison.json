@@ -1,0 +1,86 @@
+{
+  "N": 680,
+  "b2_accuracy": 0.9779411764705882,
+  "b5_accuracy": 0.9882352941176471,
+  "accuracy_delta_pp": -1.0294117647058898,
+  "accuracy_delta_pp_ci_low": -2.0588235294117685,
+  "accuracy_delta_pp_ci_high": -0.14705882352941124,
+  "b2_macro_f1": 0.9779838787750063,
+  "b5_macro_f1": 0.9882480798560691,
+  "macro_f1_delta_pp": -1.0264201081062851,
+  "macro_f1_delta_pp_ci_low": -2.0482999704430913,
+  "macro_f1_delta_pp_ci_high": -0.14447462880291168,
+  "b2_worst_recall": 0.9588235294117647,
+  "b5_worst_recall": 0.9823529411764705,
+  "worst_recall_delta_pp": -2.35294117647058,
+  "b2_nll": 0.2460447794837937,
+  "b5_nll": 0.11725318316793436,
+  "nll_delta": 0.12879159631585935,
+  "b2_ece": 0.023848368753405264,
+  "b5_ece": 0.011419312130002407,
+  "ece_delta": 0.012429056623402856,
+  "b2_only_correct": 2,
+  "b5_only_correct": 9,
+  "both_correct": 663,
+  "both_wrong": 6,
+  "mcnemar_exact_p": 0.0654296875,
+  "bootstrap_seed": 20260713,
+  "bootstrap_reps": 2000,
+  "b2_confusion_matrix": [
+    [
+      168,
+      2,
+      0,
+      0
+    ],
+    [
+      4,
+      165,
+      1,
+      0
+    ],
+    [
+      5,
+      2,
+      163,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      169
+    ]
+  ],
+  "b5_confusion_matrix": [
+    [
+      168,
+      1,
+      1,
+      0
+    ],
+    [
+      2,
+      168,
+      0,
+      0
+    ],
+    [
+      0,
+      3,
+      167,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      169
+    ]
+  ],
+  "direction_id": "R1_C5_TO_C1",
+  "seed": 42,
+  "target_client": 1,
+  "decision_margin_pp": 0.5,
+  "decision": "B5_favored"
+}
