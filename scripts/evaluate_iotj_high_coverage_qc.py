@@ -698,7 +698,7 @@ def run_high_coverage_qc(args: argparse.Namespace) -> dict[str, Any]:
         backbone_test,
         split="test",
     )
-    oracle_pred_key = "target_ridge_plus_source_preds_oracle_route"
+    oracle_pred_key = "target_ridge_plus_source_preds_oracle_route_ppm"
     test = attach_oracle_prediction(
         test,
         h8_test_oracle,

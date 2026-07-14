@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import copy
 import subprocess
 import sys
@@ -7,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+import scripts.evaluate_iotj_high_coverage_qc as qc
 from scripts.evaluate_iotj_high_coverage_qc import (
     attach_oracle_prediction,
     apply_workpoint,
@@ -274,6 +276,76 @@ def test_attach_oracle_prediction_rejects_invalid_oracle_rows(
 
     with pytest.raises(ValueError, match=message):
         attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+
+def test_qc_run_consumes_exact_upstream_oracle_ppm_column(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    oracle_key = "target_ridge_plus_source_preds_oracle_route_ppm"
+    validation = [{"client": "C5", "split": "calibration", "sample_index": index} for index in range(80)]
+    test = [{"client": "C5", "split": "test", "sample_index": index} for index in range(1360)]
+    oracle = [
+        {"client": "C5", "split": "test", "sample_index": index, oracle_key: float(index)}
+        for index in range(1360)
+    ]
+    args = argparse.Namespace(
+        output_dir=tmp_path,
+        target_inputs="target_inputs",
+        h23_validation="h23_validation",
+        h23_test="h23_test",
+        h8_validation="h8_validation",
+        h8_test="h8_test",
+        h8_test_oracle="h8_test_oracle",
+        backbone_calibration="backbone_calibration",
+        backbone_test="backbone_test",
+        pred_key="pred_ppm",
+        n_random=0,
+        seed=42,
+    )
+
+    monkeypatch.setattr(qc, "_read_csv", lambda path: oracle if path == "h8_test_oracle" else [])
+    monkeypatch.setattr(qc, "_attach_calibration_features", lambda *_: [{}] * 240)
+    monkeypatch.setattr(
+        qc,
+        "merge_aligned_streams",
+        lambda *_args, split: validation if split == "calibration" else test,
+    )
+    monkeypatch.setattr(qc, "fit_feature_reference", lambda _: {})
+    monkeypatch.setattr(qc, "raw_deployment_risk", lambda *_: {})
+    monkeypatch.setattr(qc, "fit_component_calibrator", lambda _: {})
+    monkeypatch.setattr(qc, "score_deployment_rows", lambda rows, _: list(rows))
+    monkeypatch.setattr(
+        qc,
+        "select_score_family",
+        lambda *_: {"selected_policy": {}, "selected_score": "deployment_risk_full"},
+    )
+    monkeypatch.setattr(qc, "fit_workpoints", lambda *_: {})
+    monkeypatch.setattr(
+        qc,
+        "apply_workpoint",
+        lambda rows, _policy, workpoint: [
+            {**row, "qc_workpoint": workpoint, "qc_decision": "accept"} for row in rows
+        ],
+    )
+    monkeypatch.setattr(
+        qc,
+        "evaluate_workpoint",
+        lambda *_args, **_kwargs: {
+            "accept_N": 1360,
+            "nonreject_N": 1360,
+            "accept_metrics": {},
+            "nonreject_metrics": {},
+            "oracle_accept_metrics": {},
+            "oracle_nonreject_metrics": {},
+        },
+    )
+    monkeypatch.setattr(qc, "evaluate_ranking_curve", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(qc, "_write_csv", lambda *_: None)
+    monkeypatch.setattr(qc, "_write_json", lambda *_: None)
+
+    result = qc.run_high_coverage_qc(args)
+
+    assert result["manifest"]["oracle_pred_key"] == oracle_key
 
 
 def test_score_family_selection_uses_calibration_error_capture() -> None:
