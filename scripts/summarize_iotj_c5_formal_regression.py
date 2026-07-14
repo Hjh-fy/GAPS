@@ -98,9 +98,59 @@ def flatten_operational_qc(
     missing = [workpoint for workpoint in QC_WORKPOINTS if workpoint not in operational]
     if missing:
         raise ValueError(f"{classifier_id}: missing QC workpoints: {missing}")
+    extra = sorted(set(operational) - set(QC_WORKPOINTS))
+    if extra:
+        raise ValueError(f"{classifier_id}: unexpected QC workpoints: {extra}")
     output: list[dict[str, Any]] = []
     for workpoint in QC_WORKPOINTS:
         item = operational[workpoint]
+        total = int(item["N"])
+        if total != 1360:
+            raise ValueError(
+                f"{classifier_id}/{workpoint}: expected N=1360, found {total}"
+            )
+        accept_n = int(item["accept_N"])
+        review_n = int(item["review_N"])
+        reject_n = int(item["reject_N"])
+        nonreject_n = int(item["nonreject_N"])
+        if min(accept_n, review_n, reject_n, nonreject_n) < 0:
+            raise ValueError(f"{classifier_id}/{workpoint}: negative decision count")
+        if accept_n + review_n + reject_n != total:
+            raise ValueError(
+                f"{classifier_id}/{workpoint}: decision counts do not sum to N"
+            )
+        if nonreject_n != accept_n + review_n:
+            raise ValueError(
+                f"{classifier_id}/{workpoint}: nonreject_N does not equal accept_N + review_N"
+            )
+        expected_metric_n = {
+            "full_metrics": total,
+            "accept_metrics": accept_n,
+            "nonreject_metrics": nonreject_n,
+            "review_metrics": review_n,
+            "reject_metrics": reject_n,
+            "oracle_accept_metrics": accept_n,
+            "oracle_nonreject_metrics": nonreject_n,
+        }
+        for metric_key, expected_n in expected_metric_n.items():
+            metric_n = int(item[metric_key]["N"])
+            if metric_n != expected_n:
+                raise ValueError(
+                    f"{classifier_id}/{workpoint}: {metric_key}.N={metric_n}, expected {expected_n}"
+                )
+        expected_yield = accept_n / total
+        if not math.isclose(
+            float(item["automatic_yield"]), expected_yield, rel_tol=0.0, abs_tol=1e-12
+        ):
+            raise ValueError(f"{classifier_id}/{workpoint}: automatic_yield mismatch")
+        expected_nonreject = nonreject_n / total
+        if not math.isclose(
+            float(item["nonreject_coverage"]),
+            expected_nonreject,
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        ):
+            raise ValueError(f"{classifier_id}/{workpoint}: nonreject_coverage mismatch")
         accepted = item["accept_metrics"]
         nonreject = item["nonreject_metrics"]
         oracle_accept = item["oracle_accept_metrics"]

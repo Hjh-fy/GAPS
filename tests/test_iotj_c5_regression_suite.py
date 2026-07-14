@@ -431,10 +431,13 @@ def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -
             "route_wrong_recall": 7 / 15,
             "high_error_recall": 0.2,
             "class_correct_false_flag_rate": 0.03,
-            "accept_metrics": {"RMSE": 15.9, "NRMSE": 0.12, "MAE": 7.2, "P90AE": 16.4},
-            "nonreject_metrics": {"RMSE": 16.2, "NRMSE": 0.13, "MAE": 7.5, "P90AE": 16.8},
-            "oracle_accept_metrics": {"RMSE": 10.9, "NRMSE": 0.08, "MAE": 5.2, "P90AE": 11.4},
-            "oracle_nonreject_metrics": {"RMSE": 11.2, "NRMSE": 0.09, "MAE": 5.5, "P90AE": 11.8},
+            "full_metrics": {"N": 1360, "RMSE": 17.4},
+            "accept_metrics": {"N": 1309, "RMSE": 15.9, "NRMSE": 0.12, "MAE": 7.2, "P90AE": 16.4},
+            "nonreject_metrics": {"N": 1342, "RMSE": 16.2, "NRMSE": 0.13, "MAE": 7.5, "P90AE": 16.8},
+            "review_metrics": {"N": 33, "RMSE": 20.0},
+            "reject_metrics": {"N": 18, "RMSE": 30.0},
+            "oracle_accept_metrics": {"N": 1309, "RMSE": 10.9, "NRMSE": 0.08, "MAE": 5.2, "P90AE": 11.4},
+            "oracle_nonreject_metrics": {"N": 1342, "RMSE": 11.2, "NRMSE": 0.09, "MAE": 5.5, "P90AE": 11.8},
             "random_control": {
                 "accept_RMSE": {"mean": 17.4},
                 "route_wrong_recall": {"mean": 0.04},
@@ -473,6 +476,59 @@ def test_formal_qc_flattening_preserves_realized_coverage_and_random_control() -
 def test_formal_qc_flattening_requires_all_workpoints() -> None:
     with pytest.raises(ValueError, match="missing QC workpoints"):
         flatten_operational_qc("B5", {"HC95": {}})
+
+
+def test_formal_qc_flattening_rejects_extra_workpoints() -> None:
+    operational = {name: {} for name in ("FULL", "HC95", "HC90", "HC80")}
+    with pytest.raises(ValueError, match="unexpected QC workpoints"):
+        flatten_operational_qc("B5", operational)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        (lambda item: item.update(N=7), "expected N=1360"),
+        (lambda item: item.update(reject_N=19), "decision counts do not sum"),
+        (lambda item: item.update(nonreject_N=1300), "nonreject_N"),
+        (
+            lambda item: item["accept_metrics"].update(N=1308),
+            "accept_metrics.N",
+        ),
+        (lambda item: item.update(automatic_yield=0.5), "automatic_yield"),
+    ],
+)
+def test_formal_qc_flattening_validates_counts_and_metric_cardinality(
+    mutation, message: str
+) -> None:
+    base = {
+        "N": 1360,
+        "accept_N": 1309,
+        "review_N": 33,
+        "reject_N": 18,
+        "nonreject_N": 1342,
+        "automatic_yield": 1309 / 1360,
+        "nonreject_coverage": 1342 / 1360,
+        "route_wrong_recall": 0.0,
+        "high_error_recall": 0.0,
+        "class_correct_false_flag_rate": 0.0,
+        "full_metrics": {"N": 1360},
+        "accept_metrics": {"N": 1309, "RMSE": 1.0, "NRMSE": 0.1, "MAE": 1.0, "P90AE": 1.0},
+        "nonreject_metrics": {"N": 1342, "RMSE": 1.0, "NRMSE": 0.1},
+        "review_metrics": {"N": 33},
+        "reject_metrics": {"N": 18},
+        "oracle_accept_metrics": {"N": 1309, "RMSE": 1.0, "NRMSE": 0.1},
+        "oracle_nonreject_metrics": {"N": 1342, "RMSE": 1.0, "NRMSE": 0.1},
+        "random_control": {
+            "accept_RMSE": {"mean": 1.0},
+            "route_wrong_recall": {"mean": 0.0},
+            "high_error_recall": {"mean": 0.0},
+        },
+    }
+    mutation(base)
+    operational = {name: base for name in ("FULL", "HC95", "HC90")}
+
+    with pytest.raises(ValueError, match=message):
+        flatten_operational_qc("B5", operational)
 
 
 def test_qc_oracle_source_manifest_requires_and_hashes_extension_files(
