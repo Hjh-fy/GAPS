@@ -25,6 +25,51 @@ def _row_key(row: dict[str, Any]) -> tuple[str, int]:
     return str(row.get("split")), _to_int(row.get("sample_index"))
 
 
+def _oracle_row_key(row: dict[str, Any]) -> tuple[str, str, int]:
+    client_value = row.get("client")
+    split_value = row.get("split")
+    client = "" if client_value is None else str(client_value).strip()
+    split = "" if split_value is None else str(split_value).strip()
+    sample_index = _to_int(row.get("sample_index"), -1)
+    if not client or not split or sample_index < 0:
+        raise ValueError("oracle row key requires client, split, and non-negative sample_index")
+    return client, split, sample_index
+
+
+def attach_oracle_prediction(
+    rows: Sequence[dict[str, Any]],
+    oracle_rows: Sequence[dict[str, Any]],
+    oracle_source_key: str,
+    oracle_output_key: str,
+) -> list[dict[str, Any]]:
+    """Attach an exactly aligned oracle prediction using client-aware row keys."""
+    by_key: dict[tuple[str, str, int], float] = {}
+    for row in oracle_rows:
+        key = _oracle_row_key(row)
+        if key in by_key:
+            raise ValueError(f"duplicate oracle row: {key}")
+        value = _to_float(row.get(oracle_source_key), np.nan)
+        if not np.isfinite(value):
+            raise ValueError(f"non-finite oracle prediction: {key}")
+        by_key[key] = value
+
+    output: list[dict[str, Any]] = []
+    target_keys: set[tuple[str, str, int]] = set()
+    for row in rows:
+        key = _oracle_row_key(row)
+        if key in target_keys:
+            raise ValueError(f"duplicate target row: {key}")
+        target_keys.add(key)
+        if key not in by_key:
+            raise ValueError(f"missing oracle prediction: {key}")
+        item = dict(row)
+        item[oracle_output_key] = by_key[key]
+        output.append(item)
+    if target_keys != set(by_key):
+        raise ValueError("oracle/test row sets are not identical")
+    return output
+
+
 def _index_rows(
     rows: Sequence[dict[str, Any]], name: str
 ) -> dict[tuple[str, int], dict[str, Any]]:
@@ -370,6 +415,7 @@ def evaluate_workpoint(
     rows: Sequence[dict[str, Any]],
     pred_key: str,
     *,
+    oracle_pred_key: str | None = None,
     n_random: int = 1000,
     seed: int = 42,
 ) -> dict[str, Any]:
@@ -377,11 +423,15 @@ def evaluate_workpoint(
     selected = list(rows)
     total = len(selected)
     statuses = np.asarray(
-        [str(row.get("qc_decision", "reject")) for row in selected], dtype=object
+        [str(row.get("qc_decision")) for row in selected], dtype=object
     )
+    invalid_statuses = sorted(set(statuses.tolist()) - {"accept", "review", "reject"})
+    if invalid_statuses:
+        raise ValueError(f"invalid qc_decision values: {invalid_statuses}")
     accept_mask = statuses == "accept"
     review_mask = statuses == "review"
     reject_mask = statuses == "reject"
+    nonreject_mask = accept_mask | review_mask
     flagged_mask = ~accept_mask
     true_class = np.asarray([_to_int(row.get("true_class")) for row in selected])
     pred_class = np.asarray(
@@ -418,17 +468,19 @@ def evaluate_workpoint(
             float((random_flags & high_error).sum() / max(int(high_error.sum()), 1))
         )
 
-    return {
+    report = {
         "N": total,
         "accept_N": int(accept_mask.sum()),
         "review_N": int(review_mask.sum()),
         "reject_N": int(reject_mask.sum()),
+        "nonreject_N": int(nonreject_mask.sum()),
         "automatic_yield": float(accept_mask.mean()) if total else 0.0,
         "review_rate": float(review_mask.mean()) if total else 0.0,
         "reject_rate": float(reject_mask.mean()) if total else 0.0,
-        "nonreject_coverage": float((accept_mask | review_mask).mean()) if total else 0.0,
+        "nonreject_coverage": float(nonreject_mask.mean()) if total else 0.0,
         "full_metrics": _regression_metrics(selected, pred_key),
         "accept_metrics": _regression_metrics(take(accept_mask), pred_key),
+        "nonreject_metrics": _regression_metrics(take(nonreject_mask), pred_key),
         "review_metrics": _regression_metrics(take(review_mask), pred_key),
         "reject_metrics": _regression_metrics(take(reject_mask), pred_key),
         "route_wrong_total": int(route_wrong.sum()),
@@ -452,6 +504,18 @@ def evaluate_workpoint(
             "high_error_recall": _numeric_summary(random_high_recall),
         },
     }
+    if oracle_pred_key is not None:
+        report.update(
+            {
+                "oracle_accept_metrics": _regression_metrics(
+                    take(accept_mask), oracle_pred_key
+                ),
+                "oracle_nonreject_metrics": _regression_metrics(
+                    take(nonreject_mask), oracle_pred_key
+                ),
+            }
+        )
+    return report
 
 
 def select_score_family(
@@ -612,6 +676,7 @@ def run_high_coverage_qc(args: argparse.Namespace) -> dict[str, Any]:
     h23_test = _read_csv(args.h23_test)
     h8_validation = _read_csv(args.h8_validation)
     h8_test = _read_csv(args.h8_test)
+    h8_test_oracle = _read_csv(args.h8_test_oracle)
     backbone_calibration = _read_csv(args.backbone_calibration)
     backbone_test = _read_csv(args.backbone_test)
 
@@ -632,6 +697,13 @@ def run_high_coverage_qc(args: argparse.Namespace) -> dict[str, Any]:
         h8_test,
         backbone_test,
         split="test",
+    )
+    oracle_pred_key = "target_ridge_plus_source_preds_oracle_route"
+    test = attach_oracle_prediction(
+        test,
+        h8_test_oracle,
+        oracle_pred_key,
+        oracle_pred_key,
     )
     if len(calibration_fit) != 240 or len(validation) != 80 or len(test) != 1360:
         raise ValueError(
@@ -663,9 +735,20 @@ def run_high_coverage_qc(args: argparse.Namespace) -> dict[str, Any]:
         operational[workpoint] = evaluate_workpoint(
             annotated,
             args.pred_key,
+            oracle_pred_key=oracle_pred_key,
             n_random=args.n_random,
             seed=args.seed + index,
         )
+
+    full_report = operational["FULL"]
+    if not (full_report["accept_N"] == full_report["nonreject_N"] == 1360):
+        raise ValueError("FULL must accept all 1,360 test rows")
+    if (
+        full_report["accept_metrics"] != full_report["nonreject_metrics"]
+        or full_report["oracle_accept_metrics"]
+        != full_report["oracle_nonreject_metrics"]
+    ):
+        raise ValueError("FULL Accepted and Nonreject metrics must match")
 
     component_ablation: dict[str, Any] = {}
     for index, score_key in enumerate(
@@ -708,6 +791,7 @@ def run_high_coverage_qc(args: argparse.Namespace) -> dict[str, Any]:
         "counts": {"calibration_fit": 240, "calibration_validation": 80, "test": 1360},
         "selected_score": selection["selected_score"],
         "pred_key": args.pred_key,
+        "oracle_pred_key": oracle_pred_key,
         "primary_workpoint": "HC95",
         "secondary_workpoint": "HC90",
         "ranking_curve_operational": False,
@@ -719,6 +803,7 @@ def run_high_coverage_qc(args: argparse.Namespace) -> dict[str, Any]:
                 "h23_test",
                 "h8_validation",
                 "h8_test",
+                "h8_test_oracle",
                 "backbone_calibration",
                 "backbone_test",
             )
@@ -737,6 +822,7 @@ def main() -> int:
     parser.add_argument("--h23-test", required=True)
     parser.add_argument("--h8-validation", required=True)
     parser.add_argument("--h8-test", required=True)
+    parser.add_argument("--h8-test-oracle", required=True)
     parser.add_argument("--backbone-calibration", required=True)
     parser.add_argument("--backbone-test", required=True)
     parser.add_argument("--pred-key", default="target_ridge_plus_source_preds_ppm")

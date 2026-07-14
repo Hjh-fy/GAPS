@@ -5,7 +5,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from scripts.evaluate_iotj_high_coverage_qc import (
+    attach_oracle_prediction,
     apply_workpoint,
     evaluate_workpoint,
     fit_component_calibrator,
@@ -192,6 +195,87 @@ def test_workpoint_evaluation_reports_yield_error_capture_and_random_control() -
     assert report["random_control"]["iterations"] == 50
 
 
+def test_workpoint_reports_nonreject_and_oracle_metrics() -> None:
+    rows = [
+        {"client": "C5", "split": "test", "sample_index": 0, "true_class": 0, "pred_class": 1,
+         "true_ppm": 10.0, "pred_ppm": 30.0, "oracle_ppm": 12.0, "qc_decision": "accept"},
+        {"client": "C5", "split": "test", "sample_index": 1, "true_class": 0, "pred_class": 0,
+         "true_ppm": 20.0, "pred_ppm": 24.0, "oracle_ppm": 21.0, "qc_decision": "review"},
+        {"client": "C5", "split": "test", "sample_index": 2, "true_class": 0, "pred_class": 0,
+         "true_ppm": 30.0, "pred_ppm": 90.0, "oracle_ppm": 31.0, "qc_decision": "reject"},
+    ]
+
+    report = evaluate_workpoint(rows, "pred_ppm", oracle_pred_key="oracle_ppm", n_random=0)
+
+    assert report["nonreject_N"] == 2
+    assert report["nonreject_metrics"]["RMSE"] == pytest.approx((416.0 / 2.0) ** 0.5)
+    assert report["oracle_accept_metrics"]["RMSE"] == pytest.approx(2.0)
+    assert report["oracle_nonreject_metrics"]["RMSE"] == pytest.approx((5.0 / 2.0) ** 0.5)
+
+
+def test_workpoint_rejects_invalid_qc_decision_before_metrics() -> None:
+    rows = [
+        {"qc_decision": "hold", "true_class": 0, "pred_class": 0, "true_ppm": 10.0, "pred_ppm": 10.0},
+    ]
+
+    with pytest.raises(ValueError, match="invalid qc_decision"):
+        evaluate_workpoint(rows, "pred_ppm", n_random=0)
+
+
+def test_attach_oracle_prediction_keys_by_client_split_and_sample_index() -> None:
+    rows = [
+        {"client": "C5", "split": "test", "sample_index": 7},
+        {"client": "C6", "split": "test", "sample_index": 7},
+    ]
+    oracle_rows = [
+        {"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": 11.0},
+        {"client": "C6", "split": "test", "sample_index": 7, "oracle_ppm": 22.0},
+    ]
+
+    attached = attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+    assert [row["attached_oracle_ppm"] for row in attached] == [11.0, 22.0]
+
+
+def test_attach_oracle_prediction_requires_client_coordinates() -> None:
+    rows = [{"client": None, "split": "test", "sample_index": 7}]
+    oracle_rows = [
+        {"client": None, "split": "test", "sample_index": 7, "oracle_ppm": 11.0}
+    ]
+
+    with pytest.raises(ValueError, match="oracle row key requires client"):
+        attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+
+@pytest.mark.parametrize(
+    ("oracle_rows", "message"),
+    [
+        (
+            [
+                {"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": 11.0},
+                {"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": 12.0},
+            ],
+            "duplicate oracle row",
+        ),
+        (
+            [{"client": "C6", "split": "test", "sample_index": 7, "oracle_ppm": 11.0}],
+            "missing oracle prediction",
+        ),
+        (
+            [{"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": float("nan")}],
+            "non-finite oracle prediction",
+        ),
+    ],
+)
+def test_attach_oracle_prediction_rejects_invalid_oracle_rows(
+    oracle_rows: list[dict[str, object]], message: str
+) -> None:
+    rows = [{"client": "C5", "split": "test", "sample_index": 7}]
+
+    with pytest.raises(ValueError, match=message):
+        attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+
 def test_score_family_selection_uses_calibration_error_capture() -> None:
     rows = []
     for index in range(20):
@@ -260,3 +344,4 @@ def test_high_coverage_qc_script_is_directly_executable() -> None:
 
     assert result.returncode == 0, result.stderr
     assert "high-coverage C5 QC" in result.stdout
+    assert "--h8-test-oracle" in result.stdout
