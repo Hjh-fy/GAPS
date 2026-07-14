@@ -19,7 +19,7 @@ from scripts.run_iotj_c5_regression_cloud import (
     merge_cloud_manifest,
     parse_classifier_spec,
 )
-from run_source_augmented_target_ridge_eval import attach_prediction_column
+from run_source_augmented_target_ridge_eval import attach_prediction_column, force_oracle_routes
 from scripts.summarize_iotj_c5_formal_regression import (
     flatten_operational_qc,
     validate_ladder_summary,
@@ -205,6 +205,14 @@ def test_h8_augmented_stream_receives_aligned_rich_only_prediction() -> None:
     )
 
     assert [row["target_ridge_rich_only_ppm"] for row in merged] == [21.0, 31.0]
+
+
+def test_force_oracle_routes_copies_rows_and_replaces_only_route() -> None:
+    source = [{"client": "C5", "sample_index": 7, "pred_class": 1, "true_class": 3, "route_class": 1}]
+    result = force_oracle_routes(source)
+    assert result[0]["route_class"] == 3
+    assert result[0]["pred_class"] == 1
+    assert source[0]["route_class"] == 1
 
 
 def test_ladder_fails_closed_when_a_required_base_prediction_is_missing() -> None:

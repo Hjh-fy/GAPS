@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 from run_regression_head_ablation import (
     CLASS_NAMES,
@@ -55,6 +55,18 @@ def add_pred_features(rows: list[dict[str, Any]], pred_keys: list[str]) -> list[
         item["feature_dict"] = feature_dict
         out.append(item)
     return out
+
+
+def force_oracle_routes(rows: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        true_class = inum(item.get("true_class"), -1)
+        if true_class not in CLASS_NAMES:
+            raise ValueError(f"invalid true_class for oracle route: {true_class}")
+        item["route_class"] = true_class
+        output.append(item)
+    return output
 
 
 def fit_source_heads(
@@ -391,6 +403,16 @@ def main() -> None:
         target_rich,
         "target_ridge_rich_only_ppm",
     )
+    target_test_oracle = force_oracle_routes(target_test)
+    target_test_oracle_with_src = attach_source_predictions(
+        target_test_oracle, ridge_models, mlp_models, shared_model
+    )
+    target_test_oracle_aug = add_pred_features(target_test_oracle_with_src, pred_keys)
+    target_oracle_aug = apply_client_models(
+        target_test_oracle_aug,
+        aug_models,
+        "target_ridge_plus_source_preds_oracle_route",
+    )
     validation_aug = attach_prediction_column(
         validation_aug,
         validation_rich,
@@ -444,6 +466,7 @@ def main() -> None:
     write_csv(out / "validation_fit_audit.csv", [*validation_rich_audit, *validation_aug_audit])
     write_csv(out / "target_predictions_rich_only.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_rich])
     write_csv(out / "target_predictions_plus_source_preds.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_aug])
+    write_csv(out / "target_predictions_plus_source_preds_oracle_route.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in target_oracle_aug])
     write_csv(out / "target_validation_rich_only.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_rich])
     write_csv(out / "target_validation_plus_source_preds.csv", [{k: v for k, v in row.items() if k != "feature_dict"} for row in validation_aug])
     if not args.disable_c4_rescue:
@@ -468,6 +491,8 @@ def main() -> None:
                 "selected_c4_gate": gate,
                 "rich_feature_count": len(rich_feature_names),
                 "augmented_feature_count": len(aug_feature_names),
+                "oracle_route_output": "target_predictions_plus_source_preds_oracle_route.csv",
+                "oracle_route_test_count": len(target_oracle_aug),
                 "seed": args.seed,
                 "validation_outputs": [
                     "target_validation_rich_only.csv",
