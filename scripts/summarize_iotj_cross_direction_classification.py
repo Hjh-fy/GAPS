@@ -191,6 +191,53 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def validate_evaluation_counts(
+    payload: dict[str, Any], manifest: dict[str, Any]
+) -> None:
+    run_name = str(manifest["run_name"])
+    expected = manifest["protocol"]["expected_target_counts"]
+    metrics = payload["metrics"]
+    for split in ("test", "calibration"):
+        expected_n = int(expected[split])
+        actual_n = int(metrics[split]["N"])
+        if actual_n != expected_n:
+            raise ValueError(
+                f"{run_name}: {split} N={actual_n}, expected {expected_n}"
+            )
+
+
+def filter_manifests(
+    manifests: Sequence[tuple[Path, dict[str, Any]]],
+    *,
+    directions: set[str] | None = None,
+    groups: set[str] | None = None,
+) -> list[tuple[Path, dict[str, Any]]]:
+    selected = [
+        (path, manifest)
+        for path, manifest in manifests
+        if (not directions or str(manifest["direction_id"]) in directions)
+        and (not groups or str(manifest["group_id"]) in groups)
+    ]
+    if not selected:
+        raise ValueError("summary manifest filter selected no runs")
+    selected_directions = {str(manifest["direction_id"]) for _path, manifest in selected}
+    for direction in selected_directions:
+        found_groups = {
+            str(manifest["group_id"])
+            for _path, manifest in selected
+            if str(manifest["direction_id"]) == direction
+        }
+        if found_groups != {"B2", "B5"}:
+            raise ValueError(
+                f"{direction}: summary requires paired B2/B5, found {sorted(found_groups)}"
+            )
+    return selected
+
+
+def _csv_set(value: str) -> set[str]:
+    return {item.strip() for item in value.split(",") if item.strip()}
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--command-root", type=Path, default=DEFAULT_COMMAND_ROOT)
@@ -202,9 +249,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--bootstrap-seed", type=int, default=20260713)
     parser.add_argument("--bootstrap-reps", type=int, default=2000)
     parser.add_argument("--margin-pp", type=float, default=0.5)
+    parser.add_argument("--directions", default="")
+    parser.add_argument("--groups", default="B2,B5")
     args = parser.parse_args(argv)
 
     manifests = load_ordered_manifests(args.command_root, args.seed)
+    manifests = filter_manifests(
+        manifests,
+        directions=_csv_set(args.directions),
+        groups=_csv_set(args.groups),
+    )
     device = resolve_device(args.device)
     payloads: dict[tuple[str, str], dict[str, Any]] = {}
     per_run_rows: list[dict[str, Any]] = []
@@ -222,6 +276,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             device=device,
             batch_size=args.batch_size,
         )
+        validate_evaluation_counts(payload, manifest)
         identity = (str(manifest["direction_id"]), str(manifest["group_id"]))
         payloads[identity] = payload
         row = flatten_test_metrics(payload)

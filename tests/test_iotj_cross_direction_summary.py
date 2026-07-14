@@ -82,6 +82,58 @@ def test_noninferiority_rule_requires_accuracy_macro_f1_and_worst_recall() -> No
     ) == "B5_favored"
 
 
+def test_evaluation_count_contract_rejects_wrong_target_split() -> None:
+    summary = _summary()
+    manifest = {
+        "run_name": "B2_r1",
+        "protocol": {
+            "expected_target_counts": {"calibration": 680, "test": 2680}
+        },
+    }
+    payload = {
+        "metrics": {
+            "calibration": {"N": 320},
+            "test": {"N": 680},
+        }
+    }
+
+    with pytest.raises(ValueError, match="B2_r1: test N=680, expected 2680"):
+        summary.validate_evaluation_counts(payload, manifest)
+
+
+def test_evaluation_count_contract_accepts_manifest_counts() -> None:
+    summary = _summary()
+    manifest = {
+        "run_name": "B2_r1",
+        "protocol": {
+            "expected_target_counts": {"calibration": 680, "test": 2680}
+        },
+    }
+    payload = {
+        "metrics": {
+            "calibration": {"N": 680},
+            "test": {"N": 2680},
+        }
+    }
+
+    summary.validate_evaluation_counts(payload, manifest)
+
+
+def test_summary_can_filter_the_frozen_queue_by_direction() -> None:
+    summary = _summary()
+    manifests = [
+        (Path("f1_b2.json"), {"direction_id": "F1_C1_TO_C5", "group_id": "B2"}),
+        (Path("r1_b2.json"), {"direction_id": "R1_C5_TO_C1", "group_id": "B2"}),
+        (Path("r1_b5.json"), {"direction_id": "R1_C5_TO_C1", "group_id": "B5"}),
+    ]
+
+    selected = summary.filter_manifests(
+        manifests, directions={"R1_C5_TO_C1"}, groups={"B2", "B5"}
+    )
+
+    assert [path.name for path, _manifest in selected] == ["r1_b2.json", "r1_b5.json"]
+
+
 def test_summary_cli_help_runs_from_repo_root() -> None:
     repo_root = Path(__file__).resolve().parents[1]
 

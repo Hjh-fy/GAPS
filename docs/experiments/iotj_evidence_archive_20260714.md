@@ -38,7 +38,7 @@ The tracked manifest can verify these files but cannot recreate them by itself. 
 - FULL forced-true-class H8 routing uses all 1360 test windows and is identical across A6/B5/B2: `11.9082/0.0690`.
 - The oracle columns are an offline counterfactual under frozen actual-route QC masks, not deployable performance.
 - F1 C1-to-C5 favors compact B2 descriptively (`98.8971%` versus `98.3088%`, McNemar `p=0.0963`).
-- R1 C5-to-C1 reverses direction and favors B5 descriptively (`98.8235%` versus `97.7941%`, McNemar `p=0.0654`).
+- R1 C5-to-C1 reverses direction and favors B5 on the correct 2680-row C1 test (`98.3582%` versus `97.6493%`, exact McNemar `p=0.00432`; B2-minus-B5 accuracy 95% bootstrap CI `[-1.1940, -0.2612]` pp).
 - R2 C4/C5-to-C1 and confirmation seeds 43-46 remain pending; the latest R2 preflight was blocked by Raspberry Pi SSH timeout.
 
 ## Verification
@@ -46,3 +46,4 @@ The tracked manifest can verify these files but cannot recreate them by itself. 
 - Focused formal regression/QC tests: `40 passed` on both the local PC and ECS.
 - Combined regression/QC plus cross-direction evidence tests: `55 passed` locally.
 - Original actual-route H8 and `risk_policy.json` hashes remained unchanged after the oracle/QC extension.
+- The first 680-row R1 summary used the wrong default data root and is retained only under `results/iotj_b2_b5_cross_direction_20260714_r1_summary_invalid_wrong_data_root`; the canonical tracked R1 summary is count-validated at calibration/test N=680/2680.
