@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,6 +25,7 @@ _PROCESS_READ_ERRORS = (
     psutil.AccessDenied,
     psutil.ZombieProcess,
 )
+ProcessIdentity = tuple[int, float]
 
 
 class TargetProcessNotFound(RuntimeError):
@@ -35,8 +37,17 @@ class ProcessTreeSample:
     """A resource event payload plus state needed for the next CPU delta."""
 
     payload: dict[str, Any]
-    cpu_times_seconds_by_pid: dict[int, float]
+    cpu_times_seconds_by_process_identity: dict[ProcessIdentity, float]
     monotonic_ns: int
+
+    @property
+    def cpu_times_seconds_by_pid(self) -> dict[int, float]:
+        """Return the latest per-PID totals for compatibility with early callers."""
+
+        return {
+            pid: cpu_seconds
+            for (pid, _), cpu_seconds in self.cpu_times_seconds_by_process_identity.items()
+        }
 
 
 @dataclass(frozen=True)
@@ -46,8 +57,29 @@ class SamplerResult:
     sample_count: int
 
 
+@dataclass(frozen=True)
+class SamplerRssPeak:
+    peak_rss_bytes: int | None
+    available: bool
+    method: str
+    error: str | None
+
+
 def _record_process_error(errors: list[str], pid: int, metric: str, exc: Exception) -> None:
     errors.append(f"pid={pid} metric={metric}: {type(exc).__name__}: {exc}")
+
+
+def _read_process_identity(process: psutil.Process) -> ProcessIdentity:
+    return int(process.pid), float(process.create_time())
+
+
+def get_process_identity(pid: int) -> ProcessIdentity:
+    """Read a stable process identity or report that the PID does not exist."""
+
+    try:
+        return _read_process_identity(psutil.Process(pid))
+    except psutil.NoSuchProcess as exc:
+        raise TargetProcessNotFound(f"target PID {pid} does not exist") from exc
 
 
 def collect_process_tree_sample(
@@ -56,6 +88,7 @@ def collect_process_tree_sample(
     sampler_pid: int,
     previous: ProcessTreeSample | None,
     now_ns: int,
+    expected_root_identity: ProcessIdentity | None = None,
 ) -> ProcessTreeSample:
     """Collect one de-duplicated process-tree sample.
 
@@ -71,6 +104,21 @@ def collect_process_tree_sample(
         raise TargetProcessNotFound(
             f"target PID {root_pid} does not exist"
         ) from exc
+
+    try:
+        root_identity = _read_process_identity(root)
+    except psutil.NoSuchProcess as exc:
+        raise TargetProcessNotFound(
+            f"target PID {root_pid} exited before identity validation"
+        ) from exc
+    if (
+        expected_root_identity is not None
+        and root_identity != expected_root_identity
+    ):
+        raise TargetProcessNotFound(
+            f"target PID {root_pid} identity changed from "
+            f"{expected_root_identity!r} to {root_identity!r}"
+        )
 
     try:
         descendants = root.children(recursive=True)
@@ -97,12 +145,23 @@ def collect_process_tree_sample(
 
     rss_tree_bytes = 0
     thread_count_tree = 0
-    cpu_times_seconds_by_pid: dict[int, float] = {}
+    cpu_times_seconds_by_process_identity: dict[ProcessIdentity, float] = {}
+    identities_by_pid: dict[int, ProcessIdentity | None] = {}
     readable_pids: list[int] = []
 
     for pid in sorted(processes_by_pid):
         process = processes_by_pid[pid]
         readable = False
+        identity: ProcessIdentity | None
+        try:
+            identity = (
+                root_identity
+                if pid == root_pid
+                else _read_process_identity(process)
+            )
+        except _PROCESS_READ_ERRORS as exc:
+            _record_process_error(errors, pid, "create_time", exc)
+            identity = None
         try:
             rss_tree_bytes += int(process.memory_info().rss)
             readable = True
@@ -115,17 +174,24 @@ def collect_process_tree_sample(
         except _PROCESS_READ_ERRORS as exc:
             _record_process_error(errors, pid, "num_threads", exc)
 
-        try:
-            cpu_times = process.cpu_times()
-            cpu_times_seconds_by_pid[pid] = float(cpu_times.user) + float(
-                cpu_times.system
+        if identity is None:
+            errors.append(
+                f"pid={pid} metric=cpu_times: skipped because stable identity "
+                "is unavailable"
             )
-            readable = True
-        except _PROCESS_READ_ERRORS as exc:
-            _record_process_error(errors, pid, "cpu_times", exc)
+        else:
+            try:
+                cpu_times = process.cpu_times()
+                cpu_times_seconds_by_process_identity[identity] = (
+                    float(cpu_times.user) + float(cpu_times.system)
+                )
+                readable = True
+            except _PROCESS_READ_ERRORS as exc:
+                _record_process_error(errors, pid, "cpu_times", exc)
 
         if readable:
             readable_pids.append(pid)
+            identities_by_pid[pid] = identity
 
     logical_cpu_count_value = psutil.cpu_count(logical=True)
     if logical_cpu_count_value is None or logical_cpu_count_value <= 0:
@@ -139,8 +205,12 @@ def collect_process_tree_sample(
     wall_delta_ns = 0 if previous is None else now_ns - previous.monotonic_ns
     cpu_delta_seconds = 0.0
     if previous is not None and wall_delta_ns > 0:
-        for pid, current_cpu_seconds in cpu_times_seconds_by_pid.items():
-            prior_cpu_seconds = previous.cpu_times_seconds_by_pid.get(pid)
+        for identity, current_cpu_seconds in (
+            cpu_times_seconds_by_process_identity.items()
+        ):
+            prior_cpu_seconds = (
+                previous.cpu_times_seconds_by_process_identity.get(identity)
+            )
             if prior_cpu_seconds is not None:
                 cpu_delta_seconds += max(
                     0.0, current_cpu_seconds - prior_cpu_seconds
@@ -158,11 +228,25 @@ def collect_process_tree_sample(
         "root_pid": root_pid,
         "sampler_pid_excluded": sampler_pid,
         "pids": readable_pids,
+        "process_identities": [
+            {
+                "pid": pid,
+                "create_time": (
+                    None
+                    if identities_by_pid[pid] is None
+                    else identities_by_pid[pid][1]
+                ),
+                "identity_available": identities_by_pid[pid] is not None,
+            }
+            for pid in readable_pids
+        ],
         "rss_tree_bytes": rss_tree_bytes,
         "rss_tree_peak_bytes": max(previous_peak, rss_tree_bytes),
         "process_count_tree": len(readable_pids),
         "thread_count_tree": thread_count_tree,
-        "cpu_time_tree_seconds": sum(cpu_times_seconds_by_pid.values()),
+        "cpu_time_tree_seconds": sum(
+            cpu_times_seconds_by_process_identity.values()
+        ),
         "cpu_time_tree_delta_seconds": cpu_delta_seconds,
         "cpu_percent_tree_one_core_scale": one_core_percent,
         "cpu_percent_tree_host_scale": one_core_percent / logical_cpu_count,
@@ -176,7 +260,9 @@ def collect_process_tree_sample(
     }
     return ProcessTreeSample(
         payload=payload,
-        cpu_times_seconds_by_pid=cpu_times_seconds_by_pid,
+        cpu_times_seconds_by_process_identity=(
+            cpu_times_seconds_by_process_identity
+        ),
         monotonic_ns=now_ns,
     )
 
@@ -257,17 +343,91 @@ def read_thermal_state(
     return result
 
 
-def _sampler_process_metrics(process: psutil.Process) -> tuple[float, float, int]:
+def _sampler_cpu_times(process: psutil.Process) -> tuple[float, float]:
     try:
         cpu_times = process.cpu_times()
-        memory = process.memory_info()
     except _PROCESS_READ_ERRORS:
-        return 0.0, 0.0, 0
-    rss_values = [int(memory.rss)]
-    peak_wset = getattr(memory, "peak_wset", None)
-    if peak_wset is not None:
-        rss_values.append(int(peak_wset))
-    return float(cpu_times.user), float(cpu_times.system), max(rss_values)
+        return 0.0, 0.0
+    return float(cpu_times.user), float(cpu_times.system)
+
+
+def read_sampler_rss_peak(
+    process: psutil.Process,
+    *,
+    platform: str | None = None,
+    proc_status_path: str | os.PathLike[str] | None = None,
+) -> SamplerRssPeak:
+    """Read an OS high-water RSS value, failing closed when unavailable."""
+
+    current_platform = sys.platform if platform is None else platform
+    if current_platform.startswith("win"):
+        method = "psutil_peak_wset"
+        try:
+            raw_peak = getattr(process.memory_info(), "peak_wset")
+            peak_rss_bytes = int(raw_peak)
+            if peak_rss_bytes < 0:
+                raise ValueError("peak_wset must not be negative")
+        except (AttributeError, TypeError, ValueError, *_PROCESS_READ_ERRORS) as exc:
+            return SamplerRssPeak(
+                peak_rss_bytes=None,
+                available=False,
+                method=method,
+                error=f"unavailable peak_wset: {type(exc).__name__}: {exc}",
+            )
+        return SamplerRssPeak(
+            peak_rss_bytes=peak_rss_bytes,
+            available=True,
+            method=method,
+            error=None,
+        )
+
+    if current_platform.startswith("linux"):
+        method = "proc_status_vm_hwm"
+        status_path = (
+            Path(f"/proc/{process.pid}/status")
+            if proc_status_path is None
+            else Path(proc_status_path)
+        )
+        try:
+            status_text = status_path.read_text(encoding="ascii")
+        except (OSError, UnicodeError) as exc:
+            return SamplerRssPeak(
+                peak_rss_bytes=None,
+                available=False,
+                method=method,
+                error=f"unavailable VmHWM: {type(exc).__name__}: {exc}",
+            )
+        vm_hwm_lines = [
+            line for line in status_text.splitlines() if line.startswith("VmHWM:")
+        ]
+        if not vm_hwm_lines:
+            return SamplerRssPeak(
+                peak_rss_bytes=None,
+                available=False,
+                method=method,
+                error="missing VmHWM in proc status",
+            )
+        match = re.fullmatch(r"VmHWM:\s*(\d+)\s+kB", vm_hwm_lines[0])
+        if match is None:
+            return SamplerRssPeak(
+                peak_rss_bytes=None,
+                available=False,
+                method=method,
+                error=f"malformed VmHWM line: {vm_hwm_lines[0]!r}",
+            )
+        return SamplerRssPeak(
+            peak_rss_bytes=int(match.group(1)) * 1024,
+            available=True,
+            method=method,
+            error=None,
+        )
+
+    return SamplerRssPeak(
+        peak_rss_bytes=None,
+        available=False,
+        method="unavailable",
+        error=f"no reliable RSS high-water metric on platform {current_platform!r}",
+    )
 
 
 def _observer_cost_payload(observer: JsonlObserver) -> dict[str, Any]:
@@ -303,14 +463,23 @@ def run_sampler(
     stop_path = None if stop_file is None else Path(stop_file)
     client_id = observer.identity.client_id
     previous: ProcessTreeSample | None = None
+    expected_root_identity: ProcessIdentity | None = None
     sample_count = 0
     status = "succeeded"
     shutdown_reason = "stop_file"
     shutdown_error: str | None = None
-    _, _, sampler_rss_peak_bytes = _sampler_process_metrics(sampler_process)
+    sampling_enabled = True
 
     try:
-        while True:
+        if stop_path is None or not stop_path.exists():
+            try:
+                expected_root_identity = get_process_identity(root_pid)
+            except TargetProcessNotFound as exc:
+                sampling_enabled = False
+                status = "failed"
+                shutdown_reason = "target_not_found_initial"
+                shutdown_error = str(exc)
+        while sampling_enabled:
             if stop_path is not None and stop_path.exists():
                 shutdown_reason = "stop_file"
                 break
@@ -322,10 +491,11 @@ def run_sampler(
                     sampler_pid=sampler_pid,
                     previous=previous,
                     now_ns=now_ns,
+                    expected_root_identity=expected_root_identity,
                 )
             except TargetProcessNotFound as exc:
                 shutdown_error = str(exc)
-                if sample_count == 0:
+                if expected_root_identity is None:
                     status = "failed"
                     shutdown_reason = "target_not_found_initial"
                 else:
@@ -343,10 +513,6 @@ def run_sampler(
             )
             sample_count += 1
             previous = process_sample
-            _, _, current_sampler_rss = _sampler_process_metrics(sampler_process)
-            sampler_rss_peak_bytes = max(
-                sampler_rss_peak_bytes, current_sampler_rss
-            )
             sleep(interval_seconds)
     except KeyboardInterrupt:
         status = "aborted"
@@ -356,10 +522,8 @@ def run_sampler(
         shutdown_reason = "sampler_error"
         shutdown_error = f"{type(exc).__name__}: {exc}"
 
-    sampler_cpu_user, sampler_cpu_system, final_sampler_rss = (
-        _sampler_process_metrics(sampler_process)
-    )
-    sampler_rss_peak_bytes = max(sampler_rss_peak_bytes, final_sampler_rss)
+    sampler_cpu_user, sampler_cpu_system = _sampler_cpu_times(sampler_process)
+    sampler_rss_peak = read_sampler_rss_peak(sampler_process)
     end_payload = {
         "root_pid": root_pid,
         "sampler_pid": sampler_pid,
@@ -368,7 +532,10 @@ def run_sampler(
         "sample_count": sample_count,
         "sampler_cpu_user_seconds": sampler_cpu_user,
         "sampler_cpu_system_seconds": sampler_cpu_system,
-        "sampler_rss_peak_bytes": sampler_rss_peak_bytes,
+        "sampler_rss_peak_bytes": sampler_rss_peak.peak_rss_bytes,
+        "sampler_rss_peak_available": sampler_rss_peak.available,
+        "sampler_rss_peak_method": sampler_rss_peak.method,
+        "sampler_rss_peak_error": sampler_rss_peak.error,
         **_observer_cost_payload(observer),
     }
     try:
