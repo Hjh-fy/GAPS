@@ -21,6 +21,7 @@ from scripts.freeze_iotj_confirmation_protocol import (
     create_source_archive,
     sha256_file,
 )
+from scripts.generate_iotj_classification_ablation_commands import DATA_ROOT_NAME
 
 
 SPLIT_COMPONENTS = (
@@ -37,13 +38,18 @@ def _write_split(directory: Path, split: str, rows: int) -> None:
     np.save(directory / f"{split}_regression_labels.npy", np.zeros((rows, 3), dtype=np.float32))
 
 
-def _write_dataset(root: Path, *, c5_test_rows: int = 1360) -> Path:
+def _write_dataset(
+    root: Path,
+    *,
+    c5_test_rows: int = 1360,
+    declared_sources: list[int] | None = None,
+) -> Path:
     root.mkdir(parents=True)
     (root / "split_info.json").write_text(
         json.dumps(
             {
                 "protocol": "c12_to_c5",
-                "source_clients": [1, 2],
+                "source_clients": declared_sources or [1, 2, 3, 4],
                 "target_clients": [5],
                 "seed": 42,
                 "target_split": {"train_used": False, "calibration": 0.2, "test": 0.8},
@@ -92,6 +98,68 @@ def _init_git_repo(repo: Path) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
+def _dataset_file_hashes(manifest: dict[str, object]) -> dict[str, str]:
+    return {
+        str(entry["relative_path"]): str(entry["sha256"])
+        for entry in manifest["files"]
+    }
+
+
+def _fake_bundle(archive_path: Path) -> dict[str, object]:
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    archive_path.write_bytes(b"staged archive bytes")
+    source_hash = sha256_file(archive_path)
+    return {
+        "schema_version": 1,
+        "protocol_manifest_sha256": "p" * 64,
+        "source_archive_manifest": {
+            "source_archive_sha256": source_hash,
+            "regular_members_sha256": "r" * 64,
+        },
+        "dataset_manifest": {
+            "dataset_manifest_sha256": "d" * 64,
+            "sample_counts": {"C5": {"calibration": 320, "test": 1360}},
+        },
+        "command_manifests": [
+            {"run_id": confirmation_run_id(group, seed), "group_id": group, "seed": seed}
+            for group, seed in CONFIRMATION_SCHEDULE
+        ],
+    }
+
+
+def _main_args(
+    tmp_path: Path,
+    archive_output: Path,
+    command_root: Path,
+    summary_root: Path,
+) -> list[str]:
+    return [
+        "--confirmation-commit", "a" * 40,
+        "--data-root", str(tmp_path / "dataset"),
+        "--archive-output", str(archive_output),
+        "--command-root", str(command_root),
+        "--summary-root", str(summary_root),
+    ]
+
+
+def _final_output_paths(
+    archive_output: Path,
+    command_root: Path,
+    summary_root: Path,
+) -> list[Path]:
+    paths = [
+        archive_output,
+        summary_root / "confirmation_protocol_manifest.json",
+        summary_root / "source_archive_manifest.json",
+        summary_root / "dataset_manifest.json",
+    ]
+    paths.extend(
+        command_root / confirmation_run_id(group, seed) / "command_manifest.json"
+        for group, seed in CONFIRMATION_SCHEDULE
+    )
+    return paths
+
+
 def test_confirmation_schedule_is_exact_and_alternating() -> None:
     assert CONFIRMATION_SCHEDULE == (
         ("B2", 42), ("B5", 42),
@@ -130,8 +198,10 @@ def test_dataset_manifest_hashes_only_exact_active_inputs(tmp_path: Path) -> Non
     second = build_dataset_manifest(data_root)
 
     assert first == second
-    assert first["active_source_clients"] == ["C1", "C2"]
-    assert first["active_target_clients"] == ["C5"]
+    assert first["declared_source_clients"] == [1, 2, 3, 4]
+    assert first["active_source_clients"] == [1, 2]
+    assert first["active_target_clients"] == [5]
+    assert first["inactive_declared_source_clients"] == [3, 4]
     assert first["inactive_shared_dataset_clients"] == ["C3", "C4"]
     assert first["sample_counts"]["C5"] == {"calibration": 320, "test": 1360}
     assert [entry["relative_path"] for entry in first["files"]] == _expected_dataset_paths()
@@ -146,7 +216,10 @@ def test_dataset_manifest_hashes_only_exact_active_inputs(tmp_path: Path) -> Non
     assert all("client_4/" not in entry["relative_path"] for entry in first["files"])
 
 
-@pytest.mark.parametrize("failure", ["missing", "wrong_c5_count", "metadata_direction"])
+@pytest.mark.parametrize(
+    "failure",
+    ["missing", "wrong_c5_count", "metadata_direction", "metadata_missing_active_source"],
+)
 def test_dataset_manifest_fails_closed_on_invalid_active_inputs(
     tmp_path: Path,
     failure: str,
@@ -160,6 +233,10 @@ def test_dataset_manifest_fails_closed_on_invalid_active_inputs(
     elif failure == "metadata_direction":
         info = json.loads((data_root / "split_info.json").read_text(encoding="utf-8"))
         info["target_clients"] = [3, 4, 5]
+        (data_root / "split_info.json").write_text(json.dumps(info), encoding="utf-8")
+    elif failure == "metadata_missing_active_source":
+        info = json.loads((data_root / "split_info.json").read_text(encoding="utf-8"))
+        info["source_clients"] = [1, 3, 4]
         (data_root / "split_info.json").write_text(json.dumps(info), encoding="utf-8")
 
     output = tmp_path / "dataset_manifest.json"
@@ -182,7 +259,12 @@ def test_algorithm_hash_selects_only_frozen_algorithm_sections(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     mutable = {
-        "protocol": {"source_clients": [1, 2], "target_clients": [5], "training_seed": 43},
+        "protocol": {
+            "source_clients": [1, 2],
+            "target_clients": [5],
+            "training_seed": 43,
+            "data_root": DATA_ROOT_NAME,
+        },
         "training": {"rounds": 25, "profile": "proto_replay"},
         "causal_factors": {"server_stage_mmd": True},
         "server_adaptation": {"enabled": True, "lambda_stage_mmd": 0.2},
@@ -222,6 +304,30 @@ def test_algorithm_manifest_rejects_non_confirmation_identites(
 ) -> None:
     with pytest.raises(ValueError):
         build_algorithm_manifest(tmp_path, group_id, seed)
+
+
+def test_algorithm_manifest_rejects_a_different_command_dataset_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        freeze,
+        "build_run_manifest",
+        lambda *_args, **_kwargs: {
+            "protocol": {
+                "source_clients": [1, 2],
+                "target_clients": [5],
+                "training_seed": 42,
+                "data_root": "dataset_B",
+            },
+            "training": {},
+            "causal_factors": {},
+            "server_adaptation": {},
+        },
+    )
+
+    with pytest.raises(ValueError, match="data_root"):
+        build_algorithm_manifest(tmp_path, "B2", 42)
 
 
 def test_source_archive_uses_clean_tracked_head_once_and_excludes_untracked_inputs(
@@ -293,9 +399,14 @@ def test_protocol_builds_ten_attempt_independent_command_manifests(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    data_root = tmp_path / "dataset" / DATA_ROOT_NAME
     dataset = {
         "dataset_manifest_sha256": "d" * 64,
         "sample_counts": {"C5": {"calibration": 320, "test": 1360}},
+        "files": [
+            {"relative_path": "split_info.json", "sha256": "a" * 64},
+            {"relative_path": "norm_stats.npz", "sha256": "b" * 64},
+        ],
     }
     source = {
         "source_archive_sha256": "s" * 64,
@@ -319,7 +430,12 @@ def test_protocol_builds_ten_attempt_independent_command_manifests(
         assert repo_root == tmp_path
         return {
             "group_id": group_id,
-            "protocol": {"source_clients": [1, 2], "target_clients": [5], "training_seed": seed},
+            "protocol": {
+                "source_clients": [1, 2],
+                "target_clients": [5],
+                "training_seed": seed,
+                "data_root": DATA_ROOT_NAME,
+            },
             "training": {"rounds": 25},
             "causal_factors": {"full": group_id == "B5"},
             "server_adaptation": {"enabled": True},
@@ -329,12 +445,16 @@ def test_protocol_builds_ten_attempt_independent_command_manifests(
                 "client_c2_pc": ["client", "2", str(seed)],
             },
             "topology": {"server": "existing-host-field"},
+            "provenance": {
+                "split_info_sha256": "a" * 64,
+                "norm_stats_sha256": "b" * 64,
+            },
         }
 
     monkeypatch.setattr(freeze, "build_run_manifest", fake_run_manifest)
     protocol = build_protocol_manifest(
         tmp_path,
-        tmp_path / "dataset",
+        data_root,
         "a" * 40,
         tmp_path / "confirmation.tar",
     )
@@ -376,41 +496,98 @@ def test_protocol_builds_ten_attempt_independent_command_manifests(
             assert "b2_claim_status" not in item
 
 
+def test_protocol_rejects_dataset_path_not_used_by_frozen_commands_before_archive(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wrong_data_root = tmp_path / "dataset_A"
+    archive_path = tmp_path / "confirmation.tar"
+    monkeypatch.setattr(
+        freeze,
+        "build_dataset_manifest",
+        lambda _root: pytest.fail("dataset hashing must not start for a command-root mismatch"),
+    )
+    monkeypatch.setattr(
+        freeze,
+        "create_source_archive",
+        lambda *_args: pytest.fail("git archive must not start for a command-root mismatch"),
+    )
+
+    with pytest.raises(ValueError, match="data_root"):
+        build_protocol_manifest(tmp_path, wrong_data_root, "a" * 40, archive_path)
+    assert not archive_path.exists()
+
+
+@pytest.mark.parametrize("mismatch", ["protocol_data_root", "split_info", "norm_stats"])
+def test_protocol_binds_every_command_manifest_to_dataset_metadata_hashes_before_archive(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mismatch: str,
+) -> None:
+    data_root = tmp_path / "dataset" / DATA_ROOT_NAME
+    dataset = {
+        "dataset_manifest_sha256": "d" * 64,
+        "sample_counts": {"C5": {"calibration": 320, "test": 1360}},
+        "files": [
+            {"relative_path": "split_info.json", "sha256": "a" * 64},
+            {"relative_path": "norm_stats.npz", "sha256": "b" * 64},
+        ],
+    }
+    monkeypatch.setattr(freeze, "build_dataset_manifest", lambda _root: copy.deepcopy(dataset))
+
+    def fake_run_manifest(
+        group_id: str,
+        seed: int,
+        *,
+        repo_root: Path,
+        results_root: str,
+    ) -> dict[str, object]:
+        del repo_root, results_root
+        return {
+            "group_id": group_id,
+            "protocol": {
+                "source_clients": [1, 2],
+                "target_clients": [5],
+                "training_seed": seed,
+                "data_root": "dataset_B" if mismatch == "protocol_data_root" else DATA_ROOT_NAME,
+            },
+            "training": {"rounds": 25},
+            "causal_factors": {"full": group_id == "B5"},
+            "server_adaptation": {"enabled": True},
+            "commands": {"server_ecs": ["server"]},
+            "provenance": {
+                "split_info_sha256": "c" * 64 if mismatch == "split_info" else "a" * 64,
+                "norm_stats_sha256": "c" * 64 if mismatch == "norm_stats" else "b" * 64,
+            },
+        }
+
+    monkeypatch.setattr(freeze, "build_run_manifest", fake_run_manifest)
+    monkeypatch.setattr(
+        freeze,
+        "create_source_archive",
+        lambda *_args: pytest.fail("git archive must not start before provenance validation"),
+    )
+    archive_path = tmp_path / "confirmation.tar"
+
+    with pytest.raises(ValueError, match="data_root|provenance"):
+        build_protocol_manifest(tmp_path, data_root, "a" * 40, archive_path)
+    assert not archive_path.exists()
+
+
 def test_main_writes_exact_summary_and_command_manifest_layout(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    protocol = {
-        "schema_version": 1,
-        "protocol_manifest_sha256": "p" * 64,
-        "source_archive_manifest": {"source_archive_sha256": "s" * 64},
-        "dataset_manifest": {
-            "dataset_manifest_sha256": "d" * 64,
-            "sample_counts": {"C5": {"calibration": 320, "test": 1360}},
-        },
-        "command_manifests": [
-            {"run_id": confirmation_run_id(group, seed), "group_id": group, "seed": seed}
-            for group, seed in CONFIRMATION_SCHEDULE
-        ],
-    }
     monkeypatch.setattr(
         freeze,
         "build_protocol_manifest",
-        lambda *_args, **_kwargs: copy.deepcopy(protocol),
+        lambda _repo, _data, _commit, archive: _fake_bundle(Path(archive)),
     )
     archive_output = tmp_path / "source" / "confirmation.tar"
     command_root = tmp_path / "commands"
     summary_root = tmp_path / "summary"
 
-    assert freeze.main(
-        [
-            "--confirmation-commit", "a" * 40,
-            "--data-root", str(tmp_path / "dataset"),
-            "--archive-output", str(archive_output),
-            "--command-root", str(command_root),
-            "--summary-root", str(summary_root),
-        ]
-    ) == 0
+    assert freeze.main(_main_args(tmp_path, archive_output, command_root, summary_root)) == 0
 
     assert sorted(path.name for path in summary_root.iterdir()) == [
         "confirmation_protocol_manifest.json",
@@ -431,3 +608,87 @@ def test_main_writes_exact_summary_and_command_manifest_layout(
     assert "source_archive_manifest" not in written_protocol
     assert "dataset_manifest" not in written_protocol
     assert "command_manifests" not in written_protocol
+
+
+def test_main_rejects_existing_json_before_git_archive(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    archive_output = tmp_path / "source" / "confirmation.tar"
+    command_root = tmp_path / "commands"
+    summary_root = tmp_path / "summary"
+    existing = summary_root / "dataset_manifest.json"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("existing evidence\n", encoding="utf-8")
+    monkeypatch.setattr(
+        freeze,
+        "build_protocol_manifest",
+        lambda *_args: pytest.fail("git archive must not run when any final JSON exists"),
+    )
+
+    with pytest.raises(FileExistsError, match="dataset_manifest"):
+        freeze.main(_main_args(tmp_path, archive_output, command_root, summary_root))
+    assert existing.read_text(encoding="utf-8") == "existing evidence\n"
+    assert not archive_output.exists()
+
+
+def test_main_cleans_staging_and_finals_after_json_staging_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    archive_output = tmp_path / "source" / "confirmation.tar"
+    command_root = tmp_path / "commands"
+    summary_root = tmp_path / "summary"
+    monkeypatch.setattr(
+        freeze,
+        "build_protocol_manifest",
+        lambda _repo, _data, _commit, archive: _fake_bundle(Path(archive)),
+    )
+    real_write_json = freeze._write_json
+    write_calls = 0
+
+    def fail_second_json(payload: dict[str, object], output: Path) -> None:
+        nonlocal write_calls
+        write_calls += 1
+        if write_calls == 2:
+            raise OSError("injected JSON staging failure")
+        real_write_json(payload, output)
+
+    monkeypatch.setattr(freeze, "_write_json", fail_second_json)
+
+    with pytest.raises(OSError, match="JSON staging failure"):
+        freeze.main(_main_args(tmp_path, archive_output, command_root, summary_root))
+    assert all(not path.exists() for path in _final_output_paths(archive_output, command_root, summary_root))
+    assert not any(path.name.endswith(".staging") for path in tmp_path.rglob("*"))
+
+
+def test_main_rolls_back_every_final_after_publish_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    archive_output = tmp_path / "source" / "confirmation.tar"
+    command_root = tmp_path / "commands"
+    summary_root = tmp_path / "summary"
+    monkeypatch.setattr(
+        freeze,
+        "build_protocol_manifest",
+        lambda _repo, _data, _commit, archive: _fake_bundle(Path(archive)),
+    )
+    real_replace = Path.replace
+    publish_calls = 0
+
+    def fail_after_second_publish(path: Path, target: Path) -> Path:
+        nonlocal publish_calls
+        published = real_replace(path, target)
+        publish_calls += 1
+        if publish_calls == 2:
+            raise OSError("injected publish failure")
+        return published
+
+    monkeypatch.setattr(Path, "replace", fail_after_second_publish)
+
+    with pytest.raises(OSError, match="publish failure"):
+        freeze.main(_main_args(tmp_path, archive_output, command_root, summary_root))
+    assert publish_calls == 2
+    assert all(not path.exists() for path in _final_output_paths(archive_output, command_root, summary_root))
+    assert not any(path.name.endswith(".staging") for path in tmp_path.rglob("*"))

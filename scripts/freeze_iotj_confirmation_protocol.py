@@ -8,13 +8,17 @@ import json
 import re
 import subprocess
 import tarfile
+import uuid
 from importlib import metadata
 from pathlib import Path
 from typing import Any, BinaryIO, Mapping, Sequence
 
 import numpy as np
 
-from scripts.generate_iotj_classification_ablation_commands import build_run_manifest
+from scripts.generate_iotj_classification_ablation_commands import (
+    DATA_ROOT_NAME,
+    build_run_manifest,
+)
 
 
 CONFIRMATION_SCHEDULE = (
@@ -108,9 +112,20 @@ def _load_split_info(path: Path) -> dict[str, Any]:
         raise ValueError(f"invalid split_info.json: {exc}") from exc
     if not isinstance(payload, dict):
         raise ValueError("split_info.json must contain an object")
-    if payload.get("source_clients") != [1, 2]:
+    declared_sources = payload.get("source_clients")
+    if (
+        not isinstance(declared_sources, list)
+        or any(not isinstance(client_id, int) for client_id in declared_sources)
+        or len(declared_sources) != len(set(declared_sources))
+    ):
+        raise ValueError("split_info source_clients must be a unique integer list")
+    declared_source_set = set(declared_sources)
+    if not set(ACTIVE_SOURCE_CLIENTS).issubset(declared_source_set):
+        raise ValueError("split_info source_clients must contain active clients [1, 2]")
+    unsupported_sources = declared_source_set - {1, 2, 3, 4}
+    if unsupported_sources:
         raise ValueError(
-            f"split_info source_clients must equal [1, 2]; got {payload.get('source_clients')!r}"
+            f"split_info source_clients contains unsupported clients: {sorted(unsupported_sources)}"
         )
     if payload.get("target_clients") != [5]:
         raise ValueError(
@@ -184,12 +199,16 @@ def build_dataset_manifest(data_root: Path) -> dict[str, Any]:
         }
         for path in expected_paths
     ]
+    declared_sources = [int(value) for value in split_info["source_clients"]]
+    inactive_sources = sorted(set(declared_sources) - set(ACTIVE_SOURCE_CLIENTS))
     payload: dict[str, Any] = {
         "schema_version": 1,
         "direction": "C1/C2 -> C5",
-        "active_source_clients": ["C1", "C2"],
-        "active_target_clients": ["C5"],
-        "inactive_shared_dataset_clients": ["C3", "C4"],
+        "declared_source_clients": declared_sources,
+        "active_source_clients": list(ACTIVE_SOURCE_CLIENTS),
+        "active_target_clients": list(ACTIVE_TARGET_CLIENTS),
+        "inactive_declared_source_clients": inactive_sources,
+        "inactive_shared_dataset_clients": [f"C{value}" for value in inactive_sources],
         "split_seed": int(split_info["seed"]),
         "sample_counts": sample_counts,
         "files": files,
@@ -213,6 +232,11 @@ def _algorithm_manifest_from_run_manifest(
     protocol = algorithm_config["protocol"]
     if protocol.get("source_clients") != [1, 2] or protocol.get("target_clients") != [5]:
         raise ValueError("algorithm direction must be C1/C2 source to C5 target")
+    if protocol.get("data_root") != DATA_ROOT_NAME:
+        raise ValueError(
+            f"algorithm protocol.data_root must equal {DATA_ROOT_NAME!r}; "
+            f"got {protocol.get('data_root')!r}"
+        )
     if protocol.get("training_seed") != seed:
         raise ValueError(
             f"algorithm training seed must equal {seed}; got {protocol.get('training_seed')!r}"
@@ -331,6 +355,50 @@ def _claim_fields(group_id: str) -> dict[str, str]:
     return {"b5_claim_status": "predeclared_full_method"}
 
 
+def _dataset_file_hash(dataset_manifest: Mapping[str, Any], relative_path: str) -> str:
+    files = dataset_manifest.get("files")
+    if not isinstance(files, list):
+        raise ValueError("dataset manifest files must be a list")
+    matches = [
+        entry
+        for entry in files
+        if isinstance(entry, Mapping) and entry.get("relative_path") == relative_path
+    ]
+    if len(matches) != 1:
+        raise ValueError(f"dataset manifest must contain exactly one {relative_path}")
+    digest = matches[0].get("sha256")
+    if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise ValueError(f"dataset manifest has invalid SHA-256 for {relative_path}")
+    return digest
+
+
+def _validate_run_dataset_binding(
+    run_manifest: Mapping[str, Any],
+    dataset_manifest: Mapping[str, Any],
+) -> None:
+    protocol = run_manifest.get("protocol")
+    if not isinstance(protocol, Mapping):
+        raise ValueError("run manifest protocol must be an object")
+    if protocol.get("data_root") != DATA_ROOT_NAME:
+        raise ValueError(
+            f"run manifest protocol.data_root must equal {DATA_ROOT_NAME!r}; "
+            f"got {protocol.get('data_root')!r}"
+        )
+    provenance = run_manifest.get("provenance")
+    if not isinstance(provenance, Mapping):
+        raise ValueError("run manifest provenance must be an object")
+    expected_hashes = {
+        "split_info_sha256": _dataset_file_hash(dataset_manifest, "split_info.json"),
+        "norm_stats_sha256": _dataset_file_hash(dataset_manifest, "norm_stats.npz"),
+    }
+    for field, expected in expected_hashes.items():
+        if provenance.get(field) != expected:
+            raise ValueError(
+                f"run manifest provenance {field} does not match dataset manifest: "
+                f"expected {expected}, got {provenance.get(field)!r}"
+            )
+
+
 def _protocol_contract(
     confirmation_commit: str,
     dataset_manifest: Mapping[str, Any],
@@ -362,7 +430,14 @@ def build_protocol_manifest(
 ) -> dict[str, Any]:
     """Build the complete, still-unwritten confirmation manifest bundle."""
     repo_root = Path(repo_root)
-    dataset_manifest = build_dataset_manifest(Path(data_root))
+    data_root = Path(data_root)
+    expected_data_root = (repo_root / "dataset" / DATA_ROOT_NAME).resolve()
+    if data_root.resolve() != expected_data_root:
+        raise ValueError(
+            f"data_root must equal the dataset used by frozen commands: {expected_data_root}; "
+            f"got {data_root.resolve()}"
+        )
+    dataset_manifest = build_dataset_manifest(data_root)
 
     frozen_runs: list[tuple[dict[str, Any], dict[str, Any], str]] = []
     schedule_rows: list[dict[str, Any]] = []
@@ -375,6 +450,7 @@ def build_protocol_manifest(
             results_root=DEFAULT_RESULTS_ROOT,
         )
         algorithm = _algorithm_manifest_from_run_manifest(run_manifest, group_id, seed)
+        _validate_run_dataset_binding(run_manifest, dataset_manifest)
         run_id = confirmation_run_id(group_id, seed)
         frozen_runs.append((run_manifest, algorithm, run_id))
         schedule_rows.append(
@@ -460,6 +536,87 @@ def _output_targets(
     return targets
 
 
+def _expected_final_targets(
+    archive_output: Path,
+    summary_root: Path,
+    command_root: Path,
+) -> list[Path]:
+    command_rows = [
+        {"run_id": confirmation_run_id(group_id, seed)}
+        for group_id, seed in CONFIRMATION_SCHEDULE
+    ]
+    return [Path(archive_output), *_output_targets(summary_root, command_root, command_rows)]
+
+
+def _preflight_final_targets(targets: Sequence[Path]) -> None:
+    resolved = [Path(target).resolve() for target in targets]
+    if len(resolved) != len(set(resolved)):
+        raise ValueError("archive and manifest final targets must be distinct")
+    existing = [target for target in targets if Path(target).exists()]
+    if existing:
+        raise FileExistsError(f"refusing to overwrite immutable output: {existing[0]}")
+
+
+def _staging_path(final_path: Path, transaction_id: str) -> Path:
+    final_path = Path(final_path)
+    return final_path.with_name(f".{final_path.name}.{transaction_id}.staging")
+
+
+def _manifest_payloads(bundle: Mapping[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    source_manifest = bundle.get("source_archive_manifest")
+    dataset_manifest = bundle.get("dataset_manifest")
+    command_manifests = bundle.get("command_manifests")
+    if not isinstance(source_manifest, dict):
+        raise ValueError("bundle source_archive_manifest must be an object")
+    if not isinstance(dataset_manifest, dict):
+        raise ValueError("bundle dataset_manifest must be an object")
+    if not isinstance(command_manifests, list) or any(
+        not isinstance(manifest, dict) for manifest in command_manifests
+    ):
+        raise ValueError("bundle command_manifests must be a list of objects")
+    expected_run_ids = [
+        confirmation_run_id(group_id, seed)
+        for group_id, seed in CONFIRMATION_SCHEDULE
+    ]
+    actual_run_ids = [manifest.get("run_id") for manifest in command_manifests]
+    if actual_run_ids != expected_run_ids:
+        raise ValueError("bundle command manifests do not match the exact confirmation schedule")
+    protocol_manifest = {
+        key: value
+        for key, value in bundle.items()
+        if key not in {"source_archive_manifest", "dataset_manifest", "command_manifests"}
+    }
+    payloads = [protocol_manifest, source_manifest, dataset_manifest, *command_manifests]
+    return source_manifest, payloads
+
+
+def _validate_staged_bundle(
+    staged_archive: Path,
+    source_manifest: Mapping[str, Any],
+    staged_json: Sequence[tuple[Path, Mapping[str, Any]]],
+) -> None:
+    if not staged_archive.is_file():
+        raise ValueError("source archive staging file was not created")
+    expected_archive_hash = source_manifest.get("source_archive_sha256")
+    if expected_archive_hash != sha256_file(staged_archive):
+        raise ValueError("source archive staging hash does not match source manifest")
+    for path, expected_payload in staged_json:
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"invalid staged JSON {path}: {exc}") from exc
+        if loaded != expected_payload:
+            raise ValueError(f"staged JSON content does not match payload: {path}")
+
+
+def _cleanup_transaction(paths: Sequence[Path]) -> None:
+    for path in paths:
+        try:
+            Path(path).unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--confirmation-commit", required=True)
@@ -470,33 +627,42 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[1]
-    bundle = build_protocol_manifest(
-        repo_root,
-        args.data_root,
-        args.confirmation_commit,
+    final_targets = _expected_final_targets(
         args.archive_output,
+        args.summary_root,
+        args.command_root,
     )
-    source_manifest = bundle["source_archive_manifest"]
+    _preflight_final_targets(final_targets)
+    transaction_id = uuid.uuid4().hex
+    staging_targets = [
+        _staging_path(final_target, transaction_id)
+        for final_target in final_targets
+    ]
+    _preflight_final_targets(staging_targets)
+
+    try:
+        bundle = build_protocol_manifest(
+            repo_root,
+            args.data_root,
+            args.confirmation_commit,
+            staging_targets[0],
+        )
+        source_manifest, payloads = _manifest_payloads(bundle)
+        if len(payloads) != len(staging_targets) - 1:
+            raise ValueError("bundle JSON payload count does not match final target count")
+        staged_json = list(zip(staging_targets[1:], payloads))
+        for staging_path, payload in staged_json:
+            _write_json(payload, staging_path)
+        _validate_staged_bundle(staging_targets[0], source_manifest, staged_json)
+        for staging_path, final_path in zip(staging_targets, final_targets):
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            staging_path.replace(final_path)
+    except BaseException:
+        _cleanup_transaction([*staging_targets, *final_targets])
+        raise
+
     dataset_manifest = bundle["dataset_manifest"]
     command_manifests = bundle["command_manifests"]
-    protocol_manifest = {
-        key: value
-        for key, value in bundle.items()
-        if key not in {"source_archive_manifest", "dataset_manifest", "command_manifests"}
-    }
-
-    targets = _output_targets(args.summary_root, args.command_root, command_manifests)
-    existing = [path for path in targets if path.exists()]
-    if existing:
-        raise FileExistsError(f"refusing to overwrite immutable manifest: {existing[0]}")
-    _write_json(protocol_manifest, args.summary_root / "confirmation_protocol_manifest.json")
-    _write_json(source_manifest, args.summary_root / "source_archive_manifest.json")
-    _write_json(dataset_manifest, args.summary_root / "dataset_manifest.json")
-    for command_manifest in command_manifests:
-        _write_json(
-            command_manifest,
-            args.command_root / command_manifest["run_id"] / "command_manifest.json",
-        )
 
     counts = dataset_manifest["sample_counts"]["C5"]
     print(
