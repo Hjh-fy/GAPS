@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import inspect
 import io
 import json
@@ -8,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import copy
+import contextlib
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace as dataclass_replace
 from pathlib import Path
@@ -131,7 +133,10 @@ def _frozen_input_fixture(tmp_path: Path) -> dict[str, object]:
             **algorithm,
             "topology": copy.deepcopy(controller.EXPECTED_TOPOLOGY),
             "commands": {
-                "server_ecs": ["python", "-m", "gaps_flower.server_app"],
+                "server_ecs": [
+                    "python", "-m", "gaps_flower.server_app",
+                    "--data-root", "dataset/frozen_dataset",
+                ],
                 "client_c1_pi": [
                     "python", "-m", "gaps_flower.client_app", "--client-id", "1",
                     "--data-root", "/home/gaps/GAPS/flower_runtime/dataset/frozen_dataset",
@@ -353,6 +358,12 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
             "regular_members_sha256": manifest["regular_members_sha256"],
         }
     )
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source:
+            return json.dumps({"state": "absent"})
+        assert "REMOTE_EXTRACT_SOURCE_V1" in source
+        return remote_report
+
     deployments = deploy_source_archive(
         archive_path,
         manifest,
@@ -361,7 +372,7 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
         pc_runtime_root=tmp_path / "runtime",
         run=fake_run,
         ssh=fake_ssh,
-        remote_python=lambda *_args, **_kwargs: remote_report,
+        remote_python=fake_remote_python,
     )
 
     scp_calls = [call for call in run_calls if call and call[0] == "scp"]
@@ -376,6 +387,145 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     pc_archive = Path(deployments["pc"].archive_path)
     assert pc_archive.read_bytes() == archive_path.read_bytes()
     assert (Path(deployments["pc"].src_path) / "app.py").is_file()
+
+
+def test_remote_extract_source_verifies_complete_reuse_and_rejects_partial(
+    tmp_path: Path,
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    remote_archive = tmp_path / "remote" / "source.tar"
+    remote_archive.parent.mkdir(parents=True)
+    remote_archive.write_bytes(archive.read_bytes())
+    remote_src = remote_archive.parent / "src"
+
+    with contextlib.redirect_stdout(io.StringIO()):
+        exec(
+            controller._remote_extract_source(
+                str(remote_archive),
+                str(remote_src),
+                manifest,
+                allow_fresh_extract=True,
+            ),
+            {},
+        )
+        exec(
+            controller._remote_extract_source(
+                str(remote_archive), str(remote_src), manifest
+            ),
+            {},
+        )
+
+    (remote_src / "app.py").write_text("tampered\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="tracked member"):
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(
+                controller._remote_extract_source(
+                    str(remote_archive), str(remote_src), manifest
+                ),
+                {},
+            )
+
+    partial_archive = tmp_path / "partial" / "source.tar"
+    partial_archive.parent.mkdir()
+    partial_archive.write_bytes(archive.read_bytes())
+    with pytest.raises(RuntimeError, match="partial"):
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(
+                controller._remote_extract_source(
+                    str(partial_archive), str(partial_archive.parent / "src"), manifest
+                ),
+                {},
+            )
+
+
+def test_content_addressed_deploy_reuses_only_verified_complete_runtime(
+    tmp_path: Path,
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    remote_states = {"root@ecs": "absent", "gaps@pi": "absent"}
+    scp_calls: list[list[str]] = []
+
+    def fake_run(command, **_kwargs):
+        command = [str(item) for item in command]
+        scp_calls.append(command)
+        host = command[-1].split(":", 1)[0]
+        assert remote_states[host] == "absent"
+        remote_states[host] = "archive_only"
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    def fake_remote_python(host, _python, source, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source:
+            return json.dumps({"state": remote_states[host]})
+        assert "REMOTE_EXTRACT_SOURCE_V1" in source
+        if remote_states[host] == "archive_only":
+            remote_states[host] = "complete"
+        assert remote_states[host] == "complete"
+        return json.dumps(
+            {
+                "source_archive_sha256": manifest["source_archive_sha256"],
+                "regular_members_sha256": manifest["regular_members_sha256"],
+            }
+        )
+
+    kwargs = {
+        "ecs_host": "root@ecs",
+        "pi_host": "gaps@pi",
+        "pc_runtime_root": tmp_path / "runtime",
+        "run": fake_run,
+        "ssh": lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, "", ""),
+        "remote_python": fake_remote_python,
+    }
+    first = deploy_source_archive(archive, manifest, **kwargs)
+    second = deploy_source_archive(archive, manifest, **kwargs)
+
+    assert first == second
+    assert len(scp_calls) == 2
+
+    (Path(first["pc"].src_path) / "app.py").write_text("tampered\n", encoding="utf-8")
+    with pytest.raises(ArchiveMismatch, match="tracked member"):
+        deploy_source_archive(archive, manifest, **kwargs)
+
+
+def test_content_addressed_deploy_rejects_partial_local_runtime(tmp_path: Path) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    runtime = tmp_path / "runtime"
+    partial = runtime / str(manifest["source_archive_sha256"])
+    partial.mkdir(parents=True)
+    (partial / "source.tar").write_bytes(archive.read_bytes())
+
+    with pytest.raises(RuntimeError, match="partial"):
+        deploy_source_archive(
+            archive,
+            manifest,
+            ecs_host="root@ecs",
+            pi_host="gaps@pi",
+            pc_runtime_root=runtime,
+            run=lambda *_args, **_kwargs: pytest.fail("partial runtime transferred"),
+            ssh=lambda *_args, **_kwargs: pytest.fail("partial runtime contacted host"),
+            remote_python=lambda *_args, **_kwargs: pytest.fail("partial runtime contacted host"),
+        )
+
+
+def test_content_addressed_deploy_rejects_partial_remote_before_transfer(
+    tmp_path: Path,
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+
+    with pytest.raises(ArchiveMismatch, match="partial ecs"):
+        deploy_source_archive(
+            archive,
+            manifest,
+            ecs_host="root@ecs",
+            pi_host="gaps@pi",
+            pc_runtime_root=tmp_path / "runtime",
+            run=lambda *_args, **_kwargs: pytest.fail("partial remote transferred"),
+            ssh=lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, "", ""),
+            remote_python=lambda host, _python, source, **_kwargs: (
+                json.dumps({"state": "partial"})
+                if host == "root@ecs" and "REMOTE_DEPLOY_STATE_V1" in source
+                else pytest.fail("partial remote continued")
+            ),
+        )
 
 
 @pytest.mark.parametrize(
@@ -587,6 +737,67 @@ def test_malformed_or_gapped_status_chain_fails_closed(tmp_path: Path) -> None:
         allocate_attempt(tmp_path, attempt.run_id)
     with pytest.raises(RuntimeError, match="status.*gap"):
         mark_attempt(attempt.path, "failed", reason="process_failure")
+
+
+@pytest.mark.parametrize("metric_key", ["accuracy", "loss", "nll", "ece", "recall", "f1", "metric", "metrics"])
+def test_status_chain_rejects_metric_keys_even_when_event_and_current_match(
+    tmp_path: Path, metric_key: str
+) -> None:
+    attempt = _allocate_bound(tmp_path, "c12_to_c5__b5__s43")
+    mark_attempt(attempt.path, "running", reason="attempt_allocated")
+    event_path = attempt.path / "status_events" / "status_001.json"
+    payload = json.loads(event_path.read_text(encoding="utf-8"))
+    payload["nested"] = {metric_key: 0.25}
+    _write_json(event_path, payload)
+    _write_json(attempt.path / "attempt_status.json", payload)
+
+    with pytest.raises(RuntimeError, match="classification metric"):
+        allocate_attempt(tmp_path, attempt.run_id)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "match"),
+    [
+        (lambda row: row.update(sequence=True), "type"),
+        (lambda row: row.update(wall_time_utc="2026-07-15 12:00:00"), "UTC"),
+        (lambda row: row.update(unexpected="field"), "schema"),
+        (lambda row: row.update(audit_sha256="e" * 64), "combination"),
+        (
+            lambda row: row.update(
+                state="canonical",
+                event_type="attempt_end",
+                reason="preflight_passed",
+                reason_category="controller",
+                audit_sha256="e" * 64,
+            ),
+            "combination",
+        ),
+    ],
+)
+def test_status_chain_rejects_malformed_schema_types_time_and_combinations(
+    tmp_path: Path, mutation, match: str
+) -> None:
+    attempt = _allocate_bound(tmp_path, "c12_to_c5__b2__s44")
+    mark_attempt(attempt.path, "running", reason="attempt_allocated")
+    event_path = attempt.path / "status_events" / "status_001.json"
+    payload = json.loads(event_path.read_text(encoding="utf-8"))
+    mutation(payload)
+    _write_json(event_path, payload)
+    _write_json(attempt.path / "attempt_status.json", payload)
+
+    with pytest.raises(RuntimeError, match=match):
+        allocate_attempt(tmp_path, attempt.run_id)
+
+
+def test_status_chain_rejects_non_exact_bound_provenance_schema(tmp_path: Path) -> None:
+    attempt = _allocate_bound(tmp_path, "c12_to_c5__b5__s44")
+    provenance_path = attempt.path / "attempt_provenance.json"
+    payload = json.loads(provenance_path.read_text(encoding="utf-8"))
+    payload["controller_owner"]["accuracy"] = 0.5
+    _write_json(provenance_path, payload)
+
+    with pytest.raises(RuntimeError, match="classification metric"):
+        mark_attempt(attempt.path, "running", reason="attempt_allocated")
 
 
 def test_status_rejects_unbound_or_incomplete_provenance(tmp_path: Path) -> None:
@@ -947,17 +1158,132 @@ class _FakePopen:
         self.returncode = -9
 
 
+def _literal_assignment(source: str, name: str) -> object:
+    for node in ast.walk(ast.parse(source)):
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == name
+        ):
+            return ast.literal_eval(node.value)
+    raise AssertionError(f"assignment {name!r} not found")
+
+
+def _json_assignment(source: str, name: str) -> dict[str, object]:
+    for node in ast.walk(ast.parse(source)):
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == name
+            and isinstance(node.value, ast.Call)
+            and node.value.args
+        ):
+            return json.loads(ast.literal_eval(node.value.args[0]))
+    raise AssertionError(f"JSON assignment {name!r} not found")
+
+
+def _supervisor_source(outer_source: str) -> str:
+    for node in ast.walk(ast.parse(outer_source)):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "Popen"
+            and node.args
+            and isinstance(node.args[0], ast.List)
+        ):
+            command = ast.literal_eval(node.args[0])
+            if len(command) == 3 and command[1] == "-c":
+                return str(command[2])
+    raise AssertionError("remote supervisor source not found")
+
+
+def test_remote_launcher_publishes_child_pid_separately_from_owned_group() -> None:
+    captured: list[str] = []
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        captured.append(source)
+        return json.dumps(
+            {
+                "child_pid": 4202,
+                "owner_pid": 4201,
+                "owner_pgid": 4201,
+                "owner_start_ticks": 7654321,
+            }
+        )
+
+    process = controller._remote_launch_process(
+        host_id="pi",
+        label="pi-client",
+        host="gaps@pi",
+        python_bin="/venv/bin/python",
+        command=["/venv/bin/python", "-m", "gaps_flower.client_app"],
+        cwd="/runtime/hash/src",
+        log_path="/runtime/attempt/client.log",
+        exit_path="/runtime/attempt/client.exit",
+        python_path="/runtime/hash/src",
+        remote_python=fake_remote_python,
+    )
+
+    assert process.pid == 4202
+    assert process.owner_pid == 4201
+    assert process.owner_pgid == 4201
+    assert process.owner_start_ticks == 7654321
+    assert "'owner_pgid': process.pid" in captured[0]
+    assert "owner_start_ticks = process_start_ticks(process.pid)" in captured[0]
+    supervisor = _supervisor_source(captured[0])
+    assert _literal_assignment(supervisor, "cwd") == "/runtime/hash/src"
+    assert "child = subprocess.Popen(" in supervisor
+    assert "pid_path.open('x'" in supervisor
+    assert "handle.write(str(child.pid))" in supervisor
+    assert "returncode = child.wait()" in supervisor
+
+
+def test_ecs_rewrite_preserves_algorithm_argv_and_absolutizes_all_dataset_paths() -> None:
+    frozen = [
+        "/root/gaps_env/bin/python",
+        "-m",
+        "gaps_flower.server_app",
+        "--rounds",
+        "25",
+        "--server-val-data",
+        "dataset/frozen/client_1,dataset/frozen/client_2",
+        "--server-calib-data",
+        "dataset/frozen/client_5",
+        "--da-lambda-coral",
+        "0.5",
+    ]
+
+    assert controller._rewrite_ecs_dataset_paths(frozen) == [
+        "/root/gaps_env/bin/python",
+        "-m",
+        "gaps_flower.server_app",
+        "--rounds",
+        "25",
+        "--server-val-data",
+        "/root/GAPS/dataset/frozen/client_1,/root/GAPS/dataset/frozen/client_2",
+        "--server-calib-data",
+        "/root/GAPS/dataset/frozen/client_5",
+        "--da-lambda-coral",
+        "0.5",
+    ]
+
+
 def _install_production_fakes(
     monkeypatch: pytest.MonkeyPatch,
     fixture: dict[str, object],
     events: list[str],
+    launches: list[str] | None = None,
+    launch_identities: dict[str, dict[str, int]] | None = None,
+    cleanups: list[str] | None = None,
 ) -> None:
     source = fixture["source"]
     dataset = fixture["dataset"]
-    first_run = confirmation_run_id("B2", 42)
-    algorithm_hash = fixture["commands"][first_run]["algorithm_config_sha256"]
+    remote_states = {"root@121.40.139.213": "absent", "gaps@pi": "absent"}
 
-    def report(host_id: str) -> str:
+    def report(host_id: str, source_code: str) -> str:
+        expected = _json_assignment(source_code, "expected")
         return json.dumps(
             {
                 "host_id": host_id,
@@ -966,15 +1292,21 @@ def _install_production_fakes(
                 "source_archive_sha256": source["source_archive_sha256"],
                 "regular_members_sha256": source["regular_members_sha256"],
                 "dataset_manifest_sha256": dataset["dataset_manifest_sha256"],
-                "algorithm_config_sha256": algorithm_hash,
+                "algorithm_config_sha256": expected["algorithm_config_sha256"],
                 "existing_attempt_processes": [],
             },
             sort_keys=True,
         )
 
     def fake_remote_python(host, _python, source_code, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source_code:
+            events.append(f"deploy-state:{host}:{remote_states[host]}")
+            return json.dumps({"state": remote_states[host]})
         if "REMOTE_EXTRACT_SOURCE_V1" in source_code:
-            events.append(f"deploy:{host}")
+            mode = "fresh" if remote_states[host] == "archive_only" else "reuse"
+            events.append(f"deploy:{host}:{mode}")
+            if mode == "fresh":
+                remote_states[host] = "complete"
             return json.dumps(
                 {
                     "source_archive_sha256": source["source_archive_sha256"],
@@ -984,11 +1316,22 @@ def _install_production_fakes(
         if "HOST_PREFLIGHT_V1:" in source_code:
             host_id = source_code.split("HOST_PREFLIGHT_V1:", 1)[1].splitlines()[0].strip()
             events.append(f"preflight:{host_id}")
-            return report(host_id)
+            return report(host_id, source_code)
         if "REMOTE_LAUNCH_V1:" in source_code:
             label = source_code.split("REMOTE_LAUNCH_V1:", 1)[1].splitlines()[0].strip()
             events.append(f"launch:{label}")
-            return str(5000 + len(events))
+            if launches is not None:
+                launches.append(source_code)
+            owner_pid = 5000 + len(events) * 2
+            identity = {
+                "child_pid": owner_pid + 1,
+                "owner_pid": owner_pid,
+                "owner_pgid": owner_pid,
+                "owner_start_ticks": owner_pid * 100,
+            }
+            if launch_identities is not None:
+                launch_identities[label] = identity
+            return json.dumps(identity)
         if "REMOTE_PROCESS_STATE_V1" in source_code:
             events.append("monitor:server")
             return json.dumps({"running": False, "returncode": 0})
@@ -998,6 +1341,8 @@ def _install_production_fakes(
             return json.dumps({"returncode": 0})
         if "REMOTE_CLEANUP_V1" in source_code:
             events.append("cleanup:remote")
+            if cleanups is not None:
+                cleanups.append(source_code)
             return "CLEANED"
         raise AssertionError(f"unexpected remote source: {source_code[:120]}")
 
@@ -1005,7 +1350,7 @@ def _install_production_fakes(
         command = [str(item) for item in command]
         if command[:2] == [sys.executable, "-c"] and "HOST_PREFLIGHT_V1:pc" in command[2]:
             events.append("preflight:pc")
-            return subprocess.CompletedProcess(command, 0, report("pc"), "")
+            return subprocess.CompletedProcess(command, 0, report("pc", command[2]), "")
         if "--attempt-dir" in command:
             events.append("validator")
             output = Path(command[command.index("--output") + 1])
@@ -1021,6 +1366,11 @@ def _install_production_fakes(
                 destination.mkdir(parents=True)
                 (destination / "events.jsonl").write_text("raw\n", encoding="utf-8")
             else:
+                if command[-1].endswith("/source.tar"):
+                    host = command[-1].split(":", 1)[0]
+                    assert remote_states[host] == "absent"
+                    remote_states[host] = "archive_only"
+                    events.append(f"source-scp:{host}")
                 events.append("scp")
             return subprocess.CompletedProcess(command, 0, "", "")
         raise AssertionError(f"unexpected run command: {command}")
@@ -1048,15 +1398,150 @@ def _install_production_fakes(
     monkeypatch.setattr(controller.subprocess, "Popen", fake_popen)
 
 
+def test_formal_deploy_failure_is_audited_inside_allocated_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    validator = tmp_path / "validator.py"
+    validator.write_text("# fake validator boundary\n", encoding="utf-8")
+    monkeypatch.setattr(controller, "_wait_for_pi", lambda *_args, **_kwargs: "gaps@pi")
+    monkeypatch.setattr(
+        controller,
+        "_ssh",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, "", ""),
+    )
+    monkeypatch.setattr(
+        controller,
+        "_remote_python",
+        lambda *_args, **_kwargs: json.dumps({"state": "absent"}),
+    )
+
+    def fail_transfer(command, **_kwargs):
+        if str(command[0]) == "scp":
+            raise ArchiveMismatch("forced deployment transfer failure")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(controller, "_run", fail_transfer)
+
+    with pytest.raises(ArchiveMismatch, match="forced deployment"):
+        controller.main(
+            _controller_argv(fixture, tmp_path, "--validator", str(validator))
+        )
+
+    run_id = confirmation_run_id("B2", 42)
+    attempt = tmp_path / "raw" / run_id / f"{run_id}__a001"
+    assert _read_status(attempt)["state"] == "failed"
+    assert "forced deployment transfer failure" in (attempt / "controller.log").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_two_formal_runs_verify_and_reuse_same_content_addressed_runtime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    validator = tmp_path / "validator.py"
+    validator.write_text("# fake validator boundary\n", encoding="utf-8")
+    events: list[str] = []
+    _install_production_fakes(monkeypatch, fixture, events)
+
+    assert controller.main(
+        _controller_argv(
+            fixture,
+            tmp_path,
+            "--runs",
+            "B2:42,B2:43",
+            "--validator",
+            str(validator),
+        )
+    ) == 0
+
+    for host in ("root@121.40.139.213", "gaps@pi"):
+        assert events.count(f"source-scp:{host}") == 1
+        assert events.count(f"deploy:{host}:fresh") == 1
+        assert events.count(f"deploy:{host}:reuse") == 1
+    for seed in (42, 43):
+        run_id = confirmation_run_id("B2", seed)
+        assert _read_status(tmp_path / "raw" / run_id / f"{run_id}__a001")["state"] == "canonical"
+
+
+def test_formal_server_launch_uses_only_frozen_source_and_absolute_ecs_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    validator = tmp_path / "validator.py"
+    validator.write_text("# fake validator boundary\n", encoding="utf-8")
+    events: list[str] = []
+    launches: list[str] = []
+    identities: dict[str, dict[str, int]] = {}
+    cleanups: list[str] = []
+    _install_production_fakes(
+        monkeypatch, fixture, events, launches, identities, cleanups
+    )
+
+    assert controller.main(
+        _controller_argv(fixture, tmp_path, "--validator", str(validator))
+    ) == 0
+
+    server_outer = next(source for source in launches if "REMOTE_LAUNCH_V1:server" in source)
+    supervisor = _supervisor_source(server_outer)
+    source_hash = fixture["source"]["source_archive_sha256"]
+    extracted_src = f"/root/GAPS/confirmation_runtime/{source_hash}/src"
+    assert _literal_assignment(supervisor, "cwd") == extracted_src
+    assert f"environment['PYTHONPATH'] = {extracted_src!r}" in supervisor
+    command = _literal_assignment(supervisor, "command")
+    data_index = command.index("--data-root")
+    assert command[data_index + 1] == "/root/GAPS/dataset/frozen_dataset"
+    assert "/root/GAPS" != _literal_assignment(supervisor, "cwd")
+    run_id = confirmation_run_id("B2", 42)
+    remote_attempt = f"/root/GAPS/confirmation_runtime/{source_hash}/attempts/{run_id}__a001"
+    assert command == [
+        "python",
+        "-m",
+        "gaps_flower.server_app",
+        "--data-root",
+        "/root/GAPS/dataset/frozen_dataset",
+        "--output-dir",
+        f"{remote_attempt}/raw/server/training",
+        "--observer-context",
+        f"{remote_attempt}/contexts/server.json",
+        "--observer-events",
+        f"{remote_attempt}/raw/server/events.jsonl",
+    ]
+
+    pi_sampler_outer = next(
+        source for source in launches if "REMOTE_LAUNCH_V1:pi-sampler" in source
+    )
+    sampler_command = _literal_assignment(_supervisor_source(pi_sampler_outer), "command")
+    pid_index = sampler_command.index("--pid")
+    assert int(sampler_command[pid_index + 1]) == identities["pi-client"]["child_pid"]
+    assert int(sampler_command[pid_index + 1]) != identities["pi-client"]["owner_pid"]
+
+    owned_registrations: list[tuple[int, int, int]] = []
+    for cleanup in cleanups:
+        loop = next(node for node in ast.walk(ast.parse(cleanup)) if isinstance(node, ast.For))
+        owned_registrations.extend(ast.literal_eval(loop.iter))
+        assert "os.getpgid(owner_pid) != owner_pgid" in cleanup
+        assert "process_start_ticks(owner_pid) != owner_start_ticks" in cleanup
+    owned_pgids = {row[1] for row in owned_registrations}
+    expected_remote_pgids = {
+        identity["owner_pgid"]
+        for label, identity in identities.items()
+        if label in {"server", "pi-client", "pi-sampler"}
+    }
+    assert owned_pgids == expected_remote_pgids
+    assert not ({identity["child_pid"] for identity in identities.values()} & owned_pgids)
+
+
 def test_main_validate_only_and_preflight_only_never_launch(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture = _frozen_input_fixture(tmp_path / "validate")
     monkeypatch.setattr(
         controller,
-        "deploy_source_archive",
+        "_wait_for_pi",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("validate-only deployed")
+            AssertionError("validate-only performed an external action")
         ),
     )
     assert controller.main(_controller_argv(fixture, tmp_path / "validate", "--validate-inputs-only")) == 0
@@ -1069,6 +1554,7 @@ def test_main_validate_only_and_preflight_only_never_launch(
     assert {"preflight:ecs", "preflight:pi", "preflight:pc"} <= set(events)
     assert not any(event.startswith("launch:") for event in events)
     assert "validator" not in events
+    assert not (tmp_path / "preflight" / "raw").exists()
 
 
 def test_main_formal_binds_real_helpers_in_fail_closed_order(

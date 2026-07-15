@@ -101,6 +101,44 @@ _ATTEMPT_ID_RE = re.compile(
 )
 _HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 _COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+_INSTANCE_RE = re.compile(r"^[0-9a-f]{32}$")
+_RFC3339_UTC_RE = re.compile(
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?Z$"
+)
+_FORBIDDEN_STATUS_KEY_PARTS = (
+    "accuracy",
+    "loss",
+    "nll",
+    "ece",
+    "recall",
+    "f1",
+    "metric",
+    "metrics",
+)
+_PROVENANCE_KEYS = {
+    "run_id",
+    "attempt_id",
+    "confirmation_commit",
+    "source_archive_sha256",
+    "dataset_manifest_sha256",
+    "algorithm_config_sha256",
+    "controller_owner",
+}
+_STATUS_KEYS = {
+    "sequence",
+    "run_id",
+    "attempt_id",
+    "state",
+    "event_type",
+    "reason",
+    "reason_category",
+    "wall_time_utc",
+    "confirmation_commit",
+    "source_archive_sha256",
+    "dataset_manifest_sha256",
+    "algorithm_config_sha256",
+    "audit_sha256",
+}
 _ATTEMPT_LOCKS: dict[str, threading.RLock] = {}
 _ATTEMPT_LOCKS_GUARD = threading.Lock()
 
@@ -185,6 +223,9 @@ class OwnedProcess:
     host_id: str
     label: str
     pid: int
+    owner_pid: int | None = None
+    owner_pgid: int | None = None
+    owner_start_ticks: int | None = None
     handle: Any | None = None
     host: str | None = None
     python_bin: str | None = None
@@ -203,6 +244,7 @@ class ProductionRuntime:
     validator: Path
     poll_seconds: float
     timeout_seconds: float
+    pc_runtime_root: Path
 
 
 @dataclass(frozen=True)
@@ -433,6 +475,137 @@ def _provenance_payload(provenance: Provenance) -> dict[str, str]:
     }
 
 
+def _reject_classification_metric_keys(value: Any) -> None:
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            if not isinstance(key, str):
+                raise RuntimeError("status JSON object keys must be strings")
+            lowered = key.lower()
+            if any(part in lowered for part in _FORBIDDEN_STATUS_KEY_PARTS):
+                raise RuntimeError(f"classification metric key is forbidden: {key}")
+            _reject_classification_metric_keys(child)
+    elif isinstance(value, list):
+        for child in value:
+            _reject_classification_metric_keys(child)
+
+
+def _validate_rfc3339_utc(value: Any) -> None:
+    if not isinstance(value, str) or not _RFC3339_UTC_RE.fullmatch(value):
+        raise RuntimeError("status wall_time_utc must be RFC3339 UTC")
+    try:
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00")
+    except ValueError as exc:
+        raise RuntimeError("status wall_time_utc must be RFC3339 UTC") from exc
+    if parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+        raise RuntimeError("status wall_time_utc must be RFC3339 UTC")
+
+
+def _validate_bound_provenance_payload(
+    payload: Mapping[str, Any], run_id: str, attempt_id: str
+) -> None:
+    _reject_classification_metric_keys(payload)
+    if set(payload) != _PROVENANCE_KEYS:
+        raise RuntimeError("attempt provenance has non-exact schema")
+    if payload.get("run_id") != run_id or payload.get("attempt_id") != attempt_id:
+        raise RuntimeError("bound attempt provenance identity mismatch")
+    owner = payload.get("controller_owner")
+    if not isinstance(owner, Mapping) or set(owner) != {"pid", "instance_id"}:
+        raise RuntimeError("attempt provenance owner has non-exact schema")
+    pid = owner.get("pid")
+    instance_id = owner.get("instance_id")
+    if (
+        not isinstance(pid, int)
+        or isinstance(pid, bool)
+        or pid <= 0
+        or not isinstance(instance_id, str)
+        or not _INSTANCE_RE.fullmatch(instance_id)
+    ):
+        raise RuntimeError("attempt provenance owner has invalid type")
+
+
+def _status_combination_is_legal(payload: Mapping[str, Any]) -> bool:
+    state = payload["state"]
+    event_type = payload["event_type"]
+    reason = payload["reason"]
+    audit = payload["audit_sha256"]
+    if state == "running":
+        return audit is None and (
+            (reason == "attempt_allocated" and event_type == "attempt_start")
+            or (
+                reason == "preflight_passed"
+                and event_type in {"preflight_passed", "controller_progress"}
+            )
+        )
+    if state == "canonical":
+        return (
+            event_type == "attempt_end"
+            and reason == "validator_accepted"
+            and isinstance(audit, str)
+            and bool(_HASH_RE.fullmatch(audit))
+        )
+    if state == "invalid":
+        return (
+            event_type == "attempt_failure"
+            and reason == "validator_rejected"
+            and audit is None
+        )
+    if state in {"failed", "aborted"}:
+        return (
+            event_type == "attempt_failure"
+            and reason
+            not in {
+                "attempt_allocated",
+                "preflight_passed",
+                "validator_accepted",
+                "validator_rejected",
+            }
+            and audit is None
+        )
+    return False
+
+
+def _validate_status_payload(
+    payload: Mapping[str, Any],
+    *,
+    sequence: int,
+    run_id: str,
+    attempt_id: str,
+    provenance: Mapping[str, str],
+) -> None:
+    _reject_classification_metric_keys(payload)
+    if set(payload) != _STATUS_KEYS:
+        raise RuntimeError("status event has non-exact schema")
+    if not isinstance(payload.get("sequence"), int) or isinstance(
+        payload.get("sequence"), bool
+    ):
+        raise RuntimeError("status event sequence has invalid type")
+    if payload["sequence"] != sequence:
+        raise RuntimeError("status event sequence does not match immutable filename")
+    for field in ("run_id", "attempt_id", "state", "event_type", "reason", "reason_category"):
+        if not isinstance(payload.get(field), str):
+            raise RuntimeError(f"status event {field} has invalid type")
+    if payload["run_id"] != run_id or payload["attempt_id"] != attempt_id:
+        raise RuntimeError("status event attempt identity mismatch")
+    if payload["state"] not in VALID_ATTEMPT_STATES:
+        raise RuntimeError("status event has invalid state")
+    reason = payload["reason"]
+    if reason not in STATUS_REASON_CATEGORIES:
+        raise RuntimeError("status event has invalid reason code")
+    if payload["reason_category"] != STATUS_REASON_CATEGORIES[reason]:
+        raise RuntimeError("status reason category mismatch")
+    _validate_rfc3339_utc(payload.get("wall_time_utc"))
+    for field, value in provenance.items():
+        if payload.get(field) != value:
+            raise RuntimeError(f"status provenance mismatch: {field}")
+    audit = payload.get("audit_sha256")
+    if audit is not None and (
+        not isinstance(audit, str) or not _HASH_RE.fullmatch(audit)
+    ):
+        raise RuntimeError("status audit SHA-256 has invalid type")
+    if not _status_combination_is_legal(payload):
+        raise RuntimeError("status event/state/reason/audit combination is invalid")
+
+
 def bind_attempt_provenance(attempt: Attempt, provenance: Provenance) -> Path:
     expected = _provenance_payload(provenance)
     attempt_path, run_id, attempt_id = _guard_attempt_path(attempt.path)
@@ -457,6 +630,7 @@ def _load_bound_provenance(attempt_path: Path) -> tuple[Provenance, dict[str, An
     if not path.is_file() or path.is_symlink():
         raise RuntimeError("attempt provenance is not immutably bound")
     payload = _load_json(path)
+    _validate_bound_provenance_payload(payload, attempt_path.parent.name, attempt_path.name)
     provenance = Provenance(
         confirmation_commit=payload.get("confirmation_commit"),
         source_archive_sha256=payload.get("source_archive_sha256"),
@@ -502,23 +676,16 @@ def _read_status_chain(
     terminal_seen = False
     for number, path in numbered:
         payload = _load_json(path)
-        if payload.get("sequence") != number:
-            raise RuntimeError("status event sequence does not match immutable filename")
-        if payload.get("run_id") != run_id or payload.get("attempt_id") != attempt_id:
-            raise RuntimeError("status event attempt identity mismatch")
-        state = payload.get("state")
-        if state not in VALID_ATTEMPT_STATES:
-            raise RuntimeError("status event has invalid state")
+        _validate_status_payload(
+            payload,
+            sequence=number,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            provenance=expected_provenance,
+        )
+        state = payload["state"]
         if terminal_seen:
             raise RuntimeError("terminal attempt status has a later event")
-        reason = payload.get("reason")
-        if reason not in STATUS_REASON_CATEGORIES:
-            raise RuntimeError("status event has invalid reason code")
-        if payload.get("reason_category") != STATUS_REASON_CATEGORIES[reason]:
-            raise RuntimeError("status reason category mismatch")
-        for field, value in expected_provenance.items():
-            if payload.get(field) != value:
-                raise RuntimeError(f"status provenance mismatch: {field}")
         if state in TERMINAL_ATTEMPT_STATES:
             terminal_seen = True
         chain.append(payload)
@@ -528,6 +695,7 @@ def _read_status_chain(
         if not current_path.is_file() or current_path.is_symlink():
             raise RuntimeError("current status is missing or is a symlink")
         current = _load_json(current_path)
+        _reject_classification_metric_keys(current)
         if current != chain[-1]:
             raise RuntimeError("current status does not match latest immutable event")
     return chain
@@ -560,18 +728,36 @@ def mark_attempt(
         number = len(chain) + 1
         if number > 999:
             raise RuntimeError("status event sequence exhausted")
+        if event_type is None:
+            if state == "running":
+                event_type = (
+                    "attempt_start"
+                    if reason == "attempt_allocated"
+                    else "preflight_passed"
+                )
+            elif state == "canonical":
+                event_type = "attempt_end"
+            else:
+                event_type = "attempt_failure"
         status = {
             "sequence": number,
             "run_id": run_id,
             "attempt_id": attempt_id,
             "state": state,
-            "event_type": event_type or state,
+            "event_type": event_type,
             "reason": reason,
             "reason_category": STATUS_REASON_CATEGORIES[reason],
             "wall_time_utc": _utc_now(),
             **_provenance_payload(provenance),
             "audit_sha256": audit_sha256,
         }
+        _validate_status_payload(
+            status,
+            sequence=number,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            provenance=_provenance_payload(provenance),
+        )
         events_root = attempt_path / "status_events"
         if not events_root.exists():
             events_root.mkdir(parents=False)
@@ -714,10 +900,54 @@ def verify_and_extract_archive(
     }
 
 
+def _verify_extracted_source(
+    destination: Path, source_manifest: Mapping[str, Any]
+) -> dict[str, str]:
+    destination = _guard_real_directory(Path(destination), "extracted source")
+    expected = _expected_regular_members(source_manifest)
+    actual: list[dict[str, Any]] = []
+    for path in destination.rglob("*"):
+        if path.is_symlink():
+            raise ArchiveMismatch(f"extracted source contains symlink: {path}")
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            raise ArchiveMismatch(f"extracted source contains non-regular path: {path}")
+        actual.append(
+            {
+                "relative_path": path.relative_to(destination).as_posix(),
+                "byte_size": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+        )
+    actual.sort(key=lambda row: row["relative_path"])
+    if actual != expected:
+        raise ArchiveMismatch("extracted tracked members do not match source manifest")
+    return {
+        "source_archive_sha256": str(source_manifest["source_archive_sha256"]),
+        "regular_members_sha256": str(source_manifest["regular_members_sha256"]),
+    }
+
+
+def _remote_deploy_state_source(archive_path: str, src_path: str) -> str:
+    return f"""# REMOTE_DEPLOY_STATE_V1
+import json
+from pathlib import Path
+archive_path = Path({archive_path!r})
+src_path = Path({src_path!r})
+archive_exists = archive_path.exists()
+src_exists = src_path.exists()
+state = 'complete' if archive_exists and src_exists else ('absent' if not archive_exists and not src_exists else 'partial')
+print(json.dumps({{'state': state}}, sort_keys=True))
+"""
+
+
 def _remote_extract_source(
     archive_path: str,
     src_path: str,
     source_manifest: Mapping[str, Any],
+    *,
+    allow_fresh_extract: bool = False,
 ) -> str:
     """Return a fail-closed remote script; `_remote_python` transports it safely."""
     manifest_json = json.dumps(source_manifest, ensure_ascii=False, sort_keys=True)
@@ -728,6 +958,7 @@ from pathlib import Path, PurePosixPath
 manifest = json.loads({manifest_json!r})
 archive_path = Path({archive_path!r})
 src_path = Path({src_path!r})
+allow_fresh_extract = {allow_fresh_extract!r}
 def digest(path):
     value = hashlib.sha256()
     with path.open('rb') as handle:
@@ -747,32 +978,56 @@ def safe_parts(relative):
     return parts
 if digest(archive_path) != manifest['source_archive_sha256']:
     raise RuntimeError('source archive SHA-256 mismatch after transfer')
+def verify_src():
+    expected = sorted(manifest['regular_members'], key=lambda item: item['relative_path'])
+    actual = []
+    for path in src_path.rglob('*'):
+        if path.is_symlink():
+            raise RuntimeError('tracked member source contains symlink')
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            raise RuntimeError('tracked member source contains non-regular path')
+        actual.append({{
+            'relative_path': path.relative_to(src_path).as_posix(),
+            'byte_size': path.stat().st_size,
+            'sha256': digest(path),
+        }})
+    actual.sort(key=lambda item: item['relative_path'])
+    if actual != expected:
+        raise RuntimeError('tracked member source mismatch')
 if src_path.exists():
-    raise RuntimeError('refusing non-fresh src directory')
-src_path.mkdir(parents=True)
-try:
-    with tarfile.open(archive_path, 'r:') as archive:
-        regular = {{item.name: item for item in archive.getmembers() if item.isfile()}}
-        expected = manifest['regular_members']
-        if sorted(regular) != sorted(item['relative_path'] for item in expected):
-            raise RuntimeError('archive tracked member set mismatch')
-        for item in expected:
-            relative = item['relative_path']
-            parts = safe_parts(relative)
-            source = archive.extractfile(regular[relative])
-            if source is None:
-                raise RuntimeError('missing tracked member')
-            target = src_path.joinpath(*parts)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if os.path.commonpath([str(src_path.resolve()), str(target.parent.resolve())]) != str(src_path.resolve()):
-                raise RuntimeError('tracked member escaped fresh src')
-            with source, target.open('xb') as handle:
-                shutil.copyfileobj(source, handle)
-            if target.stat().st_size != item['byte_size'] or digest(target) != item['sha256']:
-                raise RuntimeError('extracted tracked member mismatch')
-except BaseException:
-    shutil.rmtree(src_path, ignore_errors=True)
-    raise
+    if not src_path.is_dir() or src_path.is_symlink():
+        raise RuntimeError('partial content-addressed runtime')
+    verify_src()
+elif not allow_fresh_extract:
+    raise RuntimeError('partial content-addressed runtime')
+else:
+    src_path.mkdir(parents=True)
+    try:
+        with tarfile.open(archive_path, 'r:') as archive:
+            regular = {{item.name: item for item in archive.getmembers() if item.isfile()}}
+            expected = manifest['regular_members']
+            if sorted(regular) != sorted(item['relative_path'] for item in expected):
+                raise RuntimeError('archive tracked member set mismatch')
+            for item in expected:
+                relative = item['relative_path']
+                parts = safe_parts(relative)
+                source = archive.extractfile(regular[relative])
+                if source is None:
+                    raise RuntimeError('missing tracked member')
+                target = src_path.joinpath(*parts)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if os.path.commonpath([str(src_path.resolve()), str(target.parent.resolve())]) != str(src_path.resolve()):
+                    raise RuntimeError('tracked member escaped fresh src')
+                with source, target.open('xb') as handle:
+                    shutil.copyfileobj(source, handle)
+                if target.stat().st_size != item['byte_size'] or digest(target) != item['sha256']:
+                    raise RuntimeError('extracted tracked member mismatch')
+        verify_src()
+    except BaseException:
+        shutil.rmtree(src_path, ignore_errors=True)
+        raise
 print(json.dumps({{
     'source_archive_sha256': digest(archive_path),
     'regular_members_sha256': manifest['regular_members_sha256'],
@@ -798,11 +1053,20 @@ def deploy_source_archive(
     pc_root = Path(pc_runtime_root) / source_hash
     pc_archive = pc_root / "source.tar"
     pc_src = pc_root / "src"
+    pc_existed = pc_root.exists()
+    if pc_root.is_symlink():
+        raise RuntimeError(f"PC content-addressed runtime is a symlink: {pc_root}")
     pc_root.mkdir(parents=True, exist_ok=True)
-    if pc_archive.exists():
-        raise FileExistsError(f"refusing to overwrite immutable source archive: {pc_archive}")
-    shutil.copyfile(archive_path, pc_archive)
-    pc_report = verify_and_extract_archive(pc_archive, pc_src, source_manifest)
+    archive_exists = pc_archive.exists()
+    src_exists = pc_src.exists()
+    if archive_exists and src_exists:
+        _verify_archive(pc_archive, source_manifest)
+        pc_report = _verify_extracted_source(pc_src, source_manifest)
+    elif archive_exists or src_exists or pc_existed:
+        raise RuntimeError(f"partial PC content-addressed runtime: {pc_root}")
+    else:
+        shutil.copyfile(archive_path, pc_archive)
+        pc_report = verify_and_extract_archive(pc_archive, pc_src, source_manifest)
     deployments: dict[str, HostDeployment] = {
         "pc": HostDeployment("pc", pc_archive, pc_src, **pc_report)
     }
@@ -823,15 +1087,40 @@ def deploy_source_archive(
     for host_id, host, root, python_bin in remote_rows:
         remote_archive = f"{root}/source.tar"
         remote_src = f"{root}/src"
-        ssh(
+        ssh(host, f"mkdir -p '{root}'")
+        state_output = remote_python(
             host,
-            f"mkdir -p '{root}' && test ! -e '{remote_archive}' && test ! -e '{remote_src}'",
+            python_bin,
+            _remote_deploy_state_source(remote_archive, remote_src),
+            timeout=30,
         )
-        run(["scp", "-p", str(archive_path), f"{host}:{remote_archive}"], timeout=300)
+        try:
+            state_report = json.loads(state_output.splitlines()[-1])
+        except (IndexError, json.JSONDecodeError) as exc:
+            raise ArchiveMismatch(f"invalid {host_id} deployment state report") from exc
+        if not isinstance(state_report, dict) or set(state_report) != {"state"}:
+            raise ArchiveMismatch(f"invalid {host_id} deployment state report")
+        state = state_report["state"]
+        if state == "partial":
+            raise ArchiveMismatch(f"partial {host_id} content-addressed runtime")
+        if state not in {"absent", "complete"}:
+            raise ArchiveMismatch(f"invalid {host_id} deployment state")
+        if state == "absent":
+            transfer = run(
+                ["scp", "-p", str(archive_path), f"{host}:{remote_archive}"],
+                timeout=300,
+            )
+            if transfer.returncode != 0:
+                raise ArchiveMismatch(f"{host_id} source archive transfer failed")
         output = remote_python(
             host,
             python_bin,
-            _remote_extract_source(remote_archive, remote_src, source_manifest),
+            _remote_extract_source(
+                remote_archive,
+                remote_src,
+                source_manifest,
+                allow_fresh_extract=state == "absent",
+            ),
             timeout=300,
         )
         try:
@@ -1206,6 +1495,25 @@ def _replace_command_option(
     return result
 
 
+def _rewrite_ecs_dataset_paths(command: Sequence[str]) -> list[str]:
+    result = [str(item) for item in command]
+    for option in ("--data-root", "--server-val-data", "--server-calib-data"):
+        indexes = [index for index, item in enumerate(result) if item == option]
+        if not indexes:
+            continue
+        if len(indexes) != 1 or indexes[0] + 1 >= len(result):
+            raise ValueError(f"frozen server command must contain one value for {option}")
+        index = indexes[0] + 1
+        rewritten: list[str] = []
+        for relative in result[index].split(","):
+            parts = validate_archive_member_path(relative)
+            if parts[0] != "dataset":
+                raise ValueError(f"frozen {option} must be rooted at dataset/: {relative}")
+            rewritten.append(str(PurePosixPath("/root/GAPS").joinpath(*parts)))
+        result[index] = ",".join(rewritten)
+    return result
+
+
 def _host_attempt_root(deployment: HostDeployment, attempt_id: str) -> str:
     archive_parent = PurePosixPath(str(deployment.archive_path)).parent
     return str(archive_parent / "attempts" / attempt_id)
@@ -1360,7 +1668,10 @@ def _remote_launch_process(
     log_path: str,
     exit_path: str,
     python_path: str,
+    remote_python: Callable[..., str] | None = None,
 ) -> OwnedProcess:
+    remote_python = remote_python or _remote_python
+    pid_path = f"{exit_path}.child.pid"
     supervisor = f"""
 import os, subprocess
 from pathlib import Path
@@ -1368,15 +1679,30 @@ command = {list(command)!r}
 cwd = {cwd!r}
 log_path = Path({log_path!r})
 exit_path = Path({exit_path!r})
+pid_path = Path({pid_path!r})
 log_path.parent.mkdir(parents=True, exist_ok=True)
 environment = os.environ.copy()
 environment['PYTHONPATH'] = {python_path!r}
 with log_path.open('ab', buffering=0) as log:
-    result = subprocess.run(command, cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=environment)
-exit_path.write_text(str(result.returncode), encoding='ascii')
+    child = subprocess.Popen(command, cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=environment)
+    try:
+        with pid_path.open('x', encoding='ascii') as handle:
+            handle.write(str(child.pid))
+    except BaseException:
+        child.terminate()
+        child.wait()
+        raise
+    returncode = child.wait()
+with exit_path.open('x', encoding='ascii') as handle:
+    handle.write(str(returncode))
 """
     source = f"""# REMOTE_LAUNCH_V1:{label}
-import subprocess
+import json, os, signal, subprocess, time
+from pathlib import Path
+pid_path = Path({pid_path!r})
+def process_start_ticks(pid):
+    fields = Path(f'/proc/{{pid}}/stat').read_text(encoding='ascii').rsplit(')', 1)[1].split()
+    return int(fields[19])
 process = subprocess.Popen(
     [{python_bin!r}, '-c', {supervisor!r}],
     stdin=subprocess.DEVNULL,
@@ -1385,13 +1711,56 @@ process = subprocess.Popen(
     start_new_session=True,
     close_fds=True,
 )
-print(process.pid)
+try:
+    owner_start_ticks = process_start_ticks(process.pid)
+except BaseException:
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    raise
+deadline = time.monotonic() + 30
+while not pid_path.is_file() and process.poll() is None and time.monotonic() < deadline:
+    time.sleep(0.05)
+if not pid_path.is_file():
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    raise RuntimeError('remote child PID was not published')
+print(json.dumps({{
+    'child_pid': int(pid_path.read_text(encoding='ascii')),
+    'owner_pid': process.pid,
+    'owner_pgid': process.pid,
+    'owner_start_ticks': owner_start_ticks,
+}}, sort_keys=True))
 """
-    output = _remote_python(host, python_bin, source, timeout=30)
+    output = remote_python(host, python_bin, source, timeout=40)
+    try:
+        report = json.loads(output.splitlines()[-1])
+    except (IndexError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"invalid remote launch identity report: {label}") from exc
+    if not isinstance(report, dict) or set(report) != {
+        "child_pid",
+            "owner_pid",
+            "owner_pgid",
+            "owner_start_ticks",
+    }:
+        raise RuntimeError(f"incomplete remote launch identity report: {label}")
+    if any(
+        not isinstance(report[field], int)
+        or isinstance(report[field], bool)
+        or report[field] <= 0
+        for field in ("child_pid", "owner_pid", "owner_pgid", "owner_start_ticks")
+    ):
+        raise RuntimeError(f"invalid remote launch PID report: {label}")
     return OwnedProcess(
         host_id=host_id,
         label=label,
-        pid=int(output.splitlines()[-1]),
+        pid=report["child_pid"],
+        owner_pid=report["owner_pid"],
+        owner_pgid=report["owner_pgid"],
+        owner_start_ticks=report["owner_start_ticks"],
         host=host,
         python_bin=python_bin,
         exit_path=exit_path,
@@ -1435,13 +1804,19 @@ def _remote_process_state(process: OwnedProcess) -> tuple[bool, int | None]:
     source = f"""# REMOTE_PROCESS_STATE_V1
 import json, os
 from pathlib import Path
-pid = {process.pid}
+pid = {process.owner_pid!r}
+owner_pgid = {process.owner_pgid!r}
+owner_start_ticks = {process.owner_start_ticks!r}
+if not isinstance(pid, int) or pid <= 0:
+    raise RuntimeError('missing owned supervisor PID')
 exit_path = Path({str(process.exit_path)!r})
-running = True
-try:
-    os.kill(pid, 0)
-except OSError:
-    running = False
+proc_path = Path(f'/proc/{{pid}}/stat')
+running = proc_path.is_file()
+if running:
+    fields = proc_path.read_text(encoding='ascii').rsplit(')', 1)[1].split()
+    actual_start_ticks = int(fields[19])
+    if actual_start_ticks != owner_start_ticks or os.getpgid(pid) != owner_pgid:
+        raise RuntimeError('owned supervisor identity changed')
 returncode = int(exit_path.read_text(encoding='ascii')) if exit_path.is_file() else None
 print(json.dumps({{'running': running, 'returncode': returncode}}))
 """
@@ -1474,18 +1849,41 @@ print(json.dumps({{'returncode': returncode}}))
 
 
 def _remote_cleanup(processes: Sequence[OwnedProcess]) -> None:
-    by_host: dict[tuple[str, str], list[int]] = {}
+    by_host: dict[tuple[str, str], list[tuple[int, int, int]]] = {}
     for process in processes:
         if process.host_id == "pc":
             continue
-        by_host.setdefault((str(process.host), str(process.python_bin)), []).append(process.pid)
-    for (host, python_bin), pids in by_host.items():
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value <= 0
+            for value in (
+                process.owner_pid,
+                process.owner_pgid,
+                process.owner_start_ticks,
+            )
+        ):
+            raise RuntimeError(f"remote process lacks owned identity: {process.label}")
+        by_host.setdefault((str(process.host), str(process.python_bin)), []).append(
+            (
+                process.owner_pid,
+                process.owner_pgid,
+                process.owner_start_ticks,
+            )
+        )
+    for (host, python_bin), registrations in by_host.items():
         source = f"""# REMOTE_CLEANUP_V1
 import os, signal
-for pid in {pids!r}:
+from pathlib import Path
+def process_start_ticks(pid):
+    fields = Path(f'/proc/{{pid}}/stat').read_text(encoding='ascii').rsplit(')', 1)[1].split()
+    return int(fields[19])
+for owner_pid, owner_pgid, owner_start_ticks in {registrations!r}:
     try:
-        os.killpg(pid, signal.SIGTERM)
-    except (ProcessLookupError, PermissionError):
+        if os.getpgid(owner_pid) != owner_pgid:
+            continue
+        if process_start_ticks(owner_pid) != owner_start_ticks:
+            continue
+        os.killpg(owner_pgid, signal.SIGTERM)
+    except (FileNotFoundError, ProcessLookupError, PermissionError):
         pass
 print('CLEANED')
 """
@@ -1495,9 +1893,13 @@ print('CLEANED')
 def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
     state: dict[str, Any] = {}
 
+    def active_runtime() -> ProductionRuntime:
+        return state.get("runtime", runtime)
+
     def paths(attempt: Attempt) -> dict[str, str | Path]:
-        ecs_root = _host_attempt_root(runtime.deployments["ecs"], attempt.attempt_id)
-        pi_root = _host_attempt_root(runtime.deployments["pi"], attempt.attempt_id)
+        deployments = active_runtime().deployments
+        ecs_root = _host_attempt_root(deployments["ecs"], attempt.attempt_id)
+        pi_root = _host_attempt_root(deployments["pi"], attempt.attempt_id)
         return {
             "ecs_root": ecs_root,
             "ecs_raw": f"{ecs_root}/raw/server",
@@ -1507,6 +1909,18 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
         }
 
     def prepare(attempt: Attempt) -> None:
+        deployments = deploy_source_archive(
+            runtime.frozen.archive_path,
+            runtime.frozen.source_manifest,
+            ecs_host=runtime.ecs_host,
+            pi_host=runtime.pi_host,
+            pc_runtime_root=runtime.pc_runtime_root,
+            run=_run,
+            ssh=_ssh,
+            remote_python=_remote_python,
+        )
+        prepared_runtime = replace(runtime, deployments=deployments)
+        state["runtime"] = prepared_runtime
         context_paths = write_host_contexts(
             attempt,
             group_id=runtime.frozen_run.group_id,
@@ -1528,12 +1942,16 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
         )
         for local, host, remote in remote_contexts:
             _run(["scp", "-p", str(local), f"{host}:{remote}"], timeout=120)
-        preflight_frozen_run(runtime, attempt.attempt_id)
+        preflight_frozen_run(prepared_runtime, attempt.attempt_id)
 
     def launch_server(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
+        deployments = active_runtime().deployments
+        command = _rewrite_ecs_dataset_paths(
+            runtime.frozen_run.manifest["commands"]["server_ecs"]
+        )
         command = _replace_command_option(
-            runtime.frozen_run.manifest["commands"]["server_ecs"],
+            command,
             "--output-dir",
             f"{runtime_paths['ecs_raw']}/training",
         )
@@ -1549,14 +1967,15 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             host=runtime.ecs_host,
             python_bin="/root/gaps_env/bin/python",
             command=command,
-            cwd="/root/GAPS",
+            cwd=str(deployments["ecs"].src_path),
             log_path=f"{runtime_paths['ecs_raw']}/server.log",
             exit_path=f"{runtime_paths['ecs_raw']}/server.exit",
-            python_path=str(runtime.deployments["ecs"].src_path),
+            python_path=str(deployments["ecs"].src_path),
         )
 
     def launch_pi_client(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
+        deployments = active_runtime().deployments
         command = _replace_command_option(
             runtime.frozen_run.manifest["commands"]["client_c1_pi"],
             "--observer-context",
@@ -1571,15 +1990,16 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             host=runtime.pi_host,
             python_bin="/home/gaps/GAPS/gaps_rpi_env/bin/python",
             command=command,
-            cwd=str(runtime.deployments["pi"].src_path),
+            cwd=str(deployments["pi"].src_path),
             log_path=f"{runtime_paths['pi_raw']}/client.log",
             exit_path=f"{runtime_paths['pi_raw']}/client.exit",
-            python_path=str(runtime.deployments["pi"].src_path),
+            python_path=str(deployments["pi"].src_path),
         )
 
     def launch_pi_sampler(attempt: Attempt, client: object) -> OwnedProcess:
         assert isinstance(client, OwnedProcess)
         runtime_paths = state["paths"]
+        deployments = active_runtime().deployments
         stop_path = f"{runtime_paths['pi_raw']}/sampler.stop"
         command = [
             "/home/gaps/GAPS/gaps_rpi_env/bin/python",
@@ -1600,15 +2020,16 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             host=runtime.pi_host,
             python_bin="/home/gaps/GAPS/gaps_rpi_env/bin/python",
             command=command,
-            cwd=str(runtime.deployments["pi"].src_path),
+            cwd=str(deployments["pi"].src_path),
             log_path=f"{runtime_paths['pi_raw']}/sampler.log",
             exit_path=f"{runtime_paths['pi_raw']}/sampler.exit",
-            python_path=str(runtime.deployments["pi"].src_path),
+            python_path=str(deployments["pi"].src_path),
         )
         return replace(process, stop_path=stop_path)
 
     def launch_pc_client(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
+        deployments = active_runtime().deployments
         command = list(runtime.frozen_run.manifest["commands"]["client_c2_pc"])
         command[0] = sys.executable
         command = _replace_command_option(
@@ -1624,13 +2045,14 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
         return _local_launch_process(
             label="pc-client",
             command=command,
-            cwd=Path(runtime.deployments["pc"].src_path),
+            cwd=Path(deployments["pc"].src_path),
             log_root=Path(runtime_paths["pc_raw"]) / "client_logs",
         )
 
     def launch_pc_sampler(attempt: Attempt, client: object) -> OwnedProcess:
         assert isinstance(client, OwnedProcess)
         runtime_paths = state["paths"]
+        deployments = active_runtime().deployments
         stop_path = Path(runtime_paths["pc_raw"]) / "sampler.stop"
         command = [
             sys.executable,
@@ -1648,7 +2070,7 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
         return _local_launch_process(
             label="pc-sampler",
             command=command,
-            cwd=Path(runtime.deployments["pc"].src_path),
+            cwd=Path(deployments["pc"].src_path),
             log_root=Path(runtime_paths["pc_raw"]) / "sampler_logs",
             stop_path=stop_path,
         )
@@ -2006,16 +2428,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     pi_host = _wait_for_pi(
         pi_hosts, args.wait_for_pi_minutes, args.pi_retry_seconds
     )
-    deployments = deploy_source_archive(
-        frozen.archive_path,
-        frozen.source_manifest,
-        ecs_host=args.ecs_host,
-        pi_host=pi_host,
-        pc_runtime_root=args.pc_runtime_root,
-        run=_run,
-        ssh=_ssh,
-        remote_python=_remote_python,
-    )
+    deployments: Mapping[str, HostDeployment]
+    if args.preflight_only:
+        deployments = deploy_source_archive(
+            frozen.archive_path,
+            frozen.source_manifest,
+            ecs_host=args.ecs_host,
+            pi_host=pi_host,
+            pc_runtime_root=args.pc_runtime_root,
+            run=_run,
+            ssh=_ssh,
+            remote_python=_remote_python,
+        )
+    else:
+        deployments = {}
     for frozen_run in selected_runs:
         runtime = ProductionRuntime(
             frozen=frozen,
@@ -2026,6 +2452,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             validator=validator,
             poll_seconds=args.poll_seconds,
             timeout_seconds=args.run_timeout_seconds,
+            pc_runtime_root=args.pc_runtime_root,
         )
         if args.preflight_only:
             preflight_frozen_run(runtime, f"{frozen_run.run_id}__a000")
