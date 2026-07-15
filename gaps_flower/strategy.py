@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -17,6 +18,8 @@ from gaps_flower.domain_adaptation_inputs import (
     load_domain_adaptation_arrays,
     validate_domain_adaptation_request,
 )
+from gaps_flower.flower_message_audit import audit_fit_ins, audit_fit_res
+from gaps_flower.observability import NullObserver
 
 
 class CheckpointFedAvg(fl.server.strategy.FedAvg):
@@ -30,9 +33,11 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         output_dir: str,
         run_name: str = "",
         save_history: bool = True,
+        observer=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self.observer = observer or NullObserver()
         self.parameter_keys = parameter_keys
         self.reference_state = reference_state
         self.output_dir = Path(output_dir)
@@ -40,6 +45,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         self.run_name = run_name
         self.save_history = save_history
         self._round_events = {}
+        self._fit_round_start_ns: Dict[int, int] = {}
         self.history_path = self.output_dir / "history.json"
 
     def _round_event(self, server_round: int) -> dict:
@@ -438,6 +444,15 @@ class GapsStrategy(CheckpointFedAvg):
         class-phase statistics. From later rounds, ``gaps_cls`` clients can use
         these EMA prototypes in ``Client.train_one_round`` for alignment.
         """
+        round_start_ns = time.perf_counter_ns()
+        self._fit_round_start_ns[int(server_round)] = round_start_ns
+        self.observer.emit(
+            "fit_round_start",
+            round_idx=int(server_round),
+            client_id=None,
+            status="started",
+            payload={},
+        )
         configured = super().configure_fit(server_round, parameters, client_manager)
         proto_payload = self._semantic_protos_json() if self.semantic_protos else ""
         for _client, fit_ins in configured:
@@ -446,6 +461,28 @@ class GapsStrategy(CheckpointFedAvg):
             if proto_payload:
                 fit_ins.config["semantic_protos_json"] = proto_payload
                 fit_ins.config["semantic_proto_count"] = int(len(self.semantic_protos))
+        if not isinstance(self.observer, NullObserver):
+            for client, fit_ins in configured:
+                audit = audit_fit_ins(fit_ins)
+                self.observer.emit(
+                    "flower_fitins_prepared",
+                    round_idx=int(server_round),
+                    client_id=str(client.cid),
+                    status="succeeded",
+                    payload={
+                        "proxy_id": str(client.cid),
+                        "downlink_audit": {
+                            "logical": audit.logical,
+                            "application_message_bytes": (
+                                audit.application_message_bytes
+                            ),
+                            "application_message_sha256": (
+                                audit.application_message_sha256
+                            ),
+                        },
+                    },
+                    flower_serialize_ns=audit.flower_serialize_ns,
+                )
         return configured
 
     def aggregate_fit(
@@ -454,13 +491,78 @@ class GapsStrategy(CheckpointFedAvg):
         results: List[Tuple[ClientProxy, FitRes]],
         failures: List[BaseException],
     ) -> Tuple[Optional[Parameters], dict]:
+        aggregate_start_ns = time.perf_counter_ns()
+        server_da_total_ns = 0
+        da_executed = False
+        self.observer.emit(
+            "server_aggregate_start",
+            round_idx=int(server_round),
+            client_id=None,
+            status="started",
+            payload={},
+        )
         if not results:
+            aggregate_end_ns = time.perf_counter_ns()
+            aggregate_total_ns = aggregate_end_ns - aggregate_start_ns
+            round_start_ns = self._fit_round_start_ns.pop(
+                int(server_round), aggregate_start_ns
+            )
+            timing_payload = {
+                "server_aggregate_fit_total_ns": aggregate_total_ns,
+                "server_da_total_ns": 0,
+                "server_aggregate_non_da_ns": aggregate_total_ns,
+                "da_executed": False,
+            }
+            self.observer.emit(
+                "server_aggregate_end",
+                round_idx=int(server_round),
+                client_id=None,
+                status="succeeded",
+                payload=timing_payload,
+            )
+            self.observer.emit(
+                "fit_round_end",
+                round_idx=int(server_round),
+                client_id=None,
+                status="succeeded",
+                payload={
+                    **timing_payload,
+                    "fit_round_wall_ns": aggregate_end_ns - round_start_ns,
+                },
+            )
             return None, {}
 
         # ── 1. 每个客户端: Flower Parameters → state_dict(OrderedDict) ──
         client_state_dicts: List[OrderedDict] = []
         num_examples_list: List[int] = []
-        for _proxy, fit_res in results:
+        for proxy, fit_res in results:
+            if not isinstance(self.observer, NullObserver):
+                audit = audit_fit_res(fit_res)
+                raw_client_id = (fit_res.metrics or {}).get("client_id")
+                resolved_client_id = (
+                    f"C{int(raw_client_id)}"
+                    if raw_client_id is not None
+                    else str(proxy.cid)
+                )
+                self.observer.emit(
+                    "flower_fitres_available",
+                    round_idx=int(server_round),
+                    client_id=resolved_client_id,
+                    status="succeeded",
+                    payload={
+                        "proxy_id": str(proxy.cid),
+                        "uplink_audit": {
+                            "logical": audit.logical,
+                            "application_message_bytes": (
+                                audit.application_message_bytes
+                            ),
+                            "application_message_sha256": (
+                                audit.application_message_sha256
+                            ),
+                        },
+                    },
+                    flower_serialize_ns=audit.flower_serialize_ns,
+                )
             arrays = parameters_to_ndarrays(fit_res.parameters)
             state = OrderedDict()
             for key, arr in zip(self.parameter_keys, arrays):
@@ -552,8 +654,26 @@ class GapsStrategy(CheckpointFedAvg):
 
             # ── 阶段 4.4: 服务端域适应 ──
             if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
+                self.observer.emit(
+                    "server_da_start",
+                    round_idx=int(server_round),
+                    client_id=None,
+                    status="started",
+                    payload={},
+                )
+                da_start_ns = time.perf_counter_ns()
                 da_path, da_summary, da_arrays = self._run_domain_adapt(
                     server_round, aggregated_state, arrays, results, weights
+                )
+                da_end_ns = time.perf_counter_ns()
+                server_da_total_ns = da_end_ns - da_start_ns
+                da_executed = True
+                self.observer.emit(
+                    "server_da_end",
+                    round_idx=int(server_round),
+                    client_id=None,
+                    status="succeeded",
+                    payload={"server_da_total_ns": server_da_total_ns},
                 )
                 event["domain_adapt"] = da_path
                 event["domain_adapt_summary"] = da_summary
@@ -564,6 +684,36 @@ class GapsStrategy(CheckpointFedAvg):
                 else:
                     event["returned_parameters"] = "plain_aggregated"
         self._write_history()
+        aggregate_end_ns = time.perf_counter_ns()
+        aggregate_total_ns = aggregate_end_ns - aggregate_start_ns
+        round_start_ns = self._fit_round_start_ns.pop(
+            int(server_round), aggregate_start_ns
+        )
+        timing_payload = {
+            "server_aggregate_fit_total_ns": aggregate_total_ns,
+            "server_da_total_ns": server_da_total_ns,
+            "server_aggregate_non_da_ns": (
+                aggregate_total_ns - server_da_total_ns
+            ),
+            "da_executed": da_executed,
+        }
+        self.observer.emit(
+            "server_aggregate_end",
+            round_idx=int(server_round),
+            client_id=None,
+            status="succeeded",
+            payload=timing_payload,
+        )
+        self.observer.emit(
+            "fit_round_end",
+            round_idx=int(server_round),
+            client_id=None,
+            status="succeeded",
+            payload={
+                **timing_payload,
+                "fit_round_wall_ns": aggregate_end_ns - round_start_ns,
+            },
+        )
         return aggregated_parameters, aggregated_metrics
 
     # ═══════════════════════════════════════════════════════════════

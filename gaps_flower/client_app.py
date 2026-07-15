@@ -10,6 +10,7 @@ from typing import Optional
 import flwr as fl
 import torch
 
+from gaps_flower.observability import NullObserver, load_observer
 from gaps_flower.task import (
     CLASSIFICATION_PROFILE_FLAGS,
     canonical_profile,
@@ -44,7 +45,9 @@ class GapsFlowerClient(fl.client.NumPyClient):
         batch_size: int,
         profile: str = "smoke",
         seed: int = 42,
+        observer=None,
     ):
+        self.observer = observer or NullObserver()
         self.client_id = client_id
         self.profile = profile
         self.canonical_profile = canonical_profile(profile)
@@ -94,7 +97,16 @@ class GapsFlowerClient(fl.client.NumPyClient):
           - fit_seconds（训练耗时秒数）
           - 以及 train_one_round 返回的 prototype 统计量
         """
+        observer = getattr(self, "observer", None) or NullObserver()
         round_idx = int(config.get("server_round", 1)) if config else 1
+        fit_callback_start_ns = time.perf_counter_ns()
+        observer.emit(
+            "client_fit_start",
+            round_idx=round_idx,
+            client_id=f"C{self.client_id}",
+            status="started",
+            payload={},
+        )
         fit_start = time.perf_counter()
         logger.info(
             "[GAPS client %d] fit round=%d START: train_samples=%d, local_epochs=%d",
@@ -117,8 +129,24 @@ class GapsFlowerClient(fl.client.NumPyClient):
             key: value.detach().cpu().clone()
             for key, value in current_server_state.items()
         }
+        observer.emit(
+            "client_train_start",
+            round_idx=round_idx,
+            client_id=f"C{self.client_id}",
+            status="started",
+            payload={},
+        )
+        train_start_ns = time.perf_counter_ns()
         arrays, num_examples, metrics = train_one_round(
             self.gaps_client, round_idx, fit_config=config
+        )
+        train_end_ns = time.perf_counter_ns()
+        observer.emit(
+            "client_train_end",
+            round_idx=round_idx,
+            client_id=f"C{self.client_id}",
+            status="succeeded",
+            payload={"client_train_core_ns": train_end_ns - train_start_ns},
         )
         elapsed = time.perf_counter() - fit_start
         metrics.update({
@@ -141,6 +169,18 @@ class GapsFlowerClient(fl.client.NumPyClient):
             round_idx,
             num_examples,
             elapsed,
+        )
+        fit_callback_end_ns = time.perf_counter_ns()
+        observer.emit(
+            "client_fit_end",
+            round_idx=round_idx,
+            client_id=f"C{self.client_id}",
+            status="succeeded",
+            payload={
+                "client_fit_callback_ns": (
+                    fit_callback_end_ns - fit_callback_start_ns
+                )
+            },
         )
         return arrays, num_examples, metrics
 
@@ -179,6 +219,8 @@ def main() -> None:
     parser.add_argument("--local-epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--observer-context")
+    parser.add_argument("--observer-events")
     parser.add_argument(
         "--profile",
         choices=tuple(CLASSIFICATION_PROFILE_FLAGS) + (
@@ -200,16 +242,23 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    client = GapsFlowerClient(
-        client_id=args.client_id,
-        data_root=args.data_root,
-        device=args.device,
-        local_epochs=args.local_epochs,
-        batch_size=args.batch_size,
-        profile=args.profile,
-        seed=args.seed,
-    )
-    fl.client.start_numpy_client(server_address=args.server_address, client=client)
+    observer = load_observer(args.observer_context, args.observer_events)
+    try:
+        client = GapsFlowerClient(
+            client_id=args.client_id,
+            data_root=args.data_root,
+            device=args.device,
+            local_epochs=args.local_epochs,
+            batch_size=args.batch_size,
+            profile=args.profile,
+            seed=args.seed,
+            observer=observer,
+        )
+        fl.client.start_numpy_client(
+            server_address=args.server_address, client=client
+        )
+    finally:
+        observer.close()
 
 
 if __name__ == "__main__":

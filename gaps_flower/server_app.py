@@ -11,6 +11,7 @@ import flwr as fl
 from flwr.common import ndarrays_to_parameters
 
 from gaps_flower.domain_adaptation_inputs import validate_domain_adaptation_request
+from gaps_flower.observability import load_observer
 from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, weighted_average
 from gaps_flower.task import CLASSIFICATION_PROFILE_FLAGS, create_model, get_parameters, make_config
 
@@ -95,6 +96,8 @@ def main() -> None:
     parser.add_argument("--output-dir", default="results/flower_server")
     parser.add_argument("--run-name", default="flower_smoke")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--observer-context")
+    parser.add_argument("--observer-events")
     parser.add_argument("--profile", choices=PROFILE_CHOICES, default="smoke",
                         help="Server model/config profile; keep this aligned with client --profile for matrix runs")
     parser.add_argument("--save-history", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
@@ -187,6 +190,7 @@ def main() -> None:
     )
     model = create_model(config)
     initial_arrays, parameter_keys = get_parameters(model)
+    observer = load_observer(args.observer_context, args.observer_events)
 
     strategy_kwargs = dict(
         parameter_keys=parameter_keys,
@@ -203,56 +207,60 @@ def main() -> None:
         on_fit_config_fn=fit_config,
         fit_metrics_aggregation_fn=weighted_average,
         evaluate_metrics_aggregation_fn=weighted_average,
+        observer=observer,
     )
 
-    if args.strategy == "gaps":
-        strategy = GapsStrategy(
-            proto_ema_alpha=args.proto_ema_alpha,
-            use_selective_agg=args.use_selective_agg,
-            selective_warmup=args.selective_warmup,
-            selective_min_scale=args.selective_min_scale,
-            use_proto_mmd=args.use_proto_mmd,
-            use_domain_adapt=args.use_domain_adapt,
-            server_val_data=args.server_val_data,
-            server_calib_data=args.server_calib_data,
-            domain_adapt_steps=args.domain_adapt_steps,
-            domain_adapt_warmup=args.domain_adapt_warmup,
-            da_use_coral=args.da_use_coral,
-            da_use_mmd=args.da_use_mmd,
-            da_use_adversarial=args.da_use_adversarial,
-            da_mmd_objective=args.da_mmd_objective,
-            da_stage_alignment=args.da_stage_alignment,
-            da_adv_feature_objective=args.da_adv_feature_objective,
-            da_coral_class_conditional=args.da_coral_class_conditional,
-            da_use_align_reg_legacy=args.da_use_align_reg_legacy,
-            da_lambda_align_reg_legacy=args.da_lambda_align_reg_legacy,
-            strict_calibration_split=args.strict_calibration_split,
-            da_device=args.da_device,
-            da_lambda_coral=args.da_lambda_coral,
-            da_lambda_global_mmd=args.da_lambda_global_mmd,
-            da_lambda_class_mmd=args.da_lambda_class_mmd,
-            da_lambda_proto_anchor=args.da_lambda_proto_anchor,
-            da_lambda_adv=args.da_lambda_adv,
-            da_lambda_target_ce=args.da_lambda_target_ce,
-            da_lambda_proto=args.da_lambda_proto,
-            da_lambda_consistency=args.da_lambda_consistency,
-            da_lambda_residual=args.da_lambda_residual,
-            da_lambda_proto_mmd=args.da_lambda_proto_mmd,
-            da_lambda_stage_mmd=args.da_lambda_stage_mmd,
-            da_target_ce_label_smoothing=args.da_target_ce_label_smoothing,
-            da_target_ce_class_balanced=args.da_target_ce_class_balanced,
-            da_server_opt_lr=args.da_server_opt_lr,
-            use_adapted_as_global=args.use_adapted_as_global,
-            **strategy_kwargs,
+    try:
+        if args.strategy == "gaps":
+            strategy = GapsStrategy(
+                proto_ema_alpha=args.proto_ema_alpha,
+                use_selective_agg=args.use_selective_agg,
+                selective_warmup=args.selective_warmup,
+                selective_min_scale=args.selective_min_scale,
+                use_proto_mmd=args.use_proto_mmd,
+                use_domain_adapt=args.use_domain_adapt,
+                server_val_data=args.server_val_data,
+                server_calib_data=args.server_calib_data,
+                domain_adapt_steps=args.domain_adapt_steps,
+                domain_adapt_warmup=args.domain_adapt_warmup,
+                da_use_coral=args.da_use_coral,
+                da_use_mmd=args.da_use_mmd,
+                da_use_adversarial=args.da_use_adversarial,
+                da_mmd_objective=args.da_mmd_objective,
+                da_stage_alignment=args.da_stage_alignment,
+                da_adv_feature_objective=args.da_adv_feature_objective,
+                da_coral_class_conditional=args.da_coral_class_conditional,
+                da_use_align_reg_legacy=args.da_use_align_reg_legacy,
+                da_lambda_align_reg_legacy=args.da_lambda_align_reg_legacy,
+                strict_calibration_split=args.strict_calibration_split,
+                da_device=args.da_device,
+                da_lambda_coral=args.da_lambda_coral,
+                da_lambda_global_mmd=args.da_lambda_global_mmd,
+                da_lambda_class_mmd=args.da_lambda_class_mmd,
+                da_lambda_proto_anchor=args.da_lambda_proto_anchor,
+                da_lambda_adv=args.da_lambda_adv,
+                da_lambda_target_ce=args.da_lambda_target_ce,
+                da_lambda_proto=args.da_lambda_proto,
+                da_lambda_consistency=args.da_lambda_consistency,
+                da_lambda_residual=args.da_lambda_residual,
+                da_lambda_proto_mmd=args.da_lambda_proto_mmd,
+                da_lambda_stage_mmd=args.da_lambda_stage_mmd,
+                da_target_ce_label_smoothing=args.da_target_ce_label_smoothing,
+                da_target_ce_class_balanced=args.da_target_ce_class_balanced,
+                da_server_opt_lr=args.da_server_opt_lr,
+                use_adapted_as_global=args.use_adapted_as_global,
+                **strategy_kwargs,
+            )
+        else:
+            strategy = CheckpointFedAvg(**strategy_kwargs)
+
+        fl.server.start_server(
+            server_address=args.server_address,
+            config=fl.server.ServerConfig(num_rounds=args.rounds),
+            strategy=strategy,
         )
-    else:
-        strategy = CheckpointFedAvg(**strategy_kwargs)
-
-    fl.server.start_server(
-        server_address=args.server_address,
-        config=fl.server.ServerConfig(num_rounds=args.rounds),
-        strategy=strategy,
-    )
+    finally:
+        observer.close()
 
 
 if __name__ == "__main__":
