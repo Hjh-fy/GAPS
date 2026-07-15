@@ -52,20 +52,22 @@ OVERHEAD_FIELDS = {
 }
 
 
-def make_identity() -> ObserverIdentity:
-    return ObserverIdentity(
-        run_id="c12_to_c5__b2__s42",
-        attempt_id="c12_to_c5__b2__s42__a001",
-        group_id="B2",
-        training_seed=42,
-        client_id=None,
-        host_id="ecs",
-        producer="server",
-        confirmation_commit="a" * 40,
-        source_archive_sha256="b" * 64,
-        dataset_manifest_sha256="c" * 64,
-        algorithm_config_sha256="d" * 64,
-    )
+def make_identity(**overrides: object) -> ObserverIdentity:
+    values: dict[str, object] = {
+        "run_id": "c12_to_c5__b2__s42",
+        "attempt_id": "c12_to_c5__b2__s42__a001",
+        "group_id": "B2",
+        "training_seed": 42,
+        "client_id": None,
+        "host_id": "ecs",
+        "producer": "server",
+        "confirmation_commit": "a" * 40,
+        "source_archive_sha256": "b" * 64,
+        "dataset_manifest_sha256": "c" * 64,
+        "algorithm_config_sha256": "d" * 64,
+    }
+    values.update(overrides)
+    return ObserverIdentity(**values)
 
 
 def read_rows(path: Path) -> list[dict[str, object]]:
@@ -234,6 +236,81 @@ def test_load_observer_reads_valid_context(tmp_path: Path) -> None:
     assert read_rows(events)[0]["attempt_id"] == identity.attempt_id
 
 
+def test_existing_events_file_is_never_truncated(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+    original_evidence = b"immutable prior evidence\n"
+    events.write_bytes(original_evidence)
+
+    with pytest.raises(FileExistsError):
+        JsonlObserver(make_identity(), events)
+
+    assert events.read_bytes() == original_evidence
+
+
+def test_existing_close_summary_is_never_overwritten(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+    close_summary = tmp_path / "events.close.json"
+    original_evidence = b'{"immutable":true}\n'
+    close_summary.write_bytes(original_evidence)
+    observer = JsonlObserver(make_identity(), events)
+    observer.emit(
+        "fit_round_start",
+        round_idx=1,
+        client_id=None,
+        status="started",
+        payload={},
+    )
+
+    with pytest.raises(FileExistsError):
+        observer.close()
+
+    assert close_summary.read_bytes() == original_evidence
+
+
+def test_unserializable_payload_does_not_advance_or_duplicate_pending_state(
+    tmp_path: Path,
+) -> None:
+    events = tmp_path / "events.jsonl"
+    observer = JsonlObserver(make_identity(), events)
+    first_id = observer.emit(
+        "fit_round_start",
+        round_idx=1,
+        client_id=None,
+        status="started",
+        payload={},
+    )
+    evidence_before_failure = events.read_bytes()
+
+    with pytest.raises(TypeError, match="JSON serializable"):
+        observer.emit(
+            "invalid_event",
+            round_idx=1,
+            client_id=None,
+            status="failed",
+            payload={"unserializable": object()},
+        )
+    evidence_after_failure = events.read_bytes()
+
+    second_id = observer.emit(
+        "fit_round_end",
+        round_idx=1,
+        client_id=None,
+        status="succeeded",
+        payload={},
+    )
+    observer.close()
+
+    rows = read_rows(events)
+    overhead_references = [
+        row["payload"]["observed_event_id"]
+        for row in rows
+        if row["event_type"] == "observer_overhead"
+    ]
+    assert evidence_after_failure == evidence_before_failure
+    assert [row["sequence"] for row in rows] == list(range(1, len(rows) + 1))
+    assert overhead_references == [first_id, second_id]
+
+
 def test_null_observer_is_a_stateless_no_op(tmp_path: Path) -> None:
     observer = NullObserver()
     result = observer.emit(
@@ -274,6 +351,28 @@ def test_identity_rejects_non_confirmation_scope(
             dataset_manifest_sha256="c" * 64,
             algorithm_config_sha256="d" * 64,
         )
+
+
+@pytest.mark.parametrize(
+    ("overrides", "match"),
+    [
+        ({"group_id": "B5"}, "group_id"),
+        ({"training_seed": 43}, "training_seed"),
+        ({"confirmation_commit": "a" * 39}, "confirmation_commit"),
+        ({"confirmation_commit": "g" * 40}, "confirmation_commit"),
+        ({"source_archive_sha256": "b" * 63}, "source_archive_sha256"),
+        ({"source_archive_sha256": "g" * 64}, "source_archive_sha256"),
+        ({"dataset_manifest_sha256": "c" * 63}, "dataset_manifest_sha256"),
+        ({"dataset_manifest_sha256": "g" * 64}, "dataset_manifest_sha256"),
+        ({"algorithm_config_sha256": "d" * 63}, "algorithm_config_sha256"),
+        ({"algorithm_config_sha256": "g" * 64}, "algorithm_config_sha256"),
+    ],
+)
+def test_identity_rejects_inconsistent_or_malformed_evidence(
+    overrides: dict[str, object], match: str
+) -> None:
+    with pytest.raises(ValueError, match=match):
+        make_identity(**overrides)
 
 
 def test_confirmation_requirements_are_frozen() -> None:

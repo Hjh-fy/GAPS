@@ -37,6 +37,13 @@ def canonical_json_bytes(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _require_hex(field_name: str, value: str, length: int) -> None:
+    if not isinstance(value, str) or re.fullmatch(
+        rf"[0-9a-fA-F]{{{length}}}", value
+    ) is None:
+        raise ValueError(f"{field_name} must be exactly {length} hex characters")
+
+
 @dataclass(frozen=True)
 class ObserverIdentity:
     run_id: str
@@ -52,13 +59,29 @@ class ObserverIdentity:
     algorithm_config_sha256: str
 
     def __post_init__(self) -> None:
-        if _RUN_ID_PATTERN.fullmatch(self.run_id) is None:
+        run_match = _RUN_ID_PATTERN.fullmatch(self.run_id)
+        if run_match is None:
             raise ValueError(f"invalid confirmation run_id: {self.run_id!r}")
         attempt_pattern = rf"{re.escape(self.run_id)}__a\d{{3}}"
         if re.fullmatch(attempt_pattern, self.attempt_id) is None:
             raise ValueError(
                 f"attempt_id must match run_id plus '__aNNN': {self.attempt_id!r}"
             )
+        expected_group_id = run_match.group(1).upper()
+        if self.group_id != expected_group_id:
+            raise ValueError(
+                f"group_id must match run_id: expected {expected_group_id!r}"
+            )
+        expected_training_seed = int(run_match.group(2))
+        if self.training_seed != expected_training_seed:
+            raise ValueError(
+                "training_seed must match run_id: "
+                f"expected {expected_training_seed}"
+            )
+        _require_hex("confirmation_commit", self.confirmation_commit, 40)
+        _require_hex("source_archive_sha256", self.source_archive_sha256, 64)
+        _require_hex("dataset_manifest_sha256", self.dataset_manifest_sha256, 64)
+        _require_hex("algorithm_config_sha256", self.algorithm_config_sha256, 64)
 
 
 @dataclass(frozen=True)
@@ -129,7 +152,7 @@ class JsonlObserver:
         self.events_path = Path(events_path)
         self.process_instance_id = uuid.uuid4().hex
         self._sequence = 0
-        self._file: BinaryIO = self.events_path.open("wb")
+        self._file: BinaryIO = self.events_path.open("xb")
         self._pending: _PendingOverhead | None = None
         self._accumulated_cost = _ObserverCost()
         self._closed = False
@@ -147,6 +170,11 @@ class JsonlObserver:
         if self._closed:
             raise RuntimeError("cannot emit after observer is closed")
 
+        payload_snapshot = dict(payload)
+        preflight_started = time.perf_counter_ns()
+        canonical_json_bytes(payload_snapshot)
+        preflight_encode_ns = time.perf_counter_ns() - preflight_started
+
         reporting_cost = _ObserverCost()
         if self._pending is not None:
             reporting_cost = self._write_overhead(self._pending)
@@ -156,8 +184,9 @@ class JsonlObserver:
             round_idx=round_idx,
             client_id=client_id,
             status=status,
-            payload=payload,
+            payload=payload_snapshot,
             flower_serialize_ns=flower_serialize_ns,
+            extra_event_encode_ns=preflight_encode_ns,
         )
         self._pending = _PendingOverhead(
             observed_event_id=event_id,
@@ -211,11 +240,12 @@ class JsonlObserver:
         status: str,
         payload: Mapping[str, Any],
         flower_serialize_ns: int = 0,
+        extra_event_encode_ns: int = 0,
     ) -> tuple[str, _ObserverCost]:
-        self._sequence += 1
+        sequence = self._sequence + 1
         event_id = (
             f"{self.identity.attempt_id}/{self.identity.host_id}/"
-            f"{self.identity.producer}/{self.process_instance_id}/{self._sequence}"
+            f"{self.identity.producer}/{self.process_instance_id}/{sequence}"
         )
         event = {
             "schema_version": SCHEMA_VERSION,
@@ -230,7 +260,7 @@ class JsonlObserver:
             "host_id": self.identity.host_id,
             "producer": self.identity.producer,
             "process_instance_id": self.process_instance_id,
-            "sequence": self._sequence,
+            "sequence": sequence,
             "wall_time_utc": datetime.now(timezone.utc)
             .isoformat(timespec="microseconds")
             .replace("+00:00", "Z"),
@@ -245,7 +275,10 @@ class JsonlObserver:
 
         encode_started = time.perf_counter_ns()
         event_bytes = canonical_json_bytes(event) + b"\n"
-        event_encode_ns = time.perf_counter_ns() - encode_started
+        event_encode_ns = (
+            extra_event_encode_ns + time.perf_counter_ns() - encode_started
+        )
+        self._sequence = sequence
 
         write_started = time.perf_counter_ns()
         self._file.write(event_bytes)
@@ -288,7 +321,7 @@ class JsonlObserver:
             "observer_reporting_tail_bytes": reporting_tail_bytes,
         }
         close_path = self.events_path.with_suffix(".close.json")
-        with close_path.open("wb") as close_file:
+        with close_path.open("xb") as close_file:
             close_file.write(canonical_json_bytes(summary) + b"\n")
             close_file.flush()
 
