@@ -1,0 +1,56 @@
+name: Feishu GitHub Bridge smoke
+
+on:
+  push:
+    paths:
+      - '.github/workflows/feishu-github-bridge-smoke.yml'
+      - 'tools/feishu_github_codex_bridge_v1/**'
+  pull_request:
+    paths:
+      - '.github/workflows/feishu-github-bridge-smoke.yml'
+      - 'tools/feishu_github_codex_bridge_v1/**'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/feishu_github_codex_bridge_v1
+
+    env:
+      FEISHU_APP_ID: ci-test
+      FEISHU_APP_SECRET: ci-test
+      FEISHU_VERIFICATION_TOKEN: ci-test
+      FEISHU_ENCRYPT_KEY: ci-test
+      GITHUB_TOKEN: ci-test
+      GITHUB_OWNER: Hjh-fy
+      GITHUB_REPO: GAPS
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install bridge dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Run bridge tests
+        run: python -m pytest
+
+      - name: Verify bridge imports
+        run: |
+          python - <<'PY'
+          import app.config
+          import app.feishu_client
+          import app.feishu_event
+          import app.github_client
+          import app.main
+          import app.security
+          import app.task_parser
+
+          print("bridge imports ok")
+          PY
