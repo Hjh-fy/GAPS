@@ -207,7 +207,7 @@ Expected: the exact six-run queue and approved Pi/PC mapping.
 
 Verify ECS `root@121.40.139.213`, Pi `gaps@192.168.31.184`, and the local PC. Upload only the runtime, manifests, metadata, and active client directories required by the six runs. Re-run hashes and sample counts after transfer.
 
-- [ ] **Step 4: Record preflight evidence in the experiment notebook**
+- [x] **Step 4: Record preflight evidence in the experiment notebook**
 
 Record connectivity, code revision, data hashes/counts, free storage, ECS idle state, Pi `get_throttled`, and command-index hash.
 
@@ -222,19 +222,19 @@ Record connectivity, code revision, data hashes/counts, free storage, ECS idle s
 - Consumes the frozen queue from Task 4.
 - Produces six complete round-25 runs.
 
-- [ ] **Step 1: Run the F1 C1-to-C5 B2/B5 pair and review artifacts**
+- [x] **Step 1: Run the F1 C1-to-C5 B2/B5 pair and review artifacts**
 
 Launch the controller for the first pair only. Require 25 rounds, finite metrics/losses, expected client count one, final adapted checkpoint, empty fatal-error scan, and no Pi throttling before advancing.
 
-- [ ] **Step 2: Run the R1 C5-to-C1 B2/B5 pair and review artifacts**
+- [x] **Step 2: Run the R1 C5-to-C1 B2/B5 pair and review artifacts**
 
 Use Pi C5 exactly. Apply the same completion gates and record target C1 counts 680/2680.
 
-- [ ] **Step 3: Run the R2 C4/C5-to-C1 B2/B5 pair and review artifacts**
+- [x] **Step 3: Run the R2 C4/C5-to-C1 B2/B5 pair and review artifacts**
 
 Use Pi C4 and PC C5. Require both client logs and two-client round statistics.
 
-- [ ] **Step 4: Recover and hash all six immutable result directories**
+- [x] **Step 4: Recover and hash all six immutable result directories**
 
 Refuse to treat a partial directory as complete. Record wall time, checkpoint SHA-256, artifact counts, and Pi health for every run.
 
@@ -249,19 +249,19 @@ Refuse to treat a partial directory as complete. Record wall time, checkpoint SH
 - Consumes six recovered checkpoints.
 - Produces per-direction metrics, per-window streams, paired statistics, complexity/timing table, and a bounded interpretation.
 
-- [ ] **Step 1: Evaluate each run against its frozen target**
+- [x] **Step 1: Evaluate each run against its frozen target**
 
 Run the target-aware summary separately for C5 and C1 result roots. Assert N=1360 for F1 and N=2680 for R1/R2.
 
-- [ ] **Step 2: Build paired B2-minus-B5 tables**
+- [x] **Step 2: Build paired B2-minus-B5 tables**
 
 Generate accuracy, macro-F1, NLL, ECE, worst recall, confusion, McNemar, bootstrap intervals, wall time, and communication columns.
 
-- [ ] **Step 3: Apply the predeclared 0.5-point decision rule**
+- [x] **Step 3: Apply the predeclared 0.5-point decision rule**
 
 Classify every direction as B2 non-inferior, inconclusive, or B5-favored. Do not convert seed-42 screening into a final superiority claim.
 
-- [ ] **Step 4: Update documentation and commit the seed-42 evidence**
+- [x] **Step 4: Update documentation and commit the seed-42 evidence**
 
 Document actual results, failures, limitations, artifact paths, and the seeds 43-46 confirmation queue. Update the code guide with the new entrypoints.
 

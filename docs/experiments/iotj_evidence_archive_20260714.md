@@ -2,12 +2,12 @@
 
 ## Scope
 
-This index freezes the lightweight, paper-facing evidence for the seed-42 C5 formal regression/QC study and the completed F1/R1 B2-versus-B5 cross-direction classification study.
+This index freezes the lightweight, paper-facing evidence for the seed-42 C5 formal regression/QC study and the completed F1/R1/R2 B2-versus-B5 cross-direction classification study.
 
 - Branch: `codex/system-safety-hardening`
 - Oracle/QC execution revision: `7106e5c`
 - Strict summary-contract revision: `dc50495`
-- Dataset protocol: C1/C2 source, C5 target for formal regression; F1 C1-to-C5 and R1 C5-to-C1 for the completed cross-direction pairs
+- Dataset protocol: C1/C2 source, C5 target for formal regression; F1 C1-to-C5, R1 C5-to-C1, and R2 C4/C5-to-C1 for the completed cross-direction pairs
 - Training topology: Alibaba Cloud ECS plus physical Raspberry Pi/PC clients; no local simulation was used for reportable training
 
 ## Tracked Lightweight Evidence
@@ -15,11 +15,16 @@ This index freezes the lightweight, paper-facing evidence for the seed-42 C5 for
 - `results/iotj_c5_formal_regression_20260713_v2_summary/manifest.json`
 - `results/iotj_c5_formal_regression_20260713_v2_summary/qc_operational_comparison.csv`
 - `results/iotj_c5_formal_regression_20260713_v2_summary/formal_regression_report.md`
-- `results/iotj_b2_b5_cross_direction_20260713_f1_summary/classification_per_run.csv`
-- `results/iotj_b2_b5_cross_direction_20260713_f1_summary/classification_group_summary.csv`
+- `results/iotj_b2_b5_cross_direction_20260715_f1_summary/classification_per_run.csv`
+- `results/iotj_b2_b5_cross_direction_20260715_f1_summary/paired_direction_comparison.csv`
+- `results/iotj_b2_b5_cross_direction_20260715_f1_summary/paired_direction_comparison.json`
 - `results/iotj_b2_b5_cross_direction_20260714_r1_summary/classification_per_run.csv`
 - `results/iotj_b2_b5_cross_direction_20260714_r1_summary/paired_direction_comparison.csv`
 - `results/iotj_b2_b5_cross_direction_20260714_r1_summary/paired_direction_comparison.json`
+- `results/iotj_b2_b5_cross_direction_20260715_r2_summary/classification_per_run.csv`
+- `results/iotj_b2_b5_cross_direction_20260715_r2_summary/paired_direction_comparison.csv`
+- `results/iotj_b2_b5_cross_direction_20260715_r2_summary/paired_direction_comparison.json`
+- `docs/experiments/iotj_b2_b5_cross_direction_results_20260715.zh.md`
 
 The schema-v2 regression manifest records the execution revision and SHA-256 plus byte size for nine key H8/QC files per classifier (27 files total). It distinguishes the original base-suite manifest from the later oracle-route/QC extension.
 
@@ -39,7 +44,8 @@ The tracked manifest can verify these files but cannot recreate them by itself. 
 - The oracle columns are an offline counterfactual under frozen actual-route QC masks, not deployable performance.
 - F1 C1-to-C5 favors compact B2 descriptively (`98.8971%` versus `98.3088%`, McNemar `p=0.0963`).
 - R1 C5-to-C1 reverses direction and favors B5 on the correct 2680-row C1 test (`98.3582%` versus `97.6493%`, exact McNemar `p=0.00432`; B2-minus-B5 accuracy 95% bootstrap CI `[-1.1940, -0.2612]` pp).
-- R2 C4/C5-to-C1 and confirmation seeds 43-46 remain pending; the latest R2 preflight was blocked by Raspberry Pi SSH timeout.
+- R2 C4/C5-to-C1 also favors B5 descriptively (`99.1418%` versus `98.9552%`, exact McNemar `p=0.3323`; B2-minus-B5 accuracy 95% bootstrap CI `[-0.4851, 0.1119]` pp), but the paired difference is not significant.
+- Across the three seed-42 directions, B2 is the compact high-performing candidate while B5 is more robust in the reverse and heterogeneous-source settings. This direction dependence is bounded screening evidence, not a universal superiority claim; confirmation seeds 43-46 remain pending.
 
 ## Verification
 
