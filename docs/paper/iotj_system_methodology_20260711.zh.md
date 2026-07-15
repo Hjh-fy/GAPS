@@ -2,9 +2,9 @@
 
 > 文档状态：论文方法章节中文底稿与代码审计说明。
 >
-> 对齐基线：仓库提交 `2424071`，冻结实验协议版本 `iotj_classification_ablation_20260711_v2r1`，审计日期 2026-07-11。
+> 对齐基线：冻结主协议为 `iotj_classification_ablation_20260711_v2r1`，修正版分类为 v3 B1-B5；方法与证据更新至 2026-07-15，最低完整证据提交为 `02dc259`，最终以本文件所在提交为准。
 >
-> 结果边界：本文件描述当前真实实现、数学定义和预注册实验口径，不把正在运行的 A0-A7 结果写成已验证结论。历史 F2 回放只用于工程校验，不进入新论文主结果表。
+> 结果边界：seed-42 A0-A7、B1-B5、A6/B5/B2 正式回归/QC 和 B2/B5 三方向六运行均已完成；seeds 43-46、低校准压力、最终 runtime parity 和端侧开销仍未完成。历史 F2 回放只用于工程校验，不进入新论文主结果表。
 
 ## 1. 方法定位
 
@@ -657,7 +657,9 @@ for round t = 1...T:
 - Flower 分类路径不训练回归头；C5 回归使用目标校准 Ridge 和 MLP。
 - A1 与 FedAvg 的 CE-only 参数聚合在合约测试中数值等价。
 - 目标 test 不用于训练、模型选择、融合权重、专家阈值或 QC 阈值选择。
-- 当前历史 F2 回放提示固定 H8 值得作为正式候选，P4 尚未获得主方法地位。
+- 正式 A6/B5/B2 R0-R7 结果表明固定 H8 R4 是当前最佳可部署 coverage-1 点估计；H2.3+ 在 B5/B2 上退化为 anchor，R5/R6 没有超过 R4。
+- FULL/HC95/HC90 deployment-visible QC 已完成，B2-HC95 在 95.66% 自动收益率下 accepted RMSE 为 12.6729 ppm，并筛出 7/10 个错路由。
+- B2/B5 三方向结果支持方向依赖：B2 在 C1 -> C5 数值更优，B5 在 C5 -> C1 显著更优并在 C4+C5 -> C1 数值更优。
 
 ### 当前不可主张
 
@@ -668,8 +670,8 @@ for round t = 1...T:
 - 不可只报告 (S_{CC}) 或 QC 后低误差而隐藏 (S_{ALL})、N 和 coverage。
 - 不可在多种候选看过 test 后再选择“最终方法”。
 - 不可在五种子结果出现之前声称统计显著或稳定提升。
-- 不可把历史 P4 `risk_score` 写成完全 deployment-visible，也不可声称新的 C5 selector 已被当前 runtime 使用。
-- 不可在符号修正版验证前声称当前 adversarial 项缩小了 Wasserstein 域差异。
+- 不可把历史 P4 `risk_score` 写成 deployment-visible；新的 QC 风险已经离线验证，但在正式 C5 bundle 完成 parity 前不可声称它已被最终 runtime 使用。
+- 不可把 B5 单方向增益外推为 CORAL、stage 和 adversarial 每一项都在所有方向有效。
 - 不可称当前卷积为 causal TCN、GRU-TCN 或通道注意力网络；卷积使用对称 padding，没有 GRU，已实例化的 `channel_attn` 未进入 TCN forward。
 - 不可把无梯度的 `proto_mmd` 诊断写成已参与优化的核分布正则。
 
@@ -756,3 +758,25 @@ B2 是在 B1-B5 分类 test 排名打开后追加的同流程下游重放，因�
 B2-HC95 的 accept/review/reject 为 1301/35/24，实际自动覆盖率 95.66%，accepted RMSE 12.673 ppm；它标记 7/10 个分类错误和 23/132 个高误差窗口，而匹配随机拒绝的平均召回率分别为 4.02% 和 4.26%。这支持 QC 作为高覆盖率风险分流层，但不表示 QC 修复了被 review/reject 的预测。所有 B2/B5 优劣仍需种子 43-46 的配对确认，不得写成统计显著结论。
 
 扩展后的 FULL oracle-route 在 A6/B5/B2 上均使用全部 1360 条 test 窗口，并得到相同的 RMSE/NRMSE `11.9082/0.0690`。相同结果验证了三组实验共享同一套 H8 回归训练，覆盖率 1 下实际路由 RMSE `28.0144/17.4473/14.6564` 的差异主要来自分类路由。B2-HC95 的 Nonreject N 为 1336（覆盖率 98.24%），实际路由 RMSE/NRMSE 为 `12.8614/0.0858`；Accepted N 为 1301（自动收益率 95.66%），对应 `12.6729/0.0857`。因此论文应同时呈现自动输出线与人工复核线，而不能把 review 隐含并入“拒绝”。
+
+## 19. 2026-07-15 实验闭环与证据索引
+
+### 19.1 修正版分类结论
+
+v3 B1/B2/B3/B4/B5 在 C1/C2 -> C5 上的 accuracy 为 `98.7500/99.2647/98.8971/98.9706/98.8971%`。B2 同时取得最高 macro-F1 `99.2657%`、最低 NLL `0.0690` 和最低 ECE `0.0067`。B5 未显示 CORAL、stage 和 adversarial 的简单叠加增益，因此 B2 应作为轻量性能候选，B5 作为预声明完整机制和困难迁移鲁棒性候选。
+
+### 19.2 跨方向结论
+
+- C1 -> C5：B2/B5 accuracy `98.8971/98.3088%`，B2-B5 `+0.5882 pp`，McNemar `p=0.0963`。
+- C5 -> C1：B2/B5 accuracy `97.6493/98.3582%`，B2-B5 `-0.7090 pp`，`p=0.0043`。
+- C4+C5 -> C1：B2/B5 accuracy `98.9552/99.1418%`，B2-B5 `-0.1866 pp`，`p=0.3323`。三指标 0.5 pp 规则因最差类别召回差 `-0.7463 pp` 判 `B5_favored`，但准确率差异不显著。
+
+这些结果支持“完整适配栈的收益依赖迁移方向和源域异质性”，不支持“B5 的所有模块普遍有效”或“B5 完全冗余”。
+
+### 19.3 证据保存路径
+
+- 新对话交接：`docs/experiments/iotj_latest_handoff_20260715.zh.md`。
+- v2r1/v3 分类：`results/iotj_classification_ablation_20260711_v2r1_summary/`、`results/iotj_classification_ablation_20260712_v3_summary/`。
+- 正式回归/QC：`results/iotj_c5_formal_regression_20260713_v2_summary/`。
+- 跨方向：`results/iotj_b2_b5_cross_direction_20260715_f1_summary/`、`results/iotj_b2_b5_cross_direction_20260714_r1_summary/`、`results/iotj_b2_b5_cross_direction_20260715_r2_summary/`。
+- 原始 checkpoint、逐窗口预测和完整日志保存在本地 `results/` 与 ECS `/root/GAPS/results/` 同名目录；GitHub 只跟踪轻量 summary/manifest/report，不能把 summary 跟踪等同于原始证据独立归档。

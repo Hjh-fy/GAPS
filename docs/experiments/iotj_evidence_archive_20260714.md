@@ -12,7 +12,13 @@ This index freezes the lightweight, paper-facing evidence for the seed-42 C5 for
 
 ## Tracked Lightweight Evidence
 
+- `docs/experiments/iotj_latest_handoff_20260715.zh.md`
+- `results/iotj_classification_ablation_20260711_v2r1_summary/classification_per_run.csv`
+- `results/iotj_classification_ablation_20260711_v2r1_summary/classification_group_summary.csv`
+- `results/iotj_classification_ablation_20260712_v3_summary/classification_per_run.csv`
+- `results/iotj_classification_ablation_20260712_v3_summary/classification_group_summary.csv`
 - `results/iotj_c5_formal_regression_20260713_v2_summary/manifest.json`
+- `results/iotj_c5_formal_regression_20260713_v2_summary/r0_r7_comparison.csv`
 - `results/iotj_c5_formal_regression_20260713_v2_summary/qc_operational_comparison.csv`
 - `results/iotj_c5_formal_regression_20260713_v2_summary/formal_regression_report.md`
 - `results/iotj_b2_b5_cross_direction_20260715_f1_summary/classification_per_run.csv`
@@ -25,6 +31,9 @@ This index freezes the lightweight, paper-facing evidence for the seed-42 C5 for
 - `results/iotj_b2_b5_cross_direction_20260715_r2_summary/paired_direction_comparison.csv`
 - `results/iotj_b2_b5_cross_direction_20260715_r2_summary/paired_direction_comparison.json`
 - `docs/experiments/iotj_b2_b5_cross_direction_results_20260715.zh.md`
+- `docs/paper/iotj_system_methodology_20260711.zh.md`
+- `docs/paper/GAPS_IoTJ_paper_draft_20260711.zh.md`
+- `docs/paper/GAPS_IoTJ_paper_draft_20260711.zh.docx`
 
 The schema-v2 regression manifest records the execution revision and SHA-256 plus byte size for nine key H8/QC files per classifier (27 files total). It distinguishes the original base-suite manifest from the later oracle-route/QC extension.
 

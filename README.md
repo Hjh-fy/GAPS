@@ -1,27 +1,28 @@
 # GAPS 项目代码导览
 
-本文档用于说明当前主要代码文件之间的关系，以及各文件在 `GAPS-TimeAware2080-FlowerCLS-R3aK16-AutoV2-QC` 主线中的功能定位。
+> 2026-07-15 状态提示：当前权威主线已经更新为真实云边 Flower 分类、C5 个性化 H8 回归和 deployment-visible QC。下面较早的 R3aK16/AutoV2 章节保留作历史代码导航，不能替代最新实验结论。
+>
+> 新对话或从 GitHub 接手时，请先阅读 `docs/experiments/iotj_latest_handoff_20260715.zh.md`，再阅读 `代码文件介绍.md` 和实验经验笔记本。当前证据位于分支 `codex/system-safety-hardening`。
+
+本文档用于说明主要代码文件之间的关系。当前正式系统名和论文主线以最新交接文档及 `代码文件介绍.md` 为准。
 
 当前主线可以概括为：
 
 ```text
-time-aware 60-170 s window 数据
--> fixed-DA Flower 联邦分类
--> adapted classifier checkpoint 评估
--> R3aK16 浓度回归训练
--> per-target-client auto_v2 calibration package
--> deployment inference
--> risk score
--> QC decision: accept / review / reject
--> meeting/report visuals
+time-aware 60-170 s C1/C2/C5 window 数据
+-> 真实 ECS + Pi + PC Flower 联邦分类
+-> C5 calibration-assisted server adaptation
+-> C5 target-personalized Ridge/MLP/H8 回归
+-> deployment-visible QC: accept / review / reject
+-> runtime parity、系统开销和论文证据
 ```
 
 正式命名：
 
 ```text
-分类基座: CLS-FlowerExpB-TimeAware2080
-回归基座: REG-R3aK16-AutoV2-TimeAware2080
-系统主线: GAPS-TimeAware2080-FlowerCLS-R3aK16-AutoV2-QC
+分类主线: IoTJ v2r1 + corrected v3 B1-B5
+回归主线: C5 R0-R7，固定 H8 为当前最佳可部署点估计
+系统主线: GAPS calibration-assisted cloud-edge sensing + reliable output
 ```
 
 ## 目录关系

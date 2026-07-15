@@ -9,17 +9,17 @@
 A Calibration-Assisted Cloud-Edge Gas Sensing System Under Sensor Drift: Federated Semantic Classification, Target-Personalized Quantification, and Reliable Output
 
 > [!STATUS]
-> 本稿为导师汇报与实验闭环用中文完整初稿。分类 seed-42 核心筛选已完成；种子 43-46、正式 C5 回归、QC 风险覆盖和端侧开销仍需补齐。文中所有未冻结证据均明确标注，不应直接复制为投稿定稿结论。
+> 本稿为导师汇报与实验闭环用中文完整初稿，结果更新至 2026-07-15。seed-42 的 v2r1/v3 分类、A6/B5/B2 正式 C5 回归、FULL/HC95/HC90 QC、oracle-route 和三方向 B2/B5 六运行均已完成；种子 43-46、低校准压力、最终 runtime parity 和端侧开销仍需补齐。文中所有单种子与 post-screen 证据均明确标注，不应直接复制为投稿定稿结论。
 
 ## 摘要
 
-长期部署的电子鼻和气体感知节点同时受到传感器漂移、设备异质性、目标设备标注稀缺以及错误输出风险的影响。仅在源设备上训练分类器，或只报告分类正确条件下的浓度误差，均不足以描述一个可部署物联网感知系统。本文提出一个校准辅助的云边协同气体感知框架 GAPS。系统以阿里云 ECS 为 Flower 服务器，以树莓派和 PC 为物理源域客户端，在不集中原始源数据的条件下训练轻量时序分类器；服务器利用目标设备 C5 的校准分区进行类别-阶段语义适配；随后在 C5 上独立训练按预测类别路由的 Ridge/MLP 浓度专家，并通过可靠性 QC 将输出分为 accept、review 和 reject。方法上，系统将类别-阶段原型、上一轮特征蒸馏、语义记忆和目标个性化定量置于统一的行级数据合同中，并明确区分分类能力、分类正确条件回归能力和真实路由系统性能。在 C1/C2 到 C5 的真实云边 seed-42 核心筛选中，source-only FedAvg 的目标准确率仅为 26.54%，相同目标标签预算的 target-CE 基线达到 98.24%，语义适配配置达到 98.01%，联合配置达到 98.60%，其 macro-F1、NLL 和 ECE 分别为 98.60%、0.1132 和 0.0118。该结果表明目标校准是跨设备迁移的必要条件，类别-阶段语义机制是值得多种子确认的主要方法族；同时，联合配置相对强监督基线的增益仍较小，必须通过确认种子、正式回归、QC 风险覆盖和端侧开销实验完成最终证据闭环。
+长期部署的电子鼻和气体感知节点同时受到传感器漂移、设备异质性、目标设备标注稀缺以及错误输出风险的影响。仅在源设备上训练分类器，或只报告分类正确条件下的浓度误差，均不足以描述一个可部署物联网感知系统。本文提出校准辅助的云边协同气体感知框架 GAPS。系统以阿里云 ECS 为 Flower 服务器，以树莓派和 PC 为物理源域客户端，在不集中原始源窗口的条件下训练轻量时序分类器；服务器使用目标设备 calibration 执行语义与分布适配；目标端再训练按预测类别路由的 Ridge/MLP 浓度专家，并由可靠性 QC 将输出分为 accept、review 和 reject。真实 C1/C2 -> C5 seed-42 实验中，source-only FedAvg accuracy 仅为 26.54%，相同标签预算 target-CE 为 98.24%；修正版轻量 B2 达到 99.26%，预声明完整 B5 为 98.90%。固定 H8 在 A6/B5/B2 上的实际路由 RMSE 分别为 28.014、17.447 和 14.656 ppm，而分类正确条件 RMSE 均约 11.3 ppm；对全部 1360 个窗口强制真类别路由后，三组 RMSE/NRMSE 均为 11.908/0.069，说明分类错路由主导端到端尾部。B2-HC95 在 95.66% 自动收益率下将 accepted RMSE 降至 12.673 ppm，并识别 7/10 个分类错误。三方向验证进一步显示 B2 在 C1 -> C5 数值更优，B5 在 C5 -> C1 显著更优并在 C4+C5 -> C1 数值更优，表明完整适配栈的收益依赖迁移方向和源域异质性。所有性能排名仍限于 seed 42，需通过多种子和端侧开销实验完成最终证据闭环。
 
 **关键词:** 气体传感器漂移；联邦学习；云边协同；校准辅助域适应；语义原型；个性化回归；选择性输出
 
 ## Abstract
 
-Long-term electronic-nose deployments face sensor drift, device heterogeneity, limited target-device labels, and the operational risk of unreliable concentration outputs. A source-only classifier or a regression score conditioned on correct classification cannot fully characterize a deployable Internet of Things sensing system. This paper presents GAPS, a calibration-assisted cloud-edge framework for gas identification and quantification. An Alibaba Cloud ECS instance hosts the Flower server, while a Raspberry Pi and a PC act as physical source clients. The clients collaboratively train a lightweight temporal classifier without centralizing their raw source data. The server then uses the calibration partition of target device C5 for class-phase semantic adaptation. Target-personalized Ridge and multilayer perceptron experts estimate concentration according to the predicted gas route, and a reliability layer assigns each output to accept, review, or reject. GAPS unifies class-phase prototypes, previous-round feature replay, semantic memory, target calibration, and row-aligned quality control, while separating classification performance, correct-route regression capability, and real-route system performance. In the completed seed-42 C1/C2-to-C5 cloud-edge screen, source-only FedAvg achieved 26.54% target accuracy, an equal-label-budget target-cross-entropy baseline achieved 98.24%, the semantic configuration achieved 98.01%, and the combined configuration achieved 98.60% accuracy with 98.60% macro-F1, 0.1132 NLL, and 0.0118 ECE. These screening results motivate multi-seed confirmation and a complete regression, reliability, and edge-efficiency evaluation before final claims are frozen.
+Long-term electronic-nose deployments face sensor drift, device heterogeneity, limited target calibration labels, and the operational risk of unreliable concentration outputs. This paper presents GAPS, a calibration-assisted cloud-edge framework that connects physical-client federated classification, server-side target adaptation, target-personalized Ridge/MLP quantification, and accept/review/reject quality control. In real C1/C2-to-C5 seed-42 experiments, source-only FedAvg achieved only 26.54% accuracy and an equal-label-budget target-CE baseline achieved 98.24%; the corrected compact B2 configuration reached 99.26%, while the predeclared full B5 reached 98.90%. With the fixed H8 regressor, actual-route RMSE for A6, B5, and exploratory B2 was 28.014, 17.447, and 14.656 ppm, respectively, whereas correct-class RMSE remained near 11.3 ppm. Forcing the true route on all 1360 test windows produced the identical 11.908 RMSE and 0.069 NRMSE for all three streams, isolating route errors as the main source of the end-to-end tail. At the B2-HC95 operating point, 95.66% of windows were automatically accepted with 12.673 ppm RMSE, while 7 of 10 route errors were flagged. Three cross-direction experiments further showed that B2 was descriptively better for C1-to-C5, whereas B5 was significantly better for C5-to-C1 and descriptively better for C4+C5-to-C1. The full adaptation stack is therefore direction- and heterogeneity-dependent rather than uniformly additive. All rankings remain seed-42 evidence and require multi-seed and edge-efficiency confirmation.
 
 **Index Terms:** sensor drift, federated learning, cloud-edge collaboration, calibration-assisted domain adaptation, semantic prototypes, personalized regression, selective prediction
 
@@ -279,34 +279,73 @@ A5 的 accuracy 提升到 73.01%，四类 recall 分别为 62.35%、73.82%、82.
 
 A7 在 A6 语义配置上联合 distribution 和当前 stage 项，达到最高 accuracy 98.60%、macro-F1 98.60%、最低 NLL 0.1132 和最低 ECE 0.0118。相对 A6，accuracy 增益为 0.59 个百分点；相对相同标签预算的 A0T，增益仅为 0.37 个百分点。该差距具有方向性价值，但没有种子 43-46 的均值、标准差和配对置信区间之前，不能宣称 A7 稳定显著优于简单 target CE。
 
-### 8.2 每类表现与错误结构
+### 8.2 v3 修正版分类与模块作用
 
-A0T 的四类 recall 为 95.59%、99.41%、98.24% 和 99.71%；A6 为 97.35%、100.00%、95.59% 和 99.12%；A7 为 97.06%、99.41%、98.53% 和 99.41%。A7 的主要剩余错误集中在乙醇与 CO/乙烯之间，以及少量乙烯到 CO 的混淆。A6 对乙烯的 recall 相对较低，而 A7 恢复了该类性能，这可能解释联合配置的小幅增益。正式论文应在五种子结果中检验该类别级差异是否稳定。
+针对 legacy MMD 再平方、域内跨阶段对齐和对抗方向问题，v3 使用 conventional MMD2、跨域同类别同阶段对齐和修正的 Wasserstein feature objective。`prototype pair-L2` 的两个端点仍为 detached 统计量，因此 B1-B5 将其权重固定为 0。
 
-### 8.3 回归候选的历史工程回放
+| 组别 | 主要机制 | Accuracy | Macro-F1 | NLL | ECE |
+|---|---|---:|---:|---:|---:|
+| B1 | Corrected CORAL baseline | 98.7500% | 98.7534% | 0.0988 | 0.0120 |
+| B2 | Corrected global/class MMD2 | **99.2647%** | **99.2657%** | **0.0690** | **0.0067** |
+| B3 | B2 + same-class/same-phase stage | 98.8971% | 98.8980% | 0.1022 | 0.0108 |
+| B4 | B2 + Wasserstein adversarial | 98.9706% | 98.9714% | 0.0835 | 0.0081 |
+| B5 | B2 + CORAL + stage + adversarial | 98.8971% | 98.8990% | 0.0704 | 0.0093 |
 
-下表使用历史 F2 固定分类器生成的 C5 行流，仅用于验证新 C5-only 回归代码、筛选候选和暴露泄漏，不是当前 A-run 的正式论文结果。
+B2 在 seed 42 上同时取得最高 accuracy、macro-F1 和最好的 NLL/ECE。B3、B4 和 B5 均未超过 B2，说明额外 CORAL、stage 和 adversarial 项没有在主方向产生简单叠加增益。B2 是打开 B1-B5 test 排名后选出的性能候选，因此其下游回归/QC属于 post-screen exploratory evidence；B5 仍是预声明完整修正版，不能因单次排名而删除其机制价值。
 
-| 候选 | Test RMSE | S_CC N | S_CC RMSE | 选择结果 | 证据地位 |
-|---|---:|---:|---:|---|---|
-| H2.3+ | 21.2182 | 1344 | 12.3807 | w=0, 回退 MLP anchor | 历史候选筛选 |
-| Fixed H8, no C4 rescue | 16.6166 | 1344 | 11.5028 | calibration-valid 选择 | 当前优先候选 |
-| Historical P4 | 17.3559 | 1344 | 未冻结 | H8 使用率 5.22% | 部署无效, 风险泄漏 |
-| Per-window oracle | 14.8724 | 1344 | 未冻结 | 使用 test 真值选择 | 仅上界 |
+### 8.3 正式 C5 回归阶梯
 
-历史回放中，H8 优于 H2.3+，说明 source reference predictions 可能为 C5 Ridge 提供有用的低维迁移特征。H2.3+ 自动选择 w=0，表明受约束选择器能够拒绝无收益的复杂融合。P4 的 validation 阈值未在 test 上超过 fixed H8，且风险流使用 `true_class` 量程，不能作为部署方法。正式回归阶段应从选定的五种子分类器重新导出 C5 流，并在 test 未打开前完成 fixed H2.3+、fixed H8、简单 gate 和新 deployment-visible selector 的选择。
+所有 A6/B5/B2 回归模型和策略拟合均在阿里云 ECS 上完成。R3 为 calibration-validation 选择的 H2.3+；R4 为固定 H8；R7 根据 test 真值逐样本选择 R3/R4，只作为不可部署 oracle。
 
-### 8.4 当前系统证据与缺口
+| 分类器 | 分类错误 | R3 S_ALL/S_CC RMSE | R4 S_ALL RMSE/NRMSE | R4 S_CC N/RMSE | R7 S_ALL RMSE |
+|---|---:|---:|---:|---:|---:|
+| A6 | 27 | 29.6730 / 11.9446 | 28.0144 / 0.2276 | 1333 / 11.3890 | 25.5184 |
+| B5 | 15 | 20.1082 / 12.4435 | 17.4473 / 0.1352 | 1345 / 11.3890 | 15.7940 |
+| B2 | 10 | 19.7959 / 12.3415 | **14.6564 / 0.1059** | 1350 / **11.3288** | 12.6393 |
+
+B5 和 B2 的 H2.3+ 验证选择权重为 0，因此 R3 实际退化为 R2，没有产生融合增益。固定 H8 R4 在三个分类器上均优于可部署的 R1-R3/R5-R6。B2 相对 B5 的 S_CC R4 差异只有 0.0602 ppm，但 S_ALL RMSE 低 2.7910 ppm，说明收益主要来自更少且破坏性更低的分类错路由，而不是正确路由回归器发生显著改变。B2 的选择发生在分类 test 排名打开之后，必须保持探索性标签。
+
+### 8.4 QC、Nonreject 与 oracle-route
+
+HC95 是主工作点，HC90 是次工作点，FULL 是 coverage-1 对照。Yield 只统计 accept；Nonreject 合并 accept 和 review。所有阈值只在 calibration-validation 上选择，测试标签不进入部署风险。
+
+| 分类器 | Workpoint | Accept/Review/Reject | Yield | Nonreject | Accepted RMSE/NRMSE | Nonreject RMSE/NRMSE | 错路由召回 |
+|---|---|---:|---:|---:|---:|---:|---:|
+| A6 | FULL | 1360/0/0 | 100.00% | 100.00% | 28.0144 / 0.2276 | 28.0144 / 0.2276 | 0.00% |
+| A6 | HC95 | 1233/86/41 | 90.66% | 96.99% | 21.1455 / 0.1731 | 22.3047 / 0.1839 | 66.67% |
+| B5 | FULL | 1360/0/0 | 100.00% | 100.00% | 17.4473 / 0.1352 | 17.4473 / 0.1352 | 0.00% |
+| B5 | HC95 | 1309/33/18 | 96.25% | 98.68% | 15.9075 / 0.1197 | 16.0983 / 0.1213 | 46.67% |
+| B2 | FULL | 1360/0/0 | 100.00% | 100.00% | 14.6564 / 0.1059 | 14.6564 / 0.1059 | 0.00% |
+| B2 | HC95 | 1301/35/24 | 95.66% | 98.24% | **12.6729 / 0.0857** | **12.8614 / 0.0858** | **70.00%** |
+
+B2-HC95 只 reject 24 个窗口并把 35 个窗口转入 review，却识别 7/10 个分类错误；匹配随机拒绝的错路由平均召回约为 4.02%。该结果支持 QC 作为高覆盖率风险分流层，但不表示 QC 修复了被复核或拒绝的预测。
+
+为分离路由误差与数值回归误差，扩展实验保留全部 1360 个测试窗口和原 QC mask，只强制 `route_class=true_class`。A6/B5/B2 的 FULL forced-true-route RMSE/NRMSE 均为 `11.9082/0.0690`。这一上界保留了原本误分类的困难窗口，因此不同于删除错误窗口的 S_CC，也不能作为部署指标。
+
+### 8.5 B2/B5 跨方向验证
+
+| 源域 -> 目标域 | 模型 | Accuracy | Macro-F1 | NLL | ECE |
+|---|---|---:|---:|---:|---:|
+| C1 -> C5 | B2 | **98.8971%** | **98.8954%** | **0.1008** | **0.0107** |
+| C1 -> C5 | B5 | 98.3088% | 98.3131% | 0.1322 | 0.0150 |
+| C5 -> C1 | B2 | 97.6493% | 97.6525% | 0.2769 | 0.0237 |
+| C5 -> C1 | B5 | **98.3582%** | **98.3605%** | **0.1718** | **0.0156** |
+| C4+C5 -> C1 | B2 | 98.9552% | 98.9565% | 0.1059 | 0.0096 |
+| C4+C5 -> C1 | B5 | **99.1418%** | **99.1436%** | **0.0894** | **0.0082** |
+
+C1 -> C5 中 B2-B5 为 `+0.5882 pp`，McNemar `p=0.0963`；C5 -> C1 中为 `-0.7090 pp`，`p=0.0043`；C4+C5 -> C1 中为 `-0.1866 pp`，`p=0.3323`。最后一组因 B2 最差类别召回低 `0.7463 pp`，预声明三指标 0.5 pp 规则判为 `B5_favored`，但准确率差异不显著。三方向结果说明 B5 的完整适配栈在困难反向迁移和异构多源场景更有价值，而 B2 在主方向具有更好的性能/复杂度比。
+
+### 8.6 当前系统证据与缺口
 
 | 证据模块 | 已完成 | 尚需完成 | 最终论文输出 |
 |---|---|---|---|
-| Classification | 9 组 seed-42, 真实 ECS/Pi/PC | A0/A0T/A4/A4S/A5/A7 seeds 43-46 | mean±std, paired CI, per-class recall |
-| Regression | C5-only 代码和历史 F2 回放 | 从确认分类器重建并锁定 test | S_ALL 与 S_CC 主表 |
-| Selector/QC | 指标合同与泄漏审计 | 新风险、随机拒绝、固定覆盖率、bootstrap | risk-coverage 与三态输出表 |
-| IoT runtime | 真实训练拓扑和恢复流程 | Pi/PC latency、RSS、通信、掉线恢复 | 系统开销与可用性表 |
-| Deployment parity | 旧 runtime 已审计 | 接入新 C5 bundle, 1360 行逐值一致 | offline/runtime parity |
+| Classification | v2r1/v3 seed-42 与三方向六运行 | B2/B5 seeds 43-46 | mean+/-std、paired seed difference、per-class recall |
+| Regression | A6/B5/B2 R0-R7 正式 ECS 闭环 | 多种子下游稳定性 | S_ALL、S_CC、oracle-route 主表 |
+| Selector/QC | FULL/HC95/HC90、随机拒绝、forced-true-route | 低校准压力与 runtime policy parity | risk-coverage 与三态输出表 |
+| IoT runtime | 真实训练拓扑、恢复和安全加固 | Pi/PC latency、RSS、实际通信、掉线恢复 | 系统开销与可用性表 |
+| Evidence archive | 轻量 CSV/JSON/manifest 跟踪 | 大型原始产物独立归档 | claim-to-evidence map |
 
-按 float32 参数计，22,765 个序列化参数对应约 91.1 kB 的单向裸参数负载，其中有效前向参数约 78.2 kB。该数值只是通信下界，不包含 Flower 协议、张量序列化和语义 JSON。正式系统表必须使用实际网络字节、每轮耗时和端侧峰值内存，不应以理论估计替代测量。
+按 float32 参数计，22,765 个序列化分类参数对应约 91.1 kB 的单向裸参数负载，其中有效前向参数约 78.2 kB。该数值只是通信下界，不包含 Flower 协议、张量序列化和语义 JSON。正式系统表必须使用实际网络字节、每轮耗时和端侧峰值内存，不应以理论估计替代测量。
 
 ## 9. 讨论
 
@@ -316,42 +355,43 @@ A0T 的四类 recall 为 95.59%、99.41%、98.24% 和 99.71%；A6 为 97.35%、1
 
 ### 9.2 语义方法族的合理创新边界
 
-A6 接近 A0T/A7，而 A5 明显较弱，支持把 class-phase semantics 作为主要研究方向。其物理直觉是，同一气体在 early/middle/late response phase 的动态结构比全局无条件分布更稳定，设备残差可以吸收客户端特定偏移。然而，当前 prototype fit 未按总有效权重归一化，原型来自未归一化 `reg_feat`，raw L2 与 cosine 路径的尺度不同。这些问题要求增加 prototype norm 日志、normalized-anchor 和权重归一化消融。
+A6 接近 A0T/A7，而 A5 明显较弱，支持把 class-phase semantics 作为主要研究方向。v3 进一步表明，修正的 global/class MMD2 核心 B2 在主方向已经足够强，完整 B5 没有出现简单叠加增益；但跨方向实验中 B5 在 C5 -> C1 显著更优，并在 C4+C5 -> C1 改善点估计、校准误差和最差类别召回。因此，论文不应把所有附加损失都包装成普遍有效，而应将 B2 定位为紧凑核心，将 B5 定位为面向困难迁移和源域异质性的鲁棒增强。
 
-A7 的小幅增益不能自动证明每个联合项有效。当前 MMD 二次平方、stage 定义、无梯度 pair-L2 和 adversarial 符号均需要单独修正。较稳健的论文叙述是：A6 定义语义核心，A7 是联合扩展；若确认种子保持 A7 优势，再通过 `A7-noADV`、conventional-MMD 和 cross-domain same-class/same-phase 新组解释增益来源。
+A7 的 legacy 小幅增益不能证明其中每个联合项有效。v3 已修正 MMD2、跨域同类别同阶段对齐和 Wasserstein feature objective，并将无训练梯度的 prototype pair-L2 权重固定为 0。当前更稳健的论文叙述是：A6/A7 说明校准辅助语义方法族有效，B2/B5 进一步区分紧凑核心和完整鲁棒增强；最终贡献必须由 seeds 43-46 与系统开销共同决定。
 
 ### 9.3 为什么目标域回归以 Ridge 为重要主线
 
-目标 C5 calibration 只有 320 个窗口，并需按四个气体分头训练。此时目标端 Ridge 具有参数少、闭式可解释、易于 calibration-validation 选择和便于部署的优势。源域可以训练 Ridge、per-gas MLP 和 shared MLP 参考，但它们在 H8 中作为辅助预测特征，而不是直接替代 C5 头。因而“源域训练神经与线性参考，目标域以轻量个性化 Ridge/MLP 校准”比“所有域统一使用同一神经回归头”更符合当前代码和数据规模。
+目标 C5 calibration 只有 320 个窗口，并需按四个气体分头训练。此时目标端 Ridge 具有参数少、闭式可解释、易于 calibration-validation 选择和便于部署的优势。源域可以训练 Ridge、per-gas MLP 和 shared MLP 参考，但它们在 H8 中作为辅助预测特征，而不是直接替代 C5 头。正式结果中，H2.3+ 在 B5/B2 上均退化为 H2.3 anchor，而固定 H8 取得更低 S_ALL RMSE，说明低维源预测增强比直接混合更复杂目标 MLP/Ridge 更稳定。因而“源域训练神经与线性参考，目标域以轻量 Ridge 为最终个性化头”最符合当前代码和结果。
 
 ### 9.4 局限性
 
-当前研究仍有六项边界。第一，正式分类只有 seed 42 完成，多种子不确定性待补。第二，主目标只有 C5，尚不能主张任意新设备泛化。第三，窗口级随机分层切分是导师确认的主协议，但相邻窗口可能相关，需补充按文件/repeat 聚类 bootstrap。第四，C5 calibration 标签同时服务分类适配、回归和 QC，必须报告标签预算和低校准压力测试。第五，系统没有形式化差分隐私或安全聚合，不能将联邦训练等同于隐私保证。第六，新 C5 回归和 QC 尚未接入最终 runtime，当前只能称为已完成训练骨架和评估合同，不能称为部署闭环已经冻结。
+当前研究仍有六项边界。第一，正式分类与回归排名只有 seed 42，多种子不确定性待补。第二，主目标只有 C5，跨方向结果是 appendix 验证，尚不能主张任意新设备泛化。第三，窗口级随机分层切分是导师确认的主协议，但相邻窗口可能相关，需补充按文件/repeat 聚类 bootstrap 作为敏感性分析。第四，C5 calibration 标签同时服务分类适配、回归和 QC，必须报告标签预算和低校准压力测试。第五，系统没有形式化差分隐私或安全聚合，不能将联邦训练等同于隐私保证。第六，部署代码已经 fail-closed 加固，但正式 C5 bundle 的 1360 行 runtime parity、Pi/PC 延迟、RSS 和实际通信仍未冻结。
 
 ## 10. 结论
 
-本文围绕真实 IoT 气体感知部署构建了 GAPS 校准辅助云边协同系统，将物理客户端联邦分类、目标校准语义适配、C5 个性化浓度定量和三态可靠输出连接为一条可审计流程。已完成的 C1/C2 到 C5 seed-42 核心筛选表明，source-only FedAvg 在目标设备上严重失效；透明的目标校准可以恢复分类能力；类别-阶段语义方法族达到接近强监督基线的性能，联合配置取得当前最佳 accuracy、macro-F1、NLL 和 ECE。该结果为系统论文提供了清晰主线，但最终贡献仍取决于多种子确认、正式 C5 回归、QC 风险覆盖和端侧开销。本文预先固定这些证据门槛，以保证最终故事由可重复实验决定，而不是由方法名称预设。
+本文围绕真实 IoT 气体感知部署构建了 GAPS 校准辅助云边协同系统，将物理客户端联邦分类、目标 calibration 适配、C5 个性化 H8 定量和三态可靠输出连接为一条可审计流程。seed-42 结果表明，source-only FedAvg 在目标设备上严重失效；修正版 B2 在主方向提供很强的性能/复杂度比，完整 B5 在困难反向迁移中表现出更好的鲁棒性；固定 H8 优于 H2.3+ 和简单选择器，端到端回归尾部主要由错路由驱动；deployment-visible QC 能在约 95% 自动收益率下集中分流明显高风险窗口。当前系统故事已经形成分类、回归和可靠输出闭环，但最终投稿结论仍取决于 seeds 43-46、低校准压力、正式 runtime parity 和端侧开销。
 
 ## 附录 A. 建议的下一阶段实验
 
-1. 在相同 ECS/Pi/PC 拓扑补齐 A0、A0T、A4、A4S、A5、A7 的 seeds 43-46，报告 mean±std、配对 seed 差和 bootstrap 置信区间。
-2. 以新组名运行 semantic-focused correction：A6/A7-noADV、标准 MMD-squared、cross-domain same-class/same-phase 和 prototype weight normalization。
-3. 从确认后的分类 checkpoint 重建 C5 calibration/test 流，在 test 封存条件下选择 H2.3+、H8、simple gate 和新 selector，再一次性打开正式 test。
-4. 对每个回归候选同时报告 S_ALL、S_CC、classification-wrong 和 per-gas 指标，禁止只展示 S_CC。
-5. 完成 QC risk-coverage、随机拒绝、固定覆盖率、accepted error 和聚类 bootstrap；缺失 policy/schema 必须 fail closed。
-6. 在树莓派和 PC 测量分类延迟、回归/QC 延迟、RSS、模型字节、每轮通信和掉线恢复时间，并完成 1360 行 offline/runtime parity。
+1. 在相同 ECS/Pi/PC 拓扑补齐 B2/B5 seeds 43-46，报告 mean、sample standard deviation、配对 seed 差、方向例外和 bootstrap 置信区间。
+2. 完成回归/QC 低校准压力实验，并明确它不代表重新训练分类器后的端到端标签预算。
+3. 生成正式 C5 deployment bundle，完成全部 1360 个 test 窗口的 offline/runtime 逐值一致性验证。
+4. 在树莓派和 PC 测量分类、回归、QC 延迟、RSS、模型字节、实际每轮通信和掉线恢复时间。
+5. 对窗口相关性补充按文件/repeat 聚类 bootstrap，但保留导师确认的窗口级分层主协议。
+6. 冻结论文图表、claim-to-evidence map 和原始大产物归档位置，再形成投稿版本。
 
 ## 附录 B. 可主张与不可主张
 
 | 当前可主张 | 当前不可主张 |
 |---|---|
-| 真实 ECS/Pi/PC 完成 seed-42 九组训练 | 五种子稳定显著优于 A0T |
+| 真实 ECS/Pi/PC 完成 seed-42 v2r1/v3 与三方向六运行 | 五种子稳定显著优于 A0T/B2/B5 |
 | C1/C2 source 到 C5-only target 协议 | C3/C4 属于目标主结果 |
 | Flower 分类不训练回归头 | 目标域只使用 Ridge、从未训练 MLP |
 | A5-A7 是 calibration-assisted | 完全无监督目标域适配 |
 | A6 semantic family 值得确认 | A5→A6 是单项增量因果贡献 |
-| A7 是当前单种子最佳联合配置 | 当前每个 MMD/ADV/stage 项均有效 |
-| 历史 H8 是正式回归优先候选 | 历史 P4 是可部署主方法 |
+| B2 是主方向紧凑性能候选，B5 是鲁棒增强候选 | 当前每个 CORAL/MMD/ADV/stage 项均普遍有效 |
+| 正式固定 H8 是当前最佳可部署 coverage-1 回归器 | R7 oracle 或 forced-true-route 是部署性能 |
+| HC95 可在高收益率下集中分流风险 | QC 修复了 review/reject 的预测 |
 | 原始源窗口不集中到 ECS | 差分隐私或安全聚合保证 |
 | QC 合同和风险审计已建立 | 新 C5 bundle 已完成 runtime 闭环 |
 

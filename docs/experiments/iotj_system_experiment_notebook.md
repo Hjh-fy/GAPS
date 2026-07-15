@@ -1,6 +1,6 @@
 # IoT-J System Experiment Notebook
 
-Last updated: 2026-07-13
+Last updated: 2026-07-15
 
 ## Purpose
 
@@ -50,6 +50,7 @@ This is the durable engineering and research record for the IoT-J system experim
 | 2026-07-13 | Freeze a paired B2/B5 cross-direction classification study | C1-to-C5, C5-to-C1, and C4/C5-to-C1 test whether the compact MMD2 method generalizes and whether B5's extra CORAL/stage/adversarial stack adds stable value; this is appendix evidence and does not replace the C1/C2-to-C5 primary protocol | `docs/superpowers/specs/2026-07-13-b2-b5-cross-direction-classification.md` |
 | 2026-07-13 | Use Pi C1 for C1-to-C5, Pi C5 for C5-to-C1, and Pi C4 plus PC C5 for C4/C5-to-C1 | User-approved real-device mapping; B2 and B5 use identical hardware within every direction | User confirmation and cross-direction specification |
 | 2026-07-13 | Harden deployment and legacy Flower paths without changing frozen experiment semantics | Deployment claims require fail-closed QC, exact assets, deployable specialist routing, immutable aggregation weights, and clean-checkout execution; B1-B5/R0-R7 results must remain untouched | `docs/superpowers/specs/2026-07-13-system-safety-hardening-design.md`; commits `6b6d930`-`dfb43f1` plus Git closure |
+| 2026-07-15 | Freeze a single new-conversation handoff and track all lightweight seed-42 summaries in Git | A new GPT must be able to recover protocol, results, paths, limitations, and next gates without relying on untracked local results or stale paper prose | `docs/experiments/iotj_latest_handoff_20260715.zh.md`; evidence archive and refreshed paper draft |
 | 2026-07-12 | Make HC95 the primary QC operating point, HC90 secondary, and coverage 1 the no-QC baseline | The paper should show that a small 5%-10% review/reject budget concentrates obvious failures, rather than obtaining low RMSE by discarding many windows | User/advisor reporting direction |
 | 2026-07-12 | Separate operational QC thresholds from exact fixed-coverage ranking curves | Deployment thresholds are frozen on calibration-validation and produce realized test coverage; exact test coverage is only a non-operational ranking diagnostic | Leakage-safe QC design review |
 | 2026-07-12 | Correct the prototype pair-L2 status | `--use-proto-mmd=false` disables only GAPS diagnostic files; DA still evaluates pair-L2 when `da_lambda_proto_mmd>0`, but both uploaded endpoints are detached so the term changes logged loss and no trainable gradient | `gaps_flower/strategy.py`, `gaps_flower/domain_adaptation.py`, A6 round-25 diagnostics |
@@ -66,7 +67,7 @@ This is the durable engineering and research record for the IoT-J system experim
 | 5. Cross-direction simplification | F1 C1-to-C5, R1 C5-to-C1, and R2 C4/C5-to-C1 paired seed-42 analyses complete | Frozen B2/B5 definitions; balanced F1/R1/R2 datasets | Use confirmation seeds 43-46 to test the observed direction dependence |
 | 5. C5 source-count generalization | pending | F1/F2 cloud artifacts recovered | C5-only classification and regression source-count table; F3/F4 appendix optional |
 | 6. Runtime and IoT system validation | pending | Final P4 policy frozen | Runtime parity, edge latency, memory, communication |
-| 7. Paper evidence freeze | pending | Stages 1-6 complete | Claim-to-evidence map and paper-ready tables/figures |
+| 7. Paper evidence freeze | seed-42 handoff, method draft, paper draft, and lightweight summaries current; final freeze pending | Stages 1-6 complete | Multi-seed claim-to-evidence map and submission-ready tables/figures |
 
 ## Experiment Register
 
