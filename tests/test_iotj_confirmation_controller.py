@@ -1686,12 +1686,107 @@ def test_validator_cli_argv_and_audit_sha_are_fail_closed(tmp_path: Path) -> Non
     assert outcome == ValidationOutcome(True, sha256_file(audit_path), None)
 
 
+def test_validator_exit_two_with_invalid_report_returns_formal_rejection(
+    tmp_path: Path,
+) -> None:
+    attempt = _allocate_bound(tmp_path / "raw", "c12_to_c5__b5__s42")
+    protocol_path = tmp_path / "protocol.json"
+    _write_json(protocol_path, {})
+
+    def fake_run(command, **_kwargs):
+        output = Path(command[command.index("--output") + 1])
+        _write_json(output, {"status": "invalid", "reasons": ["missing event"]})
+        return subprocess.CompletedProcess(
+            command,
+            2,
+            json.dumps({"audit_sha256": sha256_file(output)}),
+            "validator rejected evidence",
+        )
+
+    outcome = controller.invoke_validator(
+        attempt,
+        validator=tmp_path / "validator.py",
+        protocol_manifest=protocol_path,
+        run=fake_run,
+    )
+
+    assert outcome.success is False
+    assert outcome.audit_sha256 is None
+
+
 @pytest.mark.parametrize(
-    ("returncode", "stdout", "match"),
-    [(2, "{}", "return code"), (0, "{}", "audit_sha256"), (0, '{"audit_sha256":"bad"}', "audit_sha256")],
+    ("returncode", "status", "match"),
+    [
+        (1, "valid", "return code"),
+        (3, "invalid", "return code"),
+        (0, "invalid", "status"),
+        (2, "valid", "status"),
+    ],
 )
-def test_validator_rejects_nonzero_or_malformed_sha(
-    tmp_path: Path, returncode: int, stdout: str, match: str
+def test_validator_rejects_unsupported_or_exit_status_mismatch(
+    tmp_path: Path, returncode: int, status: str, match: str
+) -> None:
+    attempt = _allocate_bound(tmp_path / "raw", "c12_to_c5__b5__s42")
+    protocol_path = tmp_path / "protocol.json"
+    _write_json(protocol_path, {})
+
+    def fake_run(command, **_kwargs):
+        output = Path(command[command.index("--output") + 1])
+        _write_json(output, {"status": status, "reasons": []})
+        return subprocess.CompletedProcess(
+            command,
+            returncode,
+            json.dumps({"audit_sha256": sha256_file(output)}),
+            "validator detail",
+        )
+
+    with pytest.raises(RuntimeError, match=match):
+        controller.invoke_validator(
+            attempt,
+            validator=tmp_path / "validator.py",
+            protocol_manifest=protocol_path,
+            run=fake_run,
+        )
+
+
+@pytest.mark.parametrize(
+    ("report", "write_report", "match"),
+    [
+        ({"reasons": []}, True, "status"),
+        ({"status": "unknown", "reasons": []}, True, "status"),
+        ("not a mapping", True, "report"),
+        (b"{not-json", True, "report"),
+        (None, False, "regular audit output"),
+    ],
+)
+def test_validator_rejects_malformed_or_missing_report(
+    tmp_path: Path, report: object, write_report: bool, match: str
+) -> None:
+    attempt = _allocate_bound(tmp_path / "raw", "c12_to_c5__b5__s42")
+    protocol_path = tmp_path / "protocol.json"
+    _write_json(protocol_path, {})
+
+    def fake_run(command, **_kwargs):
+        output = Path(command[command.index("--output") + 1])
+        if write_report:
+            if isinstance(report, bytes):
+                output.write_bytes(report)
+            else:
+                _write_json(output, report)
+        return subprocess.CompletedProcess(command, 2, "{}", "validator detail")
+
+    with pytest.raises(RuntimeError, match=match):
+        controller.invoke_validator(
+            attempt,
+            validator=tmp_path / "validator.py",
+            protocol_manifest=protocol_path,
+            run=fake_run,
+        )
+
+
+@pytest.mark.parametrize("stdout", ["{}", '{"audit_sha256":"bad"}', "not json"])
+def test_validator_valid_report_requires_matching_stdout_sha(
+    tmp_path: Path, stdout: str
 ) -> None:
     attempt = _allocate_bound(tmp_path / "raw", "c12_to_c5__b5__s42")
     protocol_path = tmp_path / "protocol.json"
@@ -1700,9 +1795,9 @@ def test_validator_rejects_nonzero_or_malformed_sha(
     def fake_run(command, **_kwargs):
         output = Path(command[command.index("--output") + 1])
         _write_json(output, {"status": "valid", "reasons": []})
-        return subprocess.CompletedProcess(command, returncode, stdout, "validator detail")
+        return subprocess.CompletedProcess(command, 0, stdout, "validator detail")
 
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(RuntimeError, match="JSON|audit_sha256"):
         controller.invoke_validator(
             attempt,
             validator=tmp_path / "validator.py",
@@ -1992,6 +2087,9 @@ def _install_production_fakes(
     launches: list[str] | None = None,
     launch_identities: dict[str, dict[str, object]] | None = None,
     cleanups: list[str] | None = None,
+    *,
+    validator_status: str = "valid",
+    validator_returncode: int = 0,
 ) -> None:
     source = fixture["source"]
     dataset = fixture["dataset"]
@@ -2092,10 +2190,21 @@ def _install_production_fakes(
         if "--attempt-dir" in command:
             events.append("validator")
             output = Path(command[command.index("--output") + 1])
-            _write_json(output, {"status": "valid", "reasons": []})
+            _write_json(
+                output,
+                {
+                    "status": validator_status,
+                    "reasons": (
+                        [] if validator_status == "valid" else ["forced rejection"]
+                    ),
+                },
+            )
             digest = sha256_file(output)
             return subprocess.CompletedProcess(
-                command, 0, json.dumps({"audit_sha256": digest}), ""
+                command,
+                validator_returncode,
+                json.dumps({"audit_sha256": digest}),
+                "",
             )
         if command and command[0] == "scp":
             if "-pr" in command:
@@ -2219,9 +2328,12 @@ def test_formal_server_launch_uses_only_frozen_source_and_absolute_ecs_data(
         monkeypatch, fixture, events, launches, identities, cleanups
     )
 
-    assert controller.main(
-        _controller_argv(fixture, tmp_path, "--validator", str(validator))
-    ) == 0
+    assert (
+        controller.main(
+            _controller_argv(fixture, tmp_path, "--validator", str(validator))
+        )
+        == 0
+    )
 
     server_outer = next(source for source in launches if "REMOTE_LAUNCH_V1:server" in source)
     supervisor = _supervisor_source(server_outer)
@@ -2345,3 +2457,183 @@ def test_main_formal_binds_real_helpers_in_fail_closed_order(
         )
     with pytest.raises(ValueError, match="algorithm"):
         _load_frozen(fixture)
+
+
+def test_formal_validator_rejection_records_invalid_attempt_lifecycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    validator = tmp_path / "validator.py"
+    validator.write_text("# path is executed by fake _run\n", encoding="utf-8")
+    events: list[str] = []
+    _install_production_fakes(
+        monkeypatch,
+        fixture,
+        events,
+        validator_status="invalid",
+        validator_returncode=2,
+    )
+
+    assert controller.main(
+        _controller_argv(fixture, tmp_path, "--validator", str(validator))
+    ) == 0
+
+    run_id = confirmation_run_id("B2", 42)
+    attempt_path = tmp_path / "raw" / run_id / f"{run_id}__a001"
+    assert _read_status(attempt_path)["state"] == "invalid"
+    final_event = json.loads(
+        sorted((attempt_path / "status_events").glob("status_*.json"))[-1].read_text(
+            encoding="utf-8"
+        )
+    )
+    assert final_event["event_type"] == "attempt_failure"
+    assert final_event["reason"] == "validator_rejected"
+    assert final_event["audit_sha256"] is None
+
+
+class _CleanupToken:
+    def __init__(self, label: str) -> None:
+        self.label = label
+
+
+class _TrackedCleanupLog:
+    def __init__(
+        self, label: str, events: list[str], *, close_error: BaseException | None = None
+    ) -> None:
+        self.label = label
+        self.events = events
+        self.close_error = close_error
+        self.closed = False
+
+    def close(self) -> None:
+        self.events.append(f"close:{self.label}")
+        self.closed = True
+        if self.close_error is not None:
+            raise self.close_error
+
+
+def test_production_cleanup_is_best_effort_and_aggregates_every_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    frozen = _load_frozen(_frozen_input_fixture(tmp_path / "inputs"))
+    runtime = controller.ProductionRuntime(
+        frozen=frozen,
+        frozen_run=frozen.runs[0],
+        deployments={},
+        ecs_host="root@ecs",
+        pi_host="gaps@pi",
+        validator=tmp_path / "validator.py",
+        poll_seconds=0.01,
+        timeout_seconds=1.0,
+        pc_runtime_root=tmp_path / "runtime",
+    )
+    events: list[str] = []
+    logs = [
+        _TrackedCleanupLog("server", events),
+        _TrackedCleanupLog("pi-client", events),
+        _TrackedCleanupLog("pi-sampler", events),
+        _TrackedCleanupLog(
+            "pc-client",
+            events,
+            close_error=OSError("pc client log close exploded"),
+        ),
+        _TrackedCleanupLog("pc-sampler", events),
+    ]
+
+    def remote_process(
+        host_id: str, label: str, ordinal: int, *, valid_identity: bool = True
+    ) -> controller.OwnedProcess:
+        owner_pid = 5000 + ordinal if valid_identity else None
+        return controller.OwnedProcess(
+            host_id=host_id,
+            label=label,
+            pid=6000 + ordinal,
+            owner_pid=owner_pid,
+            owner_pgid=owner_pid,
+            owner_start_ticks=7000 + ordinal if valid_identity else None,
+            registration_path=f"/attempt/{label}.registration.json",
+            launch_token=f"{ordinal:032x}",
+            host="root@ecs" if host_id == "ecs" else "gaps@pi",
+            python_bin="/venv/bin/python",
+            log_handles=(logs[ordinal],),
+        )
+
+    server = remote_process("ecs", "server", 0)
+    pi_client = remote_process("pi", "pi-client", 1)
+    pi_sampler = remote_process("pi", "pi-sampler", 2, valid_identity=False)
+    pc_client_handle = _CleanupToken("pc-client")
+    pc_sampler_handle = _CleanupToken("pc-sampler")
+    pc_client = controller.OwnedProcess(
+        "pc", "pc-client", 8001, handle=pc_client_handle, log_handles=(logs[3],)
+    )
+    pc_sampler = controller.OwnedProcess(
+        "pc", "pc-sampler", 8002, handle=pc_sampler_handle, log_handles=(logs[4],)
+    )
+    tunnel = _CleanupToken("tunnel")
+
+    def fake_remote_terminate(*, registration, **_kwargs) -> None:
+        label = str(registration["label"])
+        events.append(f"terminate-remote:{label}")
+        if label == "server":
+            raise RuntimeError("ECS terminate exploded")
+
+    def fake_terminate_processes(processes) -> None:
+        labels = [process.label for process in processes]
+        events.extend(f"terminate-local:{label}" for label in labels)
+        if labels == ["pc-client"]:
+            raise RuntimeError("PC client terminate exploded")
+        if labels == ["tunnel"]:
+            raise RuntimeError("tunnel terminate exploded")
+
+    monkeypatch.setattr(
+        controller, "_terminate_remote_launch_registration", fake_remote_terminate
+    )
+    monkeypatch.setattr(controller, "_terminate_processes", fake_terminate_processes)
+
+    hooks = controller.build_production_hooks(runtime)
+    hooks = controller.replace(
+        hooks,
+        prepare=lambda _attempt: None,
+        launch_server=lambda _attempt: server,
+        start_tunnels=lambda _attempt: [tunnel],
+        launch_pi_client=lambda _attempt: pi_client,
+        launch_pi_sampler=lambda _attempt, _client: pi_sampler,
+        launch_pc_client=lambda _attempt: pc_client,
+        launch_pc_sampler=lambda _attempt, _client: pc_sampler,
+        monitor_server=lambda _attempt, _server: None,
+        stop_sampler=lambda _attempt, _sampler: None,
+        wait_sampler=lambda _attempt, _sampler: None,
+        recover_evidence=lambda _attempt: pytest.fail("cleanup failure recovered evidence"),
+        validate_attempt=lambda _attempt: pytest.fail("cleanup failure invoked validator"),
+    )
+
+    with pytest.raises(controller.AttemptFailure):
+        run_confirmation_attempt(
+            tmp_path / "raw",
+            frozen.runs[0].run_id,
+            provenance=frozen.runs[0].provenance,
+            hooks=hooks,
+        )
+
+    assert "terminate-remote:server" in events
+    assert "terminate-remote:pi-client" in events
+    assert "terminate-local:pc-client" in events
+    assert "terminate-local:pc-sampler" in events
+    assert "terminate-local:tunnel" in events
+    assert all(log.closed for log in logs)
+    attempt_path = (
+        tmp_path
+        / "raw"
+        / frozen.runs[0].run_id
+        / f"{frozen.runs[0].run_id}__a001"
+    )
+    assert _read_status(attempt_path)["state"] == "failed"
+    controller_log = (attempt_path / "controller.log").read_text(encoding="utf-8")
+    for detail in (
+        "server: RuntimeError: ECS terminate exploded",
+        "pi-sampler: RuntimeError: remote process lacks owned identity",
+        "pc-client: RuntimeError: PC client terminate exploded",
+        "pc-client: OSError: pc client log close exploded",
+        "RuntimeError: tunnel terminate exploded",
+    ):
+        assert detail in controller_log

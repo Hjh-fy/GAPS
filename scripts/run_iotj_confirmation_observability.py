@@ -281,7 +281,7 @@ class LifecycleHooks:
     wait_sampler: Callable[[Attempt, object], None]
     recover_evidence: Callable[[Attempt], None]
     validate_attempt: Callable[[Attempt], ValidationOutcome]
-    cleanup_owned: Callable[[Sequence[object]], None]
+    cleanup_owned: Callable[[Sequence[object]], Sequence[str] | None]
     cleanup_tunnels: Callable[[Sequence[object]], None]
 
 
@@ -1737,8 +1737,25 @@ def invoke_validator(
         str(output),
     ]
     result = run(argv, timeout=300, check=False)
-    if result.returncode != 0:
+    if result.returncode not in {0, 2}:
         raise RuntimeError(f"validator return code {result.returncode}")
+    if not output.is_file() or output.is_symlink():
+        raise RuntimeError("validator did not create a regular audit output")
+    try:
+        audit = _load_json(output)
+    except (OSError, UnicodeError, ValueError, RuntimeError) as exc:
+        raise RuntimeError("validator audit report is malformed") from exc
+    status = audit.get("status")
+    if status not in {"valid", "invalid"}:
+        raise RuntimeError("validator audit status is missing or malformed")
+    expected_status = "valid" if result.returncode == 0 else "invalid"
+    if status != expected_status:
+        raise RuntimeError(
+            f"validator exit/status mismatch: return code {result.returncode}, "
+            f"status {status}"
+        )
+    if status == "invalid":
+        return ValidationOutcome(False, None, "validator rejected attempt")
     try:
         response = json.loads(result.stdout.strip())
     except json.JSONDecodeError as exc:
@@ -1746,11 +1763,6 @@ def invoke_validator(
     audit_sha256 = response.get("audit_sha256") if isinstance(response, Mapping) else None
     if not isinstance(audit_sha256, str) or not _HASH_RE.fullmatch(audit_sha256):
         raise RuntimeError("validator audit_sha256 is missing or malformed")
-    if not output.is_file() or output.is_symlink():
-        raise RuntimeError("validator did not create a regular audit output")
-    audit = _load_json(output)
-    if audit.get("status") != "valid":
-        raise RuntimeError("validator audit status is not valid")
     if sha256_file(output) != audit_sha256:
         raise RuntimeError("validator audit_sha256 does not match output bytes")
     return ValidationOutcome(True, audit_sha256, None)
@@ -2340,46 +2352,49 @@ print(json.dumps({{'returncode': returncode}}))
         raise RuntimeError(f"remote {process.label} exited unsuccessfully")
 
 
-def _remote_cleanup(processes: Sequence[OwnedProcess]) -> None:
+def _remote_cleanup(processes: Sequence[OwnedProcess]) -> list[str]:
+    errors: list[str] = []
     for process in processes:
         if process.host_id == "pc":
             continue
-        if any(
-            not isinstance(value, int) or isinstance(value, bool) or value <= 0
-            for value in (
-                process.owner_pid,
-                process.owner_pgid,
-                process.owner_start_ticks,
+        try:
+            if any(
+                not isinstance(value, int) or isinstance(value, bool) or value <= 0
+                for value in (
+                    process.owner_pid,
+                    process.owner_pgid,
+                    process.owner_start_ticks,
+                )
+            ):
+                raise RuntimeError("remote process lacks owned identity")
+            if not isinstance(process.registration_path, (str, Path)) or not isinstance(
+                process.launch_token, str
+            ):
+                raise RuntimeError("remote process lacks owned launch registration")
+            registration = _validate_launch_registration(
+                {
+                    "schema_version": 1,
+                    "label": process.label,
+                    "launch_token": process.launch_token,
+                    "registration_path": str(process.registration_path),
+                    "child_pid": process.pid,
+                    "owner_pid": process.owner_pid,
+                    "owner_pgid": process.owner_pgid,
+                    "owner_start_ticks": process.owner_start_ticks,
+                },
+                label=process.label,
+                launch_token=process.launch_token,
+                registration_path=str(process.registration_path),
             )
-        ):
-            raise RuntimeError(f"remote process lacks owned identity: {process.label}")
-        if not isinstance(process.registration_path, (str, Path)) or not isinstance(
-            process.launch_token, str
-        ):
-            raise RuntimeError(
-                f"remote process lacks owned launch registration: {process.label}"
+            _terminate_remote_launch_registration(
+                host=str(process.host),
+                python_bin=str(process.python_bin),
+                registration=registration,
+                remote_python=_remote_python,
             )
-        registration = _validate_launch_registration(
-            {
-                "schema_version": 1,
-                "label": process.label,
-                "launch_token": process.launch_token,
-                "registration_path": str(process.registration_path),
-                "child_pid": process.pid,
-                "owner_pid": process.owner_pid,
-                "owner_pgid": process.owner_pgid,
-                "owner_start_ticks": process.owner_start_ticks,
-            },
-            label=process.label,
-            launch_token=process.launch_token,
-            registration_path=str(process.registration_path),
-        )
-        _terminate_remote_launch_registration(
-            host=str(process.host),
-            python_bin=str(process.python_bin),
-            registration=registration,
-            remote_python=_remote_python,
-        )
+        except BaseException as exc:
+            errors.append(f"remote {process.label}: {type(exc).__name__}: {exc}")
+    return errors
 
 
 def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
@@ -2624,18 +2639,23 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             run=_run,
         )
 
-    def cleanup_owned(processes: Sequence[object]) -> None:
+    def cleanup_owned(processes: Sequence[object]) -> list[str]:
         typed = [process for process in processes if isinstance(process, OwnedProcess)]
-        _remote_cleanup(typed)
-        local_handles = [
-            process.handle
-            for process in typed
-            if process.host_id == "pc" and process.handle is not None
-        ]
-        _terminate_processes(local_handles)
+        errors = _remote_cleanup(typed)
+        for process in typed:
+            if process.host_id != "pc" or process.handle is None:
+                continue
+            try:
+                _terminate_processes((process.handle,))
+            except BaseException as exc:
+                errors.append(f"local {process.label}: {type(exc).__name__}: {exc}")
         for process in typed:
             for handle in process.log_handles:
-                handle.close()
+                try:
+                    handle.close()
+                except BaseException as exc:
+                    errors.append(f"log {process.label}: {type(exc).__name__}: {exc}")
+        return errors
 
     return LifecycleHooks(
         prepare=prepare,
@@ -2674,7 +2694,18 @@ def _cleanup_lifecycle(
         except BaseException as exc:
             errors.append(f"wait sampler: {type(exc).__name__}: {exc}")
     try:
-        hooks.cleanup_owned(tuple(owned))
+        owned_errors = hooks.cleanup_owned(tuple(owned))
+        if owned_errors is not None:
+            if isinstance(owned_errors, (str, bytes)) or not isinstance(
+                owned_errors, Sequence
+            ):
+                raise TypeError(
+                    "cleanup_owned must return a sequence of errors or None"
+                )
+            for error in owned_errors:
+                if not isinstance(error, str):
+                    raise TypeError("cleanup_owned errors must be strings")
+                errors.append(f"cleanup owned: {error}")
     except BaseException as exc:
         errors.append(f"cleanup owned: {type(exc).__name__}: {exc}")
     try:
