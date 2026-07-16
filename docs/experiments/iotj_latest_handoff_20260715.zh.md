@@ -151,3 +151,90 @@ B2-HC95 只拒绝 24/1360 个窗口，并把 35 个窗口转入 review；它筛�
 3. 生成最终部署 bundle，完成全部 1360 个 C5 test 窗口 offline/runtime 逐值 parity。
 4. 在 Pi/PC 测量分类、回归、QC 延迟、RSS、模型字节、实际通信和掉线恢复。
 5. 完成论文图表、claim-to-evidence map 和最终 IoTJ 写作，不再用旧 F2/P4 或 C3/C4 目标结果填补当前主表。
+
+## 11. Spec A 确认可观测冻结交接（2026-07-17）
+
+### 11.1 当前状态
+
+当前仅完成 Confirmation Experiment Observability Framework 和候选冻结代码审计，**正式十运行分类确认尚未开始**。批准的 Task 1--9 代码头为 `12b3bc45dd8ceff7098e543cf94d789a2eb338d7`，包含基线 `a920ecdbdbea250220343d63926cb370178cdc5e`；Task 10 修改文档前 tracked worktree/index 均干净。fresh audit 为 related `355 passed, 4 skipped, 2 warnings in 215.39s`、full `700 passed, 4 skipped, 2 warnings in 295.37s`，训练关键六文件相对基线零 diff，四文件 `py_compile` 与 `git diff --check` 通过。
+
+冻结 schedule 顺序必须精确为：
+
+```text
+B2:42, B5:42, B5:43, B2:43, B2:44,
+B5:44, B5:45, B2:45, B2:46, B5:46
+```
+
+C5 calibration/test 必须为 `320/1360`。到本交接点尚未打开 C5 test，尚未连接 ECS/Pi 执行 formal smoke，也没有启动官方 25-round queue。
+
+### 11.2 Task 9 可复核证据
+
+- `.tmp_iotj_observer_gate_b2_task9_final_v10/`：synthetic/local-only/unstaged，`equivalent`，`max_abs_delta=0`，8-message cross matched，report SHA-256 `1191d766e932360c8ed2e83b9258c3e18c284010ba5dbe5df249e6de8ea48646`。
+- `.tmp_iotj_observer_gate_b5_task9_final_v10/`：synthetic/local-only/unstaged，`equivalent`，`max_abs_delta=0`，8-message cross matched，report SHA-256 `a7d8a437e87d6703b8255d9431a0d47472a278bbe1d603b5658cbe9eda5d7d96`。
+- 以上只证明本地 OFF-A/ON/OFF-B 观测等价；不能替代正式拓扑 smoke 或五种子确认。
+
+### 11.3 精确命令和网络边界
+
+先定义冻结路径；`$P/$S/$D/$C/$A` 必须来自同一次 Task 10 冻结：
+
+```powershell
+$P = 'results/iotj_main_confirmation_observability_20260715_summary/confirmation_protocol_manifest.json'
+$S = 'results/iotj_main_confirmation_observability_20260715_summary/source_archive_manifest.json'
+$D = 'results/iotj_main_confirmation_observability_20260715_summary/dataset_manifest.json'
+$C = 'results/iotj_main_confirmation_observability_20260715_commands'
+$A = 'results/iotj_main_confirmation_observability_20260715/source/confirmation_source.tar'
+$R = 'results/iotj_main_confirmation_observability_20260715/raw'
+```
+
+安全本地 synthetic Gate；只使用新建空目录，不连接 ECS/Pi/PC，不读取项目 C5 test：
+
+```powershell
+python -m scripts.run_iotj_observer_equivalence_gate --group B2 --output-root .tmp_iotj_observer_gate_b2_new
+python -m scripts.run_iotj_observer_equivalence_gate --group B5 --output-root .tmp_iotj_observer_gate_b5_new
+```
+
+协议/source archive/数据/十条 command manifest 的本地 dry-run queue Gate；当前 CLI 的正确参数是 `--validate-inputs-only`，不是旧计划中的 `--dry-run`，且该模式不做 transport 或 process action：
+
+```powershell
+python -m scripts.run_iotj_confirmation_observability --protocol-manifest $P --source-archive-manifest $S --dataset-manifest $D --command-root $C --source-archive $A --raw-root $R --validate-inputs-only
+```
+
+三主机 preflight；会等待/连接 ECS、Pi，并验证 PC runtime，部署并核对 archive/runtime identity，但不启动训练进程：
+
+```powershell
+python -m scripts.run_iotj_confirmation_observability --protocol-manifest $P --source-archive-manifest $S --dataset-manifest $D --command-root $C --source-archive $A --raw-root $R --preflight-only
+```
+
+非 canonical formal-topology OFF/ON smoke；以下两条都会接触 ECS/Pi/PC，输出必须使用新目录，并且不会占用 canonical attempt registry：
+
+```powershell
+python -m scripts.run_iotj_observer_equivalence_gate --formal-topology --protocol-manifest $P --group B2 --output-root results/iotj_main_confirmation_observability_20260715/smoke/b2
+python -m scripts.run_iotj_observer_equivalence_gate --formal-topology --protocol-manifest $P --group B5 --output-root results/iotj_main_confirmation_observability_20260715/smoke/b5
+```
+
+正式十运行 controller CLI；会连接 ECS/Pi/PC 并启动冻结队列，Task 10/11 Gate 未全部通过前禁止执行：
+
+```powershell
+python -m scripts.run_iotj_confirmation_observability --protocol-manifest $P --source-archive-manifest $S --dataset-manifest $D --command-root $C --source-archive $A --raw-root $R
+```
+
+sealed summarizer；只有精确十个 validator-accepted canonical attempts 与全部输入 SHA 绑定通过后才打开 C5 test，否则在测试密封线之前 fail closed：
+
+```powershell
+python -m scripts.summarize_iotj_confirmation_observability --raw-root $R --protocol-manifest $P --data-root dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid --output-root results/iotj_main_confirmation_observability_20260715_summary_final --device auto --batch-size 32
+```
+
+从 exact docs commit 生成本地 source archive/manifests；此命令不连接 ECS/Pi/PC，也不打开 C5 test，但会读取冻结的 C1/C2/C5 dataset 文件并校验 C5 `320/1360`：
+
+```powershell
+$commit = git rev-parse HEAD
+python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commit --data-root dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid --archive-output results/iotj_main_confirmation_observability_20260715/source/confirmation_source.tar --command-root results/iotj_main_confirmation_observability_20260715_commands --summary-root results/iotj_main_confirmation_observability_20260715_summary
+```
+
+### 11.4 证据与声明纪律
+
+- logical payload、serialized Flower application message 和 transport 是三层不同口径；`transport_status=not_collected` 永远不能显示为 0。
+- 每个 run 只允许一个 canonical attempt。failed/invalid/aborted attempt 必须原地保留，不能删除、覆盖或根据 metric 选择重跑。
+- summary 只从 immutable status chain 发现 canonical attempt，绑定 `confirmation_commit`、source archive、dataset、algorithm config、protocol、audit、checkpoint 与实际消费 sidecar SHA；禁止 metric-driven selection。
+- 历史 `feaa75b` 和跨方向 seed-42 继续只作 screening/appendix。真实 C5 evaluation、ECS/Pi formal smoke 和十运行训练在本交接点均未发生。
+- 2026-07-17 用户预授权只在 Tasks 10--12 与 candidate freeze、preflight、B2/B5 formal smoke、hash/schema/runtime identity、dry-run queue Gate 全通过后生效；届时可不再人工确认而启动精确十个 25-round runs。任一 Gate 失败仍立即停止并保留证据。

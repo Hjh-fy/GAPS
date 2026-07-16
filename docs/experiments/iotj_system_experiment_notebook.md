@@ -230,3 +230,87 @@ This is the durable engineering and research record for the IoT-J system experim
 - P4 searches risk thresholds only on 80 calibration-validation rows. The selected threshold 0.0090404 routed 71/1360 test windows (5.22%) to H8 and produced test RMSE 17.3559. The fixed H8 expert remained better at 16.6166, while the unattainable per-window oracle was 14.8724.
 - Interpretation: the fixed C5 target Ridge with source-reference features is currently the strongest regression candidate. `risk_score` alone does not provide a stable expert selector in this replay. The new classifier seeds must confirm this ordering before the paper method is frozen.
 - Verification: `python -m pytest tests/test_iotj_c5_regression_inputs.py tests/test_iotj_c5_h23_plus.py tests/test_iotj_c5_p4.py -q`; direct CLI execution is covered for P4 so pytest path injection cannot mask import failures.
+
+## Spec A 确认可观测候选冻结（2026-07-17，Task 10）
+
+### 结论和声明边界
+
+- Spec A 到当前修订只实现了 **Confirmation Experiment Observability Framework（确认实验可观测框架）**。B2/B5 的正式十运行分类确认尚未开始；本节的测试、合成 Gate 和文档冻结不能写成正式确认结果。
+- 冻结方向仍是 `C1/C2 -> C5`，候选为 B2/B5，种子为 42--46，每次正式运行 25 轮。真实 C5 target-test 从未在本轮工作中打开；ECS/Pi 正式 smoke、预检和十个 25 轮运行也均未启动。
+- 历史 `feaa75b` 主方向 seed-42 结果与跨方向 seed-42 结果只属于 screening/appendix；它们不进入五种子确认均值、sample std 或显著性结论。B2 仍标记为 post-screen exploratory，B5 为 predeclared full method。
+- 通信必须分三层报告：Layer 1 是逻辑 payload 分量，Layer 2 是确定性序列化后的 Flower application message 字节数与 SHA-256，Layer 3 传输层明确为 `transport_status=not_collected`。未采集传输字节绝不写成 `0`，也不从应用层字节推算。
+
+### 经过审计的 Git 起点和 Task 1--9 完整链
+
+Task 10 修改文档前，分支为 `codex/iotj-confirmation-observability`，HEAD 精确为 `12b3bc45dd8ceff7098e543cf94d789a2eb338d7`，且 `a920ecdbdbea250220343d63926cb370178cdc5e` 是其祖先。tracked worktree 和 index 均为空；仅保留 brief 允许的未跟踪 `.tmp*`、`.t9` 和旧 Gate 证据。批准链如下（按祖先到后继顺序）：
+
+```text
+de23322 docs: specify IoTJ confirmation observability
+c3dc7fa docs: plan IoTJ confirmation observability
+6d01259 feat: add confirmation event observer
+cc982cb fix: fail closed in confirmation observer
+0b31e30 feat: audit Flower application messages
+4e797a7 feat: observe confirmation Flower phases
+5394b41 feat: sample confirmation training resources
+0381597 fix: stabilize resource sampler identity and peak RSS
+8f54e66 feat: freeze confirmation protocol manifests
+9ed42f5 fix: make confirmation freeze transactional
+6aec05c feat: orchestrate immutable confirmation attempts
+95d5faf fix: close confirmation controller safety gaps
+18effa3 fix: harden formal confirmation runtime
+d352435 fix: secure remote confirmation lifecycle
+7cac204 fix: enforce confirmation lifecycle invariants
+d6412c3 fix: complete confirmation failure handling
+5e497b7 feat: validate confirmation attempt evidence
+0b386c4 fix: harden confirmation evidence coverage
+b861f06 fix: deduplicate resource sampling points
+d06cee1 fix: bind transport status in confirmation protocol
+3ce17dc feat: summarize confirmation system evidence
+e6dbbd9 fix: seal confirmation summary inputs
+d210c39 fix: extend sealed summary transaction
+b84b76c fix: finalize summary publication transaction
+8827461 test: gate observer numerical equivalence
+8b0bca7 fix: harden observer equivalence evidence
+3005e61 fix: bind observer evidence identity
+929cd99 fix: enforce exact observer numeric types
+b7ba98c fix: validate every resource identity row
+b7106d4 fix: harden observer equivalence contracts
+12b3bc4 fix: bind formal resource recovery paths
+```
+
+训练关键路径保护审计：
+
+```text
+git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.py federated_dataset.py gaps_flower/task.py gaps_flower/domain_adaptation.py
+```
+
+输出为空，说明 Spec A 没有修改这六个训练关键文件。`scripts/run_iotj_confirmation_observability.py`、`scripts/run_iotj_observer_equivalence_gate.py` 及其两个测试模块的四文件 `py_compile` 通过；`git diff --check` 通过；静态审计后 tracked worktree/index 仍为空。
+
+### Task 10 fresh verification
+
+- 九文件 Tasks 1--9 related suite，系统临时目录唯一短 basetemp：`355 passed, 4 skipped, 2 warnings in 215.39s`，exit 0。
+- 完整 `python -m pytest -q`，另一系统临时目录唯一短 basetemp：`700 passed, 4 skipped, 2 warnings in 295.37s`，exit 0。
+- 这组 fresh 结果补充并确认 Task 9 批准前的 Gate `59 passed, 1 skipped`、controller `134 passed, 1 skipped`、related `355 passed, 4 skipped`、full `700 passed, 4 skipped`。
+
+### Task 9 最终本地 Gate 证据
+
+- 最终目录：`.tmp_iotj_observer_gate_b2_task9_final_v10/` 和 `.tmp_iotj_observer_gate_b5_task9_final_v10/`；二者都是 synthetic、local-only、unstaged evidence，不是正式拓扑或真实 C5 证据。
+- B2/B5 都为 `status=equivalent`、`max_abs_delta=0`、无 mismatch；OFF-A/ON/OFF-B 的冻结初始点、每轮张量/统计、最终 checkpoint 及独立 live trace/audit 绑定一致，跨比较精确匹配 8 条真实 Flower application message。
+- B2 report SHA-256：`1191d766e932360c8ed2e83b9258c3e18c284010ba5dbe5df249e6de8ea48646`。
+- B5 report SHA-256：`a7d8a437e87d6703b8255d9431a0d47472a278bbe1d603b5658cbe9eda5d7d96`。
+
+### 失败审查所保留的工程教训
+
+- 观测代码必须保存并恢复 Python、NumPy、PyTorch CPU/CUDA 的 RNG 状态；即使 logits 相同，observer 引入的随机数消费也会污染后续正式训练。
+- FitRes 必须在 observer audit 后再次取样并比较；只审计 observer 看到的对象会漏掉 post-observer mutation。
+- 不能让 observer 自己证明自己：独立 common live trace 要与 events sidecar 的 message bytes、SHA、round/client/proxy identity 做双向绑定。
+- 文件集合、字段集合、schema、JSON numeric type、regular-file 类型、run/attempt/round/client/host/producer identity 和恢复路径都必须精确；“内容大致相同”不构成 Gate。
+- Pi 端先生成的 Linux resource 路径恢复到 Windows 后必须重新绑定为 attempt 内精确 regular-file 路径，不能接受旧绝对路径或旁路文件。
+- DA diagnostics 不只比较路径字符串；要比较引用 JSON 的字节 SHA 和规范化语义，同时保留 allowlist 之外的全部 key。
+- failed/invalid/aborted attempt 不删除、不覆盖、不改写为 canonical。它们保留 immutable status chain、controller log、raw sidecar 和 audit，既防止 metric-driven rerun，也为故障复盘提供证据。
+
+### 后续授权与停止条件
+
+用户于 2026-07-17 预授权：仅在 Tasks 10--12 完成，且 candidate freeze、三主机 preflight、B2/B5 formal smoke、archive/hash/schema/runtime identity 与十运行 dry-run queue Gate 全部 fail-closed 通过后，可无需再次人工批准而启动冻结的十个 25 轮运行。任一 Gate 失败仍必须立即停止并保留证据。Task 10 本身只生成本地 archive/manifests，不执行 preflight、formal smoke、训练或 C5 evaluation。
+
+操作入口：安全本地 Gate 使用 `python -m scripts.run_iotj_observer_equivalence_gate --group B2|B5 --output-root <new-empty-root>`；本地冻结使用 `python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit <FULL_HEAD> --data-root dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid --archive-output results/iotj_main_confirmation_observability_20260715/source/confirmation_source.tar --command-root results/iotj_main_confirmation_observability_20260715_commands --summary-root results/iotj_main_confirmation_observability_20260715_summary`。formal topology、preflight、`--validate-inputs-only` dry-run queue、sealed summarizer 和正式 controller 的完整可复制命令及其网络边界见 `docs/experiments/iotj_latest_handoff_20260715.zh.md` 第 11.3 节。
