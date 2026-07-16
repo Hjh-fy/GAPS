@@ -1,18 +1,31 @@
 from __future__ import annotations
 
 import json
+import random
 import subprocess
 import sys
 from collections import OrderedDict
 from pathlib import Path
 
 import pytest
+import numpy as np
 import torch
+from flwr.common import Code, FitIns, FitRes, Status, ndarrays_to_parameters
+from gaps_flower.observability import JsonlObserver, ObserverIdentity
+
+import scripts.run_iotj_observer_equivalence_gate as gate_module
 
 from scripts.run_iotj_observer_equivalence_gate import (
     VOLATILE_JSON_PATHS,
+    _create_frozen_initial_checkpoint,
+    _flower_trace_fingerprint,
+    _fixed_adapted_logits,
+    _normalized_timing_scalar_mapping,
+    _run_config_argument_types,
+    _validate_observer_sidecars,
     compare_fingerprints,
     json_fingerprint,
+    run_formal_topology_gate,
     run_local_gate,
     tensor_fingerprint,
 )
@@ -348,3 +361,672 @@ def test_fingerprints_fail_closed_on_symlink_input(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="symlink/reparse"):
         json_fingerprint(link, VOLATILE_JSON_PATHS)
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_tensor_fingerprint_rejects_nonfinite_tensor(
+    tmp_path: Path, bad: float
+) -> None:
+    checkpoint = _save_checkpoint(
+        tmp_path / "bad.pth",
+        OrderedDict([("weight", torch.tensor([bad], dtype=torch.float32))]),
+    )
+    with pytest.raises(ValueError, match="non-finite"):
+        tensor_fingerprint(checkpoint)
+
+
+def _fit_messages(extra_config: bool = False, extra_metrics: bool = False):
+    parameters = ndarrays_to_parameters(
+        [
+            torch.tensor([[1.0, 2.0]], dtype=torch.float32).numpy(),
+            torch.tensor([3.0], dtype=torch.float32).numpy(),
+        ]
+    )
+    config = {"server_round": 1, "stable": "yes"}
+    metrics = {
+        "client_id": 1,
+        "fit_seconds": 1.25,
+        "prototype_json": '{"0,0":[1.0,2.0]}',
+    }
+    if extra_config:
+        config["observer_new_key"] = True
+    if extra_metrics:
+        metrics["observer_new_key"] = 1
+    return (
+        FitIns(parameters=parameters, config=config),
+        FitRes(
+            status=Status(code=Code.OK, message="ok"),
+            parameters=parameters,
+            num_examples=8,
+            metrics=metrics,
+        ),
+    )
+
+
+def test_common_trace_normalizes_only_existing_timing_value_and_preserves_keys_types() -> None:
+    fit_ins, fit_res = _fit_messages()
+    first = _flower_trace_fingerprint(
+        fit_ins=fit_ins,
+        fit_res=fit_res,
+        parameter_keys=["weight", "bias"],
+    )
+    fit_res.metrics["fit_seconds"] = 999.0
+    second = _flower_trace_fingerprint(
+        fit_ins=fit_ins,
+        fit_res=fit_res,
+        parameter_keys=["weight", "bias"],
+    )
+
+    assert first["comparison"] == second["comparison"]
+    assert first["fit_res"]["metrics_keys"] == list(fit_res.metrics)
+    assert first["fit_res"]["metrics_types"]["fit_seconds"] == "float"
+    assert first["fit_res"]["normalized_application_message_bytes"] > 0
+    assert len(first["fit_res"]["normalized_application_message_sha256"]) == 64
+
+
+def test_aggregate_trace_normalizes_existing_timings_without_dropping_keys_or_types() -> None:
+    metrics = OrderedDict(
+        [
+            ("accuracy", 0.75),
+            ("fit_seconds", 9.25),
+            ("evaluate_seconds", 3),
+            ("stable_label", "kept"),
+        ]
+    )
+    result = _normalized_timing_scalar_mapping(metrics)
+
+    assert result["key_order"] == list(metrics)
+    assert result["keys"] == list(metrics)
+    assert result["types"] == {
+        "accuracy": "float",
+        "fit_seconds": "float",
+        "evaluate_seconds": "int",
+        "stable_label": "str",
+    }
+    assert result["values"]["fit_seconds"] == {"type": "float", "value": 0.0}
+    assert result["values"]["evaluate_seconds"] == {"type": "int", "value": 0}
+    assert result["values"]["accuracy"]["value"] == 0.75
+    assert metrics["fit_seconds"] == 9.25
+
+
+def test_run_config_type_mirror_ignores_only_exact_observer_leaf_types() -> None:
+    off = {
+        "observer_context": None,
+        "observer_events": None,
+        "stable": 42,
+        "run_name": "same",
+    }
+    on = {
+        "observer_context": "context.json",
+        "observer_events": "events.jsonl",
+        "stable": 42,
+        "run_name": "same",
+    }
+    changed_nonallowlisted = {**on, "stable": 42.0}
+
+    assert _run_config_argument_types(off) == _run_config_argument_types(on)
+    assert _run_config_argument_types(off) != _run_config_argument_types(
+        changed_nonallowlisted
+    )
+
+
+@pytest.mark.parametrize("where", ["config", "metrics"])
+def test_common_trace_real_message_new_key_is_not_normalized_away(where: str) -> None:
+    base_ins, base_res = _fit_messages()
+    changed_ins, changed_res = _fit_messages(
+        extra_config=where == "config", extra_metrics=where == "metrics"
+    )
+    base = _flower_trace_fingerprint(
+        fit_ins=base_ins,
+        fit_res=base_res,
+        parameter_keys=["weight", "bias"],
+    )
+    changed = _flower_trace_fingerprint(
+        fit_ins=changed_ins,
+        fit_res=changed_res,
+        parameter_keys=["weight", "bias"],
+    )
+    result = compare_fingerprints(
+        {"common_trace": base},
+        {"common_trace": changed},
+        {"common_trace": base},
+    )
+    assert result["status"] == "observer_path_mutation"
+
+
+def test_per_client_round_trace_prevents_aggregate_cancellation() -> None:
+    off = {
+        "common_trace": {
+            "comparison": {
+                "rounds": {
+                    "1": {
+                        "fit_res": {"C1": "a", "C2": "b"},
+                        "aggregate": "same",
+                        "returned": "same",
+                        "adapted_logits": "same",
+                    }
+                }
+            }
+        }
+    }
+    on = {
+        "common_trace": {
+            "comparison": {
+                "rounds": {
+                    "1": {
+                        "fit_res": {"C1": "b", "C2": "a"},
+                        "aggregate": "same",
+                        "returned": "same",
+                        "adapted_logits": "same",
+                    }
+                }
+            }
+        }
+    }
+    assert compare_fingerprints(off, on, off)["status"] == "observer_path_mutation"
+
+
+def test_one_frozen_initial_checkpoint_is_reused_and_fingerprinted(tmp_path: Path) -> None:
+    result = _create_frozen_initial_checkpoint(tmp_path / "initial.pth", "B2")
+    assert result["path"] == str(tmp_path / "initial.pth")
+    assert len(result["raw_sha256"]) == 64
+    assert len(result["tensor_content_sha256"]) == 64
+    assert result["training_seed"] == 42
+    assert result["loaded_by_modes"] == ["off_a", "on", "off_b"]
+
+
+def test_fixed_logits_observation_preserves_all_process_rng_states(
+    tmp_path: Path,
+) -> None:
+    checkpoint = _create_frozen_initial_checkpoint(tmp_path / "initial.pth", "B2")
+    random.seed(8123)
+    np.random.seed(8123)
+    torch.manual_seed(8123)
+    python_before = random.getstate()
+    numpy_before = np.random.get_state()
+    torch_before = torch.random.get_rng_state().clone()
+
+    result = _fixed_adapted_logits(Path(checkpoint["path"]), "B2")
+
+    assert len(result["content_sha256"]) == 64
+    assert random.getstate() == python_before
+    numpy_after = np.random.get_state()
+    assert numpy_after[0] == numpy_before[0]
+    assert np.array_equal(numpy_after[1], numpy_before[1])
+    assert numpy_after[2:] == numpy_before[2:]
+    assert torch.equal(torch.random.get_rng_state(), torch_before)
+
+
+def test_sidecar_validator_derives_zero_for_off_and_rejects_missing_on(
+    tmp_path: Path,
+) -> None:
+    off = tmp_path / "off"
+    off.mkdir()
+    assert _validate_observer_sidecars(off, enabled=False) == {
+        "enabled": False,
+        "event_files": 0,
+        "close_summaries": 0,
+        "producers": {},
+    }
+    on = tmp_path / "on"
+    on.mkdir()
+    with pytest.raises(ValueError, match="server.*C1.*C2|missing"):
+        _validate_observer_sidecars(on, enabled=True)
+
+
+def test_formal_topology_gate_uses_strict_frozen_binding_and_injected_runner(
+    tmp_path: Path,
+) -> None:
+    protocol = tmp_path / "summary" / "confirmation_protocol_manifest.json"
+    protocol.parent.mkdir()
+    protocol.write_text("{}", encoding="utf-8")
+    calls = []
+
+    def fake_loader(path: Path):
+        assert path == protocol
+        return {
+            "protocol_manifest_sha256": "a" * 64,
+            "source_archive_sha256": "b" * 64,
+            "dataset_manifest_sha256": "c" * 64,
+            "regular_members_sha256": "d" * 64,
+            "confirmation_commit": "e" * 40,
+            "group_id": "B2",
+            "seed": 42,
+            "command_manifest_sha256": "f" * 64,
+            "archive_sha256": "b" * 64,
+        }
+
+    def fake_runner(binding, output_root, group_id):
+        calls.append((binding, output_root, group_id))
+        return {
+            "status": "equivalent",
+            "equivalent": True,
+            "max_abs_delta": 0.0,
+            "modes": ["off", "on"],
+            "resource_samples_per_client_round": 1,
+        }
+
+    output = tmp_path / "formal-output"
+    report = run_formal_topology_gate(
+        protocol,
+        output,
+        "B2",
+        frozen_loader=fake_loader,
+        runner=fake_runner,
+    )
+    assert report["status"] == "equivalent"
+    assert calls == [(fake_loader(protocol), output, "B2")]
+    assert report["binding"]["command_manifest_sha256"] == "f" * 64
+
+
+def test_real_flower_chain_detects_injected_on_fitins_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("IOTJ_GATE_TEST_INJECT_ON_KEY", "1")
+    monkeypatch.setenv("IOTJ_GATE_INJECT_POST_AUDIT_METRICS_KEY", "1")
+    report = run_local_gate(tmp_path / "injected-real-chain", "B2")
+
+    assert report["status"] == "observer_path_mutation"
+    assert report["off_pair_equal"] is True
+    assert report["on_equal_to_off"] is False
+    assert any(
+        "observer_injected_regression_key" in mismatch
+        for mismatch in report["mismatches"]
+    )
+    assert any(
+        "observer_injected_post_audit_metrics_key" in mismatch
+        for mismatch in report["mismatches"]
+    )
+    assert len(set(report["final_checkpoint_sha256"].values())) == 1
+
+
+def test_observer_message_audit_must_match_independent_common_trace() -> None:
+    validator = getattr(gate_module, "_cross_validate_message_audits", None)
+    assert callable(validator), "missing observer/common-trace cross-validator"
+    common = {
+        "raw_messages": [
+            {
+                "round": 1,
+                "direction": "downlink",
+                "client_id": "C1",
+                "application_message_bytes": 11,
+                "application_message_sha256": "a" * 64,
+                "logical": {"logical_downlink_total_bytes": 10},
+            }
+        ]
+    }
+    observer = [
+        {
+            "round": 1,
+            "direction": "downlink",
+            "client_id": "C1",
+            "application_message_bytes": 11,
+            "application_message_sha256": "b" * 64,
+            "logical": {"logical_downlink_total_bytes": 10},
+        }
+    ]
+    with pytest.raises(ValueError, match="common trace"):
+        validator(observer, common)
+
+
+def _resource_identity(client_id: str) -> ObserverIdentity:
+    return ObserverIdentity(
+        run_id="c12_to_c5__b2__s42",
+        attempt_id="c12_to_c5__b2__s42__a999",
+        group_id="B2",
+        training_seed=42,
+        client_id=client_id,
+        host_id="pc" if client_id == "C2" else "pi",
+        producer="resource_sampler",
+        confirmation_commit="a" * 40,
+        source_archive_sha256="b" * 64,
+        dataset_manifest_sha256="c" * 64,
+        algorithm_config_sha256="d" * 64,
+    )
+
+
+def _training_identity(producer: str, client_id: str | None) -> ObserverIdentity:
+    return ObserverIdentity(
+        run_id="c12_to_c5__b2__s42",
+        attempt_id="c12_to_c5__b2__s42__a999",
+        group_id="B2",
+        training_seed=42,
+        client_id=client_id,
+        host_id="server" if producer == "server" else str(client_id).lower(),
+        producer=producer,
+        confirmation_commit="a" * 40,
+        source_archive_sha256="b" * 64,
+        dataset_manifest_sha256="c" * 64,
+        algorithm_config_sha256="d" * 64,
+    )
+
+
+def _write_training_sidecars(root: Path, *, duplicate_c1_fitres: bool = False) -> None:
+    root.mkdir()
+    downlink_audit = {
+        "logical": {
+            "logical_downlink_model_value_bytes": 10,
+            "logical_downlink_parameter_blob_bytes": 10,
+            "logical_downlink_semantic_proto_utf8_bytes": 0,
+            "logical_downlink_other_config_value_bytes": 1,
+            "logical_downlink_total_bytes": 11,
+        },
+        "application_message_bytes": 20,
+        "application_message_sha256": "1" * 64,
+    }
+    uplink_audit = {
+        "logical": {
+            "logical_uplink_model_value_bytes": 10,
+            "logical_uplink_parameter_blob_bytes": 10,
+            "logical_uplink_prototype_utf8_bytes": 1,
+            "logical_uplink_prototype_var_utf8_bytes": 1,
+            "logical_uplink_statistics_utf8_bytes": 1,
+            "logical_uplink_diagnostic_value_bytes": 1,
+            "logical_uplink_total_bytes": 14,
+        },
+        "application_message_bytes": 30,
+        "application_message_sha256": "2" * 64,
+    }
+    server = JsonlObserver(
+        _training_identity("server", None), root / "server_events.jsonl"
+    )
+    for round_idx in (1, 2):
+        server.emit(
+            "fit_round_start", round_idx=round_idx, client_id=None,
+            status="started", payload={}
+        )
+        for proxy_id in ("p1", "p2"):
+            server.emit(
+                "flower_fitins_prepared", round_idx=round_idx,
+                client_id=proxy_id, status="succeeded",
+                payload={"proxy_id": proxy_id, "downlink_audit": downlink_audit},
+            )
+        server.emit(
+            "server_aggregate_start", round_idx=round_idx, client_id=None,
+            status="started", payload={}
+        )
+        for proxy_id, client_id in (("p1", "C1"), ("p2", "C2")):
+            effective = (
+                "C1"
+                if duplicate_c1_fitres and round_idx == 2 and client_id == "C2"
+                else client_id
+            )
+            server.emit(
+                "flower_fitres_available", round_idx=round_idx,
+                client_id=effective, status="succeeded",
+                payload={"proxy_id": proxy_id, "uplink_audit": uplink_audit},
+            )
+        server.emit(
+            "server_da_start", round_idx=round_idx, client_id=None,
+            status="started", payload={}
+        )
+        server.emit(
+            "server_da_end", round_idx=round_idx, client_id=None,
+            status="succeeded", payload={"server_da_total_ns": 1}
+        )
+        server.emit(
+            "server_aggregate_end", round_idx=round_idx, client_id=None,
+            status="succeeded",
+            payload={
+                "server_aggregate_fit_total_ns": 2,
+                "server_da_total_ns": 1,
+                "server_aggregate_non_da_ns": 1,
+                "da_executed": True,
+            },
+        )
+        server.emit(
+            "fit_round_end", round_idx=round_idx, client_id=None,
+            status="succeeded",
+            payload={
+                "server_aggregate_fit_total_ns": 2,
+                "server_da_total_ns": 1,
+                "server_aggregate_non_da_ns": 1,
+                "da_executed": True,
+                "fit_round_wall_ns": 3,
+            },
+        )
+    server.close()
+    for client_id in ("C1", "C2"):
+        client = JsonlObserver(
+            _training_identity("client", client_id),
+            root / f"client_{client_id.lower()}_events.jsonl",
+        )
+        for round_idx in (1, 2):
+            client.emit(
+                "client_fit_start", round_idx=round_idx, client_id=client_id,
+                status="started", payload={}
+            )
+            client.emit(
+                "client_train_start", round_idx=round_idx, client_id=client_id,
+                status="started", payload={}
+            )
+            client.emit(
+                "client_train_end", round_idx=round_idx, client_id=client_id,
+                status="succeeded", payload={"client_train_core_ns": 1}
+            )
+            client.emit(
+                "client_fit_end", round_idx=round_idx, client_id=client_id,
+                status="succeeded", payload={"client_fit_callback_ns": 2}
+            )
+        client.close()
+
+
+def test_training_sidecar_validator_rejects_duplicate_round_client_matrix(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "matrix"
+    _write_training_sidecars(root, duplicate_c1_fitres=True)
+    with pytest.raises(ValueError, match="matrix|C2"):
+        _validate_observer_sidecars(root, enabled=True)
+
+
+def test_training_sidecar_validator_binds_close_bytes_to_jsonl_size(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "close-bytes"
+    _write_training_sidecars(root)
+    close_path = root / "server_events.close.json"
+    close = json.loads(close_path.read_text(encoding="utf-8"))
+    close["observer_event_bytes_written"] += 1
+    close_path.write_text(json.dumps(close), encoding="utf-8")
+    with pytest.raises(ValueError, match="byte"):
+        _validate_observer_sidecars(root, enabled=True)
+
+
+def test_training_sidecar_validator_rejects_invalid_application_audit(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "invalid-audit"
+    _write_training_sidecars(root)
+    event_path = root / "server_events.jsonl"
+    rows = [json.loads(line) for line in event_path.read_text(encoding="utf-8").splitlines()]
+    target = next(
+        row for row in rows if row["event_type"] == "flower_fitins_prepared"
+    )
+    target["payload"]["downlink_audit"]["application_message_bytes"] = -1
+    event_path.write_text(
+        "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+    close_path = root / "server_events.close.json"
+    close = json.loads(close_path.read_text(encoding="utf-8"))
+    close["observer_event_bytes_written"] = event_path.stat().st_size
+    close_path.write_text(json.dumps(close), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="application.*audit|message byte"):
+        _validate_observer_sidecars(root, enabled=True)
+
+
+def _resource_payload(start_ns: int, end_ns: int, *, rss: int = 1024) -> dict:
+    return {
+        "root_pid": 101,
+        "sampler_pid_excluded": 202,
+        "pids": [101],
+        "process_identities": [
+            {"pid": 101, "create_time": 1.0, "identity_available": True}
+        ],
+        "rss_tree_bytes": rss,
+        "rss_tree_peak_bytes": max(rss, 1024),
+        "process_count_tree": 1,
+        "thread_count_tree": 1,
+        "cpu_time_tree_seconds": 1.0,
+        "cpu_time_tree_delta_seconds": 0.1,
+        "cpu_percent_tree_one_core_scale": 10.0,
+        "cpu_percent_tree_host_scale": 2.5,
+        "logical_cpu_count": 4,
+        "sample_interval_start_monotonic_ns": start_ns,
+        "sample_interval_end_monotonic_ns": end_ns,
+        "sample_interval_wall_ns": end_ns - start_ns,
+        "sample_errors": [],
+        "cpu_temperature_c": 45.0,
+        "cpu_temperature_available": True,
+        "cpu_temperature_source": "sysfs",
+        "vcgencmd_available": False,
+        "throttled_raw": None,
+        "throttled_bits": None,
+        "throttled_available": False,
+        "thermal_errors": [],
+    }
+
+
+def _write_resource_sidecar(root: Path, *, rss: int = 1024) -> None:
+    root.mkdir()
+    observer = JsonlObserver(_resource_identity("C2"), root / "resource.jsonl")
+    observer.emit(
+        "resource_sample",
+        round_idx=None,
+        client_id="C2",
+        status="succeeded",
+        payload=_resource_payload(100, 200, rss=rss),
+    )
+    observer.emit(
+        "resource_sample",
+        round_idx=None,
+        client_id="C2",
+        status="succeeded",
+        payload=_resource_payload(200, 300, rss=rss),
+    )
+    observer.emit(
+        "resource_sampler_end",
+        round_idx=None,
+        client_id="C2",
+        status="succeeded",
+        payload={
+            "root_pid": 101,
+            "sampler_pid": 202,
+            "shutdown_reason": "stop_file",
+            "shutdown_error": None,
+            "sample_count": 2,
+            "sampler_cpu_user_seconds": 0.1,
+            "sampler_cpu_system_seconds": 0.1,
+            "sampler_rss_peak_bytes": 4096,
+            "sampler_rss_peak_available": True,
+            "sampler_rss_peak_method": "test",
+            "sampler_rss_peak_error": None,
+            "observer_cost_values_scope": "before_resource_sampler_end_emit",
+            "observer_event_encode_ns": 1,
+            "observer_io_write_ns": 1,
+            "observer_fsync_ns": 1,
+            "observer_event_bytes_written": 1,
+            "observer_event_count": 2,
+            "observer_close_summary_path": "resource.close.json",
+            "observer_close_summary_is_authoritative": True,
+        },
+    )
+    observer.close()
+
+
+def test_formal_resource_sidecar_requires_exact_schema_finite_nonnegative_values(
+    tmp_path: Path,
+) -> None:
+    validator = getattr(gate_module, "_validate_formal_resource_sidecar", None)
+    assert callable(validator), "missing strict formal resource-sidecar validator"
+    good = tmp_path / "good"
+    _write_resource_sidecar(good)
+    result = validator(good, "C2")
+    assert result["sample_count"] == 2
+    bad = tmp_path / "bad"
+    _write_resource_sidecar(bad, rss=-1)
+    with pytest.raises(ValueError, match="nonnegative|rss"):
+        validator(bad, "C2")
+
+
+def test_portable_evidence_path_rejects_absolute_or_escaping_paths(
+    tmp_path: Path,
+) -> None:
+    portable = getattr(gate_module, "_portable_evidence_path", None)
+    assert callable(portable), "missing portable evidence-path normalizer"
+    root = tmp_path / "attempt"
+    root.mkdir()
+    inside = root / "raw" / "events.jsonl"
+    inside.parent.mkdir()
+    assert portable(root, inside) == "raw/events.jsonl"
+    with pytest.raises(ValueError, match="outside|escape"):
+        portable(root, tmp_path / "outside.jsonl")
+
+
+def test_formal_capture_includes_raw_checkpoint_sha_boundaries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    attempt = tmp_path / "formal"
+    training = attempt / "raw" / "ecs" / "training"
+    training.mkdir(parents=True)
+    for name in ("server_latest.pth", "server_latest_adapted.pth"):
+        (training / name).write_bytes(name.encode("ascii"))
+    (attempt / "raw" / "ecs" / "common_trace.jsonl").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    for round_idx in (1, 2):
+        for stem in ("prototype_stats", "semantic_protos"):
+            (training / f"{stem}_round_{round_idx:03d}.json").write_text(
+                "{}", encoding="utf-8"
+            )
+        (training / f"client_stats_round_{round_idx:03d}.json").write_text(
+            json.dumps({"clients": [{"client_id": 1}, {"client_id": 2}]}),
+            encoding="utf-8",
+        )
+        (training / f"domain_adapt_round_{round_idx:03d}.json").write_text(
+            "{}", encoding="utf-8"
+        )
+    monkeypatch.setattr(
+        gate_module,
+        "tensor_fingerprint",
+        lambda path: {
+            "artifact_sha256": ("a" if "adapted" not in path.name else "b") * 64,
+            "content_sha256": "c" * 64,
+            "comparison": {"path_kind": path.name},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "json_fingerprint",
+        lambda *_args, **_kwargs: {
+            "artifact_sha256": "d" * 64,
+            "content_sha256": "e" * 64,
+            "comparison": {},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "_common_trace_fingerprint",
+        lambda _path: {
+            "artifact_sha256": "f" * 64,
+            "content_sha256": "1" * 64,
+            "comparison": {},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "_fixed_adapted_logits",
+        lambda *_args, **_kwargs: {
+            "content_sha256": "2" * 64,
+            "comparison": {},
+        },
+    )
+    artifacts = gate_module._capture_formal_artifacts(attempt)
+    assert artifacts["final_aggregated_checkpoint_raw"]["comparison"] == {
+        "raw_file_sha256": "a" * 64
+    }
+    assert artifacts["final_adapted_checkpoint_raw"]["comparison"] == {
+        "raw_file_sha256": "b" * 64
+    }

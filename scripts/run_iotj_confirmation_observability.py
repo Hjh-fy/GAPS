@@ -261,6 +261,40 @@ class ProductionRuntime:
 
 
 @dataclass(frozen=True)
+class FormalSmokeConfig:
+    """Explicit non-canonical two-round topology-smoke command overlay."""
+
+    observer_enabled: bool
+    trace_output: str
+    initial_checkpoint: str
+    mode: str = "off"
+    namespace: str = "noncanonical_smoke"
+    rounds: int = 2
+    local_epochs: int = 1
+    initial_checkpoint_source: Path | None = None
+    initial_checkpoint_sha256: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.namespace != "noncanonical_smoke":
+            raise ValueError("formal smoke namespace must be noncanonical_smoke")
+        if self.rounds != 2:
+            raise ValueError("formal smoke rounds must equal 2")
+        if self.local_epochs != 1:
+            raise ValueError("formal smoke local_epochs must equal 1")
+        if self.mode not in {"off", "on"}:
+            raise ValueError("formal smoke mode must be off or on")
+        if self.observer_enabled != (self.mode == "on"):
+            raise ValueError("formal smoke observer_enabled must match mode")
+        if not self.trace_output or not self.initial_checkpoint:
+            raise ValueError("formal smoke trace and initial checkpoint paths are required")
+        if self.initial_checkpoint_source is not None:
+            if not isinstance(self.initial_checkpoint_sha256, str) or not _HASH_RE.fullmatch(
+                self.initial_checkpoint_sha256
+            ):
+                raise ValueError("formal smoke initial checkpoint SHA-256 is required")
+
+
+@dataclass(frozen=True)
 class ValidationOutcome:
     success: bool
     audit_sha256: str | None
@@ -1810,6 +1844,89 @@ def _replace_command_option(
     return result
 
 
+def _remove_command_option(command: Sequence[str], option: str) -> list[str]:
+    result = [str(item) for item in command]
+    matches = [index for index, item in enumerate(result) if item == option]
+    if len(matches) > 1:
+        raise ValueError(f"command contains duplicate {option}")
+    if not matches:
+        return result
+    index = matches[0]
+    if index + 1 >= len(result):
+        raise ValueError(f"command option {option} has no value")
+    del result[index : index + 2]
+    return result
+
+
+def _wrap_smoke_server_command(
+    command: Sequence[str], smoke: FormalSmokeConfig
+) -> list[str]:
+    original = [str(item) for item in command]
+    if len(original) < 3 or original[1:3] != ["-m", "gaps_flower.server_app"]:
+        raise ValueError("frozen smoke server command must invoke gaps_flower.server_app")
+    return [
+        original[0],
+        "-m",
+        "scripts.run_iotj_observer_equivalence_gate",
+        "--trace-child-role",
+        "server",
+        "--trace-output",
+        smoke.trace_output,
+        "--trace-initial-checkpoint",
+        smoke.initial_checkpoint,
+        "--",
+        *original[1:],
+    ]
+
+
+def derive_noncanonical_smoke_commands(
+    command_manifest: Mapping[str, Any], smoke: FormalSmokeConfig
+) -> dict[str, Any]:
+    """Derive an ephemeral smoke overlay without mutating frozen commands."""
+
+    commands = command_manifest.get("commands")
+    if not isinstance(commands, Mapping) or set(commands) != {
+        "server_ecs",
+        "client_c1_pi",
+        "client_c2_pc",
+    }:
+        raise ValueError("frozen smoke commands have non-exact topology schema")
+    server = _replace_command_option(commands["server_ecs"], "--rounds", "2")
+    c1 = _replace_command_option(commands["client_c1_pi"], "--local-epochs", "1")
+    c2 = _replace_command_option(commands["client_c2_pc"], "--local-epochs", "1")
+    for option in ("--observer-context", "--observer-events"):
+        server = _remove_command_option(server, option)
+        c1 = _remove_command_option(c1, option)
+        c2 = _remove_command_option(c2, option)
+    server = _wrap_smoke_server_command(server, smoke)
+    identity_fields = (
+        "run_id",
+        "group_id",
+        "protocol_manifest_sha256",
+        "source_archive_sha256",
+        "regular_members_sha256",
+        "dataset_manifest_sha256",
+        "algorithm_config_sha256",
+    )
+    identity = {field: command_manifest.get(field) for field in identity_fields}
+    if any(not isinstance(value, str) for value in identity.values()):
+        raise ValueError("frozen smoke command identity is incomplete")
+    return {
+        "server_ecs": server,
+        "client_c1_pi": c1,
+        "client_c2_pc": c2,
+        "smoke_identity": {
+            "namespace": smoke.namespace,
+            "noncanonical_smoke": True,
+            "mode": smoke.mode,
+            "rounds": smoke.rounds,
+            "local_epochs": smoke.local_epochs,
+            **identity,
+            "command_manifest_sha256": canonical_sha256(command_manifest),
+        },
+    }
+
+
 def _rewrite_ecs_dataset_paths(command: Sequence[str]) -> list[str]:
     result = [str(item) for item in command]
     for option in ("--data-root", "--server-val-data", "--server-calib-data"):
@@ -2418,7 +2535,9 @@ def _remote_cleanup(processes: Sequence[OwnedProcess]) -> list[str]:
     return errors
 
 
-def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
+def build_production_hooks(
+    runtime: ProductionRuntime, smoke: FormalSmokeConfig | None = None
+) -> LifecycleHooks:
     state: dict[str, Any] = {}
 
     def active_runtime() -> ProductionRuntime:
@@ -2458,6 +2577,42 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
         state["contexts"] = context_paths
         runtime_paths = paths(attempt)
         state["paths"] = runtime_paths
+        if smoke is not None:
+            smoke_bindings = {
+                "ecs_root": str(runtime_paths["ecs_root"]),
+                "ecs_raw": str(runtime_paths["ecs_raw"]),
+            }
+            resolved_trace_output = smoke.trace_output
+            resolved_initial_checkpoint = smoke.initial_checkpoint
+            for token, value in smoke_bindings.items():
+                resolved_trace_output = resolved_trace_output.replace(
+                    "{" + token + "}", value
+                )
+                resolved_initial_checkpoint = resolved_initial_checkpoint.replace(
+                    "{" + token + "}", value
+                )
+            if "{" in resolved_trace_output or "{" in resolved_initial_checkpoint:
+                raise ValueError("formal smoke path contains an unresolved binding")
+            state["smoke_trace_output"] = resolved_trace_output
+            state["smoke_initial_checkpoint"] = resolved_initial_checkpoint
+            derived = derive_noncanonical_smoke_commands(
+                runtime.frozen_run.manifest, smoke
+            )
+            state["commands"] = derived
+            identity_path = attempt.path / "smoke_command_identity.json"
+            if identity_path.exists() or identity_path.is_symlink():
+                raise FileExistsError("smoke command identity already exists")
+            identity_path.write_text(
+                json.dumps(
+                    derived["smoke_identity"],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+                newline="\n",
+            )
         for host, root in (
             (runtime.ecs_host, runtime_paths["ecs_root"]),
             (runtime.pi_host, runtime_paths["pi_root"]),
@@ -2470,25 +2625,72 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
         )
         for local, host, remote in remote_contexts:
             _run(["scp", "-p", str(local), f"{host}:{remote}"], timeout=120)
+        if smoke is not None and smoke.initial_checkpoint_source is not None:
+            source = Path(smoke.initial_checkpoint_source)
+            if (
+                not source.is_file()
+                or source.is_symlink()
+                or sha256_file(source) != smoke.initial_checkpoint_sha256
+            ):
+                raise ArchiveMismatch("formal smoke initial checkpoint hash mismatch")
+            _run(
+                [
+                    "scp",
+                    "-p",
+                    str(source),
+                    f"{runtime.ecs_host}:{state['smoke_initial_checkpoint']}",
+                ],
+                timeout=120,
+            )
+            verify_source = f"""
+import hashlib, json
+from pathlib import Path
+path = Path({state['smoke_initial_checkpoint']!r})
+digest = hashlib.sha256(path.read_bytes()).hexdigest()
+expected = {smoke.initial_checkpoint_sha256!r}
+if digest != expected:
+    raise RuntimeError('formal smoke initial checkpoint hash mismatch')
+print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
+"""
+            response = json.loads(
+                _remote_python(
+                    runtime.ecs_host,
+                    "/root/gaps_env/bin/python",
+                    verify_source,
+                    timeout=120,
+                ).splitlines()[-1]
+            )
+            if response != {
+                "initial_checkpoint_sha256": smoke.initial_checkpoint_sha256
+            }:
+                raise ArchiveMismatch("formal smoke initial checkpoint verification failed")
         preflight_frozen_run(prepared_runtime, attempt.attempt_id)
 
     def launch_server(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
         deployments = active_runtime().deployments
-        command = _rewrite_ecs_dataset_paths(
-            runtime.frozen_run.manifest["commands"]["server_ecs"]
+        source_commands = (
+            state["commands"] if smoke is not None else runtime.frozen_run.manifest["commands"]
         )
+        command = _rewrite_ecs_dataset_paths(source_commands["server_ecs"])
         command = _replace_command_option(
             command,
             "--output-dir",
             f"{runtime_paths['ecs_raw']}/training",
         )
-        command = _replace_command_option(
-            command, "--observer-context", f"{runtime_paths['ecs_root']}/contexts/server.json"
-        )
-        command = _replace_command_option(
-            command, "--observer-events", f"{runtime_paths['ecs_raw']}/events.jsonl"
-        )
+        if smoke is None or smoke.observer_enabled:
+            command = _replace_command_option(
+                command, "--observer-context", f"{runtime_paths['ecs_root']}/contexts/server.json"
+            )
+            command = _replace_command_option(
+                command, "--observer-events", f"{runtime_paths['ecs_raw']}/events.jsonl"
+            )
+        if smoke is not None:
+            replacements = {
+                smoke.trace_output: str(state["smoke_trace_output"]),
+                smoke.initial_checkpoint: str(state["smoke_initial_checkpoint"]),
+            }
+            command = [replacements.get(item, item) for item in command]
         return _remote_launch_process(
             host_id="ecs",
             label="server",
@@ -2505,14 +2707,19 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
     def launch_pi_client(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
         deployments = active_runtime().deployments
-        command = _replace_command_option(
-            runtime.frozen_run.manifest["commands"]["client_c1_pi"],
-            "--observer-context",
-            f"{runtime_paths['pi_root']}/contexts/client.json",
+        source_commands = (
+            state["commands"] if smoke is not None else runtime.frozen_run.manifest["commands"]
         )
-        command = _replace_command_option(
-            command, "--observer-events", f"{runtime_paths['pi_raw']}/events.jsonl"
-        )
+        command = list(source_commands["client_c1_pi"])
+        if smoke is None or smoke.observer_enabled:
+            command = _replace_command_option(
+                command,
+                "--observer-context",
+                f"{runtime_paths['pi_root']}/contexts/client.json",
+            )
+            command = _replace_command_option(
+                command, "--observer-events", f"{runtime_paths['pi_raw']}/events.jsonl"
+            )
         return _remote_launch_process(
             host_id="pi",
             label="pi-client",
@@ -2561,18 +2768,22 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
     def launch_pc_client(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
         deployments = active_runtime().deployments
-        command = list(runtime.frozen_run.manifest["commands"]["client_c2_pc"])
+        source_commands = (
+            state["commands"] if smoke is not None else runtime.frozen_run.manifest["commands"]
+        )
+        command = list(source_commands["client_c2_pc"])
         command[0] = sys.executable
-        command = _replace_command_option(
-            command,
-            "--observer-context",
-            str(state["contexts"]["pc_client"]),
-        )
-        command = _replace_command_option(
-            command,
-            "--observer-events",
-            str(Path(runtime_paths["pc_raw"]) / "events.jsonl"),
-        )
+        if smoke is None or smoke.observer_enabled:
+            command = _replace_command_option(
+                command,
+                "--observer-context",
+                str(state["contexts"]["pc_client"]),
+            )
+            command = _replace_command_option(
+                command,
+                "--observer-events",
+                str(Path(runtime_paths["pc_raw"]) / "events.jsonl"),
+            )
         return _local_launch_process(
             label="pc-client",
             command=command,
@@ -2736,6 +2947,121 @@ def _cleanup_lifecycle(
     return errors
 
 
+def _execute_hook_lifecycle(
+    attempt: Attempt,
+    hooks: LifecycleHooks,
+    *,
+    after_prepare: Callable[[], None] | None = None,
+) -> None:
+    """Run the one production lifecycle shared by canonical and smoke modes."""
+
+    owned: list[object] = []
+    samplers: list[object] = []
+    tunnels: list[object] = []
+    cleaned = False
+    try:
+        hooks.prepare(attempt)
+        if after_prepare is not None:
+            after_prepare()
+        server = hooks.launch_server(attempt)
+        owned.append(server)
+        tunnels.extend(hooks.start_tunnels(attempt))
+        pi_client = hooks.launch_pi_client(attempt)
+        owned.append(pi_client)
+        pi_sampler = hooks.launch_pi_sampler(attempt, pi_client)
+        samplers.append(pi_sampler)
+        owned.append(pi_sampler)
+        pc_client = hooks.launch_pc_client(attempt)
+        owned.append(pc_client)
+        pc_sampler = hooks.launch_pc_sampler(attempt, pc_client)
+        samplers.append(pc_sampler)
+        owned.append(pc_sampler)
+        hooks.monitor_server(attempt, server)
+        cleanup_errors = _cleanup_lifecycle(attempt, hooks, samplers, owned, tunnels)
+        cleaned = True
+        if cleanup_errors:
+            raise AttemptFailure("; ".join(cleanup_errors))
+        hooks.recover_evidence(attempt)
+    except BaseException as exc:
+        cleanup_errors = [] if cleaned else _cleanup_lifecycle(
+            attempt, hooks, samplers, owned, tunnels
+        )
+        if cleanup_errors:
+            detail = f"{type(exc).__name__}: {exc}; cleanup: " + "; ".join(
+                cleanup_errors
+            )
+            raise AttemptFailure(detail) from exc
+        raise
+
+
+def run_noncanonical_smoke_attempt(
+    output_path: Path,
+    *,
+    run_id: str,
+    mode: str,
+    provenance: Provenance,
+    hooks: LifecycleHooks,
+) -> Attempt:
+    """Execute formal smoke without touching the canonical attempt registry."""
+
+    if mode not in {"off", "on"}:
+        raise ValueError("formal smoke mode must be off or on")
+    match = _RUN_ID_RE.fullmatch(run_id)
+    if match is None:
+        raise ValueError("formal smoke run_id is invalid")
+    validate_requested_run(match.group(1).upper(), int(match.group(2)))
+    provenance.require_complete()
+    output = Path(output_path)
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"noncanonical smoke output already exists: {output}")
+    _reject_symlink_components(output.parent, "noncanonical smoke output parent")
+    output.mkdir(parents=True)
+    attempt_id = f"{run_id}__a998" if mode == "off" else f"{run_id}__a999"
+    attempt = Attempt(run_id=run_id, attempt_id=attempt_id, path=output)
+    marker = {
+        "schema_version": 1,
+        "namespace": "noncanonical_smoke",
+        "noncanonical_smoke": True,
+        "mode": mode,
+        "run_id": run_id,
+        "attempt_id": attempt_id,
+        "confirmation_commit": provenance.confirmation_commit,
+        "source_archive_sha256": provenance.source_archive_sha256,
+        "dataset_manifest_sha256": provenance.dataset_manifest_sha256,
+        "algorithm_config_sha256": provenance.algorithm_config_sha256,
+    }
+    marker["binding_sha256"] = canonical_sha256(marker)
+    marker_path = output / "noncanonical_smoke.json"
+    marker_path.write_text(
+        json.dumps(marker, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    try:
+        _execute_hook_lifecycle(attempt, hooks)
+    except BaseException as exc:
+        failure_path = output / "noncanonical_smoke_failure.json"
+        failure = {
+            **marker,
+            "status": "failed",
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+        }
+        failure_path.write_text(
+            json.dumps(failure, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        raise
+    success = {**marker, "status": "evidence_recovered"}
+    (output / "noncanonical_smoke_complete.json").write_text(
+        json.dumps(success, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    return attempt
+
+
 def _failure_category(exc: BaseException) -> str:
     category = getattr(exc, "reason_category", None)
     return category if isinstance(category, str) else "process"
@@ -2785,37 +3111,17 @@ def run_confirmation_attempt(
         event_type="attempt_start",
         reason="attempt_allocated",
     )
-    owned: list[object] = []
-    samplers: list[object] = []
-    tunnels: list[object] = []
-    cleaned = False
     try:
-        hooks.prepare(attempt)
-        mark_attempt(
-            attempt.path,
-            "running",
-            event_type="preflight_passed",
-            reason="preflight_passed",
+        _execute_hook_lifecycle(
+            attempt,
+            hooks,
+            after_prepare=lambda: mark_attempt(
+                attempt.path,
+                "running",
+                event_type="preflight_passed",
+                reason="preflight_passed",
+            ),
         )
-        server = hooks.launch_server(attempt)
-        owned.append(server)
-        tunnels.extend(hooks.start_tunnels(attempt))
-        pi_client = hooks.launch_pi_client(attempt)
-        owned.append(pi_client)
-        pi_sampler = hooks.launch_pi_sampler(attempt, pi_client)
-        samplers.append(pi_sampler)
-        owned.append(pi_sampler)
-        pc_client = hooks.launch_pc_client(attempt)
-        owned.append(pc_client)
-        pc_sampler = hooks.launch_pc_sampler(attempt, pc_client)
-        samplers.append(pc_sampler)
-        owned.append(pc_sampler)
-        hooks.monitor_server(attempt, server)
-        cleanup_errors = _cleanup_lifecycle(attempt, hooks, samplers, owned, tunnels)
-        cleaned = True
-        if cleanup_errors:
-            raise AttemptFailure("; ".join(cleanup_errors))
-        hooks.recover_evidence(attempt)
         outcome = hooks.validate_attempt(attempt)
         if not isinstance(outcome, ValidationOutcome):
             raise TypeError("validator must return ValidationOutcome")
@@ -2840,12 +3146,7 @@ def run_confirmation_attempt(
         )
         return attempt
     except BaseException as exc:
-        cleanup_errors = [] if cleaned else _cleanup_lifecycle(
-            attempt, hooks, samplers, owned, tunnels
-        )
         detail = f"{type(exc).__name__}: {exc}"
-        if cleanup_errors:
-            detail += "; cleanup: " + "; ".join(cleanup_errors)
         state = "aborted" if isinstance(exc, (AttemptAborted, KeyboardInterrupt)) else "failed"
         try:
             _append_controller_log(attempt.path, detail)

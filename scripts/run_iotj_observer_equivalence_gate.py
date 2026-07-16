@@ -9,10 +9,13 @@ switch between the three attempts.
 from __future__ import annotations
 
 import argparse
+import copy
+import base64
 import hashlib
 import json
 import math
 import os
+import random
 import signal
 import socket
 import subprocess
@@ -21,10 +24,18 @@ import time
 from collections import OrderedDict
 from collections.abc import Mapping
 from pathlib import Path
-from typing import AbstractSet, Any
+from typing import AbstractSet, Any, Callable
 
 import numpy as np
 import torch
+from flwr.common import FitIns, FitRes, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
+
+from gaps_flower.flower_message_audit import (
+    audit_fit_ins,
+    audit_fit_res,
+    canonical_fit_ins_bytes,
+    canonical_fit_res_bytes,
+)
 
 
 VOLATILE_JSON_PATHS = {
@@ -97,6 +108,25 @@ def _require_regular_file(path: Path) -> Path:
     return path
 
 
+def _portable_evidence_path(root: Path, path: Path) -> str:
+    """Return a report-stable POSIX path and reject evidence outside its root."""
+
+    evidence_root = Path(root).resolve(strict=True)
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = evidence_root / candidate
+    candidate = candidate.resolve(strict=False)
+    try:
+        relative = candidate.relative_to(evidence_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"evidence path is outside root or escapes it: {candidate}"
+        ) from exc
+    if not relative.parts or any(part == ".." for part in relative.parts):
+        raise ValueError(f"evidence path escapes root: {candidate}")
+    return relative.as_posix()
+
+
 def _finite_json(value: Any, path: tuple[Any, ...] = ()) -> None:
     if isinstance(value, float) and not math.isfinite(value):
         raise ValueError(f"non-finite JSON value at {path!r}")
@@ -147,6 +177,10 @@ def tensor_fingerprint(checkpoint: Path) -> dict[str, Any]:
     records: OrderedDict[str, dict[str, Any]] = OrderedDict()
     comparison_records: OrderedDict[str, dict[str, Any]] = OrderedDict()
     for key, tensor in walked:
+        if (tensor.is_floating_point() or tensor.is_complex()) and not bool(
+            torch.isfinite(tensor).all().item()
+        ):
+            raise ValueError(f"checkpoint contains non-finite tensor: {key}")
         raw = _tensor_bytes(tensor)
         record = {
             "dtype": str(tensor.dtype),
@@ -171,6 +205,207 @@ def tensor_fingerprint(checkpoint: Path) -> dict[str, Any]:
         "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
         "key_order": list(records),
         "tensors": records,
+        "comparison": comparison,
+    }
+
+
+def _scalar_record(value: Any) -> dict[str, Any]:
+    """Preserve the exact Flower Scalar type and value in a JSON-safe record."""
+
+    if type(value) is bool:
+        return {"type": "bool", "value": value}
+    if type(value) is int:
+        return {"type": "int", "value": value}
+    if type(value) is float:
+        if not math.isfinite(value):
+            raise ValueError("Flower scalar is non-finite")
+        return {"type": "float", "value": value}
+    if type(value) is str:
+        return {"type": "str", "value": value}
+    if type(value) is bytes:
+        return {
+            "type": "bytes",
+            "value_base64": base64.b64encode(value).decode("ascii"),
+        }
+    raise TypeError(f"unsupported Flower scalar type: {type(value).__name__}")
+
+
+def _scalar_mapping_record(values: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "key_order": list(values),
+        "keys": list(values),
+        "types": {str(key): _scalar_record(value)["type"] for key, value in values.items()},
+        "values": {str(key): _scalar_record(value) for key, value in values.items()},
+    }
+
+
+def _parameters_record(
+    parameters: Parameters, parameter_keys: list[str]
+) -> dict[str, Any]:
+    arrays = parameters_to_ndarrays(parameters)
+    if len(arrays) != len(parameter_keys):
+        raise ValueError(
+            "Flower parameter count differs from the frozen parameter key order: "
+            f"{len(arrays)} != {len(parameter_keys)}"
+        )
+    tensors: list[dict[str, Any]] = []
+    for index, (key, array) in enumerate(zip(parameter_keys, arrays)):
+        contiguous = np.ascontiguousarray(array)
+        if np.issubdtype(contiguous.dtype, np.inexact) and not bool(
+            np.isfinite(contiguous).all()
+        ):
+            raise ValueError(f"Flower parameter contains non-finite values: {key}")
+        raw = contiguous.tobytes(order="C")
+        tensors.append(
+            {
+                "index": index,
+                "key": str(key),
+                "dtype": str(contiguous.dtype),
+                "shape": list(contiguous.shape),
+                "numel": int(contiguous.size),
+                "raw_bytes": len(raw),
+                "raw_sha256": _sha256_bytes(raw),
+            }
+        )
+    comparison = {"key_order": list(parameter_keys), "tensors": tensors}
+    return {
+        **comparison,
+        "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
+    }
+
+
+def _normalize_fit_ins_message(ins: FitIns) -> FitIns:
+    # FitIns currently has no timing allowlist.  Copying is deliberate: the
+    # gate must never retain or alter a live Flower object.
+    return copy.deepcopy(ins)
+
+
+def _normalize_fit_res_message(res: FitRes) -> FitRes:
+    normalized = copy.deepcopy(res)
+    metrics = normalized.metrics if normalized.metrics is not None else {}
+    for key in ("fit_seconds", "evaluate_seconds"):
+        if key not in metrics:
+            continue
+        value = metrics[key]
+        if type(value) is float:
+            metrics[key] = 0.0
+        elif type(value) is int:
+            metrics[key] = 0
+        else:
+            raise ValueError(f"timing scalar has invalid type: {key}")
+    return normalized
+
+
+def _normalized_timing_scalar_mapping(values: Mapping[str, Any]) -> dict[str, Any]:
+    normalized = copy.deepcopy(dict(values))
+    for key in ("fit_seconds", "evaluate_seconds"):
+        if key not in normalized:
+            continue
+        value = normalized[key]
+        if type(value) is float:
+            normalized[key] = 0.0
+        elif type(value) is int:
+            normalized[key] = 0
+        else:
+            raise ValueError(f"timing scalar has invalid type: {key}")
+    return _scalar_mapping_record(normalized)
+
+
+def _fit_ins_trace(ins: FitIns, parameter_keys: list[str]) -> dict[str, Any]:
+    snapshot = copy.deepcopy(ins)
+    normalized = _normalize_fit_ins_message(snapshot)
+    raw_application = canonical_fit_ins_bytes(snapshot)
+    normalized_application = canonical_fit_ins_bytes(normalized)
+    audit = audit_fit_ins(snapshot)
+    raw_sha256 = _sha256_bytes(raw_application)
+    if (
+        audit.application_message_bytes != len(raw_application)
+        or audit.application_message_sha256 != raw_sha256
+    ):
+        raise ValueError("FitIns independent audit differs from canonical bytes")
+    config = _scalar_mapping_record(snapshot.config)
+    comparison = {
+        "parameters": _parameters_record(snapshot.parameters, parameter_keys),
+        "config": config,
+        "logical": audit.logical,
+        "normalized_application_message_bytes": len(normalized_application),
+        "normalized_application_message_sha256": _sha256_bytes(normalized_application),
+    }
+    return {
+        "raw_application_message_bytes": len(raw_application),
+        "raw_application_message_sha256": raw_sha256,
+        "logical": audit.logical,
+        "config_keys": config["keys"],
+        "config_types": config["types"],
+        "normalized_application_message_bytes": len(normalized_application),
+        "normalized_application_message_sha256": _sha256_bytes(normalized_application),
+        "comparison": comparison,
+    }
+
+
+def _fit_res_trace(res: FitRes, parameter_keys: list[str]) -> dict[str, Any]:
+    snapshot = copy.deepcopy(res)
+    normalized = _normalize_fit_res_message(snapshot)
+    raw_application = canonical_fit_res_bytes(snapshot)
+    normalized_application = canonical_fit_res_bytes(normalized)
+    audit = audit_fit_res(snapshot)
+    raw_sha256 = _sha256_bytes(raw_application)
+    if (
+        audit.application_message_bytes != len(raw_application)
+        or audit.application_message_sha256 != raw_sha256
+    ):
+        raise ValueError("FitRes independent audit differs from canonical bytes")
+    metrics = _scalar_mapping_record(snapshot.metrics or {})
+    normalized_metrics = _scalar_mapping_record(normalized.metrics or {})
+    status = {
+        "code": int(snapshot.status.code.value),
+        "message": snapshot.status.message,
+    }
+    comparison = {
+        "status": status,
+        "num_examples": int(snapshot.num_examples),
+        "parameters": _parameters_record(snapshot.parameters, parameter_keys),
+        "metrics": normalized_metrics,
+        "logical": audit.logical,
+        "normalized_application_message_bytes": len(normalized_application),
+        "normalized_application_message_sha256": _sha256_bytes(normalized_application),
+    }
+    return {
+        "raw_application_message_bytes": len(raw_application),
+        "raw_application_message_sha256": raw_sha256,
+        "logical": audit.logical,
+        "metrics_keys": metrics["keys"],
+        "metrics_types": metrics["types"],
+        "normalized_application_message_bytes": len(normalized_application),
+        "normalized_application_message_sha256": _sha256_bytes(normalized_application),
+        "comparison": comparison,
+    }
+
+
+def _flower_trace_fingerprint(
+    *, fit_ins: FitIns, fit_res: FitRes, parameter_keys: list[str]
+) -> dict[str, Any]:
+    """Fingerprint actual FitIns/FitRes objects without using the observer."""
+
+    ins_trace = _fit_ins_trace(fit_ins, parameter_keys)
+    res_trace = _fit_res_trace(fit_res, parameter_keys)
+    comparison = {
+        "fit_ins": ins_trace["comparison"],
+        "fit_res": res_trace["comparison"],
+    }
+    return {
+        "kind": "flower_common_trace",
+        "artifact_sha256": _sha256_bytes(
+            _canonical_bytes(
+                {
+                    "fit_ins_raw": ins_trace["raw_application_message_sha256"],
+                    "fit_res_raw": res_trace["raw_application_message_sha256"],
+                }
+            )
+        ),
+        "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
+        "fit_ins": ins_trace,
+        "fit_res": res_trace,
         "comparison": comparison,
     }
 
@@ -242,7 +477,12 @@ def _first_mismatches(
         return [f"{'.'.join(map(str, path)) or '<root>'}: type differs"]
     if isinstance(left, Mapping):
         if set(left) != set(right):
-            return [f"{'.'.join(map(str, path)) or '<root>'}: keys differ"]
+            left_only = sorted(set(left) - set(right), key=str)
+            right_only = sorted(set(right) - set(left), key=str)
+            return [
+                f"{'.'.join(map(str, path)) or '<root>'}: keys differ; "
+                f"left_only={left_only!r}; right_only={right_only!r}"
+            ]
         output: list[str] = []
         for key in sorted(left, key=str):
             output.extend(_first_mismatches(left[key], right[key], path + (key,), limit))
@@ -365,6 +605,54 @@ def compare_fingerprints(
         },
     }
     return result
+
+
+def _create_frozen_initial_checkpoint(path: Path, group_id: str) -> dict[str, Any]:
+    """Create one seed-42 model checkpoint reused by every gate mode."""
+
+    group = str(group_id).upper()
+    if group not in _GROUPS:
+        raise ValueError(f"group_id must be one of {_GROUPS}, got {group_id!r}")
+    target = Path(path)
+    _require_no_link_ancestors(target.parent)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if os.path.lexists(target):
+        raise FileExistsError(f"initial checkpoint already exists: {target}")
+    from gaps_flower.task import create_model, make_config
+
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(42)
+        config = make_config(
+            device="cpu",
+            local_epochs=1,
+            batch_size=4,
+            profile="proto_replay",
+            seed=42,
+        )
+        model = create_model(config)
+        state = OrderedDict(
+            (key, value.detach().cpu().clone())
+            for key, value in model.state_dict().items()
+        )
+    torch.save(
+        {
+            "schema_version": "iotj.observer_equivalence.initial.v1",
+            "group_id": group,
+            "training_seed": 42,
+            "model_state": state,
+            "parameter_keys": list(state),
+        },
+        target,
+    )
+    fingerprint = tensor_fingerprint(target)
+    return {
+        "path": str(target),
+        "raw_sha256": fingerprint["artifact_sha256"],
+        "tensor_content_sha256": fingerprint["content_sha256"],
+        "parameter_keys": list(state),
+        "training_seed": 42,
+        "loaded_by_modes": list(_MODES),
+    }
 
 
 def _write_fixture(root: Path) -> dict[str, str]:
@@ -552,6 +840,276 @@ def _client_command(*, client_id: int, port: int, data_root: Path) -> list[str]:
     ]
 
 
+def _trace_json_projection(value: Any) -> dict[str, Any]:
+    _finite_json(value)
+    return {
+        "content_sha256": _sha256_bytes(_canonical_bytes(value)),
+        "comparison": value,
+    }
+
+
+def _fixed_adapted_logits(checkpoint: Path, group_id: str) -> dict[str, Any]:
+    from gaps_flower.task import create_model, make_config
+
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    state = payload.get("model_state")
+    if not isinstance(state, Mapping):
+        raise ValueError(f"adapted checkpoint has no model_state: {checkpoint}")
+    python_random_state = random.getstate()
+    numpy_random_state = np.random.get_state()
+    try:
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(7001)
+            model = create_model(
+                make_config(
+                    device="cpu",
+                    local_epochs=1,
+                    batch_size=4,
+                    profile="proto_replay",
+                    seed=42,
+                )
+            )
+            model.load_state_dict(state, strict=True)
+            model.eval()
+            inputs = torch.from_numpy(
+                np.random.RandomState(7001)
+                .standard_normal((8, 100, 8))
+                .astype(np.float32)
+            )
+            with torch.no_grad():
+                output = model(inputs)
+                logits = output[0] if isinstance(output, (tuple, list)) else output
+    finally:
+        random.setstate(python_random_state)
+        np.random.set_state(numpy_random_state)
+    if not bool(torch.isfinite(logits).all().item()):
+        raise ValueError(f"adapted logits are non-finite for {group_id}")
+    raw = _tensor_bytes(logits)
+    comparison = {
+        "input_seed": 7001,
+        "group_id": group_id,
+        "dtype": str(logits.dtype),
+        "shape": list(logits.shape),
+        "raw_sha256": _sha256_bytes(raw),
+    }
+    return {
+        "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
+        "comparison": comparison,
+    }
+
+
+def _append_common_trace(path: Path, row: Mapping[str, Any]) -> None:
+    with path.open("ab") as handle:
+        handle.write(_canonical_bytes(row) + b"\n")
+        handle.flush()
+
+
+def _run_traced_server(
+    trace_output: Path,
+    initial_checkpoint: Path,
+    delegated_argv: list[str],
+) -> int:
+    """Run the real server while independently snapshotting live Flower objects."""
+
+    trace_path = Path(trace_output)
+    initial_path = _require_regular_file(Path(initial_checkpoint))
+    _require_no_link_ancestors(trace_path.parent)
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    with trace_path.open("xb"):
+        pass
+    initial = torch.load(initial_path, map_location="cpu", weights_only=True)
+    initial_state = initial.get("model_state")
+    initial_keys = initial.get("parameter_keys")
+    if not isinstance(initial_state, Mapping) or list(initial_state) != initial_keys:
+        raise ValueError("frozen initial checkpoint state/key binding is invalid")
+    initial_fp = tensor_fingerprint(initial_path)
+
+    import gaps_flower.server_app as server_app
+    import gaps_flower.strategy as strategy_module
+    from gaps_flower.strategy import GapsStrategy
+
+    original_create_model = server_app.create_model
+    original_configure_fit = GapsStrategy.configure_fit
+    original_aggregate_fit = GapsStrategy.aggregate_fit
+    original_strategy_audit_fit_res = strategy_module.audit_fit_res
+
+    if os.environ.get("IOTJ_GATE_INJECT_POST_AUDIT_METRICS_KEY") == "1":
+        def injected_audit_fit_res(fit_res: FitRes) -> Any:
+            audit = original_strategy_audit_fit_res(fit_res)
+            if fit_res.metrics is None:
+                fit_res.metrics = {}
+            fit_res.metrics["observer_injected_post_audit_metrics_key"] = "sentinel"
+            return audit
+
+        strategy_module.audit_fit_res = injected_audit_fit_res
+
+    def create_model_from_frozen(config: Any) -> torch.nn.Module:
+        model = original_create_model(config)
+        if list(model.state_dict()) != list(initial_keys):
+            raise ValueError("frozen initial checkpoint schema differs from server model")
+        model.load_state_dict(initial_state, strict=True)
+        return model
+
+    def traced_configure_fit(
+        strategy: Any, server_round: int, parameters: Parameters, client_manager: Any
+    ) -> Any:
+        configured = original_configure_fit(
+            strategy, server_round, parameters, client_manager
+        )
+        if os.environ.get("IOTJ_GATE_INJECT_CONFIG_KEY") == "1":
+            for _proxy, fit_ins in configured:
+                fit_ins.config["observer_injected_regression_key"] = True
+        for proxy, fit_ins in configured:
+            _append_common_trace(
+                trace_path,
+                {
+                    "record_type": "fit_ins",
+                    "round": int(server_round),
+                    "proxy_id": str(proxy.cid),
+                    "trace": _fit_ins_trace(fit_ins, list(strategy.parameter_keys)),
+                },
+            )
+        return configured
+
+    def traced_aggregate_fit(
+        strategy: Any,
+        server_round: int,
+        results: list[Any],
+        failures: list[Any],
+    ) -> Any:
+        fit_res_rows: dict[str, Any] = {}
+        selector_inputs: dict[str, Any] = {}
+        for proxy, fit_res in results:
+            raw_client_id = (fit_res.metrics or {}).get("client_id")
+            client_id = (
+                f"C{int(raw_client_id)}"
+                if raw_client_id is not None
+                else str(proxy.cid)
+            )
+            trace = _fit_res_trace(fit_res, list(strategy.parameter_keys))
+            fit_res_rows[client_id] = trace
+            selector_inputs[client_id] = trace["comparison"]["metrics"]
+            _append_common_trace(
+                trace_path,
+                {
+                    "record_type": "fit_res",
+                    "round": int(server_round),
+                    "proxy_id": str(proxy.cid),
+                    "client_id": client_id,
+                    "trace": trace,
+                },
+            )
+        returned_parameters, aggregated_metrics = original_aggregate_fit(
+            strategy, server_round, results, failures
+        )
+        for proxy, fit_res in results:
+            raw_client_id = (fit_res.metrics or {}).get("client_id")
+            client_id = (
+                f"C{int(raw_client_id)}"
+                if raw_client_id is not None
+                else str(proxy.cid)
+            )
+            _append_common_trace(
+                trace_path,
+                {
+                    "record_type": "fit_res_post_observer",
+                    "round": int(server_round),
+                    "proxy_id": str(proxy.cid),
+                    "client_id": client_id,
+                    "trace": _fit_res_trace(fit_res, list(strategy.parameter_keys)),
+                },
+            )
+        if returned_parameters is None:
+            raise ValueError("formal trace expected returned aggregate parameters")
+        output_dir = Path(strategy.output_dir)
+        plain_path = output_dir / f"server_round_{int(server_round):03d}.pth"
+        adapted_path = output_dir / f"server_round_{int(server_round):03d}_adapted.pth"
+        event = copy.deepcopy(strategy._round_event(int(server_round)))
+        round_comparison = {
+            "round": int(server_round),
+            "fit_res_by_client": {
+                key: fit_res_rows[key]["comparison"] for key in sorted(fit_res_rows)
+            },
+            "plain_aggregate": tensor_fingerprint(plain_path)["comparison"],
+            "returned_parameters": _parameters_record(
+                returned_parameters, list(strategy.parameter_keys)
+            ),
+            "selector_inputs": selector_inputs,
+            "selector_decision": event.get("selective_agg"),
+            "aggregated_metrics": _normalized_timing_scalar_mapping(
+                aggregated_metrics or {}
+            ),
+            "prototype_stats": json_fingerprint(
+                output_dir / f"prototype_stats_round_{int(server_round):03d}.json",
+                VOLATILE_JSON_PATHS,
+            )["comparison"],
+            "semantic_protos": json_fingerprint(
+                output_dir / f"semantic_protos_round_{int(server_round):03d}.json",
+                VOLATILE_JSON_PATHS,
+            )["comparison"],
+        }
+        client_stats = json.loads(
+            (output_dir / f"client_stats_round_{int(server_round):03d}.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        round_comparison["client_stats"] = {
+            "round": client_stats.get("round"),
+            "global_summary": client_stats.get("global_summary"),
+            "clients": [
+                _normalize_json({"metrics": row}, VOLATILE_JSON_PATHS)["metrics"]
+                for row in client_stats.get("clients", [])
+            ],
+        }
+        if adapted_path.is_file():
+            round_comparison["adapted_checkpoint"] = tensor_fingerprint(adapted_path)[
+                "comparison"
+            ]
+            da_path = output_dir / f"domain_adapt_round_{int(server_round):03d}.json"
+            da_value = json.loads(da_path.read_text(encoding="utf-8"))
+            da_value.pop("semantic_protos_after_da", None)
+            round_comparison["domain_adapt_diagnostics"] = _normalize_json(
+                {"metrics": da_value}, VOLATILE_JSON_PATHS
+            )["metrics"]
+        _append_common_trace(
+            trace_path,
+            {
+                "record_type": "round_summary",
+                "round": int(server_round),
+                "content_sha256": _sha256_bytes(_canonical_bytes(round_comparison)),
+                "comparison": round_comparison,
+            },
+        )
+        return returned_parameters, aggregated_metrics
+
+    server_app.create_model = create_model_from_frozen
+    GapsStrategy.configure_fit = traced_configure_fit
+    GapsStrategy.aggregate_fit = traced_aggregate_fit
+    _append_common_trace(
+        trace_path,
+        {
+            "record_type": "initial_checkpoint",
+            "raw_sha256": initial_fp["artifact_sha256"],
+            "tensor_content_sha256": initial_fp["content_sha256"],
+            "parameter_keys": list(initial_keys),
+            "comparison": initial_fp["comparison"],
+        },
+    )
+    if delegated_argv[:2] != ["-m", "gaps_flower.server_app"]:
+        raise ValueError("trace child must delegate to gaps_flower.server_app")
+    previous_argv = sys.argv
+    try:
+        sys.argv = ["gaps_flower.server_app", *delegated_argv[2:]]
+        server_app.main()
+    finally:
+        sys.argv = previous_argv
+        server_app.create_model = original_create_model
+        GapsStrategy.configure_fit = original_configure_fit
+        GapsStrategy.aggregate_fit = original_aggregate_fit
+        strategy_module.audit_fit_res = original_strategy_audit_fit_res
+    return 0
+
+
 def _popen_flags() -> dict[str, Any]:
     if os.name == "nt":
         return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
@@ -611,6 +1169,7 @@ def _launch_attempt(
     mode: str,
     port: int,
     fixture_sha: str,
+    initial_checkpoint: Path,
 ) -> dict[str, Any]:
     attempt = root / mode
     attempt.mkdir()
@@ -631,6 +1190,20 @@ def _launch_attempt(
         data_root=fixture_root,
         output_dir=active_server_output,
     )
+    common_trace = attempt / "common_trace.jsonl"
+    server_command = [
+        server_command[0],
+        "-m",
+        "scripts.run_iotj_observer_equivalence_gate",
+        "--trace-child-role",
+        "server",
+        "--trace-output",
+        str(common_trace),
+        "--trace-initial-checkpoint",
+        str(initial_checkpoint),
+        "--",
+        *server_command[1:],
+    ]
     client_commands = [
         _client_command(client_id=client_id, port=port, data_root=fixture_root)
         for client_id in (1, 2)
@@ -687,6 +1260,8 @@ def _launch_attempt(
     env.update(
         {"PYTHONHASHSEED": "0", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
     )
+    if mode == "on" and os.environ.get("IOTJ_GATE_TEST_INJECT_ON_KEY") == "1":
+        env["IOTJ_GATE_INJECT_CONFIG_KEY"] = "1"
     processes: list[subprocess.Popen[Any]] = []
     handles: list[Any] = []
     repo_root = Path(__file__).resolve().parents[1]
@@ -751,22 +1326,79 @@ def _launch_attempt(
         for handle in handles:
             handle.close()
 
-    expected_sidecars = [events for _context, events in contexts]
-    if mode == "on":
-        missing = [str(path) for path in expected_sidecars if not path.is_file()]
-        if missing:
-            raise RuntimeError(f"ON did not create expected sidecars: {missing}")
-    else:
-        unexpected = sorted(attempt.glob("*_events.jsonl"))
-        if unexpected:
-            raise RuntimeError(f"OFF created observer sidecars: {unexpected}")
-    return {"attempt": attempt, "server_output": server_output}
+    sidecars = _validate_observer_sidecars(attempt, enabled=mode == "on")
+    return {
+        "attempt": attempt,
+        "server_output": server_output,
+        "port": port,
+        "server_address": f"127.0.0.1:{port}",
+        "group_id": group_id,
+        "common_trace": common_trace,
+        "sidecars": sidecars,
+    }
 
 
 def _json_projection(path: Path, payload: Mapping[str, Any]) -> dict[str, Any]:
     projection_path = path.with_suffix(path.suffix + ".gate.json")
     projection_path.write_bytes(_canonical_bytes(payload) + b"\n")
     return json_fingerprint(projection_path, VOLATILE_JSON_PATHS)
+
+
+def _run_config_argument_types(args: Mapping[str, Any]) -> dict[str, str]:
+    types = {str(key): type(item).__name__ for key, item in args.items()}
+    for key in ("observer_context", "observer_events"):
+        if key in types:
+            types[key] = "__ignored_exact_volatile_leaf_type__"
+    return types
+
+
+def _run_config_fingerprint(path: Path, attempt: Mapping[str, Any]) -> dict[str, Any]:
+    config_path = _require_regular_file(path)
+    raw = config_path.read_bytes()
+    value = json.loads(
+        raw.decode("utf-8"),
+        parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+    )
+    _finite_json(value)
+    args = value.get("args")
+    if not isinstance(args, Mapping):
+        raise ValueError("run_config args must be an object")
+    if args.get("server_address") != attempt["server_address"]:
+        raise ValueError("run_config server_address differs from reserved binding")
+    expected_active_output = Path(attempt["attempt"]).parent / "_active_server_output"
+    if args.get("output_dir") != str(expected_active_output):
+        raise ValueError("run_config output_dir differs from the exact gate binding")
+    normalized_args = _normalize_json(
+        {"run_config": {"args": dict(args)}}, VOLATILE_JSON_PATHS
+    )["run_config"]["args"]
+    normalized_args["server_address"] = {
+        "type": "str",
+        "host": "127.0.0.1",
+        "port_binding": "unique_dynamic_port",
+    }
+    argument_types = _run_config_argument_types(args)
+    comparison = {
+        "args": normalized_args,
+        "args_key_order": list(args),
+        "args_types": argument_types,
+        "orchestration_contract": {
+            "host": "127.0.0.1",
+            "unique_dynamic_port": True,
+            "actual_port_type": type(attempt["port"]).__name__,
+        },
+    }
+    return {
+        "kind": "run_config",
+        "artifact_sha256": _sha256_bytes(raw),
+        "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
+        "actual_binding": {
+            "server_address": args["server_address"],
+            "output_dir": args["output_dir"],
+            "run_name": args["run_name"],
+            "port": attempt["port"],
+        },
+        "comparison": comparison,
+    }
 
 
 def _capture_artifacts(attempt: Mapping[str, Any]) -> dict[str, Any]:
@@ -784,23 +1416,17 @@ def _capture_artifacts(attempt: Mapping[str, Any]) -> dict[str, Any]:
             "comparison": {"raw_file_sha256": raw_sha},
         }
 
-    raw_config = json.loads((output / "run_config.json").read_text(encoding="utf-8"))
-    excluded = {"server_address", "output_dir", "run_name"}
-    projected_args = {
-        key: value for key, value in raw_config["args"].items() if key not in excluded
-    }
-    artifacts["run_config"] = _json_projection(
-        attempt_root / "run_config_projection.json",
-        {
-            "run_config": {"args": projected_args},
-            "provenance": {
-                "wall_time_utc": "not-collected",
-                "pid": 0,
-                "path": str(output),
-            },
-        },
+    artifacts["run_config"] = _run_config_fingerprint(
+        output / "run_config.json", attempt
+    )
+    artifacts["common_trace"] = _common_trace_fingerprint(
+        Path(attempt["common_trace"])
     )
     for round_idx in (1, 2):
+        artifacts[f"adapted_logits_round_{round_idx}"] = _fixed_adapted_logits(
+            output / f"server_round_{round_idx:03d}_adapted.pth",
+            str(attempt.get("group_id", "local")),
+        )
         for stem in ("prototype_stats", "semantic_protos"):
             source = output / f"{stem}_round_{round_idx:03d}.json"
             artifacts[f"{stem}_round_{round_idx}"] = json_fingerprint(
@@ -832,27 +1458,549 @@ def _capture_artifacts(attempt: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _read_events(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    rows = [
+        json.loads(
+            line,
+            parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+        )
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    for row in rows:
+        _finite_json(row)
+    return rows
+
+
+def _validate_application_audit(audit: Any, *, direction: str) -> None:
+    if direction == "downlink":
+        logical_keys = {
+            "logical_downlink_model_value_bytes",
+            "logical_downlink_parameter_blob_bytes",
+            "logical_downlink_semantic_proto_utf8_bytes",
+            "logical_downlink_other_config_value_bytes",
+            "logical_downlink_total_bytes",
+        }
+        total_key = "logical_downlink_total_bytes"
+        component_keys = logical_keys - {
+            total_key,
+            "logical_downlink_model_value_bytes",
+        }
+    elif direction == "uplink":
+        logical_keys = {
+            "logical_uplink_model_value_bytes",
+            "logical_uplink_parameter_blob_bytes",
+            "logical_uplink_prototype_utf8_bytes",
+            "logical_uplink_prototype_var_utf8_bytes",
+            "logical_uplink_statistics_utf8_bytes",
+            "logical_uplink_diagnostic_value_bytes",
+            "logical_uplink_total_bytes",
+        }
+        total_key = "logical_uplink_total_bytes"
+        component_keys = logical_keys - {
+            total_key,
+            "logical_uplink_model_value_bytes",
+        }
+    else:
+        raise ValueError(f"unknown application audit direction: {direction}")
+    if not isinstance(audit, Mapping) or set(audit) != {
+        "logical",
+        "application_message_bytes",
+        "application_message_sha256",
+    }:
+        raise ValueError(f"{direction} application audit schema mismatch")
+    logical = audit["logical"]
+    if not isinstance(logical, Mapping) or set(logical) != logical_keys:
+        raise ValueError(f"{direction} application audit logical schema mismatch")
+    for key, value in logical.items():
+        if type(value) is not int or value < 0:
+            raise ValueError(f"{direction} application audit has invalid message byte field: {key}")
+    if logical[total_key] != sum(logical[key] for key in component_keys):
+        raise ValueError(f"{direction} application audit logical total mismatch")
+    application_bytes = audit["application_message_bytes"]
+    if type(application_bytes) is not int or application_bytes <= 0:
+        raise ValueError(f"{direction} application audit has invalid message bytes")
+    sha256 = audit["application_message_sha256"]
+    if (
+        not isinstance(sha256, str)
+        or len(sha256) != 64
+        or sha256 != sha256.lower()
+        or any(character not in "0123456789abcdef" for character in sha256)
+    ):
+        raise ValueError(f"{direction} application audit SHA-256 is invalid")
+
+
+def _validate_observer_sidecars(
+    attempt_dir: Path, *, enabled: bool
+) -> dict[str, Any]:
+    """Validate actual JSONL/close sidecars and derive counts from disk."""
+
+    root = Path(attempt_dir)
+    event_files = sorted(root.rglob("*events.jsonl"))
+    close_files = sorted(root.rglob("*events.close.json"))
+    if not enabled:
+        if event_files or close_files:
+            raise ValueError(
+                "observer-disabled attempt contains sidecars: "
+                f"events={event_files}, close={close_files}"
+            )
+        return {
+            "enabled": False,
+            "event_files": 0,
+            "close_summaries": 0,
+            "producers": {},
+        }
+    if len(event_files) != 3 or len(close_files) != 3:
+        raise ValueError(
+            "missing required server/C1/C2 observer sidecars: "
+            f"event_files={len(event_files)}, close_summaries={len(close_files)}"
+        )
+
+    required_event_keys = {
+        "schema_version",
+        "event_id",
+        "event_type",
+        "run_id",
+        "attempt_id",
+        "group_id",
+        "training_seed",
+        "round",
+        "client_id",
+        "host_id",
+        "producer",
+        "process_instance_id",
+        "sequence",
+        "wall_time_utc",
+        "monotonic_ns",
+        "confirmation_commit",
+        "source_archive_sha256",
+        "dataset_manifest_sha256",
+        "algorithm_config_sha256",
+        "status",
+        "payload",
+    }
+    required_close_keys = {
+        "schema_version",
+        "run_id",
+        "attempt_id",
+        "host_id",
+        "producer",
+        "process_instance_id",
+        "observer_flower_serialize_ns",
+        "observer_event_encode_ns",
+        "observer_io_write_ns",
+        "observer_fsync_ns",
+        "observer_total_ns",
+        "observer_event_bytes_written",
+        "observer_event_count",
+        "observer_reporting_tail_bytes",
+    }
+    producer_rows: dict[str, dict[str, Any]] = {}
+    substantive_by_producer: dict[str, list[dict[str, Any]]] = {}
+    global_event_ids: set[str] = set()
+    common_identity: dict[str, Any] | None = None
+    identity_keys = (
+        "schema_version",
+        "run_id",
+        "attempt_id",
+        "group_id",
+        "training_seed",
+        "confirmation_commit",
+        "source_archive_sha256",
+        "dataset_manifest_sha256",
+        "algorithm_config_sha256",
+    )
+    for event_path in event_files:
+        rows = _read_events(event_path)
+        if not rows:
+            raise ValueError(f"empty observer event file: {event_path}")
+        first = rows[0]
+        if common_identity is None:
+            common_identity = {key: first[key] for key in identity_keys}
+        for index, row in enumerate(rows, start=1):
+            if set(row) != required_event_keys:
+                raise ValueError(f"observer event schema mismatch: {event_path}:{index}")
+            if row["schema_version"] != "iotj.confirmation.observability.v1":
+                raise ValueError(f"observer schema version mismatch: {event_path}")
+            if row["sequence"] != index:
+                raise ValueError(f"non-contiguous observer sequence: {event_path}")
+            if any(row[key] != common_identity[key] for key in identity_keys):
+                raise ValueError(f"observer identity mismatch: {event_path}:{index}")
+            expected_suffix = f"/{row['process_instance_id']}/{index}"
+            if not str(row["event_id"]).endswith(expected_suffix):
+                raise ValueError(f"event_id/sequence mismatch: {event_path}:{index}")
+            if row["event_id"] in global_event_ids:
+                raise ValueError(f"duplicate observer event_id: {row['event_id']}")
+            global_event_ids.add(str(row["event_id"]))
+        process_values = {str(row["process_instance_id"]) for row in rows}
+        host_values = {str(row["host_id"]) for row in rows}
+        producer_values = {str(row["producer"]) for row in rows}
+        if len(process_values) != 1 or len(host_values) != 1 or len(producer_values) != 1:
+            raise ValueError(f"mixed process/host/producer identity: {event_path}")
+
+        substantive = [row for row in rows if row["event_type"] != "observer_overhead"]
+        overhead = [row for row in rows if row["event_type"] == "observer_overhead"]
+        observed = [str(row["payload"].get("observed_event_id")) for row in overhead]
+        substantive_ids = [str(row["event_id"]) for row in substantive]
+        if sorted(observed) != sorted(substantive_ids) or len(observed) != len(set(observed)):
+            raise ValueError(f"observer overhead pairing mismatch: {event_path}")
+        for row in overhead:
+            payload = row["payload"]
+            expected_overhead_keys = {
+                "observed_event_id",
+                "observer_flower_serialize_ns",
+                "observer_event_encode_ns",
+                "observer_io_write_ns",
+                "observer_fsync_ns",
+                "observer_total_ns",
+                "observer_event_bytes_written",
+                "observer_event_count",
+            }
+            if set(payload) != expected_overhead_keys:
+                raise ValueError(f"observer overhead schema mismatch: {event_path}")
+            components = [
+                int(payload["observer_flower_serialize_ns"]),
+                int(payload["observer_event_encode_ns"]),
+                int(payload["observer_io_write_ns"]),
+                int(payload["observer_fsync_ns"]),
+            ]
+            if any(value < 0 for value in components):
+                raise ValueError(f"negative observer overhead: {event_path}")
+            if int(payload["observer_total_ns"]) != sum(components):
+                raise ValueError(f"observer overhead total mismatch: {event_path}")
+            if int(payload["observer_event_bytes_written"]) <= 0 or int(
+                payload["observer_event_count"]
+            ) <= 0:
+                raise ValueError(f"invalid observer overhead accounting: {event_path}")
+        client_ids = {
+            str(row["client_id"])
+            for row in substantive
+            if row["client_id"] is not None
+        }
+        producer = str(first["producer"])
+        if producer == "server":
+            logical_name = "server"
+        elif client_ids == {"C1"}:
+            logical_name = "C1"
+        elif client_ids == {"C2"}:
+            logical_name = "C2"
+        else:
+            raise ValueError(f"observer producer is not server/C1/C2: {event_path}")
+        if logical_name in producer_rows:
+            raise ValueError(f"duplicate observer producer: {logical_name}")
+
+        close_path = event_path.with_suffix(".close.json")
+        if close_path not in close_files:
+            raise ValueError(f"missing close summary for {logical_name}: {close_path}")
+        close = json.loads(
+            close_path.read_text(encoding="utf-8"),
+            parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+        )
+        _finite_json(close)
+        if set(close) != required_close_keys:
+            raise ValueError(f"observer close schema mismatch: {close_path}")
+        for key in ("schema_version", "run_id", "attempt_id", "host_id", "producer", "process_instance_id"):
+            if close[key] != first[key]:
+                raise ValueError(f"observer close identity mismatch: {close_path}")
+        if int(close["observer_event_count"]) != len(rows):
+            raise ValueError(f"observer close event count mismatch: {close_path}")
+        if int(close["observer_event_bytes_written"]) != event_path.stat().st_size:
+            raise ValueError(
+                f"observer close byte count differs from JSONL size: {close_path}"
+            )
+        close_components = [
+            int(close["observer_flower_serialize_ns"]),
+            int(close["observer_event_encode_ns"]),
+            int(close["observer_io_write_ns"]),
+            int(close["observer_fsync_ns"]),
+        ]
+        if any(value < 0 for value in close_components):
+            raise ValueError(f"negative close overhead: {close_path}")
+        if int(close["observer_total_ns"]) != sum(close_components):
+            raise ValueError(f"observer close total mismatch: {close_path}")
+
+        type_counts: dict[str, int] = {}
+        for row in substantive:
+            event_type = str(row["event_type"])
+            type_counts[event_type] = type_counts.get(event_type, 0) + 1
+            payload = row["payload"]
+            if not isinstance(payload, Mapping):
+                raise ValueError(f"observer event payload is not an object: {event_path}")
+            for key, value in payload.items():
+                if str(key).endswith("_ns") and (
+                    type(value) is not int or value < 0
+                ):
+                    raise ValueError(
+                        f"observer event has invalid nonnegative timing: {event_path}/{key}"
+                    )
+        producer_rows[logical_name] = {
+            "event_file": _portable_evidence_path(root, event_path),
+            "close_summary": _portable_evidence_path(root, close_path),
+            "events": len(rows),
+            "substantive_events": len(substantive),
+            "overhead_events": len(overhead),
+            "event_type_counts": type_counts,
+            "observer_total_ns": int(close["observer_total_ns"]),
+            "observer_event_bytes_written": int(close["observer_event_bytes_written"]),
+        }
+        substantive_by_producer[logical_name] = substantive
+
+    if set(producer_rows) != {"server", "C1", "C2"}:
+        raise ValueError(f"missing required server/C1/C2 producers: {sorted(producer_rows)}")
+    for client in ("C1", "C2"):
+        counts = producer_rows[client]["event_type_counts"]
+        expected = {
+            "client_fit_start": 2,
+            "client_train_start": 2,
+            "client_train_end": 2,
+            "client_fit_end": 2,
+        }
+        if counts != expected:
+            raise ValueError(f"{client} event counts differ from two-round contract: {counts}")
+        client_rows = substantive_by_producer[client]
+        observed_client_matrix = {
+            (int(row["round"]), str(row["event_type"]), str(row["client_id"]))
+            for row in client_rows
+        }
+        expected_client_matrix = {
+            (round_idx, event_type, client)
+            for round_idx in (1, 2)
+            for event_type in expected
+        }
+        if (
+            len(observed_client_matrix) != len(client_rows)
+            or observed_client_matrix != expected_client_matrix
+        ):
+            raise ValueError(f"{client} round/client event matrix is invalid")
+    server_counts = producer_rows["server"]["event_type_counts"]
+    expected_server_counts = {
+        "fit_round_start": 2,
+        "flower_fitins_prepared": 4,
+        "server_aggregate_start": 2,
+        "flower_fitres_available": 4,
+        "server_da_start": 2,
+        "server_da_end": 2,
+        "server_aggregate_end": 2,
+        "fit_round_end": 2,
+    }
+    if server_counts != expected_server_counts:
+        raise ValueError(f"server event counts differ from two-round contract: {server_counts}")
+    server_rows = substantive_by_producer["server"]
+    fit_res_rows = [
+        row for row in server_rows if row["event_type"] == "flower_fitres_available"
+    ]
+    proxy_clients: dict[tuple[int, str], str] = {}
+    fit_res_matrix: list[tuple[int, str]] = []
+    for row in fit_res_rows:
+        _validate_application_audit(row["payload"].get("uplink_audit"), direction="uplink")
+        round_idx = int(row["round"])
+        client_id = str(row["client_id"])
+        proxy_id = str(row["payload"].get("proxy_id"))
+        key = (round_idx, proxy_id)
+        if key in proxy_clients or client_id not in {"C1", "C2"}:
+            raise ValueError("server FitRes round/client matrix has invalid proxy binding")
+        proxy_clients[key] = client_id
+        fit_res_matrix.append((round_idx, client_id))
+    expected_message_matrix = [
+        (round_idx, client_id)
+        for round_idx in (1, 2)
+        for client_id in ("C1", "C2")
+    ]
+    if sorted(fit_res_matrix) != expected_message_matrix:
+        raise ValueError("server FitRes round/client matrix lacks C1 or C2")
+    fit_ins_matrix: list[tuple[int, str]] = []
+    for row in server_rows:
+        if row["event_type"] != "flower_fitins_prepared":
+            continue
+        _validate_application_audit(
+            row["payload"].get("downlink_audit"), direction="downlink"
+        )
+        round_idx = int(row["round"])
+        client_id = proxy_clients.get(
+            (round_idx, str(row["payload"].get("proxy_id")))
+        )
+        if client_id is None:
+            raise ValueError("server FitIns round/client matrix lacks proxy binding")
+        fit_ins_matrix.append((round_idx, client_id))
+    if sorted(fit_ins_matrix) != expected_message_matrix:
+        raise ValueError("server FitIns round/client matrix lacks C1 or C2")
+    return {
+        "enabled": True,
+        "event_files": len(event_files),
+        "close_summaries": len(close_files),
+        "producers": producer_rows,
+    }
+
+
+def _common_trace_fingerprint(path: Path) -> dict[str, Any]:
+    trace_path = _require_regular_file(Path(path))
+    rows = _read_events(trace_path)
+    initial_rows = [row for row in rows if row.get("record_type") == "initial_checkpoint"]
+    fit_ins_rows = [row for row in rows if row.get("record_type") == "fit_ins"]
+    fit_res_rows = [row for row in rows if row.get("record_type") == "fit_res"]
+    post_fit_res_rows = [
+        row for row in rows if row.get("record_type") == "fit_res_post_observer"
+    ]
+    summary_rows = [row for row in rows if row.get("record_type") == "round_summary"]
+    if not (
+        len(initial_rows) == 1
+        and len(fit_ins_rows) == 4
+        and len(fit_res_rows) == 4
+        and len(post_fit_res_rows) == 4
+        and len(summary_rows) == 2
+    ):
+        raise ValueError(
+            "common trace record count mismatch: "
+            f"initial={len(initial_rows)}, FitIns={len(fit_ins_rows)}, "
+            f"FitRes={len(fit_res_rows)}, post-FitRes={len(post_fit_res_rows)}, "
+            f"rounds={len(summary_rows)}"
+        )
+    proxy_clients: dict[tuple[int, str], str] = {}
+    for row in fit_res_rows:
+        key = (int(row["round"]), str(row["proxy_id"]))
+        client_id = str(row["client_id"])
+        if key in proxy_clients or client_id not in {"C1", "C2"}:
+            raise ValueError("common trace proxy/client binding is invalid")
+        proxy_clients[key] = client_id
+
+    fit_ins: dict[str, dict[str, Any]] = {"1": {}, "2": {}}
+    fit_res: dict[str, dict[str, Any]] = {"1": {}, "2": {}}
+    post_fit_res: dict[str, dict[str, Any]] = {"1": {}, "2": {}}
+    raw_messages: list[dict[str, Any]] = []
+    for row in fit_ins_rows:
+        round_idx = int(row["round"])
+        client_id = proxy_clients.get((round_idx, str(row["proxy_id"])))
+        if client_id is None or client_id in fit_ins[str(round_idx)]:
+            raise ValueError("common trace FitIns/client binding is invalid")
+        fit_ins[str(round_idx)][client_id] = row["trace"]["comparison"]
+        raw_messages.append(
+            {
+                "round": round_idx,
+                "direction": "downlink",
+                "client_id": client_id,
+                "application_message_bytes": row["trace"][
+                    "raw_application_message_bytes"
+                ],
+                "application_message_sha256": row["trace"][
+                    "raw_application_message_sha256"
+                ],
+                "logical": row["trace"]["logical"],
+            }
+        )
+    for row in fit_res_rows:
+        round_idx = int(row["round"])
+        client_id = str(row["client_id"])
+        if client_id in fit_res[str(round_idx)]:
+            raise ValueError("duplicate common trace FitRes/client binding")
+        fit_res[str(round_idx)][client_id] = row["trace"]["comparison"]
+        raw_messages.append(
+            {
+                "round": round_idx,
+                "direction": "uplink",
+                "client_id": client_id,
+                "application_message_bytes": row["trace"][
+                    "raw_application_message_bytes"
+                ],
+                "application_message_sha256": row["trace"][
+                    "raw_application_message_sha256"
+                ],
+                "logical": row["trace"]["logical"],
+            }
+        )
+    for row in post_fit_res_rows:
+        round_idx = int(row["round"])
+        client_id = str(row["client_id"])
+        if client_id in post_fit_res[str(round_idx)]:
+            raise ValueError("duplicate common trace post-observer FitRes/client binding")
+        post_fit_res[str(round_idx)][client_id] = row["trace"]["comparison"]
+    for round_idx in (1, 2):
+        if set(fit_ins[str(round_idx)]) != {"C1", "C2"} or set(
+            fit_res[str(round_idx)]
+        ) != {"C1", "C2"} or set(post_fit_res[str(round_idx)]) != {"C1", "C2"}:
+            raise ValueError(f"common trace round {round_idx} lacks C1/C2")
+
+    initial = initial_rows[0]
+    initial_tensors = initial["comparison"]["tensors"]
+    for client_id in ("C1", "C2"):
+        sent = fit_ins["1"][client_id]["parameters"]["tensors"]
+        for item in sent:
+            initial_key = f"model_state.{item['key']}"
+            if (
+                initial_key not in initial_tensors
+                or f"torch.{item['dtype']}" != initial_tensors[initial_key]["dtype"]
+                or item["shape"] != initial_tensors[initial_key]["shape"]
+                or item["raw_sha256"] != initial_tensors[initial_key]["raw_sha256"]
+            ):
+                raise ValueError(
+                    f"round-1 FitIns does not match frozen initial checkpoint: {client_id}/{item['key']}"
+                )
+    summaries = {str(int(row["round"])): row["comparison"] for row in summary_rows}
+    if set(summaries) != {"1", "2"}:
+        raise ValueError("common trace round summaries are incomplete")
+    comparison = {
+        "initial_tensor_content_sha256": initial["tensor_content_sha256"],
+        "initial_parameter_keys": initial["parameter_keys"],
+        "fit_ins": fit_ins,
+        "fit_res": fit_res,
+        "fit_res_post_observer": post_fit_res,
+        "rounds": summaries,
+    }
+    raw_messages.sort(key=lambda row: (row["round"], row["direction"], row["client_id"]))
+    return {
+        "kind": "flower_common_trace",
+        "artifact_sha256": _sha256_file(trace_path),
+        "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
+        "raw_messages": raw_messages,
+        "comparison": comparison,
+    }
 
 
 def _message_fingerprints(on_attempt: Mapping[str, Any]) -> list[dict[str, Any]]:
-    events = _read_events(Path(on_attempt["attempt"]) / "server_events.jsonl")
-    messages = []
+    attempt_root = Path(on_attempt["attempt"])
+    server_candidates: list[tuple[Path, list[dict[str, Any]]]] = []
+    for path in sorted(attempt_root.rglob("*events.jsonl")):
+        rows = _read_events(path)
+        if rows and {row.get("producer") for row in rows} == {"server"}:
+            server_candidates.append((path, rows))
+    if len(server_candidates) != 1:
+        raise ValueError(
+            "expected exactly one server observer event file, got "
+            f"{[str(path) for path, _rows in server_candidates]}"
+        )
+    _server_path, events = server_candidates[0]
+    proxy_clients: dict[tuple[int, str], str] = {}
+    for event in events:
+        if event.get("event_type") != "flower_fitres_available":
+            continue
+        round_idx = int(event["round"])
+        client_id = str(event.get("client_id"))
+        proxy_id = str(event["payload"]["proxy_id"])
+        key = (round_idx, proxy_id)
+        if key in proxy_clients or client_id not in {"C1", "C2"}:
+            raise ValueError("observer FitRes proxy/client binding is invalid")
+        proxy_clients[key] = client_id
+
+    messages: list[dict[str, Any]] = []
     for event in events:
         event_type = event.get("event_type")
         if event_type == "flower_fitins_prepared":
             audit = event["payload"]["downlink_audit"]
             direction = "downlink"
+            client_id = proxy_clients.get(
+                (int(event["round"]), str(event["payload"]["proxy_id"]))
+            )
+            if client_id is None:
+                raise ValueError("observer FitIns proxy/client binding is missing")
         elif event_type == "flower_fitres_available":
             audit = event["payload"]["uplink_audit"]
             direction = "uplink"
+            client_id = str(event.get("client_id"))
         else:
             continue
         messages.append(
             {
                 "round": int(event["round"]),
                 "direction": direction,
-                "client_id": event.get("client_id") if direction == "uplink" else None,
+                "client_id": client_id,
                 "application_message_bytes": int(audit["application_message_bytes"]),
                 "application_message_sha256": str(audit["application_message_sha256"]),
                 "logical": audit["logical"],
@@ -870,6 +2018,33 @@ def _message_fingerprints(on_attempt: Mapping[str, Any]) -> list[dict[str, Any]]
     if sum(item["direction"] == "uplink" for item in messages) != 4:
         raise RuntimeError("expected exactly four FitRes message fingerprints")
     return messages
+
+
+def _cross_validate_message_audits(
+    observer_messages: list[dict[str, Any]], common_trace: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Require observer message audits to equal the independent live-object trace."""
+
+    common_messages = common_trace.get("raw_messages")
+    if not isinstance(common_messages, list):
+        raise ValueError("common trace lacks raw message audits")
+    key = lambda item: (
+        int(item["round"]),
+        str(item["direction"]),
+        str(item["client_id"]),
+    )
+    observer_sorted = sorted(copy.deepcopy(observer_messages), key=key)
+    common_sorted = sorted(copy.deepcopy(common_messages), key=key)
+    if observer_sorted != common_sorted:
+        raise ValueError(
+            "observer message audits differ from independent common trace: "
+            f"observer_sha256={_sha256_bytes(_canonical_bytes(observer_sorted))}, "
+            f"common_trace_sha256={_sha256_bytes(_canonical_bytes(common_sorted))}"
+        )
+    return {
+        "message_count": len(observer_sorted),
+        "content_sha256": _sha256_bytes(_canonical_bytes(observer_sorted)),
+    }
 
 
 def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -904,6 +2079,9 @@ def run_local_gate(output_root: Path, group_id: str) -> dict[str, Any]:
     fixture_hashes = _write_fixture(root)
     fixture_root = root / "fixture_data"
     fixture_sha = _sha256_bytes(_canonical_bytes(fixture_hashes))
+    initial_checkpoint = _create_frozen_initial_checkpoint(
+        root / "frozen_initial_checkpoint.pth", group
+    )
     ports: set[int] = set()
     attempts: dict[str, dict[str, Any]] = {}
     artifacts: dict[str, dict[str, Any]] = {}
@@ -916,13 +2094,37 @@ def run_local_gate(output_root: Path, group_id: str) -> dict[str, Any]:
                 mode=mode,
                 port=_reserve_port(ports),
                 fixture_sha=fixture_sha,
+                initial_checkpoint=Path(initial_checkpoint["path"]),
             )
             artifacts[mode] = _capture_artifacts(attempts[mode])
         comparison = compare_fingerprints(
             artifacts["off_a"], artifacts["on"], artifacts["off_b"]
         )
         messages = _message_fingerprints(attempts["on"])
+        try:
+            message_cross_validation = _cross_validate_message_audits(
+                messages, artifacts["on"]["common_trace"]
+            )
+            message_cross_validation["status"] = "matched"
+        except ValueError as exc:
+            message_cross_validation = {
+                "status": "observer_path_mutation",
+                "error": str(exc),
+            }
+            comparison["status"] = "observer_path_mutation"
+            comparison["equivalent"] = False
+            comparison["on_equal_to_off"] = False
+            comparison["mismatches"] = [
+                *comparison["mismatches"],
+                f"message_common_trace_cross_validation: {exc}",
+            ]
         content_hashes = comparison["content_set_sha256"]
+        portable_initial_checkpoint = {
+            **initial_checkpoint,
+            "path": _portable_evidence_path(
+                root, Path(initial_checkpoint["path"])
+            ),
+        }
         report = {
             "schema_version": "iotj.observer_equivalence.v1",
             "group_id": group,
@@ -937,6 +2139,7 @@ def run_local_gate(output_root: Path, group_id: str) -> dict[str, Any]:
                 "rows_per_source": 8,
                 "input_hashes": fixture_hashes,
                 "input_set_sha256": fixture_sha,
+                "frozen_initial_checkpoint": portable_initial_checkpoint,
             },
             "execution_order": ["OFF-A", "ON", "OFF-B"],
             "status": comparison["status"],
@@ -967,15 +2170,21 @@ def run_local_gate(output_root: Path, group_id: str) -> dict[str, Any]:
             },
             "message_fingerprints": messages,
             "message_fingerprint_sha256": _sha256_bytes(_canonical_bytes(messages)),
+            "message_common_trace_cross_validation": message_cross_validation,
             "observer_sidecars": {
-                "off_a": 0,
-                "on": 3,
-                "off_b": 0,
+                mode: attempts[mode]["sidecars"] for mode in _MODES
+            },
+            "orchestration_bindings": {
+                mode: {
+                    "server_address": attempts[mode]["server_address"],
+                    "port": attempts[mode]["port"],
+                }
+                for mode in _MODES
             },
             "boundaries": {
                 "dataset": "synthetic-only; no C5 test or project dataset opened",
                 "topology": "local loopback; formal ECS/Pi/PC smoke is a later gate",
-                "message_capture": "application fingerprints are read from ON sidecars; OFF equivalence is established by exact downstream numerical artifacts",
+                "message_capture": "FitIns/FitRes common traces are captured from live Flower objects independently of JsonlObserver in OFF-A/ON/OFF-B; ON sidecars are separately audited",
             },
         }
     except Exception as exc:
@@ -988,20 +2197,711 @@ def run_local_gate(output_root: Path, group_id: str) -> dict[str, Any]:
             "error_type": type(exc).__name__,
             "error": str(exc),
             "fixture_input_hashes": fixture_hashes,
+            "frozen_initial_checkpoint": initial_checkpoint,
         }
     _atomic_write_json(root / "observer_equivalence_report.json", report)
     return report
 
 
+def _load_formal_frozen_binding(protocol_path: Path, group_id: str) -> dict[str, Any]:
+    from scripts.freeze_iotj_confirmation_protocol import canonical_sha256
+    from scripts.run_iotj_confirmation_observability import load_frozen_inputs
+
+    protocol = _require_regular_file(Path(protocol_path))
+    summary_root = protocol.parent
+    summary_name = summary_root.name
+    if not summary_name.endswith("_summary"):
+        raise ValueError("formal protocol manifest must be inside the frozen *_summary root")
+    base_name = summary_name[: -len("_summary")]
+    experiment_root = summary_root.parent / base_name
+    command_root = summary_root.parent / f"{base_name}_commands"
+    source_manifest = summary_root / "source_archive_manifest.json"
+    dataset_manifest = summary_root / "dataset_manifest.json"
+    archive = experiment_root / "source" / "confirmation_source.tar"
+    frozen = load_frozen_inputs(
+        protocol,
+        source_manifest,
+        dataset_manifest,
+        command_root,
+        archive,
+    )
+    group = str(group_id).upper()
+    candidates = [
+        run for run in frozen.runs if run.group_id == group and run.seed == 42
+    ]
+    if len(candidates) != 1:
+        raise ValueError(f"frozen input has no unique {group}/seed-42 run")
+    frozen_run = candidates[0]
+    return {
+        "protocol_manifest_sha256": str(
+            frozen.protocol["protocol_manifest_sha256"]
+        ),
+        "source_archive_sha256": str(
+            frozen.source_manifest["source_archive_sha256"]
+        ),
+        "dataset_manifest_sha256": str(
+            frozen.dataset_manifest["dataset_manifest_sha256"]
+        ),
+        "regular_members_sha256": str(
+            frozen.source_manifest["regular_members_sha256"]
+        ),
+        "confirmation_commit": str(frozen.protocol["confirmation_commit"]),
+        "group_id": group,
+        "seed": 42,
+        "command_manifest_sha256": canonical_sha256(frozen_run.manifest),
+        "archive_sha256": _sha256_file(frozen.archive_path),
+        "_frozen": frozen,
+        "_frozen_run": frozen_run,
+    }
+
+
+def _capture_formal_artifacts(attempt_root: Path) -> dict[str, Any]:
+    output = attempt_root / "raw" / "ecs" / "training"
+    trace = attempt_root / "raw" / "ecs" / "common_trace.jsonl"
+    artifacts: OrderedDict[str, Any] = OrderedDict()
+    artifacts["final_aggregated_checkpoint"] = tensor_fingerprint(
+        output / "server_latest.pth"
+    )
+    artifacts["final_adapted_checkpoint"] = tensor_fingerprint(
+        output / "server_latest_adapted.pth"
+    )
+    for label in ("final_aggregated_checkpoint", "final_adapted_checkpoint"):
+        raw_sha = artifacts[label]["artifact_sha256"]
+        artifacts[f"{label}_raw"] = {
+            "kind": "raw_checkpoint",
+            "artifact_sha256": raw_sha,
+            "content_sha256": raw_sha,
+            "comparison": {"raw_file_sha256": raw_sha},
+        }
+    artifacts["common_trace"] = _common_trace_fingerprint(trace)
+    for round_idx in (1, 2):
+        artifacts[f"adapted_logits_round_{round_idx}"] = _fixed_adapted_logits(
+            output / f"server_round_{round_idx:03d}_adapted.pth",
+            "formal",
+        )
+        for stem in ("prototype_stats", "semantic_protos"):
+            artifacts[f"{stem}_round_{round_idx}"] = json_fingerprint(
+                output / f"{stem}_round_{round_idx:03d}.json", VOLATILE_JSON_PATHS
+            )
+        client_stats = json.loads(
+            (output / f"client_stats_round_{round_idx:03d}.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for client in client_stats["clients"]:
+            client_id = int(client["client_id"])
+            normalized = _normalize_json(
+                {"metrics": client}, VOLATILE_JSON_PATHS
+            )
+            artifacts[f"client_stats_round_{round_idx}_c{client_id}"] = {
+                "kind": "json_projection",
+                "artifact_sha256": _sha256_bytes(_canonical_bytes(client)),
+                "content_sha256": _sha256_bytes(_canonical_bytes(normalized)),
+                "comparison": normalized,
+            }
+        diagnostics = json.loads(
+            (output / f"domain_adapt_round_{round_idx:03d}.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        diagnostics.pop("semantic_protos_after_da", None)
+        normalized_diagnostics = _normalize_json(
+            {"metrics": diagnostics}, VOLATILE_JSON_PATHS
+        )
+        artifacts[f"domain_adapt_round_{round_idx}"] = {
+            "kind": "json_projection",
+            "artifact_sha256": _sha256_bytes(_canonical_bytes(diagnostics)),
+            "content_sha256": _sha256_bytes(
+                _canonical_bytes(normalized_diagnostics)
+            ),
+            "comparison": normalized_diagnostics,
+        }
+    return artifacts
+
+
+def _validate_formal_resource_sidecar(
+    host_root: Path, client_id: str
+) -> dict[str, Any]:
+    """Strictly validate one formal host's resource sampler evidence."""
+
+    root = Path(host_root)
+    expected_client = str(client_id)
+    if expected_client not in {"C1", "C2"}:
+        raise ValueError(f"resource sidecar client must be C1 or C2: {client_id!r}")
+    event_path = _require_regular_file(root / "resource.jsonl")
+    close_path = _require_regular_file(root / "resource.close.json")
+    rows = _read_events(event_path)
+    if not rows:
+        raise ValueError(f"empty resource sidecar: {event_path}")
+
+    event_keys = {
+        "schema_version",
+        "event_id",
+        "event_type",
+        "run_id",
+        "attempt_id",
+        "group_id",
+        "training_seed",
+        "round",
+        "client_id",
+        "host_id",
+        "producer",
+        "process_instance_id",
+        "sequence",
+        "wall_time_utc",
+        "monotonic_ns",
+        "confirmation_commit",
+        "source_archive_sha256",
+        "dataset_manifest_sha256",
+        "algorithm_config_sha256",
+        "status",
+        "payload",
+    }
+    identity_keys = (
+        "schema_version",
+        "run_id",
+        "attempt_id",
+        "group_id",
+        "training_seed",
+        "client_id",
+        "host_id",
+        "producer",
+        "process_instance_id",
+        "confirmation_commit",
+        "source_archive_sha256",
+        "dataset_manifest_sha256",
+        "algorithm_config_sha256",
+    )
+    first = rows[0]
+    identity = {key: first.get(key) for key in identity_keys}
+    if (
+        identity["schema_version"] != "iotj.confirmation.observability.v1"
+        or identity["client_id"] != expected_client
+        or identity["producer"] != "resource_sampler"
+    ):
+        raise ValueError(f"resource sidecar identity mismatch: {event_path}")
+    event_ids: set[str] = set()
+    for index, row in enumerate(rows, start=1):
+        if set(row) != event_keys:
+            raise ValueError(f"resource event exact schema mismatch: {event_path}:{index}")
+        if any(row.get(key) != identity[key] for key in identity_keys):
+            raise ValueError(f"resource event identity drift: {event_path}:{index}")
+        if row["sequence"] != index:
+            raise ValueError(f"resource event sequence is not contiguous: {event_path}")
+        expected_suffix = f"/{identity['process_instance_id']}/{index}"
+        if not str(row["event_id"]).endswith(expected_suffix):
+            raise ValueError(f"resource event_id/sequence mismatch: {event_path}:{index}")
+        if row["event_id"] in event_ids:
+            raise ValueError(f"duplicate resource event_id: {row['event_id']}")
+        event_ids.add(str(row["event_id"]))
+        if type(row["monotonic_ns"]) is not int or row["monotonic_ns"] < 0:
+            raise ValueError(f"resource event monotonic_ns must be nonnegative: {event_path}")
+
+    substantive = [row for row in rows if row["event_type"] != "observer_overhead"]
+    overhead = [row for row in rows if row["event_type"] == "observer_overhead"]
+    if any(row["event_type"] not in {"resource_sample", "resource_sampler_end"} for row in substantive):
+        raise ValueError(f"unexpected resource event type: {event_path}")
+    observed_ids = [str(row["payload"].get("observed_event_id")) for row in overhead]
+    substantive_ids = [str(row["event_id"]) for row in substantive]
+    if sorted(observed_ids) != sorted(substantive_ids) or len(observed_ids) != len(set(observed_ids)):
+        raise ValueError(f"resource observer overhead pairing mismatch: {event_path}")
+    overhead_keys = {
+        "observed_event_id",
+        "observer_flower_serialize_ns",
+        "observer_event_encode_ns",
+        "observer_io_write_ns",
+        "observer_fsync_ns",
+        "observer_total_ns",
+        "observer_event_bytes_written",
+        "observer_event_count",
+    }
+    for row in overhead:
+        payload = row["payload"]
+        if not isinstance(payload, Mapping) or set(payload) != overhead_keys:
+            raise ValueError(f"resource observer overhead exact schema mismatch: {event_path}")
+        components = [
+            payload["observer_flower_serialize_ns"],
+            payload["observer_event_encode_ns"],
+            payload["observer_io_write_ns"],
+            payload["observer_fsync_ns"],
+        ]
+        if any(type(value) is not int or value < 0 for value in components):
+            raise ValueError(f"resource observer overhead must be nonnegative: {event_path}")
+        if payload["observer_total_ns"] != sum(components):
+            raise ValueError(f"resource observer overhead total mismatch: {event_path}")
+        if (
+            type(payload["observer_event_bytes_written"]) is not int
+            or payload["observer_event_bytes_written"] <= 0
+            or type(payload["observer_event_count"]) is not int
+            or payload["observer_event_count"] <= 0
+        ):
+            raise ValueError(f"resource observer overhead accounting is invalid: {event_path}")
+
+    sample_payload_keys = {
+        "root_pid",
+        "sampler_pid_excluded",
+        "pids",
+        "process_identities",
+        "rss_tree_bytes",
+        "rss_tree_peak_bytes",
+        "process_count_tree",
+        "thread_count_tree",
+        "cpu_time_tree_seconds",
+        "cpu_time_tree_delta_seconds",
+        "cpu_percent_tree_one_core_scale",
+        "cpu_percent_tree_host_scale",
+        "logical_cpu_count",
+        "sample_interval_start_monotonic_ns",
+        "sample_interval_end_monotonic_ns",
+        "sample_interval_wall_ns",
+        "sample_errors",
+        "cpu_temperature_c",
+        "cpu_temperature_available",
+        "cpu_temperature_source",
+        "vcgencmd_available",
+        "throttled_raw",
+        "throttled_bits",
+        "throttled_available",
+        "thermal_errors",
+    }
+    integer_fields = {
+        "root_pid",
+        "sampler_pid_excluded",
+        "rss_tree_bytes",
+        "rss_tree_peak_bytes",
+        "process_count_tree",
+        "thread_count_tree",
+        "logical_cpu_count",
+        "sample_interval_start_monotonic_ns",
+        "sample_interval_end_monotonic_ns",
+        "sample_interval_wall_ns",
+    }
+    numeric_fields = integer_fields | {
+        "cpu_time_tree_seconds",
+        "cpu_time_tree_delta_seconds",
+        "cpu_percent_tree_one_core_scale",
+        "cpu_percent_tree_host_scale",
+    }
+    samples = [row for row in substantive if row["event_type"] == "resource_sample"]
+    if not samples:
+        raise ValueError(f"resource sidecar contains no samples: {event_path}")
+    valid_intervals: list[tuple[int, int]] = []
+    root_pid: int | None = None
+    sampler_pid: int | None = None
+    last_peak = 0
+    last_end: int | None = None
+    for row in samples:
+        if row["round"] is not None or row["client_id"] != expected_client or row["status"] != "succeeded":
+            raise ValueError(f"resource sample event identity/status is invalid: {event_path}")
+        payload = row["payload"]
+        if not isinstance(payload, Mapping) or set(payload) != sample_payload_keys:
+            raise ValueError(f"resource sample exact schema mismatch: {event_path}")
+        for field in numeric_fields:
+            value = payload[field]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                raise ValueError(f"resource {field} must be finite and nonnegative")
+            if field in integer_fields and type(value) is not int:
+                raise ValueError(f"resource {field} must be a nonnegative integer")
+        if payload["root_pid"] <= 0 or payload["sampler_pid_excluded"] <= 0:
+            raise ValueError("resource root/sampler PID must be positive")
+        if root_pid is None:
+            root_pid = int(payload["root_pid"])
+            sampler_pid = int(payload["sampler_pid_excluded"])
+        elif payload["root_pid"] != root_pid or payload["sampler_pid_excluded"] != sampler_pid:
+            raise ValueError("resource root/sampler PID identity drift")
+        pids = payload["pids"]
+        if (
+            not isinstance(pids, list)
+            or any(type(pid) is not int or pid <= 0 for pid in pids)
+            or pids != sorted(set(pids))
+            or payload["sampler_pid_excluded"] in pids
+            or payload["root_pid"] not in pids
+            or payload["process_count_tree"] != len(pids)
+        ):
+            raise ValueError("resource pids/process_count_tree identity is invalid")
+        identities = payload["process_identities"]
+        if not isinstance(identities, list) or len(identities) != len(pids):
+            raise ValueError("resource process_identities count mismatch")
+        for pid, process_identity in zip(pids, identities):
+            if not isinstance(process_identity, Mapping) or set(process_identity) != {
+                "pid", "create_time", "identity_available"
+            }:
+                raise ValueError("resource process identity exact schema mismatch")
+            if process_identity["pid"] != pid or process_identity["identity_available"] is not True:
+                raise ValueError("resource process identity is unavailable or mismatched")
+            create_time = process_identity["create_time"]
+            if isinstance(create_time, bool) or not isinstance(create_time, (int, float)) or not math.isfinite(create_time) or create_time < 0:
+                raise ValueError("resource process create_time must be finite and nonnegative")
+        if payload["rss_tree_peak_bytes"] < payload["rss_tree_bytes"] or payload["rss_tree_peak_bytes"] < last_peak:
+            raise ValueError("resource rss_tree_peak_bytes is invalid")
+        last_peak = int(payload["rss_tree_peak_bytes"])
+        start = int(payload["sample_interval_start_monotonic_ns"])
+        end = int(payload["sample_interval_end_monotonic_ns"])
+        if end < start or payload["sample_interval_wall_ns"] != end - start:
+            raise ValueError("resource sample interval is invalid")
+        if last_end is not None and start < last_end:
+            raise ValueError("resource sample intervals overlap backwards")
+        if row["monotonic_ns"] < end:
+            raise ValueError("resource sample event clock precedes interval end")
+        last_end = end
+        valid_intervals.append((start, end))
+        if payload["sample_errors"] != []:
+            raise ValueError("resource sample contains sampling errors")
+        if payload["thermal_errors"] != []:
+            raise ValueError("resource sample contains thermal errors")
+        for flag in ("cpu_temperature_available", "vcgencmd_available", "throttled_available"):
+            if type(payload[flag]) is not bool:
+                raise ValueError(f"resource {flag} must be boolean")
+        temperature = payload["cpu_temperature_c"]
+        if payload["cpu_temperature_available"]:
+            if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not math.isfinite(temperature) or temperature < 0:
+                raise ValueError("resource CPU temperature must be finite and nonnegative")
+            if payload["cpu_temperature_source"] not in {"sysfs", "vcgencmd"}:
+                raise ValueError("resource CPU temperature source is invalid")
+        elif temperature is not None or payload["cpu_temperature_source"] is not None:
+            raise ValueError("unavailable resource CPU temperature must be null")
+        if payload["throttled_available"]:
+            if type(payload["throttled_bits"]) is not int or payload["throttled_bits"] < 0 or not isinstance(payload["throttled_raw"], str):
+                raise ValueError("resource throttled state is invalid")
+        elif payload["throttled_bits"] is not None or payload["throttled_raw"] is not None:
+            raise ValueError("unavailable resource throttled state must be null")
+
+    sampler_ends = [row for row in substantive if row["event_type"] == "resource_sampler_end"]
+    if len(sampler_ends) != 1:
+        raise ValueError(f"resource sidecar requires exactly one sampler end: {event_path}")
+    end_event = sampler_ends[0]
+    if end_event["round"] is not None or end_event["client_id"] != expected_client or end_event["status"] != "succeeded":
+        raise ValueError(f"resource sampler end identity/status is invalid: {event_path}")
+    end_payload = end_event["payload"]
+    end_payload_keys = {
+        "root_pid",
+        "sampler_pid",
+        "shutdown_reason",
+        "shutdown_error",
+        "sample_count",
+        "sampler_cpu_user_seconds",
+        "sampler_cpu_system_seconds",
+        "sampler_rss_peak_bytes",
+        "sampler_rss_peak_available",
+        "sampler_rss_peak_method",
+        "sampler_rss_peak_error",
+        "observer_cost_values_scope",
+        "observer_event_encode_ns",
+        "observer_io_write_ns",
+        "observer_fsync_ns",
+        "observer_event_bytes_written",
+        "observer_event_count",
+        "observer_close_summary_path",
+        "observer_close_summary_is_authoritative",
+    }
+    if not isinstance(end_payload, Mapping) or set(end_payload) != end_payload_keys:
+        raise ValueError("resource sampler end exact schema mismatch")
+    if (
+        end_payload["root_pid"] != root_pid
+        or end_payload["sampler_pid"] != sampler_pid
+        or end_payload["sample_count"] != len(samples)
+        or end_payload["shutdown_error"] is not None
+        or end_payload["shutdown_reason"] not in {"stop_file", "target_exited"}
+    ):
+        raise ValueError("resource sampler end identity/count/error mismatch")
+    for field in (
+        "root_pid", "sampler_pid", "sample_count", "sampler_cpu_user_seconds",
+        "sampler_cpu_system_seconds", "observer_event_encode_ns",
+        "observer_io_write_ns", "observer_fsync_ns",
+        "observer_event_bytes_written", "observer_event_count",
+    ):
+        value = end_payload[field]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+            raise ValueError(f"resource sampler end {field} must be finite and nonnegative")
+    if end_payload["sampler_rss_peak_available"] is not True:
+        raise ValueError("resource sampler RSS peak must be available")
+    peak = end_payload["sampler_rss_peak_bytes"]
+    if type(peak) is not int or peak < 0 or end_payload["sampler_rss_peak_error"] is not None:
+        raise ValueError("resource sampler RSS peak is invalid")
+    if not isinstance(end_payload["sampler_rss_peak_method"], str) or not end_payload["sampler_rss_peak_method"]:
+        raise ValueError("resource sampler RSS peak method is invalid")
+    if (
+        end_payload["observer_cost_values_scope"] != "before_resource_sampler_end_emit"
+        or end_payload["observer_close_summary_is_authoritative"] is not True
+        or Path(str(end_payload["observer_close_summary_path"])).name != "resource.close.json"
+    ):
+        raise ValueError("resource sampler observer-cost boundary is invalid")
+
+    close = json.loads(
+        close_path.read_text(encoding="utf-8"),
+        parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+    )
+    _finite_json(close)
+    close_keys = {
+        "schema_version", "run_id", "attempt_id", "host_id", "producer",
+        "process_instance_id", "observer_flower_serialize_ns",
+        "observer_event_encode_ns", "observer_io_write_ns", "observer_fsync_ns",
+        "observer_total_ns", "observer_event_bytes_written", "observer_event_count",
+        "observer_reporting_tail_bytes",
+    }
+    if set(close) != close_keys:
+        raise ValueError("resource close summary exact schema mismatch")
+    for key in ("schema_version", "run_id", "attempt_id", "host_id", "producer", "process_instance_id"):
+        if close[key] != identity[key]:
+            raise ValueError("resource close summary identity mismatch")
+    close_components = [
+        close["observer_flower_serialize_ns"], close["observer_event_encode_ns"],
+        close["observer_io_write_ns"], close["observer_fsync_ns"],
+    ]
+    if any(type(value) is not int or value < 0 for value in close_components):
+        raise ValueError("resource close summary overhead must be nonnegative")
+    if close["observer_total_ns"] != sum(close_components):
+        raise ValueError("resource close summary overhead total mismatch")
+    if close["observer_event_count"] != len(rows):
+        raise ValueError("resource close summary event count mismatch")
+    if close["observer_event_bytes_written"] != event_path.stat().st_size:
+        raise ValueError("resource close summary byte count mismatch")
+    if type(close["observer_reporting_tail_bytes"]) is not int or close["observer_reporting_tail_bytes"] < 0:
+        raise ValueError("resource close summary tail bytes must be nonnegative")
+    return {
+        "sample_count": len(samples),
+        "valid_intervals": valid_intervals,
+        "event_file": _portable_evidence_path(root, event_path),
+        "close_summary": _portable_evidence_path(root, close_path),
+        "event_sha256": _sha256_file(event_path),
+        "close_sha256": _sha256_file(close_path),
+    }
+
+
+def _formal_resource_samples_per_client_round(on_root: Path) -> int:
+    minimum: int | None = None
+    for client_id, host_root in (
+        ("C1", on_root / "raw" / "pi"),
+        ("C2", on_root / "raw" / "pc"),
+    ):
+        client_events = _read_events(host_root / "events.jsonl")
+        resource_validation = _validate_formal_resource_sidecar(host_root, client_id)
+        valid_intervals = resource_validation["valid_intervals"]
+        for round_idx in (1, 2):
+            starts = [
+                row
+                for row in client_events
+                if row.get("event_type") == "client_fit_start"
+                and row.get("client_id") == client_id
+                and row.get("round") == round_idx
+            ]
+            ends = [
+                row
+                for row in client_events
+                if row.get("event_type") == "client_fit_end"
+                and row.get("client_id") == client_id
+                and row.get("round") == round_idx
+            ]
+            if len(starts) != 1 or len(ends) != 1:
+                raise ValueError(f"{client_id} round {round_idx} fit interval is invalid")
+            start_ns = int(starts[0]["monotonic_ns"])
+            end_ns = int(ends[0]["monotonic_ns"])
+            overlapping = 0
+            for sample_start, sample_end in valid_intervals:
+                if sample_start <= end_ns and sample_end >= start_ns:
+                    overlapping += 1
+            minimum = overlapping if minimum is None else min(minimum, overlapping)
+    if minimum is None or minimum < 1:
+        raise ValueError("formal smoke lacks one resource sample per client round")
+    return minimum
+
+
+def _run_formal_bound_gate(
+    binding: Mapping[str, Any], output_root: Path, group_id: str
+) -> dict[str, Any]:
+    from scripts.run_iotj_confirmation_observability import (
+        DEFAULT_PC_RUNTIME_ROOT,
+        FormalSmokeConfig,
+        ProductionRuntime,
+        REPO_ROOT,
+        build_production_hooks,
+        run_noncanonical_smoke_attempt,
+    )
+
+    frozen = binding.get("_frozen")
+    frozen_run = binding.get("_frozen_run")
+    if frozen is None or frozen_run is None:
+        raise ValueError("formal runner requires validated frozen input objects")
+    root = _prepare_output_root(Path(output_root))
+    initial = _create_frozen_initial_checkpoint(
+        root / "frozen_initial_checkpoint.pth", group_id
+    )
+    runtime = ProductionRuntime(
+        frozen=frozen,
+        frozen_run=frozen_run,
+        deployments={},
+        ecs_host=os.environ.get("IOTJ_ECS_HOST", "root@121.40.139.213"),
+        pi_host=os.environ.get("IOTJ_PI_HOST", "gaps@192.168.31.184"),
+        validator=REPO_ROOT / "scripts" / "validate_iotj_confirmation_attempt.py",
+        poll_seconds=1.0,
+        timeout_seconds=1800.0,
+        pc_runtime_root=Path(
+            os.environ.get("IOTJ_PC_RUNTIME_ROOT", str(DEFAULT_PC_RUNTIME_ROOT))
+        ),
+    )
+    attempts: dict[str, Path] = {}
+    artifacts: dict[str, dict[str, Any]] = {}
+    sidecars: dict[str, Any] = {}
+    resource_sidecars: dict[str, Any] = {}
+    for mode in ("off", "on"):
+        smoke = FormalSmokeConfig(
+            observer_enabled=mode == "on",
+            mode=mode,
+            trace_output="{ecs_raw}/common_trace.jsonl",
+            initial_checkpoint="{ecs_root}/frozen_initial_checkpoint.pth",
+            initial_checkpoint_source=Path(initial["path"]),
+            initial_checkpoint_sha256=initial["raw_sha256"],
+        )
+        attempt_root = root / mode
+        run_noncanonical_smoke_attempt(
+            attempt_root,
+            run_id=frozen_run.run_id,
+            mode=mode,
+            provenance=frozen_run.provenance,
+            hooks=build_production_hooks(runtime, smoke=smoke),
+        )
+        attempts[mode] = attempt_root
+        sidecars[mode] = _validate_observer_sidecars(
+            attempt_root, enabled=mode == "on"
+        )
+        resource_sidecars[mode] = {
+            "C1": _validate_formal_resource_sidecar(
+                attempt_root / "raw" / "pi", "C1"
+            ),
+            "C2": _validate_formal_resource_sidecar(
+                attempt_root / "raw" / "pc", "C2"
+            ),
+        }
+        artifacts[mode] = _capture_formal_artifacts(attempt_root)
+    # Formal topology has one OFF and one ON.  Reuse OFF as the deterministic
+    # reference in the three-way classifier; local Gate separately proves the
+    # OFF-A/OFF-B environment repeatability contract.
+    comparison = compare_fingerprints(
+        artifacts["off"], artifacts["on"], artifacts["off"]
+    )
+    resource_minimum = _formal_resource_samples_per_client_round(attempts["on"])
+    messages = _message_fingerprints({"attempt": attempts["on"]})
+    try:
+        message_cross_validation = _cross_validate_message_audits(
+            messages, artifacts["on"]["common_trace"]
+        )
+        message_cross_validation["status"] = "matched"
+    except ValueError as exc:
+        message_cross_validation = {
+            "status": "observer_path_mutation",
+            "error": str(exc),
+        }
+        comparison["status"] = "observer_path_mutation"
+        comparison["equivalent"] = False
+        comparison["on_equal_to_off"] = False
+        comparison["mismatches"] = [
+            *comparison["mismatches"],
+            f"message_common_trace_cross_validation: {exc}",
+        ]
+    return {
+        "status": comparison["status"],
+        "equivalent": comparison["equivalent"],
+        "max_abs_delta": comparison["max_abs_delta"],
+        "modes": ["off", "on"],
+        "resource_samples_per_client_round": resource_minimum,
+        "message_fingerprints": messages,
+        "message_common_trace_cross_validation": message_cross_validation,
+        "observer_sidecars": sidecars,
+        "resource_sidecars": resource_sidecars,
+        "frozen_initial_checkpoint": {
+            **initial,
+            "path": _portable_evidence_path(root, Path(initial["path"])),
+        },
+        "artifact_hashes": comparison["artifact_hashes"],
+        "mismatches": comparison["mismatches"],
+    }
+
+
+def run_formal_topology_gate(
+    protocol_manifest: Path,
+    output_root: Path,
+    group_id: str,
+    *,
+    frozen_loader: Callable[[Path], Mapping[str, Any]] | None = None,
+    runner: Callable[[Mapping[str, Any], Path, str], Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Bind and execute the noncanonical ECS/Pi/PC OFF/ON smoke lifecycle."""
+
+    group = str(group_id).upper()
+    if group not in _GROUPS:
+        raise ValueError(f"group_id must be one of {_GROUPS}, got {group_id!r}")
+    loader = frozen_loader or (lambda path: _load_formal_frozen_binding(path, group))
+    bound = dict(loader(Path(protocol_manifest)))
+    required = {
+        "protocol_manifest_sha256": 64,
+        "source_archive_sha256": 64,
+        "dataset_manifest_sha256": 64,
+        "regular_members_sha256": 64,
+        "confirmation_commit": 40,
+        "command_manifest_sha256": 64,
+        "archive_sha256": 64,
+    }
+    for key, length in required.items():
+        value = bound.get(key)
+        if not isinstance(value, str) or len(value) != length or any(
+            character not in "0123456789abcdef" for character in value.lower()
+        ) or value != value.lower():
+            raise ValueError(f"formal frozen binding has invalid {key}")
+    if bound["archive_sha256"] != bound["source_archive_sha256"]:
+        raise ValueError("formal source archive bytes differ from the frozen binding")
+    if bound.get("group_id") != group or bound.get("seed") != 42:
+        raise ValueError("formal frozen binding differs from requested group/seed-42")
+    execute = runner or _run_formal_bound_gate
+    result = dict(execute(bound, Path(output_root), group))
+    report = {
+        "schema_version": "iotj.observer_equivalence.formal.v1",
+        "topology": "ECS server + Raspberry Pi C1 + PC C2",
+        "group_id": group,
+        "binding": {key: value for key, value in bound.items() if not key.startswith("_")},
+        **result,
+    }
+    if runner is None:
+        _atomic_write_json(Path(output_root) / "formal_observer_equivalence_report.json", report)
+    return report
+
+
 def main() -> None:
+    if "--trace-child-role" in sys.argv[1:]:
+        trace_parser = argparse.ArgumentParser(add_help=False)
+        trace_parser.add_argument("--trace-child-role", choices=("server",), required=True)
+        trace_parser.add_argument("--trace-output", type=Path, required=True)
+        trace_parser.add_argument("--trace-initial-checkpoint", type=Path, required=True)
+        trace_parser.add_argument("delegated", nargs=argparse.REMAINDER)
+        trace_args = trace_parser.parse_args()
+        delegated = list(trace_args.delegated)
+        if delegated and delegated[0] == "--":
+            delegated = delegated[1:]
+        raise SystemExit(
+            _run_traced_server(
+                trace_args.trace_output,
+                trace_args.trace_initial_checkpoint,
+                delegated,
+            )
+        )
     parser = argparse.ArgumentParser(
-        description="Run the local OFF-A/ON/OFF-B observer equivalence Gate"
+        description="Run the local or formal-topology observer equivalence Gate"
     )
     parser.add_argument("--group", required=True, choices=_GROUPS)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--formal-topology", action="store_true")
+    parser.add_argument("--protocol-manifest", type=Path)
     args = parser.parse_args()
     try:
-        report = run_local_gate(args.output_root, args.group)
+        if args.formal_topology:
+            if args.protocol_manifest is None:
+                parser.error("--formal-topology requires --protocol-manifest")
+            report = run_formal_topology_gate(
+                args.protocol_manifest, args.output_root, args.group
+            )
+        else:
+            if args.protocol_manifest is not None:
+                parser.error("--protocol-manifest requires --formal-topology")
+            report = run_local_gate(args.output_root, args.group)
     except Exception as exc:
         print(f"observer equivalence Gate refused to run: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc

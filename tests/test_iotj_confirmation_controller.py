@@ -2720,3 +2720,137 @@ def test_production_cleanup_is_best_effort_and_aggregates_every_error(
         "RuntimeError: tunnel terminate exploded",
     ):
         assert detail in controller_log
+
+
+def test_formal_smoke_config_is_explicit_noncanonical_and_fixed() -> None:
+    config = controller.FormalSmokeConfig(
+        observer_enabled=False,
+        trace_output="/attempt/common_trace.jsonl",
+        initial_checkpoint="/attempt/frozen_initial_checkpoint.pth",
+    )
+    assert config.namespace == "noncanonical_smoke"
+    assert config.rounds == 2
+    assert config.local_epochs == 1
+    assert config.observer_enabled is False
+    with pytest.raises(ValueError, match="rounds"):
+        dataclass_replace(config, rounds=25)
+    with pytest.raises(ValueError, match="namespace"):
+        dataclass_replace(config, namespace="canonical")
+
+
+def test_smoke_commands_are_ephemeral_and_do_not_mutate_frozen_manifest(
+    tmp_path: Path,
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    manifest = next(iter(fixture["commands"].values()))
+    original = copy.deepcopy(manifest["commands"])
+    config = controller.FormalSmokeConfig(
+        observer_enabled=False,
+        trace_output="/attempt/common_trace.jsonl",
+        initial_checkpoint="/attempt/frozen_initial_checkpoint.pth",
+    )
+
+    derived = controller.derive_noncanonical_smoke_commands(manifest, config)
+
+    assert manifest["commands"] == original
+    assert manifest["algorithm_config_sha256"] == fixture["protocol"]["schedule"][0][
+        "algorithm_config_sha256"
+    ]
+    assert controller._command_option(derived["server_ecs"], "--rounds") == "2"
+    assert controller._command_option(derived["client_c1_pi"], "--local-epochs") == "1"
+    assert controller._command_option(derived["client_c2_pc"], "--local-epochs") == "1"
+    assert "--observer-context" not in derived["server_ecs"]
+    assert "--observer-events" not in derived["server_ecs"]
+    assert derived["smoke_identity"]["noncanonical_smoke"] is True
+    assert derived["smoke_identity"]["algorithm_config_sha256"] == manifest[
+        "algorithm_config_sha256"
+    ]
+
+
+def test_default_production_hook_path_is_unchanged_without_explicit_smoke() -> None:
+    signature = inspect.signature(controller.build_production_hooks)
+    assert signature.parameters["smoke"].default is None
+
+
+def test_noncanonical_smoke_lifecycle_never_allocates_or_marks_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    events: list[str] = []
+    hooks = LifecycleHooks(
+        prepare=lambda _attempt: events.append("prepare"),
+        launch_server=lambda _attempt: events.append("server") or object(),
+        start_tunnels=lambda _attempt: events.append("tunnels") or [],
+        launch_pi_client=lambda _attempt: events.append("pi-client") or object(),
+        launch_pi_sampler=lambda _attempt, _client: events.append("pi-sampler") or object(),
+        launch_pc_client=lambda _attempt: events.append("pc-client") or object(),
+        launch_pc_sampler=lambda _attempt, _client: events.append("pc-sampler") or object(),
+        monitor_server=lambda _attempt, _server: events.append("monitor"),
+        stop_sampler=lambda _attempt, _sampler: events.append("stop-sampler"),
+        wait_sampler=lambda _attempt, _sampler: events.append("wait-sampler"),
+        recover_evidence=lambda _attempt: events.append("recover"),
+        validate_attempt=lambda _attempt: pytest.fail("smoke called 25-round validator"),
+        cleanup_owned=lambda _owned: events.append("cleanup-owned") or [],
+        cleanup_tunnels=lambda _tunnels: events.append("cleanup-tunnels"),
+    )
+    monkeypatch.setattr(
+        controller,
+        "allocate_attempt",
+        lambda *_args, **_kwargs: pytest.fail("smoke allocated canonical attempt"),
+    )
+    monkeypatch.setattr(
+        controller,
+        "mark_attempt",
+        lambda *_args, **_kwargs: pytest.fail("smoke wrote attempt registry"),
+    )
+    output = tmp_path / "formal-smoke" / "off"
+
+    attempt = controller.run_noncanonical_smoke_attempt(
+        output,
+        run_id="c12_to_c5__b2__s42",
+        mode="off",
+        provenance=PROVENANCE,
+        hooks=hooks,
+    )
+
+    assert attempt.path == output
+    assert json.loads((output / "noncanonical_smoke.json").read_text(encoding="utf-8"))[
+        "noncanonical_smoke"
+    ] is True
+    assert not (output / "attempt_status.json").exists()
+    assert "recover" in events
+    assert events.count("stop-sampler") == 2
+    assert events.count("wait-sampler") == 2
+
+
+def test_noncanonical_smoke_failure_retains_output_and_cleans_all_owned(
+    tmp_path: Path,
+) -> None:
+    events: list[str] = []
+    hooks = LifecycleHooks(
+        prepare=lambda _attempt: events.append("prepare"),
+        launch_server=lambda _attempt: events.append("server") or object(),
+        start_tunnels=lambda _attempt: [object()],
+        launch_pi_client=lambda _attempt: (_ for _ in ()).throw(RuntimeError("pi failed")),
+        launch_pi_sampler=lambda *_args: pytest.fail("unexpected sampler"),
+        launch_pc_client=lambda *_args: pytest.fail("unexpected PC"),
+        launch_pc_sampler=lambda *_args: pytest.fail("unexpected PC sampler"),
+        monitor_server=lambda *_args: pytest.fail("unexpected monitor"),
+        stop_sampler=lambda *_args: None,
+        wait_sampler=lambda *_args: None,
+        recover_evidence=lambda *_args: pytest.fail("failed smoke recovered"),
+        validate_attempt=lambda *_args: pytest.fail("failed smoke validated"),
+        cleanup_owned=lambda owned: events.append(f"cleanup-owned:{len(owned)}") or [],
+        cleanup_tunnels=lambda tunnels: events.append(f"cleanup-tunnels:{len(tunnels)}"),
+    )
+    output = tmp_path / "failed-smoke"
+    with pytest.raises(RuntimeError, match="pi failed"):
+        controller.run_noncanonical_smoke_attempt(
+            output,
+            run_id="c12_to_c5__b2__s42",
+            mode="on",
+            provenance=PROVENANCE,
+            hooks=hooks,
+        )
+    assert output.is_dir()
+    assert "cleanup-owned:1" in events
+    assert "cleanup-tunnels:1" in events
