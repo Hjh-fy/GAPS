@@ -5,7 +5,7 @@ import random
 import subprocess
 import sys
 from collections import OrderedDict
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import pytest
 import numpy as np
@@ -1022,6 +1022,70 @@ def test_training_sidecar_validator_rejects_float_sequence(
         )
 
 
+def test_training_sidecar_rejects_substantive_payload_extra_key(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "training-extra-payload"
+    _write_training_sidecars(root)
+
+    def mutate(rows: list[dict]) -> None:
+        target = next(row for row in rows if row["event_type"] == "client_train_end")
+        target["payload"]["unexpected_payload_key"] = 7
+
+    _rewrite_event_rows(root / "client_c1_events.jsonl", mutate)
+    with pytest.raises(ValueError, match="schema|payload|client_train_end"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_rejects_event_status_outside_frozen_contract(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "training-status-contract"
+    _write_training_sidecars(root)
+
+    def mutate(rows: list[dict]) -> None:
+        target = next(row for row in rows if row["event_type"] == "client_fit_start")
+        assert target["status"] == "started"
+        target["status"] = "succeeded"
+
+    _rewrite_event_rows(root / "client_c1_events.jsonl", mutate)
+    with pytest.raises(ValueError, match="status|client_fit_start|contract"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_rejects_overhead_reference_identity_and_status_drift(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "training-overhead-reference"
+    _write_training_sidecars(root)
+
+    def mutate(rows: list[dict]) -> None:
+        substantive = next(
+            row
+            for row in rows
+            if row["event_type"] == "client_fit_start" and row["round"] == 1
+        )
+        overhead = next(
+            row
+            for row in rows
+            if row["event_type"] == "observer_overhead"
+            and row["payload"]["observed_event_id"] == substantive["event_id"]
+        )
+        overhead["round"] = 2
+        overhead["client_id"] = 42.0
+        overhead["status"] = "failed"
+
+    _rewrite_event_rows(root / "client_c1_events.jsonl", mutate)
+    with pytest.raises(ValueError, match="overhead|round|client|status|reference"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
 def _resource_payload(start_ns: int, end_ns: int, *, rss: int = 1024) -> dict:
     return {
         "root_pid": 101,
@@ -1207,6 +1271,44 @@ def test_formal_resource_sidecar_rejects_float_sampler_end_count(
         )
 
 
+def test_formal_resource_sidecar_rejects_float_process_identity_pid(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-float-process-pid"
+    _write_resource_sidecar(root)
+
+    def mutate(rows: list[dict]) -> None:
+        sample = next(row for row in rows if row["event_type"] == "resource_sample")
+        assert sample["payload"]["process_identities"][0]["pid"] == 101
+        sample["payload"]["process_identities"][0]["pid"] = 101.0
+
+    _rewrite_event_rows(root / "resource.jsonl", mutate)
+    with pytest.raises(ValueError, match="pid|type|identity"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
+
+
+def test_formal_resource_sidecar_rejects_close_path_not_recovered_file(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-wrong-close-path"
+    _write_resource_sidecar(root)
+    wrong_close = tmp_path / "outside" / "resource.close.json"
+
+    def mutate(rows: list[dict]) -> None:
+        sampler_end = next(
+            row for row in rows if row["event_type"] == "resource_sampler_end"
+        )
+        sampler_end["payload"]["observer_close_summary_path"] = str(wrong_close)
+
+    _rewrite_event_rows(root / "resource.jsonl", mutate)
+    with pytest.raises(ValueError, match="close|path|recover|outside|regular"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
+
+
 def test_portable_evidence_path_rejects_absolute_or_escaping_paths(
     tmp_path: Path,
 ) -> None:
@@ -1241,8 +1343,11 @@ def test_formal_capture_includes_raw_checkpoint_sha_boundaries(
             json.dumps({"clients": [{"client_id": 1}, {"client_id": 2}]}),
             encoding="utf-8",
         )
+        semantic_after_da = training / f"semantic_after_da_round_{round_idx:03d}.json"
+        semantic_after_da.write_text("{}", encoding="utf-8")
         (training / f"domain_adapt_round_{round_idx:03d}.json").write_text(
-            "{}", encoding="utf-8"
+            json.dumps({"semantic_protos_after_da": str(semantic_after_da)}),
+            encoding="utf-8",
         )
     monkeypatch.setattr(
         gate_module,
@@ -1286,3 +1391,141 @@ def test_formal_capture_includes_raw_checkpoint_sha_boundaries(
     assert artifacts["final_adapted_checkpoint_raw"]["comparison"] == {
         "raw_file_sha256": "b" * 64
     }
+
+
+def test_da_diagnostics_compare_semantic_path_and_referenced_json_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def write_attempt(
+        root: Path, *, semantic_prefix: str, semantic_value: int
+    ) -> None:
+        training = root / "raw" / "ecs" / "training"
+        training.mkdir(parents=True)
+        for name in ("server_latest.pth", "server_latest_adapted.pth"):
+            (training / name).write_bytes(name.encode("ascii"))
+        (root / "raw" / "ecs" / "common_trace.jsonl").write_text(
+            "{}\n", encoding="utf-8"
+        )
+        for round_idx in (1, 2):
+            for stem in ("prototype_stats", "semantic_protos"):
+                (training / f"{stem}_round_{round_idx:03d}.json").write_text(
+                    "{}", encoding="utf-8"
+                )
+            (training / f"client_stats_round_{round_idx:03d}.json").write_text(
+                json.dumps({"clients": [{"client_id": 1}, {"client_id": 2}]}),
+                encoding="utf-8",
+            )
+            semantic = training / f"{semantic_prefix}_round_{round_idx:03d}.json"
+            semantic.write_text(
+                json.dumps({"round": round_idx, "value": semantic_value}),
+                encoding="utf-8",
+            )
+            (training / f"domain_adapt_round_{round_idx:03d}.json").write_text(
+                json.dumps(
+                    {
+                        "loss": 1.0,
+                        "semantic_protos_after_da": str(semantic),
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+    base_root = tmp_path / "off-a"
+    changed_path_root = tmp_path / "on-path"
+    changed_content_root = tmp_path / "on-content"
+    migrated_root = tmp_path / "formal-recovered"
+    write_attempt(base_root, semantic_prefix="semantic_after_da", semantic_value=1)
+    write_attempt(
+        changed_path_root,
+        semantic_prefix="changed_semantic_after_da",
+        semantic_value=1,
+    )
+    write_attempt(
+        changed_content_root,
+        semantic_prefix="semantic_after_da",
+        semantic_value=2,
+    )
+    write_attempt(
+        migrated_root,
+        semantic_prefix="semantic_after_da",
+        semantic_value=1,
+    )
+    migrated_training = migrated_root / "raw" / "ecs" / "training"
+    producer_root = PurePosixPath("/root/GAPS/formal-attempt/raw/ecs/training")
+    (migrated_training / "run_config.json").write_text(
+        json.dumps({"args": {"output_dir": str(producer_root)}}),
+        encoding="utf-8",
+    )
+    for round_idx in (1, 2):
+        diagnostics_path = (
+            migrated_training / f"domain_adapt_round_{round_idx:03d}.json"
+        )
+        diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+        diagnostics["semantic_protos_after_da"] = str(
+            producer_root / f"semantic_after_da_round_{round_idx:03d}.json"
+        )
+        diagnostics_path.write_text(json.dumps(diagnostics), encoding="utf-8")
+    migrated_round_one = migrated_training / "domain_adapt_round_001.json"
+    migrated_round_one_value = json.loads(
+        migrated_round_one.read_text(encoding="utf-8")
+    )
+    wrong_root_value = dict(migrated_round_one_value)
+    wrong_root_value["semantic_protos_after_da"] = str(
+        PurePosixPath("/root/GAPS/wrong-attempt/raw/ecs/training")
+        / "semantic_after_da_round_001.json"
+    )
+    migrated_round_one.write_text(json.dumps(wrong_root_value), encoding="utf-8")
+    with pytest.raises(ValueError, match="root|outside|escape|path|regular"):
+        gate_module._domain_adapt_diagnostics_fingerprint(
+            migrated_round_one, migrated_training
+        )
+    migrated_round_one.write_text(
+        json.dumps(migrated_round_one_value), encoding="utf-8"
+    )
+
+    monkeypatch.setattr(
+        gate_module,
+        "tensor_fingerprint",
+        lambda path: {
+            "artifact_sha256": ("a" if "adapted" not in path.name else "b") * 64,
+            "content_sha256": "c" * 64,
+            "comparison": {"path_kind": path.name},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "json_fingerprint",
+        lambda *_args, **_kwargs: {
+            "artifact_sha256": "d" * 64,
+            "content_sha256": "e" * 64,
+            "comparison": {},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "_common_trace_fingerprint",
+        lambda _path: {
+            "artifact_sha256": "f" * 64,
+            "content_sha256": "1" * 64,
+            "comparison": {},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "_fixed_adapted_logits",
+        lambda *_args, **_kwargs: {
+            "content_sha256": "2" * 64,
+            "comparison": {},
+        },
+    )
+
+    base = gate_module._capture_formal_artifacts(base_root)
+    changed_path = gate_module._capture_formal_artifacts(changed_path_root)
+    changed_content = gate_module._capture_formal_artifacts(changed_content_root)
+    migrated = gate_module._capture_formal_artifacts(migrated_root)
+    path_result = compare_fingerprints(base, changed_path, base)
+    content_result = compare_fingerprints(base, changed_content, base)
+    migrated_result = compare_fingerprints(base, migrated, base)
+    assert not path_result["equivalent"], "semantic_protos_after_da path was ignored"
+    assert not content_result["equivalent"], "referenced semantic JSON was ignored"
+    assert migrated_result["equivalent"], "producer absolute prefix was not migrated"

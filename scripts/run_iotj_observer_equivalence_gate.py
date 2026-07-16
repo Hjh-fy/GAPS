@@ -23,7 +23,7 @@ import sys
 import time
 from collections import OrderedDict
 from collections.abc import Mapping
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import AbstractSet, Any, Callable
 
 import numpy as np
@@ -125,6 +125,24 @@ def _portable_evidence_path(root: Path, path: Path) -> str:
     if not relative.parts or any(part == ".." for part in relative.parts):
         raise ValueError(f"evidence path escapes root: {candidate}")
     return relative.as_posix()
+
+
+def _require_exact_recovered_file_reference(value: Any, recovered: Path) -> Path:
+    """Bind an exact JSON string path to one already recovered regular file."""
+
+    if type(value) is not str or not value:
+        raise ValueError("recovered-file reference must have exact nonempty string type")
+    declared = Path(value)
+    if any(part == ".." for part in declared.parts):
+        raise ValueError(f"recovered-file reference contains traversal: {value!r}")
+    candidate = declared if declared.is_absolute() else Path(recovered).parent / declared
+    candidate = _require_regular_file(candidate)
+    expected = _require_regular_file(Path(recovered))
+    if candidate.resolve(strict=True) != expected.resolve(strict=True):
+        raise ValueError(
+            f"reported recovered-file reference is not the recovered file: {value!r}"
+        )
+    return expected
 
 
 def _finite_json(value: Any, path: tuple[Any, ...] = ()) -> None:
@@ -455,6 +473,137 @@ def json_fingerprint(
         "artifact_sha256": _sha256_bytes(raw),
         "content_sha256": _sha256_bytes(content),
         "comparison": normalized,
+    }
+
+
+def _load_finite_json_file(path: Path) -> tuple[Path, bytes, Any]:
+    input_path = _require_regular_file(Path(path))
+    raw = input_path.read_bytes()
+    try:
+        value = json.loads(
+            raw.decode("utf-8"),
+            parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+        )
+    except Exception as exc:
+        raise ValueError(f"invalid JSON input {input_path}: {exc}") from exc
+    _finite_json(value)
+    return input_path, raw, value
+
+
+def _declared_path_parts(
+    value: str,
+) -> tuple[PurePosixPath | PureWindowsPath, bool]:
+    """Parse producer paths without assuming the verifier's operating system."""
+
+    windows_path = PureWindowsPath(value)
+    posix_path = PurePosixPath(value)
+    if windows_path.is_absolute():
+        declared = windows_path
+        is_absolute = True
+    elif posix_path.is_absolute():
+        declared = posix_path
+        is_absolute = True
+    else:
+        if windows_path.drive or windows_path.root or posix_path.root:
+            raise ValueError("declared path is rooted but not fully absolute")
+        declared = windows_path if "\\" in value else posix_path
+        is_absolute = False
+    if not declared.parts or any(part == ".." for part in declared.parts):
+        raise ValueError("declared path is empty or contains traversal")
+    return declared, is_absolute
+
+
+def _relative_to_recorded_output(
+    root: Path, declared: PurePosixPath | PureWindowsPath
+) -> tuple[str, ...]:
+    _, _, run_config = _load_finite_json_file(root / "run_config.json")
+    if (
+        not isinstance(run_config, Mapping)
+        or not isinstance(run_config.get("args"), Mapping)
+        or type(run_config["args"].get("output_dir")) is not str
+    ):
+        raise ValueError("run_config lacks exact output_dir binding for DA path recovery")
+    recorded_root, recorded_is_absolute = _declared_path_parts(
+        run_config["args"]["output_dir"]
+    )
+    if not recorded_is_absolute or type(recorded_root) is not type(declared):
+        raise ValueError("recorded DA output root is not an absolute safe path")
+    try:
+        return declared.relative_to(recorded_root).parts
+    except ValueError as exc:
+        raise ValueError(
+            "semantic_protos_after_da escapes the recorded output root"
+        ) from exc
+
+
+def _domain_adapt_diagnostics_fingerprint(
+    diagnostics_path: Path, output_root: Path
+) -> dict[str, Any]:
+    """Fingerprint DA diagnostics and their referenced semantic-prototype JSON."""
+
+    root = Path(output_root)
+    _require_no_link_ancestors(root)
+    if _is_reparse_or_link(root) or not root.is_dir():
+        raise ValueError(f"domain-adapt output root is not a regular directory: {root}")
+    root = root.resolve(strict=True)
+    diagnostics_path, diagnostics_raw, diagnostics = _load_finite_json_file(
+        diagnostics_path
+    )
+    _portable_evidence_path(root, diagnostics_path)
+    if not isinstance(diagnostics, Mapping):
+        raise ValueError("domain-adapt diagnostics must be a JSON object")
+    diagnostics = copy.deepcopy(dict(diagnostics))
+    declared_value = diagnostics.get("semantic_protos_after_da")
+    if type(declared_value) is not str or not declared_value:
+        raise ValueError(
+            "semantic_protos_after_da must have exact nonempty string path type"
+        )
+    declared, declared_is_absolute = _declared_path_parts(declared_value)
+    native_declared = Path(declared_value)
+    if native_declared.is_absolute():
+        try:
+            relative_parts = native_declared.relative_to(root).parts
+        except ValueError:
+            relative_parts = _relative_to_recorded_output(root, declared)
+    elif declared_is_absolute:
+        relative_parts = _relative_to_recorded_output(root, declared)
+    else:
+        relative_parts = declared.parts
+    if not relative_parts or any(part == ".." for part in relative_parts):
+        raise ValueError("semantic_protos_after_da is not output-root-relative")
+
+    semantic_candidate = root.joinpath(*relative_parts)
+    stable_relative = _portable_evidence_path(root, semantic_candidate)
+    semantic_path, semantic_raw, semantic_json = _load_finite_json_file(
+        semantic_candidate
+    )
+    if semantic_path.resolve(strict=True) != semantic_candidate.resolve(strict=True):
+        raise ValueError("semantic_protos_after_da did not resolve to the bound file")
+    diagnostics["semantic_protos_after_da"] = stable_relative
+    normalized_diagnostics = _normalize_json(
+        {"metrics": diagnostics}, VOLATILE_JSON_PATHS
+    )
+    normalized_semantic_json = _normalize_json(
+        semantic_json, VOLATILE_JSON_PATHS
+    )
+    semantic_sha256 = _sha256_bytes(semantic_raw)
+    comparison = {
+        "metrics": normalized_diagnostics["metrics"],
+        "semantic_protos_after_da_file": {
+            "path": stable_relative,
+            "byte_sha256": semantic_sha256,
+            "normalized_json": normalized_semantic_json,
+        },
+    }
+    artifact_manifest = {
+        "diagnostics_byte_sha256": _sha256_bytes(diagnostics_raw),
+        "semantic_protos_after_da_byte_sha256": semantic_sha256,
+    }
+    return {
+        "kind": "domain_adapt_diagnostics",
+        "artifact_sha256": _sha256_bytes(_canonical_bytes(artifact_manifest)),
+        "content_sha256": _sha256_bytes(_canonical_bytes(comparison)),
+        "comparison": comparison,
     }
 
 
@@ -1066,11 +1215,11 @@ def _run_traced_server(
                 "comparison"
             ]
             da_path = output_dir / f"domain_adapt_round_{int(server_round):03d}.json"
-            da_value = json.loads(da_path.read_text(encoding="utf-8"))
-            da_value.pop("semantic_protos_after_da", None)
-            round_comparison["domain_adapt_diagnostics"] = _normalize_json(
-                {"metrics": da_value}, VOLATILE_JSON_PATHS
-            )["metrics"]
+            round_comparison["domain_adapt_diagnostics"] = (
+                _domain_adapt_diagnostics_fingerprint(da_path, output_dir)[
+                    "comparison"
+                ]
+            )
         _append_common_trace(
             trace_path,
             {
@@ -1464,18 +1613,8 @@ def _capture_artifacts(attempt: Mapping[str, Any]) -> dict[str, Any]:
                 {"metrics": client},
             )
         diagnostics_path = output / f"domain_adapt_round_{round_idx:03d}.json"
-        diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
-        semantic_path = diagnostics.pop("semantic_protos_after_da", None)
-        artifacts[f"domain_adapt_round_{round_idx}"] = _json_projection(
-            attempt_root / f"domain_adapt_round_{round_idx}.json",
-            {
-                "metrics": diagnostics,
-                "provenance": {
-                    "wall_time_utc": "not-collected",
-                    "pid": 0,
-                    "path": semantic_path,
-                },
-            },
+        artifacts[f"domain_adapt_round_{round_idx}"] = (
+            _domain_adapt_diagnostics_fingerprint(diagnostics_path, output)
         )
     return artifacts
 
@@ -1550,6 +1689,143 @@ def _validate_application_audit(audit: Any, *, direction: str) -> None:
         or any(character not in "0123456789abcdef" for character in sha256)
     ):
         raise ValueError(f"{direction} application audit SHA-256 is invalid")
+
+
+def _require_exact_nonnegative_int(
+    payload: Mapping[str, Any], field: str, *, event_type: str
+) -> int:
+    value = payload[field]
+    if type(value) is not int or value < 0:
+        raise ValueError(
+            f"{event_type} payload {field} must have exact nonnegative integer type"
+        )
+    return value
+
+
+def _validate_training_substantive_event(row: Mapping[str, Any]) -> None:
+    """Apply one frozen, event-specific schema to every training event row."""
+
+    event_type = row.get("event_type")
+    producer = row.get("producer")
+    if type(event_type) is not str or type(producer) is not str:
+        raise ValueError("training event type/producer must have exact string type")
+    if type(row.get("round")) is not int or row["round"] not in {1, 2}:
+        raise ValueError(f"{event_type} round must be exact frozen integer 1/2")
+    payload = row.get("payload")
+    if not isinstance(payload, Mapping):
+        raise ValueError(f"{event_type} payload must be a JSON object")
+
+    if producer == "client":
+        contracts = {
+            "client_fit_start": ("started", set()),
+            "client_train_start": ("started", set()),
+            "client_train_end": ("succeeded", {"client_train_core_ns"}),
+            "client_fit_end": ("succeeded", {"client_fit_callback_ns"}),
+        }
+        if event_type not in contracts:
+            raise ValueError(f"unknown client training event type: {event_type}")
+        client_id = row.get("client_id")
+        if type(client_id) is not str or client_id not in {"C1", "C2"}:
+            raise ValueError(f"{event_type} requires exact C1/C2 client identity")
+        expected_status, payload_keys = contracts[event_type]
+        if type(row.get("status")) is not str or row["status"] != expected_status:
+            raise ValueError(f"{event_type} status differs from frozen contract")
+        if set(payload) != payload_keys:
+            raise ValueError(f"{event_type} payload exact schema mismatch")
+        for field in payload_keys:
+            _require_exact_nonnegative_int(payload, field, event_type=event_type)
+        return
+
+    if producer != "server":
+        raise ValueError(f"unknown training event producer: {producer}")
+    lifecycle_contracts = {
+        "fit_round_start": ("started", set()),
+        "server_aggregate_start": ("started", set()),
+        "server_da_start": ("started", set()),
+        "server_da_end": ("succeeded", {"server_da_total_ns"}),
+        "server_aggregate_end": (
+            "succeeded",
+            {
+                "server_aggregate_fit_total_ns",
+                "server_da_total_ns",
+                "server_aggregate_non_da_ns",
+                "da_executed",
+            },
+        ),
+        "fit_round_end": (
+            "succeeded",
+            {
+                "server_aggregate_fit_total_ns",
+                "server_da_total_ns",
+                "server_aggregate_non_da_ns",
+                "da_executed",
+                "fit_round_wall_ns",
+            },
+        ),
+    }
+    if event_type in lifecycle_contracts:
+        expected_status, payload_keys = lifecycle_contracts[event_type]
+        if row.get("client_id") is not None:
+            raise ValueError(f"{event_type} requires null client identity")
+        if type(row.get("status")) is not str or row["status"] != expected_status:
+            raise ValueError(f"{event_type} status differs from frozen contract")
+        if set(payload) != payload_keys:
+            raise ValueError(f"{event_type} payload exact schema mismatch")
+        integer_fields = payload_keys - {"da_executed"}
+        for field in integer_fields:
+            _require_exact_nonnegative_int(payload, field, event_type=event_type)
+        if "da_executed" in payload_keys and type(payload["da_executed"]) is not bool:
+            raise ValueError(f"{event_type} da_executed must have exact bool type")
+        if event_type in {"server_aggregate_end", "fit_round_end"}:
+            if payload["server_aggregate_fit_total_ns"] != (
+                payload["server_da_total_ns"]
+                + payload["server_aggregate_non_da_ns"]
+            ):
+                raise ValueError(f"{event_type} aggregate total decomposition mismatch")
+        if event_type == "fit_round_end" and payload["fit_round_wall_ns"] < payload[
+            "server_aggregate_fit_total_ns"
+        ]:
+            raise ValueError("fit_round_end wall time precedes aggregate total")
+        return
+
+    message_contracts = {
+        "flower_fitins_prepared": ("downlink", "downlink_audit"),
+        "flower_fitres_available": ("uplink", "uplink_audit"),
+    }
+    if event_type not in message_contracts:
+        raise ValueError(f"unknown server training event type: {event_type}")
+    direction, audit_key = message_contracts[event_type]
+    if type(row.get("status")) is not str or row["status"] != "succeeded":
+        raise ValueError(f"{event_type} status differs from frozen contract")
+    if set(payload) != {"proxy_id", audit_key}:
+        raise ValueError(f"{event_type} payload exact schema mismatch")
+    proxy_id = payload["proxy_id"]
+    if type(proxy_id) is not str or not proxy_id:
+        raise ValueError(f"{event_type} proxy_id must have exact nonempty string type")
+    client_id = row.get("client_id")
+    if event_type == "flower_fitins_prepared":
+        if type(client_id) is not str or client_id != proxy_id:
+            raise ValueError("flower_fitins_prepared proxy/client identity mismatch")
+    elif type(client_id) is not str or client_id not in {"C1", "C2"}:
+        raise ValueError("flower_fitres_available requires exact C1/C2 client identity")
+    _validate_application_audit(payload[audit_key], direction=direction)
+
+
+def _validate_observer_overhead_reference(
+    row: Mapping[str, Any], referenced: Mapping[str, Any], *, context: str
+) -> None:
+    """Bind overhead identity and success status to its substantive event."""
+
+    if type(row.get("status")) is not str or row["status"] != "succeeded":
+        raise ValueError(f"{context} observer overhead status must be succeeded")
+    for field in ("round", "client_id"):
+        if (
+            type(row.get(field)) is not type(referenced.get(field))
+            or row.get(field) != referenced.get(field)
+        ):
+            raise ValueError(
+                f"{context} observer overhead {field} differs from referenced event"
+            )
 
 
 _BINDING_COMMON_KEYS = {
@@ -1840,10 +2116,13 @@ def _validate_observer_sidecars(
 
         substantive = [row for row in rows if row["event_type"] != "observer_overhead"]
         overhead = [row for row in rows if row["event_type"] == "observer_overhead"]
-        observed = [str(row["payload"].get("observed_event_id")) for row in overhead]
-        substantive_ids = [str(row["event_id"]) for row in substantive]
-        if sorted(observed) != sorted(substantive_ids) or len(observed) != len(set(observed)):
-            raise ValueError(f"observer overhead pairing mismatch: {event_path}")
+        substantive_by_id: dict[str, dict[str, Any]] = {}
+        for row in substantive:
+            if type(row["event_id"]) is not str or row["event_id"] in substantive_by_id:
+                raise ValueError(f"invalid substantive event identity: {event_path}")
+            _validate_training_substantive_event(row)
+            substantive_by_id[row["event_id"]] = row
+        observed: list[str] = []
         for row in overhead:
             payload = row["payload"]
             expected_overhead_keys = {
@@ -1858,6 +2137,18 @@ def _validate_observer_sidecars(
             }
             if set(payload) != expected_overhead_keys:
                 raise ValueError(f"observer overhead schema mismatch: {event_path}")
+            observed_event_id = payload["observed_event_id"]
+            if (
+                type(observed_event_id) is not str
+                or observed_event_id not in substantive_by_id
+            ):
+                raise ValueError(f"observer overhead reference mismatch: {event_path}")
+            _validate_observer_overhead_reference(
+                row,
+                substantive_by_id[observed_event_id],
+                context="training",
+            )
+            observed.append(observed_event_id)
             numeric_fields = expected_overhead_keys - {"observed_event_id"}
             if any(
                 type(payload[field]) is not int or payload[field] < 0
@@ -1879,8 +2170,13 @@ def _validate_observer_sidecars(
                 or payload["observer_event_count"] <= 0
             ):
                 raise ValueError(f"invalid observer overhead accounting: {event_path}")
+        substantive_ids = list(substantive_by_id)
+        if sorted(observed) != sorted(substantive_ids) or len(observed) != len(
+            set(observed)
+        ):
+            raise ValueError(f"observer overhead pairing mismatch: {event_path}")
         client_ids = {
-            str(row["client_id"])
+            row["client_id"]
             for row in substantive
             if row["client_id"] is not None
         }
@@ -1947,18 +2243,8 @@ def _validate_observer_sidecars(
 
         type_counts: dict[str, int] = {}
         for row in substantive:
-            event_type = str(row["event_type"])
+            event_type = row["event_type"]
             type_counts[event_type] = type_counts.get(event_type, 0) + 1
-            payload = row["payload"]
-            if not isinstance(payload, Mapping):
-                raise ValueError(f"observer event payload is not an object: {event_path}")
-            for key, value in payload.items():
-                if str(key).endswith("_ns") and (
-                    type(value) is not int or value < 0
-                ):
-                    raise ValueError(
-                        f"observer event has invalid nonnegative timing: {event_path}/{key}"
-                    )
         producer_rows[logical_name] = {
             "event_file": _portable_evidence_path(root, event_path),
             "close_summary": _portable_evidence_path(root, close_path),
@@ -2018,10 +2304,9 @@ def _validate_observer_sidecars(
     proxy_clients: dict[tuple[int, str], str] = {}
     fit_res_matrix: list[tuple[int, str]] = []
     for row in fit_res_rows:
-        _validate_application_audit(row["payload"].get("uplink_audit"), direction="uplink")
         round_idx = row["round"]
-        client_id = str(row["client_id"])
-        proxy_id = str(row["payload"].get("proxy_id"))
+        client_id = row["client_id"]
+        proxy_id = row["payload"]["proxy_id"]
         key = (round_idx, proxy_id)
         if key in proxy_clients or client_id not in {"C1", "C2"}:
             raise ValueError("server FitRes round/client matrix has invalid proxy binding")
@@ -2038,12 +2323,9 @@ def _validate_observer_sidecars(
     for row in server_rows:
         if row["event_type"] != "flower_fitins_prepared":
             continue
-        _validate_application_audit(
-            row["payload"].get("downlink_audit"), direction="downlink"
-        )
         round_idx = row["round"]
         client_id = proxy_clients.get(
-            (round_idx, str(row["payload"].get("proxy_id")))
+            (round_idx, row["payload"]["proxy_id"])
         )
         if client_id is None:
             raise ValueError("server FitIns round/client matrix lacks proxy binding")
@@ -2527,23 +2809,10 @@ def _capture_formal_artifacts(attempt_root: Path) -> dict[str, Any]:
                 "content_sha256": _sha256_bytes(_canonical_bytes(normalized)),
                 "comparison": normalized,
             }
-        diagnostics = json.loads(
-            (output / f"domain_adapt_round_{round_idx:03d}.json").read_text(
-                encoding="utf-8"
-            )
+        diagnostics_path = output / f"domain_adapt_round_{round_idx:03d}.json"
+        artifacts[f"domain_adapt_round_{round_idx}"] = (
+            _domain_adapt_diagnostics_fingerprint(diagnostics_path, output)
         )
-        diagnostics.pop("semantic_protos_after_da", None)
-        normalized_diagnostics = _normalize_json(
-            {"metrics": diagnostics}, VOLATILE_JSON_PATHS
-        )
-        artifacts[f"domain_adapt_round_{round_idx}"] = {
-            "kind": "json_projection",
-            "artifact_sha256": _sha256_bytes(_canonical_bytes(diagnostics)),
-            "content_sha256": _sha256_bytes(
-                _canonical_bytes(normalized_diagnostics)
-            ),
-            "comparison": normalized_diagnostics,
-        }
     return artifacts
 
 
@@ -2647,10 +2916,13 @@ def _validate_formal_resource_sidecar(
     overhead = [row for row in rows if row["event_type"] == "observer_overhead"]
     if any(row["event_type"] not in {"resource_sample", "resource_sampler_end"} for row in substantive):
         raise ValueError(f"unexpected resource event type: {event_path}")
-    observed_ids = [str(row["payload"].get("observed_event_id")) for row in overhead]
-    substantive_ids = [str(row["event_id"]) for row in substantive]
-    if sorted(observed_ids) != sorted(substantive_ids) or len(observed_ids) != len(set(observed_ids)):
-        raise ValueError(f"resource observer overhead pairing mismatch: {event_path}")
+    substantive_by_id = {
+        row["event_id"]: row
+        for row in substantive
+        if type(row["event_id"]) is str
+    }
+    if len(substantive_by_id) != len(substantive):
+        raise ValueError(f"resource substantive event identity mismatch: {event_path}")
     overhead_keys = {
         "observed_event_id",
         "observer_flower_serialize_ns",
@@ -2665,6 +2937,17 @@ def _validate_formal_resource_sidecar(
         payload = row["payload"]
         if not isinstance(payload, Mapping) or set(payload) != overhead_keys:
             raise ValueError(f"resource observer overhead exact schema mismatch: {event_path}")
+        observed_event_id = payload["observed_event_id"]
+        if (
+            type(observed_event_id) is not str
+            or observed_event_id not in substantive_by_id
+        ):
+            raise ValueError(f"resource observer overhead reference mismatch: {event_path}")
+        _validate_observer_overhead_reference(
+            row,
+            substantive_by_id[observed_event_id],
+            context="resource",
+        )
         numeric_fields = overhead_keys - {"observed_event_id"}
         if any(
             type(payload[field]) is not int or payload[field] < 0
@@ -2683,6 +2966,12 @@ def _validate_formal_resource_sidecar(
             raise ValueError(f"resource observer overhead total mismatch: {event_path}")
         if payload["observer_event_bytes_written"] <= 0 or payload["observer_event_count"] <= 0:
             raise ValueError(f"resource observer overhead accounting is invalid: {event_path}")
+    observed_ids = [row["payload"]["observed_event_id"] for row in overhead]
+    substantive_ids = list(substantive_by_id)
+    if sorted(observed_ids) != sorted(substantive_ids) or len(observed_ids) != len(
+        set(observed_ids)
+    ):
+        raise ValueError(f"resource observer overhead pairing mismatch: {event_path}")
 
     sample_payload_keys = {
         "root_pid",
@@ -2774,7 +3063,12 @@ def _validate_formal_resource_sidecar(
                 "pid", "create_time", "identity_available"
             }:
                 raise ValueError("resource process identity exact schema mismatch")
-            if process_identity["pid"] != pid or process_identity["identity_available"] is not True:
+            if (
+                type(process_identity["pid"]) is not int
+                or process_identity["pid"] <= 0
+                or process_identity["pid"] != pid
+                or process_identity["identity_available"] is not True
+            ):
                 raise ValueError("resource process identity is unavailable or mismatched")
             create_time = process_identity["create_time"]
             if isinstance(create_time, bool) or not isinstance(create_time, (int, float)) or not math.isfinite(create_time) or create_time < 0:
@@ -2883,9 +3177,11 @@ def _validate_formal_resource_sidecar(
     if (
         end_payload["observer_cost_values_scope"] != "before_resource_sampler_end_emit"
         or end_payload["observer_close_summary_is_authoritative"] is not True
-        or Path(str(end_payload["observer_close_summary_path"])).name != "resource.close.json"
     ):
         raise ValueError("resource sampler observer-cost boundary is invalid")
+    _require_exact_recovered_file_reference(
+        end_payload["observer_close_summary_path"], close_path
+    )
 
     close = json.loads(
         close_path.read_text(encoding="utf-8"),
