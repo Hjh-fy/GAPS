@@ -33,7 +33,6 @@ from scripts.freeze_iotj_confirmation_protocol import (
     sha256_file,
 )
 from scripts.run_iotj_classification_cloud_edge import (
-    _remote_python,
     _run,
     _ssh,
     _start_tunnels,
@@ -57,6 +56,12 @@ EXPECTED_DEPENDENCY_VERSIONS = {
     "protobuf": "4.25.8",
     "psutil": "7.0.0",
 }
+_REMOTE_PYTHON_BINARIES = frozenset(
+    {
+        "/root/gaps_env/bin/python",
+        "/home/gaps/GAPS/gaps_rpi_env/bin/python",
+    }
+)
 VALID_ATTEMPT_STATES = {"running", "failed", "aborted", "invalid", "canonical"}
 TERMINAL_ATTEMPT_STATES = {"failed", "aborted", "invalid", "canonical"}
 STATUS_REASON_CATEGORIES = {
@@ -93,6 +98,66 @@ OBJECTIVE_RERUN_REASON_CATEGORIES = frozenset(
         "observer_failure",
     }
 )
+
+
+def _run_source_over_stdin(
+    command: Sequence[str], source: str, *, timeout: int
+) -> subprocess.CompletedProcess[str]:
+    if not isinstance(source, str):
+        raise TypeError("Python source must be text")
+    argv = [str(item) for item in command]
+    result = subprocess.run(
+        argv,
+        cwd=REPO_ROOT,
+        input=source,
+        text=True,
+        encoding="utf-8",
+        capture_output=True,
+        timeout=timeout,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(
+            f"command failed ({result.returncode}): {' '.join(argv)}\n{detail}"
+        )
+    return result
+
+
+def _remote_python(
+    host: str, python_bin: str, source: str, *, timeout: int = 30
+) -> str:
+    if python_bin not in _REMOTE_PYTHON_BINARIES or not PurePosixPath(
+        python_bin
+    ).is_absolute():
+        raise ValueError("remote Python must use an approved absolute path")
+    if (
+        not isinstance(host, str)
+        or not host
+        or host.startswith("-")
+        or any(character in host for character in "\x00\r\n")
+    ):
+        raise ValueError("remote host is invalid")
+    result = _run_source_over_stdin(
+        [
+            "ssh",
+            "-o",
+            "BatchMode=yes",
+            "-o",
+            "ConnectTimeout=10",
+            "-o",
+            "ServerAliveInterval=15",
+            "-o",
+            "ServerAliveCountMax=2",
+            host,
+            python_bin,
+            "-",
+        ],
+        source,
+        timeout=timeout,
+    )
+    return result.stdout.strip()
+
+
 EXPECTED_TOPOLOGY = {
     "server": "Alibaba Cloud ECS",
     "C1": "physical Raspberry Pi CPU",

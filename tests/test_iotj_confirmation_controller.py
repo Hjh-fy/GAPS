@@ -504,6 +504,79 @@ def test_pc_deploy_temp_name_fits_long_content_root(tmp_path: Path) -> None:
         )
 
 
+def test_controller_remote_python_streams_long_probe_over_utf8_stdin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = "# 传感器 probe\n" + ("value = 1\n" * 7000)
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append(([str(item) for item in command], dict(kwargs)))
+        return subprocess.CompletedProcess(command, 0, " acknowledged\n", "")
+
+    monkeypatch.setattr(controller.subprocess, "run", fake_run)
+    output = controller._remote_python(
+        "root@ecs", "/root/gaps_env/bin/python", source, timeout=123
+    )
+
+    assert output == "acknowledged"
+    assert len(calls) == 1
+    command, kwargs = calls[0]
+    assert command == [
+        "ssh",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=10",
+        "-o",
+        "ServerAliveInterval=15",
+        "-o",
+        "ServerAliveCountMax=2",
+        "root@ecs",
+        "/root/gaps_env/bin/python",
+        "-",
+    ]
+    assert "-n" not in command
+    assert len(subprocess.list2cmdline(command)) < 1024
+    assert kwargs == {
+        "cwd": controller.REPO_ROOT,
+        "input": source,
+        "text": True,
+        "encoding": "utf-8",
+        "capture_output": True,
+        "timeout": 123,
+    }
+
+
+def test_controller_remote_python_rejects_unapproved_binary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        controller.subprocess,
+        "run",
+        lambda *_args, **_kwargs: pytest.fail("unapproved remote Python executed"),
+    )
+    with pytest.raises(ValueError, match="approved absolute path"):
+        controller._remote_python("root@ecs", "/tmp/python", "print('unsafe')")
+
+
+def test_controller_remote_python_preserves_nonzero_failure_detail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        controller.subprocess,
+        "run",
+        lambda command, **_kwargs: subprocess.CompletedProcess(
+            command, 7, "", "remote probe failed"
+        ),
+    )
+    with pytest.raises(RuntimeError, match=r"command failed \(7\)") as exc_info:
+        controller._remote_python(
+            "gaps@pi", "/home/gaps/GAPS/gaps_rpi_env/bin/python", "print('probe')"
+        )
+    assert "remote probe failed" in str(exc_info.value)
+
+
 def test_remote_extract_source_verifies_complete_reuse_and_rejects_partial(
     tmp_path: Path,
 ) -> None:
