@@ -12,6 +12,7 @@ import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -139,6 +140,16 @@ _STATUS_KEYS = {
     "algorithm_config_sha256",
     "audit_sha256",
 }
+_LAUNCH_REGISTRATION_KEYS = {
+    "schema_version",
+    "label",
+    "launch_token",
+    "registration_path",
+    "child_pid",
+    "owner_pid",
+    "owner_pgid",
+    "owner_start_ticks",
+}
 _ATTEMPT_LOCKS: dict[str, threading.RLock] = {}
 _ATTEMPT_LOCKS_GUARD = threading.Lock()
 
@@ -226,6 +237,8 @@ class OwnedProcess:
     owner_pid: int | None = None
     owner_pgid: int | None = None
     owner_start_ticks: int | None = None
+    registration_path: str | Path | None = None
+    launch_token: str | None = None
     handle: Any | None = None
     host: str | None = None
     python_bin: str | None = None
@@ -299,17 +312,56 @@ def _reject_symlink_components(path: Path, label: str) -> None:
     current = Path(path).absolute()
     while True:
         try:
-            mode = current.lstat().st_mode
+            entry = os.lstat(current)
         except FileNotFoundError:
             pass
         else:
-            if os.path.islink(current):
-                raise RuntimeError(f"{label} contains symlink component: {current}")
+            attributes = getattr(entry, "st_file_attributes", 0)
+            reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+            if stat.S_ISLNK(entry.st_mode) or attributes & reparse_flag:
+                raise RuntimeError(
+                    f"{label} contains symlink or reparse component: {current}"
+                )
             if not os.path.isdir(current) and current == Path(path).absolute():
                 raise RuntimeError(f"{label} must be a real directory: {current}")
         if current.parent == current:
             break
         current = current.parent
+
+
+def _lstat_runtime_component(
+    path: Path,
+    label: str,
+    *,
+    kind: str,
+    missing_ok: bool,
+) -> os.stat_result | None:
+    path = Path(path)
+    _reject_symlink_components(path.parent, f"{label} parent")
+    try:
+        entry = os.lstat(path)
+    except FileNotFoundError:
+        if missing_ok:
+            return None
+        raise RuntimeError(f"{label} is missing: {path}")
+    attributes = getattr(entry, "st_file_attributes", 0)
+    reparse_flag = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    if stat.S_ISLNK(entry.st_mode) or attributes & reparse_flag:
+        raise RuntimeError(f"{label} is a symlink or reparse point: {path}")
+    if kind == "directory" and not stat.S_ISDIR(entry.st_mode):
+        raise RuntimeError(f"{label} is not a real directory: {path}")
+    if kind == "file" and not stat.S_ISREG(entry.st_mode):
+        raise RuntimeError(f"{label} is not a regular file: {path}")
+    return entry
+
+
+def _create_pinned_directory(path: Path, label: str) -> Path:
+    path = Path(path)
+    _reject_symlink_components(path, label)
+    path.mkdir(parents=True, exist_ok=True)
+    _reject_symlink_components(path, label)
+    _lstat_runtime_component(path, label, kind="directory", missing_ok=False)
+    return path
 
 
 def _is_contained(path: Path, root: Path) -> bool:
@@ -929,16 +981,126 @@ def _verify_extracted_source(
     }
 
 
+def _remote_runtime_path_helpers() -> str:
+    return """
+REPARSE_FLAG = getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400)
+def checked_lstat(path, label, missing_ok=False):
+    try:
+        entry = os.lstat(path)
+    except FileNotFoundError:
+        if missing_ok:
+            return None
+        raise RuntimeError(f'{label} is missing: {path}')
+    if stat.S_ISLNK(entry.st_mode) or getattr(entry, 'st_file_attributes', 0) & REPARSE_FLAG:
+        raise RuntimeError(f'{label} is a symlink or reparse point: {path}')
+    return entry
+def pin_directory_chain(path, label, create=False):
+    path = Path(path)
+    missing = []
+    current = path
+    while True:
+        entry = checked_lstat(current, label, missing_ok=True)
+        if entry is not None:
+            if not stat.S_ISDIR(entry.st_mode):
+                raise RuntimeError(f'{label} component is not a directory: {current}')
+            break
+        missing.append(current)
+        if current.parent == current:
+            raise RuntimeError(f'{label} has no real ancestor: {path}')
+        current = current.parent
+    if missing and not create:
+        raise RuntimeError(f'{label} is missing: {path}')
+    for item in reversed(missing):
+        os.mkdir(item)
+        entry = checked_lstat(item, label)
+        if not stat.S_ISDIR(entry.st_mode):
+            raise RuntimeError(f'{label} component is not a directory: {item}')
+    return checked_lstat(path, label)
+def pin_leaf(path, label, kind, missing_ok=False):
+    path = Path(path)
+    pin_directory_chain(path.parent, f'{label} parent')
+    entry = checked_lstat(path, label, missing_ok=missing_ok)
+    if entry is None:
+        return None
+    expected = stat.S_ISREG if kind == 'file' else stat.S_ISDIR
+    if not expected(entry.st_mode):
+        raise RuntimeError(f'{label} is not a real {kind}: {path}')
+    return entry
+"""
+
+
 def _remote_deploy_state_source(archive_path: str, src_path: str) -> str:
+    helpers = _remote_runtime_path_helpers()
     return f"""# REMOTE_DEPLOY_STATE_V1
-import json
+import json, os, stat
 from pathlib import Path
+{helpers}
 archive_path = Path({archive_path!r})
 src_path = Path({src_path!r})
-archive_exists = archive_path.exists()
-src_exists = src_path.exists()
-state = 'complete' if archive_exists and src_exists else ('absent' if not archive_exists and not src_exists else 'partial')
+if archive_path.parent != src_path.parent:
+    raise RuntimeError('runtime components do not share one content root')
+pin_directory_chain(archive_path.parent, 'content-addressed runtime root', create=True)
+archive_entry = pin_leaf(archive_path, 'source archive', 'file', missing_ok=True)
+src_entry = pin_leaf(src_path, 'extracted source', 'directory', missing_ok=True)
+state = 'complete' if archive_entry is not None and src_entry is not None else ('absent' if archive_entry is None and src_entry is None else 'partial')
 print(json.dumps({{'state': state}}, sort_keys=True))
+"""
+
+
+def _remote_reserve_archive_source(temp_path: str, runtime_root: str) -> str:
+    helpers = _remote_runtime_path_helpers()
+    return f"""# REMOTE_RESERVE_ARCHIVE_V1
+import json, os, stat
+from pathlib import Path
+{helpers}
+runtime_root = Path({runtime_root!r})
+temp_path = Path({temp_path!r})
+pin_directory_chain(runtime_root, 'content-addressed runtime root')
+if temp_path.parent != runtime_root:
+    raise RuntimeError('temporary archive escapes runtime root')
+if checked_lstat(temp_path, 'temporary source archive', missing_ok=True) is not None:
+    raise RuntimeError('temporary source archive already exists')
+with temp_path.open('xb'):
+    pass
+pin_leaf(temp_path, 'temporary source archive', 'file')
+print(json.dumps({{'state': 'reserved'}}, sort_keys=True))
+"""
+
+
+def _remote_install_archive_source(
+    temp_path: str, archive_path: str, expected_sha256: str
+) -> str:
+    helpers = _remote_runtime_path_helpers()
+    return f"""# REMOTE_INSTALL_ARCHIVE_V1
+import hashlib, json, os, stat
+from pathlib import Path
+{helpers}
+temp_path = Path({temp_path!r})
+archive_path = Path({archive_path!r})
+pin_directory_chain(archive_path.parent, 'content-addressed runtime root')
+if temp_path.parent != archive_path.parent:
+    raise RuntimeError('temporary archive escapes runtime root')
+pin_leaf(temp_path, 'temporary source archive', 'file')
+if pin_leaf(archive_path, 'source archive', 'file', missing_ok=True) is not None:
+    raise RuntimeError('source archive already exists')
+def digest(path):
+    value = hashlib.sha256()
+    with path.open('rb') as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            value.update(chunk)
+    return value.hexdigest()
+expected = {expected_sha256!r}
+if digest(temp_path) != expected:
+    raise RuntimeError('temporary source archive SHA-256 mismatch')
+os.link(temp_path, archive_path, follow_symlinks=False)
+temp_path.unlink()
+pin_leaf(archive_path, 'source archive', 'file')
+if digest(archive_path) != expected:
+    raise RuntimeError('installed source archive SHA-256 mismatch')
+print(json.dumps({{'source_archive_sha256': expected}}, sort_keys=True))
 """
 
 
@@ -951,14 +1113,21 @@ def _remote_extract_source(
 ) -> str:
     """Return a fail-closed remote script; `_remote_python` transports it safely."""
     manifest_json = json.dumps(source_manifest, ensure_ascii=False, sort_keys=True)
+    helpers = _remote_runtime_path_helpers()
     return f"""
 # REMOTE_EXTRACT_SOURCE_V1
-import hashlib, json, os, shutil, tarfile
+import hashlib, json, os, shutil, stat, tarfile
 from pathlib import Path, PurePosixPath
+{helpers}
 manifest = json.loads({manifest_json!r})
 archive_path = Path({archive_path!r})
 src_path = Path({src_path!r})
 allow_fresh_extract = {allow_fresh_extract!r}
+if archive_path.parent != src_path.parent:
+    raise RuntimeError('runtime components do not share one content root')
+pin_directory_chain(archive_path.parent, 'content-addressed runtime root')
+pin_leaf(archive_path, 'source archive', 'file')
+src_entry = pin_leaf(src_path, 'extracted source', 'directory', missing_ok=True)
 def digest(path):
     value = hashlib.sha256()
     with path.open('rb') as handle:
@@ -996,14 +1165,13 @@ def verify_src():
     actual.sort(key=lambda item: item['relative_path'])
     if actual != expected:
         raise RuntimeError('tracked member source mismatch')
-if src_path.exists():
-    if not src_path.is_dir() or src_path.is_symlink():
-        raise RuntimeError('partial content-addressed runtime')
+if src_entry is not None:
     verify_src()
 elif not allow_fresh_extract:
     raise RuntimeError('partial content-addressed runtime')
 else:
-    src_path.mkdir(parents=True)
+    os.mkdir(src_path)
+    pin_leaf(src_path, 'extracted source', 'directory')
     try:
         with tarfile.open(archive_path, 'r:') as archive:
             regular = {{item.name: item for item in archive.getmembers() if item.isfile()}}
@@ -1050,22 +1218,63 @@ def deploy_source_archive(
     _verify_archive(archive_path, source_manifest)
     source_hash = str(source_manifest["source_archive_sha256"])
     members_hash = str(source_manifest["regular_members_sha256"])
-    pc_root = Path(pc_runtime_root) / source_hash
+    pc_runtime_parent = Path(pc_runtime_root)
+    runtime_parent_entry = _lstat_runtime_component(
+        pc_runtime_parent,
+        "PC runtime parent",
+        kind="directory",
+        missing_ok=True,
+    )
+    if runtime_parent_entry is None:
+        _create_pinned_directory(pc_runtime_parent, "PC runtime parent")
+    pc_root = pc_runtime_parent / source_hash
     pc_archive = pc_root / "source.tar"
     pc_src = pc_root / "src"
-    pc_existed = pc_root.exists()
-    if pc_root.is_symlink():
-        raise RuntimeError(f"PC content-addressed runtime is a symlink: {pc_root}")
-    pc_root.mkdir(parents=True, exist_ok=True)
-    archive_exists = pc_archive.exists()
-    src_exists = pc_src.exists()
-    if archive_exists and src_exists:
+    pc_root_entry = _lstat_runtime_component(
+        pc_root,
+        "PC content-addressed runtime",
+        kind="directory",
+        missing_ok=True,
+    )
+    pc_existed = pc_root_entry is not None
+    if pc_root_entry is None:
+        _create_pinned_directory(pc_root, "PC content-addressed runtime")
+    archive_entry = _lstat_runtime_component(
+        pc_archive, "PC source archive", kind="file", missing_ok=True
+    )
+    src_entry = _lstat_runtime_component(
+        pc_src, "PC extracted source", kind="directory", missing_ok=True
+    )
+    if archive_entry is not None and src_entry is not None:
         _verify_archive(pc_archive, source_manifest)
         pc_report = _verify_extracted_source(pc_src, source_manifest)
-    elif archive_exists or src_exists or pc_existed:
+    elif archive_entry is not None or src_entry is not None or pc_existed:
         raise RuntimeError(f"partial PC content-addressed runtime: {pc_root}")
     else:
-        shutil.copyfile(archive_path, pc_archive)
+        pc_temp = pc_root / f".source.tar.{uuid.uuid4().hex}.tmp"
+        _lstat_runtime_component(
+            pc_temp, "PC temporary source archive", kind="file", missing_ok=True
+        )
+        try:
+            with archive_path.open("rb") as source, pc_temp.open("xb") as destination:
+                shutil.copyfileobj(source, destination)
+                destination.flush()
+                os.fsync(destination.fileno())
+            _lstat_runtime_component(
+                pc_temp,
+                "PC temporary source archive",
+                kind="file",
+                missing_ok=False,
+            )
+            _verify_archive(pc_temp, source_manifest)
+            os.link(pc_temp, pc_archive, follow_symlinks=False)
+            pc_temp.unlink()
+            _lstat_runtime_component(
+                pc_archive, "PC source archive", kind="file", missing_ok=False
+            )
+            _verify_archive(pc_archive, source_manifest)
+        finally:
+            pc_temp.unlink(missing_ok=True)
         pc_report = verify_and_extract_archive(pc_archive, pc_src, source_manifest)
     deployments: dict[str, HostDeployment] = {
         "pc": HostDeployment("pc", pc_archive, pc_src, **pc_report)
@@ -1087,7 +1296,6 @@ def deploy_source_archive(
     for host_id, host, root, python_bin in remote_rows:
         remote_archive = f"{root}/source.tar"
         remote_src = f"{root}/src"
-        ssh(host, f"mkdir -p '{root}'")
         state_output = remote_python(
             host,
             python_bin,
@@ -1106,12 +1314,43 @@ def deploy_source_archive(
         if state not in {"absent", "complete"}:
             raise ArchiveMismatch(f"invalid {host_id} deployment state")
         if state == "absent":
+            remote_temp = f"{root}/.source.tar.{uuid.uuid4().hex}.tmp"
+            reserve_output = remote_python(
+                host,
+                python_bin,
+                _remote_reserve_archive_source(remote_temp, root),
+                timeout=30,
+            )
+            try:
+                reserve_report = json.loads(reserve_output.splitlines()[-1])
+            except (IndexError, json.JSONDecodeError) as exc:
+                raise ArchiveMismatch(
+                    f"invalid {host_id} archive reservation report"
+                ) from exc
+            if reserve_report != {"state": "reserved"}:
+                raise ArchiveMismatch(f"invalid {host_id} archive reservation report")
             transfer = run(
-                ["scp", "-p", str(archive_path), f"{host}:{remote_archive}"],
+                ["scp", "-p", str(archive_path), f"{host}:{remote_temp}"],
                 timeout=300,
             )
             if transfer.returncode != 0:
                 raise ArchiveMismatch(f"{host_id} source archive transfer failed")
+            install_output = remote_python(
+                host,
+                python_bin,
+                _remote_install_archive_source(
+                    remote_temp, remote_archive, source_hash
+                ),
+                timeout=60,
+            )
+            try:
+                install_report = json.loads(install_output.splitlines()[-1])
+            except (IndexError, json.JSONDecodeError) as exc:
+                raise ArchiveMismatch(
+                    f"invalid {host_id} archive installation report"
+                ) from exc
+            if install_report != {"source_archive_sha256": source_hash}:
+                raise ArchiveMismatch(f"invalid {host_id} archive installation report")
         output = remote_python(
             host,
             python_bin,
@@ -1657,6 +1896,156 @@ def preflight_frozen_run(runtime: ProductionRuntime, attempt_id: str) -> None:
         )
 
 
+def _validate_launch_registration(
+    payload: Any,
+    *,
+    label: str,
+    launch_token: str,
+    registration_path: str,
+) -> dict[str, Any]:
+    if not isinstance(payload, dict) or set(payload) != _LAUNCH_REGISTRATION_KEYS:
+        raise RuntimeError("launch registration has non-exact schema")
+    if payload.get("schema_version") != 1 or isinstance(
+        payload.get("schema_version"), bool
+    ):
+        raise RuntimeError("launch registration schema version is invalid")
+    if payload.get("label") != label:
+        raise RuntimeError("launch registration label identity mismatch")
+    if (
+        payload.get("launch_token") != launch_token
+        or not _INSTANCE_RE.fullmatch(launch_token)
+    ):
+        raise RuntimeError("launch registration token identity mismatch")
+    if payload.get("registration_path") != registration_path:
+        raise RuntimeError("launch registration path identity mismatch")
+    for field in ("child_pid", "owner_pid", "owner_pgid", "owner_start_ticks"):
+        value = payload.get(field)
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise RuntimeError(f"launch registration {field} is invalid")
+    if payload["owner_pid"] != payload["owner_pgid"]:
+        raise RuntimeError("launch registration owner process group mismatch")
+    if payload["child_pid"] == payload["owner_pid"]:
+        raise RuntimeError("launch registration child and owner PID must differ")
+    return dict(payload)
+
+
+def _remote_read_registration_source(registration_path: str) -> str:
+    return f"""# REMOTE_READ_REGISTRATION_V1
+import os, stat, time
+from pathlib import Path
+registration_path = Path({registration_path!r})
+deadline = time.monotonic() + 10
+while True:
+    try:
+        entry = os.lstat(registration_path)
+        break
+    except FileNotFoundError:
+        if time.monotonic() >= deadline:
+            raise RuntimeError('launch registration is missing')
+        time.sleep(0.05)
+if stat.S_ISLNK(entry.st_mode) or getattr(entry, 'st_file_attributes', 0) & getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400):
+    raise RuntimeError('launch registration is a symlink or reparse point')
+if not stat.S_ISREG(entry.st_mode):
+    raise RuntimeError('launch registration is not a regular file')
+print(registration_path.read_text(encoding='utf-8'), end='')
+"""
+
+
+def _remote_terminate_registration_source(
+    registration: Mapping[str, Any],
+) -> str:
+    expected_json = json.dumps(dict(registration), ensure_ascii=False, sort_keys=True)
+    return f"""# REMOTE_TERMINATE_REGISTRATION_V1
+import json, os, signal, stat
+from pathlib import Path
+expected = json.loads({expected_json!r})
+registration_path = Path(expected['registration_path'])
+entry = os.lstat(registration_path)
+if stat.S_ISLNK(entry.st_mode) or getattr(entry, 'st_file_attributes', 0) & getattr(stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400):
+    raise RuntimeError('launch registration is a symlink or reparse point')
+if not stat.S_ISREG(entry.st_mode):
+    raise RuntimeError('launch registration is not a regular file')
+registration = json.loads(registration_path.read_text(encoding='utf-8'))
+if registration != expected:
+    raise RuntimeError('launch registration != expected identity')
+owner_pid = expected['owner_pid']
+owner_pgid = expected['owner_pgid']
+owner_start_ticks = expected['owner_start_ticks']
+def process_start_ticks(pid):
+    fields = Path(f'/proc/{{pid}}/stat').read_text(encoding='ascii').rsplit(')', 1)[1].split()
+    return int(fields[19])
+try:
+    actual_pgid = os.getpgid(owner_pid)
+except ProcessLookupError:
+    actual_pgid = None
+if actual_pgid is not None:
+    if actual_pgid != owner_pgid:
+        raise RuntimeError('registered owner PGID changed')
+    if process_start_ticks(owner_pid) != owner_start_ticks:
+        raise RuntimeError('registered owner start time changed')
+    os.killpg(owner_pgid, signal.SIGTERM)
+archived = registration_path.with_name(registration_path.name + '.cleaned')
+try:
+    os.link(registration_path, archived, follow_symlinks=False)
+except FileExistsError:
+    archived_entry = os.lstat(archived)
+    if stat.S_ISLNK(archived_entry.st_mode) or not stat.S_ISREG(archived_entry.st_mode):
+        raise RuntimeError('archived launch registration is unsafe')
+    if archived.read_bytes() != registration_path.read_bytes():
+        raise RuntimeError('archived launch registration mismatch')
+registration_path.unlink()
+print(json.dumps({{'recovered': True}}, sort_keys=True))
+"""
+
+
+def _read_remote_launch_registration(
+    *,
+    host: str,
+    python_bin: str,
+    label: str,
+    launch_token: str,
+    registration_path: str,
+    remote_python: Callable[..., str],
+) -> dict[str, Any]:
+    output = remote_python(
+        host,
+        python_bin,
+        _remote_read_registration_source(registration_path),
+        timeout=15,
+    )
+    try:
+        payload = json.loads(output.splitlines()[-1])
+    except (IndexError, json.JSONDecodeError) as exc:
+        raise RuntimeError("launch registration is not valid JSON") from exc
+    return _validate_launch_registration(
+        payload,
+        label=label,
+        launch_token=launch_token,
+        registration_path=registration_path,
+    )
+
+
+def _terminate_remote_launch_registration(
+    *,
+    host: str,
+    python_bin: str,
+    registration: Mapping[str, Any],
+    remote_python: Callable[..., str],
+) -> None:
+    output = remote_python(
+        host,
+        python_bin,
+        _remote_terminate_registration_source(registration),
+        timeout=30,
+    )
+    try:
+        report = json.loads(output.splitlines()[-1])
+    except (IndexError, json.JSONDecodeError) as exc:
+        raise RuntimeError("launch registration termination report is invalid") from exc
+    if report != {"recovered": True}:
+        raise RuntimeError("launch registration termination was not acknowledged")
+
+
 def _remote_launch_process(
     *,
     host_id: str,
@@ -1668,10 +2057,12 @@ def _remote_launch_process(
     log_path: str,
     exit_path: str,
     python_path: str,
+    registration_path: str,
     remote_python: Callable[..., str] | None = None,
 ) -> OwnedProcess:
     remote_python = remote_python or _remote_python
     pid_path = f"{exit_path}.child.pid"
+    launch_token = uuid.uuid4().hex
     supervisor = f"""
 import os, subprocess
 from pathlib import Path
@@ -1700,6 +2091,8 @@ with exit_path.open('x', encoding='ascii') as handle:
 import json, os, signal, subprocess, time
 from pathlib import Path
 pid_path = Path({pid_path!r})
+registration_path = Path({registration_path!r})
+launch_token = {launch_token!r}
 def process_start_ticks(pid):
     fields = Path(f'/proc/{{pid}}/stat').read_text(encoding='ascii').rsplit(')', 1)[1].split()
     return int(fields[19])
@@ -1728,32 +2121,86 @@ if not pid_path.is_file():
     except ProcessLookupError:
         pass
     raise RuntimeError('remote child PID was not published')
-print(json.dumps({{
+identity = {{
+    'schema_version': 1,
+    'label': {label!r},
+    'launch_token': launch_token,
+    'registration_path': str(registration_path),
     'child_pid': int(pid_path.read_text(encoding='ascii')),
     'owner_pid': process.pid,
     'owner_pgid': process.pid,
     'owner_start_ticks': owner_start_ticks,
-}}, sort_keys=True))
+}}
+with registration_path.open('x', encoding='utf-8') as handle:
+    json.dump(identity, handle, ensure_ascii=False, sort_keys=True)
+    handle.write('\\n')
+    handle.flush()
+    os.fsync(handle.fileno())
+print(json.dumps(identity, ensure_ascii=False, sort_keys=True))
 """
-    output = remote_python(host, python_bin, source, timeout=40)
+
+    def recover_and_raise(
+        original: BaseException,
+        message: str,
+        registration: Mapping[str, Any] | None = None,
+    ) -> None:
+        try:
+            verified = dict(registration) if registration is not None else (
+                _read_remote_launch_registration(
+                    host=host,
+                    python_bin=python_bin,
+                    label=label,
+                    launch_token=launch_token,
+                    registration_path=registration_path,
+                    remote_python=remote_python,
+                )
+            )
+            _terminate_remote_launch_registration(
+                host=host,
+                python_bin=python_bin,
+                registration=verified,
+                remote_python=remote_python,
+            )
+        except BaseException as recovery_exc:
+            raise RuntimeError(
+                f"{message}; launch registration recovery failed: "
+                f"{type(recovery_exc).__name__}: {recovery_exc}"
+            ) from original
+        raise RuntimeError(
+            f"{message}; registered process recovered after acknowledgement failure"
+        ) from original
+
+    try:
+        output = remote_python(host, python_bin, source, timeout=40)
+    except BaseException as exc:
+        recover_and_raise(exc, f"remote launch acknowledgement failed: {label}")
     try:
         report = json.loads(output.splitlines()[-1])
-    except (IndexError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"invalid remote launch identity report: {label}") from exc
-    if not isinstance(report, dict) or set(report) != {
-        "child_pid",
-            "owner_pid",
-            "owner_pgid",
-            "owner_start_ticks",
-    }:
-        raise RuntimeError(f"incomplete remote launch identity report: {label}")
-    if any(
-        not isinstance(report[field], int)
-        or isinstance(report[field], bool)
-        or report[field] <= 0
-        for field in ("child_pid", "owner_pid", "owner_pgid", "owner_start_ticks")
-    ):
-        raise RuntimeError(f"invalid remote launch PID report: {label}")
+        response_registration = _validate_launch_registration(
+            report,
+            label=label,
+            launch_token=launch_token,
+            registration_path=registration_path,
+        )
+    except BaseException as exc:
+        recover_and_raise(exc, f"remote launch acknowledgement is invalid: {label}")
+    try:
+        stored_registration = _read_remote_launch_registration(
+            host=host,
+            python_bin=python_bin,
+            label=label,
+            launch_token=launch_token,
+            registration_path=registration_path,
+            remote_python=remote_python,
+        )
+    except BaseException as exc:
+        recover_and_raise(exc, f"remote launch registration verification failed: {label}")
+    if response_registration != stored_registration:
+        recover_and_raise(
+            RuntimeError("launch acknowledgement and registration identity mismatch"),
+            f"remote launch identity mismatch: {label}",
+            stored_registration,
+        )
     return OwnedProcess(
         host_id=host_id,
         label=label,
@@ -1761,6 +2208,8 @@ print(json.dumps({{
         owner_pid=report["owner_pid"],
         owner_pgid=report["owner_pgid"],
         owner_start_ticks=report["owner_start_ticks"],
+        registration_path=registration_path,
+        launch_token=launch_token,
         host=host,
         python_bin=python_bin,
         exit_path=exit_path,
@@ -1849,7 +2298,6 @@ print(json.dumps({{'returncode': returncode}}))
 
 
 def _remote_cleanup(processes: Sequence[OwnedProcess]) -> None:
-    by_host: dict[tuple[str, str], list[tuple[int, int, int]]] = {}
     for process in processes:
         if process.host_id == "pc":
             continue
@@ -1862,32 +2310,33 @@ def _remote_cleanup(processes: Sequence[OwnedProcess]) -> None:
             )
         ):
             raise RuntimeError(f"remote process lacks owned identity: {process.label}")
-        by_host.setdefault((str(process.host), str(process.python_bin)), []).append(
-            (
-                process.owner_pid,
-                process.owner_pgid,
-                process.owner_start_ticks,
+        if not isinstance(process.registration_path, (str, Path)) or not isinstance(
+            process.launch_token, str
+        ):
+            raise RuntimeError(
+                f"remote process lacks owned launch registration: {process.label}"
             )
+        registration = _validate_launch_registration(
+            {
+                "schema_version": 1,
+                "label": process.label,
+                "launch_token": process.launch_token,
+                "registration_path": str(process.registration_path),
+                "child_pid": process.pid,
+                "owner_pid": process.owner_pid,
+                "owner_pgid": process.owner_pgid,
+                "owner_start_ticks": process.owner_start_ticks,
+            },
+            label=process.label,
+            launch_token=process.launch_token,
+            registration_path=str(process.registration_path),
         )
-    for (host, python_bin), registrations in by_host.items():
-        source = f"""# REMOTE_CLEANUP_V1
-import os, signal
-from pathlib import Path
-def process_start_ticks(pid):
-    fields = Path(f'/proc/{{pid}}/stat').read_text(encoding='ascii').rsplit(')', 1)[1].split()
-    return int(fields[19])
-for owner_pid, owner_pgid, owner_start_ticks in {registrations!r}:
-    try:
-        if os.getpgid(owner_pid) != owner_pgid:
-            continue
-        if process_start_ticks(owner_pid) != owner_start_ticks:
-            continue
-        os.killpg(owner_pgid, signal.SIGTERM)
-    except (FileNotFoundError, ProcessLookupError, PermissionError):
-        pass
-print('CLEANED')
-"""
-        _remote_python(host, python_bin, source, timeout=30)
+        _terminate_remote_launch_registration(
+            host=str(process.host),
+            python_bin=str(process.python_bin),
+            registration=registration,
+            remote_python=_remote_python,
+        )
 
 
 def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
@@ -1971,6 +2420,7 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             log_path=f"{runtime_paths['ecs_raw']}/server.log",
             exit_path=f"{runtime_paths['ecs_raw']}/server.exit",
             python_path=str(deployments["ecs"].src_path),
+            registration_path=f"{runtime_paths['ecs_root']}/raw/server.registration.json",
         )
 
     def launch_pi_client(attempt: Attempt) -> OwnedProcess:
@@ -1994,6 +2444,7 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             log_path=f"{runtime_paths['pi_raw']}/client.log",
             exit_path=f"{runtime_paths['pi_raw']}/client.exit",
             python_path=str(deployments["pi"].src_path),
+            registration_path=f"{runtime_paths['pi_root']}/raw/pi-client.registration.json",
         )
 
     def launch_pi_sampler(attempt: Attempt, client: object) -> OwnedProcess:
@@ -2024,6 +2475,7 @@ def build_production_hooks(runtime: ProductionRuntime) -> LifecycleHooks:
             log_path=f"{runtime_paths['pi_raw']}/sampler.log",
             exit_path=f"{runtime_paths['pi_raw']}/sampler.exit",
             python_path=str(deployments["pi"].src_path),
+            registration_path=f"{runtime_paths['pi_root']}/raw/pi-sampler.registration.json",
         )
         return replace(process, stop_path=stop_path)
 

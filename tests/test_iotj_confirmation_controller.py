@@ -5,6 +5,7 @@ import inspect
 import io
 import json
 import os
+import stat
 import subprocess
 import sys
 import tarfile
@@ -361,6 +362,12 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     def fake_remote_python(_host, _python, source, **_kwargs):
         if "REMOTE_DEPLOY_STATE_V1" in source:
             return json.dumps({"state": "absent"})
+        if "REMOTE_RESERVE_ARCHIVE_V1" in source:
+            return json.dumps({"state": "reserved"})
+        if "REMOTE_INSTALL_ARCHIVE_V1" in source:
+            return json.dumps(
+                {"source_archive_sha256": manifest["source_archive_sha256"]}
+            )
         assert "REMOTE_EXTRACT_SOURCE_V1" in source
         return remote_report
 
@@ -378,12 +385,17 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     scp_calls = [call for call in run_calls if call and call[0] == "scp"]
     assert len(scp_calls) == 2
     assert all(call[2] == str(archive_path) for call in scp_calls)
-    assert {call[3] for call in scp_calls} == {
-        f"root@ecs:/root/GAPS/confirmation_runtime/{manifest['source_archive_sha256']}/source.tar",
-        f"gaps@pi:/home/gaps/GAPS/confirmation_runtime/{manifest['source_archive_sha256']}/source.tar",
-    }
+    destinations = {call[3].split(":", 1)[0]: call[3].split(":", 1)[1] for call in scp_calls}
+    assert set(destinations) == {"root@ecs", "gaps@pi"}
+    assert destinations["root@ecs"].startswith(
+        f"/root/GAPS/confirmation_runtime/{manifest['source_archive_sha256']}/.source.tar."
+    )
+    assert destinations["gaps@pi"].startswith(
+        f"/home/gaps/GAPS/confirmation_runtime/{manifest['source_archive_sha256']}/.source.tar."
+    )
+    assert all(destination.endswith(".tmp") for destination in destinations.values())
     assert all("sync" not in " ".join(call).lower() for call in run_calls)
-    assert len(ssh_calls) == 2
+    assert ssh_calls == []
     pc_archive = Path(deployments["pc"].archive_path)
     assert pc_archive.read_bytes() == archive_path.read_bytes()
     assert (Path(deployments["pc"].src_path) / "app.py").is_file()
@@ -450,12 +462,22 @@ def test_content_addressed_deploy_reuses_only_verified_complete_runtime(
         scp_calls.append(command)
         host = command[-1].split(":", 1)[0]
         assert remote_states[host] == "absent"
-        remote_states[host] = "archive_only"
+        assert "/.source.tar." in command[-1]
+        assert command[-1].endswith(".tmp")
         return subprocess.CompletedProcess(command, 0, "", "")
 
     def fake_remote_python(host, _python, source, **_kwargs):
         if "REMOTE_DEPLOY_STATE_V1" in source:
             return json.dumps({"state": remote_states[host]})
+        if "REMOTE_RESERVE_ARCHIVE_V1" in source:
+            assert remote_states[host] == "absent"
+            return json.dumps({"state": "reserved"})
+        if "REMOTE_INSTALL_ARCHIVE_V1" in source:
+            assert remote_states[host] == "absent"
+            remote_states[host] = "archive_only"
+            return json.dumps(
+                {"source_archive_sha256": manifest["source_archive_sha256"]}
+            )
         assert "REMOTE_EXTRACT_SOURCE_V1" in source
         if remote_states[host] == "archive_only":
             remote_states[host] = "complete"
@@ -526,6 +548,173 @@ def test_content_addressed_deploy_rejects_partial_remote_before_transfer(
                 else pytest.fail("partial remote continued")
             ),
         )
+
+
+@pytest.mark.parametrize("component", ["archive", "dangling_archive", "root"])
+def test_remote_deploy_state_rejects_synthetic_symlink_components(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, component: str
+) -> None:
+    root = tmp_path / "runtime" / "hash"
+    root.mkdir(parents=True)
+    archive = root / "source.tar"
+    src = root / "src"
+    if component != "dangling_archive":
+        archive.write_bytes(b"archive")
+    src.mkdir()
+    target = root if component == "root" else archive
+    original_lstat = os.lstat
+
+    class _SyntheticSymlinkStat:
+        st_mode = stat.S_IFLNK | 0o777
+        st_file_attributes = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+    def fake_lstat(path, *args, **kwargs):
+        if Path(path) == target:
+            return _SyntheticSymlinkStat()
+        return original_lstat(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "lstat", fake_lstat)
+    source = controller._remote_deploy_state_source(str(archive), str(src))
+
+    with pytest.raises(RuntimeError, match="symlink|reparse"):
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(source, {})
+
+
+def test_remote_extract_rejects_synthetic_archive_symlink(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    root = tmp_path / "runtime" / "hash"
+    root.mkdir(parents=True)
+    remote_archive = root / "source.tar"
+    remote_archive.write_bytes(archive.read_bytes())
+    original_lstat = os.lstat
+
+    class _SyntheticSymlinkStat:
+        st_mode = stat.S_IFLNK | 0o777
+        st_file_attributes = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+    monkeypatch.setattr(
+        os,
+        "lstat",
+        lambda path, *args, **kwargs: (
+            _SyntheticSymlinkStat()
+            if Path(path) == remote_archive
+            else original_lstat(path, *args, **kwargs)
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="symlink|reparse"):
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(
+                controller._remote_extract_source(
+                    str(remote_archive),
+                    str(root / "src"),
+                    manifest,
+                    allow_fresh_extract=True,
+                ),
+                {},
+            )
+
+
+def test_remote_runtime_sources_use_lstat_not_exists_for_pinned_components(
+    tmp_path: Path,
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    state_source = controller._remote_deploy_state_source(
+        "/runtime/hash/source.tar", "/runtime/hash/src"
+    )
+    extract_source = controller._remote_extract_source(
+        "/runtime/hash/source.tar", "/runtime/hash/src", manifest
+    )
+
+    assert "os.lstat" in state_source
+    assert ".exists()" not in state_source
+    assert "os.lstat" in extract_source
+    assert "src_path.exists()" not in extract_source
+
+
+def test_pc_runtime_parent_reparse_is_rejected_before_content_creation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    original_lstat = os.lstat
+    original = original_lstat(runtime)
+
+    class _SyntheticReparseStat:
+        st_mode = original.st_mode
+        st_file_attributes = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+    monkeypatch.setattr(
+        os,
+        "lstat",
+        lambda path, *args, **kwargs: (
+            _SyntheticReparseStat()
+            if Path(path) == runtime
+            else original_lstat(path, *args, **kwargs)
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="reparse"):
+        deploy_source_archive(
+            archive,
+            manifest,
+            ecs_host="root@ecs",
+            pi_host="gaps@pi",
+            pc_runtime_root=runtime,
+            run=lambda *_args, **_kwargs: pytest.fail("reparse runtime transferred"),
+            ssh=lambda *_args, **_kwargs: pytest.fail("reparse runtime contacted host"),
+            remote_python=lambda *_args, **_kwargs: pytest.fail("reparse runtime contacted host"),
+        )
+
+
+def test_fresh_remote_archive_transfer_uses_verified_temp_then_atomic_install(
+    tmp_path: Path,
+) -> None:
+    archive, manifest = _source_fixture(tmp_path / "source")
+    scp_destinations: list[str] = []
+    install_sources: list[str] = []
+
+    def fake_run(command, **_kwargs):
+        scp_destinations.append(str(command[-1]))
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source:
+            return json.dumps({"state": "absent"})
+        if "REMOTE_RESERVE_ARCHIVE_V1" in source:
+            return json.dumps({"state": "reserved"})
+        if "REMOTE_INSTALL_ARCHIVE_V1" in source:
+            install_sources.append(source)
+            return json.dumps(
+                {"source_archive_sha256": manifest["source_archive_sha256"]}
+            )
+        assert "REMOTE_EXTRACT_SOURCE_V1" in source
+        return json.dumps(
+            {
+                "source_archive_sha256": manifest["source_archive_sha256"],
+                "regular_members_sha256": manifest["regular_members_sha256"],
+            }
+        )
+
+    deploy_source_archive(
+        archive,
+        manifest,
+        ecs_host="root@ecs",
+        pi_host="gaps@pi",
+        pc_runtime_root=tmp_path / "runtime",
+        run=fake_run,
+        ssh=lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, "", ""),
+        remote_python=fake_remote_python,
+    )
+
+    assert len(scp_destinations) == 2
+    assert all("/.source.tar." in destination and destination.endswith(".tmp") for destination in scp_destinations)
+    assert len(install_sources) == 2
+    assert all("os.lstat" in source and "os.link" in source for source in install_sources)
 
 
 @pytest.mark.parametrize(
@@ -941,12 +1130,15 @@ def test_path_guard_rejects_reported_symlink_without_platform_privilege(
 ) -> None:
     raw_root = tmp_path / "raw"
     raw_root.mkdir()
-    real_islink = controller.os.path.islink
-    monkeypatch.setattr(
-        controller.os.path,
-        "islink",
-        lambda path: Path(path) == raw_root or real_islink(path),
-    )
+    real_lstat = controller.os.lstat
+
+    def synthetic_lstat(path):
+        entry = real_lstat(path)
+        if Path(path) != raw_root:
+            return entry
+        return os.stat_result((stat.S_IFLNK | 0o777, *tuple(entry)[1:]))
+
+    monkeypatch.setattr(controller.os, "lstat", synthetic_lstat)
     with pytest.raises(RuntimeError, match="symlink"):
         allocate_attempt(raw_root, "c12_to_c5__b2__s42")
 
@@ -1166,6 +1358,13 @@ def _literal_assignment(source: str, name: str) -> object:
             and isinstance(node.targets[0], ast.Name)
             and node.targets[0].id == name
         ):
+            if (
+                isinstance(node.value, ast.Call)
+                and isinstance(node.value.func, ast.Name)
+                and node.value.func.id == "Path"
+                and len(node.value.args) == 1
+            ):
+                return ast.literal_eval(node.value.args[0])
             return ast.literal_eval(node.value)
     raise AssertionError(f"assignment {name!r} not found")
 
@@ -1201,17 +1400,28 @@ def _supervisor_source(outer_source: str) -> str:
 
 def test_remote_launcher_publishes_child_pid_separately_from_owned_group() -> None:
     captured: list[str] = []
+    identity: dict[str, object] = {}
 
     def fake_remote_python(_host, _python, source, **_kwargs):
         captured.append(source)
-        return json.dumps(
-            {
-                "child_pid": 4202,
-                "owner_pid": 4201,
-                "owner_pgid": 4201,
-                "owner_start_ticks": 7654321,
-            }
-        )
+        if "REMOTE_LAUNCH_V1" in source:
+            identity.update(
+                {
+                    "schema_version": 1,
+                    "label": "pi-client",
+                    "launch_token": _literal_assignment(source, "launch_token"),
+                    "registration_path": _literal_assignment(
+                        source, "registration_path"
+                    ),
+                    "child_pid": 4202,
+                    "owner_pid": 4201,
+                    "owner_pgid": 4201,
+                    "owner_start_ticks": 7654321,
+                }
+            )
+            return json.dumps(identity)
+        assert "REMOTE_READ_REGISTRATION_V1" in source
+        return json.dumps(identity)
 
     process = controller._remote_launch_process(
         host_id="pi",
@@ -1223,6 +1433,7 @@ def test_remote_launcher_publishes_child_pid_separately_from_owned_group() -> No
         log_path="/runtime/attempt/client.log",
         exit_path="/runtime/attempt/client.exit",
         python_path="/runtime/hash/src",
+        registration_path="/runtime/attempt/client.registration.json",
         remote_python=fake_remote_python,
     )
 
@@ -1230,14 +1441,135 @@ def test_remote_launcher_publishes_child_pid_separately_from_owned_group() -> No
     assert process.owner_pid == 4201
     assert process.owner_pgid == 4201
     assert process.owner_start_ticks == 7654321
+    assert process.registration_path == "/runtime/attempt/client.registration.json"
+    assert process.launch_token == identity["launch_token"]
     assert "'owner_pgid': process.pid" in captured[0]
     assert "owner_start_ticks = process_start_ticks(process.pid)" in captured[0]
+    assert "registration_path.open('x'" in captured[0]
+    assert captured[0].index("registration_path.open('x'") < captured[0].index(
+        "print(json.dumps(identity"
+    )
     supervisor = _supervisor_source(captured[0])
     assert _literal_assignment(supervisor, "cwd") == "/runtime/hash/src"
     assert "child = subprocess.Popen(" in supervisor
     assert "pid_path.open('x'" in supervisor
     assert "handle.write(str(child.pid))" in supervisor
     assert "returncode = child.wait()" in supervisor
+
+
+def test_lost_launch_ack_reads_registration_then_identity_gated_terminates() -> None:
+    calls: list[str] = []
+    identity: dict[str, object] = {}
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        calls.append(source)
+        if "REMOTE_LAUNCH_V1" in source:
+            identity.update(
+                {
+                    "schema_version": 1,
+                    "label": "server",
+                    "launch_token": _literal_assignment(source, "launch_token"),
+                    "registration_path": _literal_assignment(
+                        source, "registration_path"
+                    ),
+                    "child_pid": 5202,
+                    "owner_pid": 5201,
+                    "owner_pgid": 5201,
+                    "owner_start_ticks": 8765432,
+                }
+            )
+            raise ConnectionError("SSH response lost after registration")
+        if "REMOTE_READ_REGISTRATION_V1" in source:
+            return json.dumps(identity)
+        assert "REMOTE_TERMINATE_REGISTRATION_V1" in source
+        return json.dumps({"recovered": True})
+
+    with pytest.raises(RuntimeError, match="acknowledgement.*recovered"):
+        controller._remote_launch_process(
+            host_id="ecs",
+            label="server",
+            host="root@ecs",
+            python_bin="/venv/bin/python",
+            command=["/venv/bin/python", "-m", "gaps_flower.server_app"],
+            cwd="/runtime/hash/src",
+            log_path="/runtime/attempt/server.log",
+            exit_path="/runtime/attempt/server.exit",
+            python_path="/runtime/hash/src",
+            registration_path="/runtime/attempt/server.registration.json",
+            remote_python=fake_remote_python,
+        )
+
+    assert any("REMOTE_READ_REGISTRATION_V1" in source for source in calls)
+    terminate = next(
+        source for source in calls if "REMOTE_TERMINATE_REGISTRATION_V1" in source
+    )
+    assert "registration != expected" in terminate
+    assert terminate.index("registration != expected") < terminate.index("os.killpg")
+    assert "process_start_ticks(owner_pid) != owner_start_ticks" in terminate
+
+
+@pytest.mark.parametrize("registration_kind", ["malformed", "mismatch"])
+def test_bad_launch_registration_never_blind_kills_and_attempt_is_audited(
+    tmp_path: Path, registration_kind: str
+) -> None:
+    remote_calls: list[str] = []
+    identity: dict[str, object] = {}
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        remote_calls.append(source)
+        if "REMOTE_LAUNCH_V1" in source:
+            identity.update(
+                {
+                    "schema_version": 1,
+                    "label": "server",
+                    "launch_token": _literal_assignment(source, "launch_token"),
+                    "registration_path": _literal_assignment(
+                        source, "registration_path"
+                    ),
+                    "child_pid": 6202,
+                    "owner_pid": 6201,
+                    "owner_pgid": 6201,
+                    "owner_start_ticks": 9876543,
+                }
+            )
+            raise ConnectionError("launch response truncated")
+        assert "REMOTE_READ_REGISTRATION_V1" in source
+        if registration_kind == "malformed":
+            return json.dumps({"schema_version": 1})
+        return json.dumps({**identity, "launch_token": "0" * 32})
+
+    hooks = _hooks([])
+
+    def launch_server(attempt):
+        return controller._remote_launch_process(
+            host_id="ecs",
+            label="server",
+            host="root@ecs",
+            python_bin="/venv/bin/python",
+            command=["/venv/bin/python", "-m", "gaps_flower.server_app"],
+            cwd="/runtime/hash/src",
+            log_path=f"/runtime/{attempt.attempt_id}/server.log",
+            exit_path=f"/runtime/{attempt.attempt_id}/server.exit",
+            python_path="/runtime/hash/src",
+            registration_path=f"/runtime/{attempt.attempt_id}/server.registration.json",
+            remote_python=fake_remote_python,
+        )
+
+    hooks = controller.replace(hooks, launch_server=launch_server)
+    with pytest.raises(RuntimeError, match="registration"):
+        run_confirmation_attempt(
+            tmp_path,
+            "c12_to_c5__b2__s45",
+            provenance=PROVENANCE,
+            hooks=hooks,
+        )
+
+    assert not any("REMOTE_TERMINATE_REGISTRATION_V1" in source for source in remote_calls)
+    run_id = "c12_to_c5__b2__s45"
+    attempt_path = tmp_path / run_id / f"{run_id}__a001"
+    assert _read_status(attempt_path)["state"] == "failed"
+    controller_log = (attempt_path / "controller.log").read_text(encoding="utf-8")
+    assert "registration" in controller_log
 
 
 def test_ecs_rewrite_preserves_algorithm_argv_and_absolutizes_all_dataset_paths() -> None:
@@ -1275,12 +1607,13 @@ def _install_production_fakes(
     fixture: dict[str, object],
     events: list[str],
     launches: list[str] | None = None,
-    launch_identities: dict[str, dict[str, int]] | None = None,
+    launch_identities: dict[str, dict[str, object]] | None = None,
     cleanups: list[str] | None = None,
 ) -> None:
     source = fixture["source"]
     dataset = fixture["dataset"]
     remote_states = {"root@121.40.139.213": "absent", "gaps@pi": "absent"}
+    registrations: dict[str, dict[str, object]] = {}
 
     def report(host_id: str, source_code: str) -> str:
         expected = _json_assignment(source_code, "expected")
@@ -1302,6 +1635,15 @@ def _install_production_fakes(
         if "REMOTE_DEPLOY_STATE_V1" in source_code:
             events.append(f"deploy-state:{host}:{remote_states[host]}")
             return json.dumps({"state": remote_states[host]})
+        if "REMOTE_RESERVE_ARCHIVE_V1" in source_code:
+            assert remote_states[host] == "absent"
+            return json.dumps({"state": "reserved"})
+        if "REMOTE_INSTALL_ARCHIVE_V1" in source_code:
+            assert remote_states[host] == "absent"
+            remote_states[host] = "archive_only"
+            return json.dumps(
+                {"source_archive_sha256": source["source_archive_sha256"]}
+            )
         if "REMOTE_EXTRACT_SOURCE_V1" in source_code:
             mode = "fresh" if remote_states[host] == "archive_only" else "reuse"
             events.append(f"deploy:{host}:{mode}")
@@ -1324,14 +1666,24 @@ def _install_production_fakes(
                 launches.append(source_code)
             owner_pid = 5000 + len(events) * 2
             identity = {
+                "schema_version": 1,
+                "label": label,
+                "launch_token": _literal_assignment(source_code, "launch_token"),
+                "registration_path": _literal_assignment(
+                    source_code, "registration_path"
+                ),
                 "child_pid": owner_pid + 1,
                 "owner_pid": owner_pid,
                 "owner_pgid": owner_pid,
                 "owner_start_ticks": owner_pid * 100,
             }
+            registrations[str(identity["registration_path"])] = identity
             if launch_identities is not None:
                 launch_identities[label] = identity
             return json.dumps(identity)
+        if "REMOTE_READ_REGISTRATION_V1" in source_code:
+            registration_path = str(_literal_assignment(source_code, "registration_path"))
+            return json.dumps(registrations[registration_path])
         if "REMOTE_PROCESS_STATE_V1" in source_code:
             events.append("monitor:server")
             return json.dumps({"running": False, "returncode": 0})
@@ -1339,11 +1691,14 @@ def _install_production_fakes(
             label = source_code.split("REMOTE_WAIT_V1:", 1)[1].splitlines()[0].strip()
             events.append(f"wait:{label}")
             return json.dumps({"returncode": 0})
-        if "REMOTE_CLEANUP_V1" in source_code:
+        if "REMOTE_TERMINATE_REGISTRATION_V1" in source_code:
             events.append("cleanup:remote")
             if cleanups is not None:
                 cleanups.append(source_code)
-            return "CLEANED"
+            expected = _json_assignment(source_code, "expected")
+            registration_path = str(expected["registration_path"])
+            assert registrations.pop(registration_path) == expected
+            return json.dumps({"recovered": True})
         raise AssertionError(f"unexpected remote source: {source_code[:120]}")
 
     def fake_run(command, **_kwargs):
@@ -1366,10 +1721,9 @@ def _install_production_fakes(
                 destination.mkdir(parents=True)
                 (destination / "events.jsonl").write_text("raw\n", encoding="utf-8")
             else:
-                if command[-1].endswith("/source.tar"):
+                if "/.source.tar." in command[-1] and command[-1].endswith(".tmp"):
                     host = command[-1].split(":", 1)[0]
                     assert remote_states[host] == "absent"
-                    remote_states[host] = "archive_only"
                     events.append(f"source-scp:{host}")
                 events.append("scp")
             return subprocess.CompletedProcess(command, 0, "", "")
@@ -1410,11 +1764,14 @@ def test_formal_deploy_failure_is_audited_inside_allocated_attempt(
         "_ssh",
         lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, "", ""),
     )
-    monkeypatch.setattr(
-        controller,
-        "_remote_python",
-        lambda *_args, **_kwargs: json.dumps({"state": "absent"}),
-    )
+    def fake_remote_python(_host, _python, source_code, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source_code:
+            return json.dumps({"state": "absent"})
+        if "REMOTE_RESERVE_ARCHIVE_V1" in source_code:
+            return json.dumps({"state": "reserved"})
+        raise AssertionError(f"unexpected remote source: {source_code[:120]}")
+
+    monkeypatch.setattr(controller, "_remote_python", fake_remote_python)
 
     def fail_transfer(command, **_kwargs):
         if str(command[0]) == "scp":
@@ -1473,7 +1830,7 @@ def test_formal_server_launch_uses_only_frozen_source_and_absolute_ecs_data(
     validator.write_text("# fake validator boundary\n", encoding="utf-8")
     events: list[str] = []
     launches: list[str] = []
-    identities: dict[str, dict[str, int]] = {}
+    identities: dict[str, dict[str, object]] = {}
     cleanups: list[str] = []
     _install_production_fakes(
         monkeypatch, fixture, events, launches, identities, cleanups
@@ -1517,13 +1874,15 @@ def test_formal_server_launch_uses_only_frozen_source_and_absolute_ecs_data(
     assert int(sampler_command[pid_index + 1]) == identities["pi-client"]["child_pid"]
     assert int(sampler_command[pid_index + 1]) != identities["pi-client"]["owner_pid"]
 
-    owned_registrations: list[tuple[int, int, int]] = []
+    owned_registrations: list[dict[str, object]] = []
     for cleanup in cleanups:
-        loop = next(node for node in ast.walk(ast.parse(cleanup)) if isinstance(node, ast.For))
-        owned_registrations.extend(ast.literal_eval(loop.iter))
-        assert "os.getpgid(owner_pid) != owner_pgid" in cleanup
+        expected = _json_assignment(cleanup, "expected")
+        owned_registrations.append(expected)
+        assert cleanup.index("registration != expected") < cleanup.index("os.killpg")
+        assert "actual_pgid != owner_pgid" in cleanup
         assert "process_start_ticks(owner_pid) != owner_start_ticks" in cleanup
-    owned_pgids = {row[1] for row in owned_registrations}
+        assert str(expected["registration_path"]).endswith(".registration.json")
+    owned_pgids = {row["owner_pgid"] for row in owned_registrations}
     expected_remote_pgids = {
         identity["owner_pgid"]
         for label, identity in identities.items()
