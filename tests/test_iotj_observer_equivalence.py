@@ -1151,6 +1151,23 @@ def test_formal_resource_sidecar_rejects_float_sequence(
         )
 
 
+def test_formal_resource_sidecar_rejects_later_row_binding_type_drift(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-later-binding-drift"
+    _write_resource_sidecar(root)
+
+    def mutate(rows: list[dict]) -> None:
+        assert rows[0]["training_seed"] == 42
+        rows[1]["training_seed"] = 42.0
+
+    _rewrite_event_rows(root / "resource.jsonl", mutate)
+    with pytest.raises(ValueError, match="type|identity|training_seed"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
+
+
 def test_formal_resource_sidecar_rejects_float_overhead_total(
     tmp_path: Path,
 ) -> None:

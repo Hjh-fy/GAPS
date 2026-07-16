@@ -2626,7 +2626,11 @@ def _validate_formal_resource_sidecar(
     for index, row in enumerate(rows, start=1):
         if set(row) != event_keys:
             raise ValueError(f"resource event exact schema mismatch: {event_path}:{index}")
-        if any(row.get(key) != identity[key] for key in identity_keys):
+        if any(
+            type(row.get(key)) is not type(identity[key])
+            or row.get(key) != identity[key]
+            for key in identity_keys
+        ):
             raise ValueError(f"resource event identity drift: {event_path}:{index}")
         if type(row["sequence"]) is not int or row["sequence"] != index:
             raise ValueError(f"resource event sequence is not contiguous: {event_path}")
