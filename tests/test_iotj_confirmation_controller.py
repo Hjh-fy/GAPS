@@ -504,6 +504,38 @@ def test_pc_deploy_temp_name_fits_long_content_root(tmp_path: Path) -> None:
         )
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows MAX_PATH regression")
+def test_local_launch_imports_module_beyond_max_path(tmp_path: Path) -> None:
+    target_source_length = 223
+    padding = target_source_length - len(str(tmp_path.absolute())) - 1
+    if padding < 1:
+        pytest.skip("pytest temporary path is too long for the MAX_PATH fixture")
+    source = tmp_path / ("r" * padding)
+    source_io = controller._windows_extended_local_path(source.absolute())
+    module = source_io / "scripts" / "sample_iotj_process_resources.py"
+    module.parent.mkdir(parents=True)
+    (module.parent / "__init__.py").write_text("", encoding="utf-8")
+    module.write_text("print('long-path-module-ok')\n", encoding="utf-8")
+    assert len(str(source.absolute())) == target_source_length
+    assert len(str(source.absolute() / "scripts" / module.name)) >= 260
+
+    process = controller._local_launch_process(
+        label="pc-sampler",
+        command=[sys.executable, "-m", "scripts.sample_iotj_process_resources"],
+        cwd=source,
+        log_root=tmp_path / "logs",
+    )
+    try:
+        assert process.handle.wait(timeout=30) == 0
+    finally:
+        for handle in process.log_handles:
+            handle.close()
+    assert (tmp_path / "logs" / "stdout.log").read_text(
+        encoding="utf-8"
+    ).strip() == "long-path-module-ok"
+    assert (tmp_path / "logs" / "stderr.log").read_text(encoding="utf-8") == ""
+
+
 def test_controller_remote_python_streams_long_probe_over_utf8_stdin(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

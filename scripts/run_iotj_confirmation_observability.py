@@ -2520,10 +2520,13 @@ def _local_launch_process(
     log_root.mkdir(parents=True, exist_ok=False)
     stdout = (log_root / "stdout.log").open("xb", buffering=0)
     stderr = (log_root / "stderr.log").open("xb", buffering=0)
+    launch_cwd = Path(cwd)
+    if os.name == "nt":
+        launch_cwd = _windows_extended_local_path(launch_cwd.absolute())
     try:
         process = subprocess.Popen(
             [str(item) for item in command],
-            cwd=cwd,
+            cwd=launch_cwd,
             stdin=subprocess.DEVNULL,
             stdout=stdout,
             stderr=stderr,
