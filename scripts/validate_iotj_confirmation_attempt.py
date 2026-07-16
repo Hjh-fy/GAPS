@@ -1104,14 +1104,20 @@ def validate_resource_coverage(
                 reasons.append(
                     f"{client_id} round {round_idx} has no overlapping resource sample"
                 )
-        covered_sample_points = sum(
-            1
-            for _sample_index, sample_start, sample_end in valid_intervals
-            if any(
-                sample_start <= fit_end and sample_end >= fit_start
-                for _round_idx, fit_start, fit_end in active_intervals
-            )
-        )
+        covered_bins: set[tuple[int, int]] = set()
+        for _sample_index, _sample_start, sample_end in valid_intervals:
+            for round_idx, fit_start, fit_end in active_intervals:
+                if not fit_start <= sample_end <= fit_end:
+                    continue
+                endpoint_offset_ns = sample_end - fit_start
+                bin_index = (
+                    0
+                    if endpoint_offset_ns == 0
+                    else (endpoint_offset_ns - 1) // 1_000_000_000
+                )
+                covered_bins.add((round_idx, bin_index))
+                break
+        covered_sample_points = len(covered_bins)
         coverage = (
             min(covered_sample_points / expected_sample_points, 1.0)
             if expected_sample_points > 0

@@ -810,6 +810,68 @@ def test_all_rounds_overlap_but_one_sample_per_long_round_has_low_coverage(
     assert _reason_contains(audit, "0.95")
 
 
+def test_duplicate_samples_in_one_bin_do_not_forge_full_coverage(
+    valid_attempt: AttemptFixture,
+) -> None:
+    path = valid_attempt.path / "raw" / "pc" / "resource.jsonl"
+
+    def mutate(rows: list[dict[str, Any]]) -> None:
+        samples = [row for row in rows if row["event_type"] == "resource_sample"]
+        for round_offset in range(25):
+            round_samples = samples[round_offset * 7 : (round_offset + 1) * 7]
+            first_payload = round_samples[0]["payload"]
+            duplicate_interval = {
+                "sample_interval_start_monotonic_ns": first_payload[
+                    "sample_interval_start_monotonic_ns"
+                ],
+                "sample_interval_end_monotonic_ns": first_payload[
+                    "sample_interval_end_monotonic_ns"
+                ],
+                "sample_interval_wall_ns": first_payload[
+                    "sample_interval_wall_ns"
+                ],
+            }
+            for sample in round_samples[1:]:
+                sample["payload"].update(duplicate_interval)
+
+    _rewrite_rows(path, mutate)
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+    assert audit["status"] == "invalid"
+    assert audit["resource"]["C2"]["covered_rounds"] == 25
+    assert audit["resource"]["C2"]["expected_sample_points"] == 175
+    assert audit["resource"]["C2"]["covered_sample_points"] == 25
+    assert audit["resource"]["C2"]["coverage"] == pytest.approx(25 / 175)
+    assert _reason_contains(audit, "coverage")
+
+
+def test_overlap_with_endpoint_outside_fit_does_not_fill_sampling_bins(
+    valid_attempt: AttemptFixture,
+) -> None:
+    path = valid_attempt.path / "raw" / "pi" / "resource.jsonl"
+
+    def mutate(rows: list[dict[str, Any]]) -> None:
+        samples = [row for row in rows if row["event_type"] == "resource_sample"]
+        round_17_samples = samples[16 * 7 : 17 * 7]
+        fit_end = 100_000_000_000 + 17 * 10_000_000_000 + 8_000_000_000
+        for sample in round_17_samples:
+            sample["payload"].update(
+                {
+                    "sample_interval_start_monotonic_ns": fit_end - 100,
+                    "sample_interval_end_monotonic_ns": fit_end + 100,
+                    "sample_interval_wall_ns": 200,
+                }
+            )
+            sample["monotonic_ns"] = fit_end + 200
+
+    _rewrite_rows(path, mutate)
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+    assert audit["status"] == "valid", audit["reasons"]
+    assert audit["resource"]["C1"]["covered_rounds"] == 25
+    assert audit["resource"]["C1"]["expected_sample_points"] == 175
+    assert audit["resource"]["C1"]["covered_sample_points"] == 168
+    assert audit["resource"]["C1"]["coverage"] == pytest.approx(168 / 175)
+
+
 def test_unpaired_observer_overhead_is_invalid(
     valid_attempt: AttemptFixture,
 ) -> None:
