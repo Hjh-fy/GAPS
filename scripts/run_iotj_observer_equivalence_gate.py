@@ -1808,7 +1808,7 @@ def _validate_observer_sidecars(
                 raise ValueError(f"observer event schema mismatch: {event_path}:{index}")
             if row["schema_version"] != "iotj.confirmation.observability.v1":
                 raise ValueError(f"observer schema version mismatch: {event_path}")
-            if row["sequence"] != index:
+            if type(row["sequence"]) is not int or row["sequence"] != index:
                 raise ValueError(f"non-contiguous observer sequence: {event_path}")
             if type(row["monotonic_ns"]) is not int or row["monotonic_ns"] < 0:
                 raise ValueError(f"observer monotonic_ns must be a nonnegative integer: {event_path}")
@@ -1819,7 +1819,10 @@ def _validate_observer_sidecars(
             if any(row[key] != common_identity[key] for key in identity_keys):
                 raise ValueError(f"observer identity mismatch: {event_path}:{index}")
             for key in identity_keys:
-                if row[key] != binding[key]:
+                if (
+                    type(row[key]) is not type(binding[key])
+                    or row[key] != binding[key]
+                ):
                     raise ValueError(
                         f"observer binding mismatch for {key}: {event_path}:{index}"
                     )
@@ -2612,7 +2615,10 @@ def _validate_formal_resource_sidecar(
     ):
         raise ValueError(f"resource sidecar identity mismatch: {event_path}")
     for key, expected_value in binding.items():
-        if identity[key] != expected_value:
+        if (
+            type(identity[key]) is not type(expected_value)
+            or identity[key] != expected_value
+        ):
             raise ValueError(
                 f"resource binding mismatch for {key}: {event_path}"
             )
@@ -2622,7 +2628,7 @@ def _validate_formal_resource_sidecar(
             raise ValueError(f"resource event exact schema mismatch: {event_path}:{index}")
         if any(row.get(key) != identity[key] for key in identity_keys):
             raise ValueError(f"resource event identity drift: {event_path}:{index}")
-        if row["sequence"] != index:
+        if type(row["sequence"]) is not int or row["sequence"] != index:
             raise ValueError(f"resource event sequence is not contiguous: {event_path}")
         expected_suffix = f"/{identity['process_instance_id']}/{index}"
         if not str(row["event_id"]).endswith(expected_suffix):
@@ -2655,22 +2661,23 @@ def _validate_formal_resource_sidecar(
         payload = row["payload"]
         if not isinstance(payload, Mapping) or set(payload) != overhead_keys:
             raise ValueError(f"resource observer overhead exact schema mismatch: {event_path}")
+        numeric_fields = overhead_keys - {"observed_event_id"}
+        if any(
+            type(payload[field]) is not int or payload[field] < 0
+            for field in numeric_fields
+        ):
+            raise ValueError(
+                f"resource observer overhead integer type/nonnegative mismatch: {event_path}"
+            )
         components = [
             payload["observer_flower_serialize_ns"],
             payload["observer_event_encode_ns"],
             payload["observer_io_write_ns"],
             payload["observer_fsync_ns"],
         ]
-        if any(type(value) is not int or value < 0 for value in components):
-            raise ValueError(f"resource observer overhead must be nonnegative: {event_path}")
         if payload["observer_total_ns"] != sum(components):
             raise ValueError(f"resource observer overhead total mismatch: {event_path}")
-        if (
-            type(payload["observer_event_bytes_written"]) is not int
-            or payload["observer_event_bytes_written"] <= 0
-            or type(payload["observer_event_count"]) is not int
-            or payload["observer_event_count"] <= 0
-        ):
+        if payload["observer_event_bytes_written"] <= 0 or payload["observer_event_count"] <= 0:
             raise ValueError(f"resource observer overhead accounting is invalid: {event_path}")
 
     sample_payload_keys = {
@@ -2840,15 +2847,28 @@ def _validate_formal_resource_sidecar(
         or end_payload["shutdown_reason"] not in {"stop_file", "target_exited"}
     ):
         raise ValueError("resource sampler end identity/count/error mismatch")
-    for field in (
-        "root_pid", "sampler_pid", "sample_count", "sampler_cpu_user_seconds",
-        "sampler_cpu_system_seconds", "observer_event_encode_ns",
+    exact_integer_fields = (
+        "root_pid", "sampler_pid", "sample_count", "observer_event_encode_ns",
         "observer_io_write_ns", "observer_fsync_ns",
         "observer_event_bytes_written", "observer_event_count",
-    ):
+    )
+    for field in exact_integer_fields:
         value = end_payload[field]
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
-            raise ValueError(f"resource sampler end {field} must be finite and nonnegative")
+        if type(value) is not int or value < 0:
+            raise ValueError(
+                f"resource sampler end {field} must have exact nonnegative integer type"
+            )
+    for field in ("sampler_cpu_user_seconds", "sampler_cpu_system_seconds"):
+        value = end_payload[field]
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or value < 0
+        ):
+            raise ValueError(
+                f"resource sampler end {field} must be finite and nonnegative"
+            )
     if end_payload["sampler_rss_peak_available"] is not True:
         raise ValueError("resource sampler RSS peak must be available")
     peak = end_payload["sampler_rss_peak_bytes"]

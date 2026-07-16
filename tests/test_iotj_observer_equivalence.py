@@ -987,6 +987,41 @@ def test_training_sidecar_validator_rejects_consistent_wrong_binding(
         )
 
 
+def test_training_sidecar_validator_rejects_float_training_seed(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "float-training-seed"
+    _write_training_sidecars(root)
+    for event_path in root.glob("*events.jsonl"):
+        _rewrite_event_rows(
+            event_path,
+            lambda rows: [row.__setitem__("training_seed", 42.0) for row in rows],
+        )
+
+    with pytest.raises(ValueError, match="type|training_seed|binding"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_validator_rejects_float_sequence(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "float-sequence"
+    _write_training_sidecars(root)
+    _rewrite_event_rows(
+        root / "server_events.jsonl",
+        lambda rows: [
+            row.__setitem__("sequence", float(row["sequence"])) for row in rows
+        ],
+    )
+
+    with pytest.raises(ValueError, match="type|integer|sequence"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
 def _resource_payload(start_ns: int, end_ns: int, *, rss: int = 1024) -> dict:
     return {
         "root_pid": 101,
@@ -1094,6 +1129,62 @@ def test_formal_resource_sidecar_rejects_consistent_wrong_binding(
     )
 
     with pytest.raises(ValueError, match="binding|confirmation_commit"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
+
+
+def test_formal_resource_sidecar_rejects_float_sequence(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-float-sequence"
+    _write_resource_sidecar(root)
+    _rewrite_event_rows(
+        root / "resource.jsonl",
+        lambda rows: [
+            row.__setitem__("sequence", float(row["sequence"])) for row in rows
+        ],
+    )
+    with pytest.raises(ValueError, match="type|integer|sequence"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
+
+
+def test_formal_resource_sidecar_rejects_float_overhead_total(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-float-overhead-total"
+    _write_resource_sidecar(root)
+
+    def mutate(rows: list[dict]) -> None:
+        overhead = next(row for row in rows if row["event_type"] == "observer_overhead")
+        total = overhead["payload"]["observer_total_ns"]
+        overhead["payload"]["observer_total_ns"] = float(total)
+
+    _rewrite_event_rows(root / "resource.jsonl", mutate)
+    with pytest.raises(ValueError, match="type|integer|overhead"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
+
+
+def test_formal_resource_sidecar_rejects_float_sampler_end_count(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-float-end-count"
+    _write_resource_sidecar(root)
+
+    def mutate(rows: list[dict]) -> None:
+        sampler_end = next(
+            row for row in rows if row["event_type"] == "resource_sampler_end"
+        )
+        sampler_end["payload"]["sample_count"] = float(
+            sampler_end["payload"]["sample_count"]
+        )
+
+    _rewrite_event_rows(root / "resource.jsonl", mutate)
+    with pytest.raises(ValueError, match="type|integer|sample_count"):
         gate_module._validate_formal_resource_sidecar(
             root, "C2", expected_binding=_expected_resource_binding("C2")
         )
