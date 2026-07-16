@@ -127,22 +127,29 @@ def _portable_evidence_path(root: Path, path: Path) -> str:
     return relative.as_posix()
 
 
-def _require_exact_recovered_file_reference(value: Any, recovered: Path) -> Path:
-    """Bind an exact JSON string path to one already recovered regular file."""
+def _require_exact_producer_file_reference(
+    value: Any, expected_producer: Any, recovered: Path
+) -> Path:
+    """Bind an exact producer path to one separately recovered regular file."""
 
     if type(value) is not str or not value:
-        raise ValueError("recovered-file reference must have exact nonempty string type")
-    declared = Path(value)
-    if any(part == ".." for part in declared.parts):
-        raise ValueError(f"recovered-file reference contains traversal: {value!r}")
-    candidate = declared if declared.is_absolute() else Path(recovered).parent / declared
-    candidate = _require_regular_file(candidate)
-    expected = _require_regular_file(Path(recovered))
-    if candidate.resolve(strict=True) != expected.resolve(strict=True):
+        raise ValueError("producer-file reference must have exact nonempty string type")
+    if type(expected_producer) is not str or not expected_producer:
         raise ValueError(
-            f"reported recovered-file reference is not the recovered file: {value!r}"
+            "expected producer-file reference must have exact nonempty string type"
         )
-    return expected
+    declared, declared_is_absolute = _declared_path_parts(value)
+    expected, expected_is_absolute = _declared_path_parts(expected_producer)
+    if (
+        not declared_is_absolute
+        or not expected_is_absolute
+        or type(declared) is not type(expected)
+        or declared.parts != expected.parts
+    ):
+        raise ValueError(
+            "reported producer-file reference differs from the exact expected path"
+        )
+    return _require_regular_file(Path(recovered))
 
 
 def _finite_json(value: Any, path: tuple[Any, ...] = ()) -> None:
@@ -2820,6 +2827,7 @@ def _validate_formal_resource_sidecar(
     host_root: Path,
     client_id: str,
     *,
+    expected_producer_close_path: str,
     expected_binding: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Strictly validate one formal host's resource sampler evidence."""
@@ -3179,8 +3187,10 @@ def _validate_formal_resource_sidecar(
         or end_payload["observer_close_summary_is_authoritative"] is not True
     ):
         raise ValueError("resource sampler observer-cost boundary is invalid")
-    _require_exact_recovered_file_reference(
-        end_payload["observer_close_summary_path"], close_path
+    _require_exact_producer_file_reference(
+        end_payload["observer_close_summary_path"],
+        expected_producer_close_path,
+        close_path,
     )
 
     close = json.loads(
@@ -3284,6 +3294,7 @@ def _run_formal_bound_gate(
     from scripts.run_iotj_confirmation_observability import (
         DEFAULT_PC_RUNTIME_ROOT,
         FormalSmokeConfig,
+        PI_REMOTE_RUNTIME_BASE,
         ProductionRuntime,
         REPO_ROOT,
         build_production_hooks,
@@ -3356,6 +3367,13 @@ def _run_formal_bound_gate(
             "C1": _validate_formal_resource_sidecar(
                 attempt_root / "raw" / "pi",
                 "C1",
+                expected_producer_close_path=str(
+                    PurePosixPath(PI_REMOTE_RUNTIME_BASE)
+                    / provenance.source_archive_sha256
+                    / "attempts"
+                    / smoke_attempt.attempt_id
+                    / "raw/client_c1/resource.close.json"
+                ),
                 expected_binding=_expected_resource_binding(
                     training_binding, client_id="C1", host_id="pi-c1"
                 ),
@@ -3363,6 +3381,9 @@ def _run_formal_bound_gate(
             "C2": _validate_formal_resource_sidecar(
                 attempt_root / "raw" / "pc",
                 "C2",
+                expected_producer_close_path=str(
+                    attempt_root / "raw" / "pc" / "resource.close.json"
+                ),
                 expected_binding=_expected_resource_binding(
                     training_binding, client_id="C2", host_id="pc-c2"
                 ),

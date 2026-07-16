@@ -49,6 +49,8 @@ DEFAULT_RAW_ROOT = (
 DEFAULT_PC_RUNTIME_ROOT = Path(
     "results/iotj_main_confirmation_observability_20260715/runtime"
 )
+ECS_REMOTE_RUNTIME_BASE = "/root/GAPS/confirmation_runtime"
+PI_REMOTE_RUNTIME_BASE = "/home/gaps/GAPS/confirmation_runtime"
 EXPECTED_DEPENDENCY_VERSIONS = {
     "flwr": "1.23.0",
     "protobuf": "4.25.8",
@@ -1360,13 +1362,13 @@ def deploy_source_archive(
         (
             "ecs",
             ecs_host,
-            f"/root/GAPS/confirmation_runtime/{source_hash}",
+            f"{ECS_REMOTE_RUNTIME_BASE}/{source_hash}",
             "/root/gaps_env/bin/python",
         ),
         (
             "pi",
             pi_host,
-            f"/home/gaps/GAPS/confirmation_runtime/{source_hash}",
+            f"{PI_REMOTE_RUNTIME_BASE}/{source_hash}",
             "/home/gaps/GAPS/gaps_rpi_env/bin/python",
         ),
     )

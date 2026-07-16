@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 import random
 import subprocess
 import sys
@@ -1118,27 +1119,29 @@ def _resource_payload(start_ns: int, end_ns: int, *, rss: int = 1024) -> dict:
     }
 
 
-def _write_resource_sidecar(root: Path, *, rss: int = 1024) -> None:
-    root.mkdir()
-    observer = JsonlObserver(_resource_identity("C2"), root / "resource.jsonl")
+def _write_resource_sidecar(
+    root: Path, *, rss: int = 1024, client_id: str = "C2"
+) -> None:
+    root.mkdir(parents=True)
+    observer = JsonlObserver(_resource_identity(client_id), root / "resource.jsonl")
     observer.emit(
         "resource_sample",
         round_idx=None,
-        client_id="C2",
+        client_id=client_id,
         status="succeeded",
         payload=_resource_payload(100, 200, rss=rss),
     )
     observer.emit(
         "resource_sample",
         round_idx=None,
-        client_id="C2",
+        client_id=client_id,
         status="succeeded",
         payload=_resource_payload(200, 300, rss=rss),
     )
     observer.emit(
         "resource_sampler_end",
         round_idx=None,
-        client_id="C2",
+        client_id=client_id,
         status="succeeded",
         payload={
             "root_pid": 101,
@@ -1158,7 +1161,7 @@ def _write_resource_sidecar(root: Path, *, rss: int = 1024) -> None:
             "observer_fsync_ns": 1,
             "observer_event_bytes_written": 1,
             "observer_event_count": 2,
-            "observer_close_summary_path": "resource.close.json",
+            "observer_close_summary_path": str(root / "resource.close.json"),
             "observer_close_summary_is_authoritative": True,
         },
     )
@@ -1172,12 +1175,22 @@ def test_formal_resource_sidecar_requires_exact_schema_finite_nonnegative_values
     assert callable(validator), "missing strict formal resource-sidecar validator"
     good = tmp_path / "good"
     _write_resource_sidecar(good)
-    result = validator(good, "C2", expected_binding=_expected_resource_binding("C2"))
+    result = validator(
+        good,
+        "C2",
+        expected_producer_close_path=str(good / "resource.close.json"),
+        expected_binding=_expected_resource_binding("C2"),
+    )
     assert result["sample_count"] == 2
     bad = tmp_path / "bad"
     _write_resource_sidecar(bad, rss=-1)
     with pytest.raises(ValueError, match="nonnegative|rss"):
-        validator(bad, "C2", expected_binding=_expected_resource_binding("C2"))
+        validator(
+            bad,
+            "C2",
+            expected_producer_close_path=str(bad / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
+        )
 
 
 def test_formal_resource_sidecar_rejects_consistent_wrong_binding(
@@ -1194,7 +1207,10 @@ def test_formal_resource_sidecar_rejects_consistent_wrong_binding(
 
     with pytest.raises(ValueError, match="binding|confirmation_commit"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
 
 
@@ -1211,7 +1227,10 @@ def test_formal_resource_sidecar_rejects_float_sequence(
     )
     with pytest.raises(ValueError, match="type|integer|sequence"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
 
 
@@ -1228,7 +1247,10 @@ def test_formal_resource_sidecar_rejects_later_row_binding_type_drift(
     _rewrite_event_rows(root / "resource.jsonl", mutate)
     with pytest.raises(ValueError, match="type|identity|training_seed"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
 
 
@@ -1246,7 +1268,10 @@ def test_formal_resource_sidecar_rejects_float_overhead_total(
     _rewrite_event_rows(root / "resource.jsonl", mutate)
     with pytest.raises(ValueError, match="type|integer|overhead"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
 
 
@@ -1267,7 +1292,10 @@ def test_formal_resource_sidecar_rejects_float_sampler_end_count(
     _rewrite_event_rows(root / "resource.jsonl", mutate)
     with pytest.raises(ValueError, match="type|integer|sample_count"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
 
 
@@ -1285,7 +1313,10 @@ def test_formal_resource_sidecar_rejects_float_process_identity_pid(
     _rewrite_event_rows(root / "resource.jsonl", mutate)
     with pytest.raises(ValueError, match="pid|type|identity"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
 
 
@@ -1305,8 +1336,69 @@ def test_formal_resource_sidecar_rejects_close_path_not_recovered_file(
     _rewrite_event_rows(root / "resource.jsonl", mutate)
     with pytest.raises(ValueError, match="close|path|recover|outside|regular"):
         gate_module._validate_formal_resource_sidecar(
-            root, "C2", expected_binding=_expected_resource_binding("C2")
+            root,
+            "C2",
+            expected_producer_close_path=str(root / "resource.close.json"),
+            expected_binding=_expected_resource_binding("C2"),
         )
+
+
+def test_formal_pi_resource_sidecar_accepts_exact_producer_close_recovery(
+    tmp_path: Path,
+) -> None:
+    validator = gate_module._validate_formal_resource_sidecar
+    binding = _expected_resource_binding("C1")
+    producer_root = (
+        PurePosixPath("/home/gaps/GAPS/confirmation_runtime")
+        / binding["source_archive_sha256"]
+        / "attempts"
+        / binding["attempt_id"]
+        / "raw"
+        / "client_c1"
+    )
+    expected_producer_close = producer_root / "resource.close.json"
+
+    def validate(attempt: Path, declared_close: PurePosixPath) -> dict:
+        recovered_root = attempt / "raw" / "pi"
+        _write_resource_sidecar(recovered_root, client_id="C1")
+
+        def mutate(rows: list[dict]) -> None:
+            sampler_end = next(
+                row for row in rows if row["event_type"] == "resource_sampler_end"
+            )
+            sampler_end["payload"]["observer_close_summary_path"] = str(
+                declared_close
+            )
+
+        _rewrite_event_rows(recovered_root / "resource.jsonl", mutate)
+        kwargs = {"expected_binding": binding}
+        if "expected_producer_close_path" in inspect.signature(validator).parameters:
+            kwargs["expected_producer_close_path"] = str(expected_producer_close)
+        return validator(recovered_root, "C1", **kwargs)
+
+    wrong_references = {
+        "wrong-source": (
+            PurePosixPath("/home/gaps/GAPS/confirmation_runtime")
+            / ("e" * 64)
+            / "attempts"
+            / binding["attempt_id"]
+            / "raw/client_c1/resource.close.json"
+        ),
+        "wrong-attempt": (
+            PurePosixPath("/home/gaps/GAPS/confirmation_runtime")
+            / binding["source_archive_sha256"]
+            / "attempts/c12_to_c5__b2__s42__a998/raw/client_c1/resource.close.json"
+        ),
+        "arbitrary-basename": PurePosixPath(
+            "/tmp/arbitrary/resource.close.json"
+        ),
+    }
+    for label, wrong_reference in wrong_references.items():
+        with pytest.raises(ValueError, match="close|path|producer|recover|regular"):
+            validate(tmp_path / label, wrong_reference)
+
+    result = validate(tmp_path / "attempt", expected_producer_close)
+    assert result["close_summary"] == "resource.close.json"
 
 
 def test_portable_evidence_path_rejects_absolute_or_escaping_paths(

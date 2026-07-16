@@ -381,6 +381,10 @@ def test_archive_hash_mismatch_leaves_fresh_destination_absent(tmp_path: Path) -
 def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     tmp_path: Path,
 ) -> None:
+    ecs_runtime_base = getattr(controller, "ECS_REMOTE_RUNTIME_BASE", None)
+    pi_runtime_base = getattr(controller, "PI_REMOTE_RUNTIME_BASE", None)
+    assert ecs_runtime_base == "/root/GAPS/confirmation_runtime"
+    assert pi_runtime_base == "/home/gaps/GAPS/confirmation_runtime"
     archive_path, manifest = _source_fixture(tmp_path)
     run_calls: list[list[str]] = []
     ssh_calls: list[tuple[str, str]] = []
@@ -428,10 +432,10 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     destinations = {call[3].split(":", 1)[0]: call[3].split(":", 1)[1] for call in scp_calls}
     assert set(destinations) == {"root@ecs", "gaps@pi"}
     assert destinations["root@ecs"].startswith(
-        f"/root/GAPS/confirmation_runtime/{manifest['source_archive_sha256']}/.source.tar."
+        f"{ecs_runtime_base}/{manifest['source_archive_sha256']}/.source.tar."
     )
     assert destinations["gaps@pi"].startswith(
-        f"/home/gaps/GAPS/confirmation_runtime/{manifest['source_archive_sha256']}/.source.tar."
+        f"{pi_runtime_base}/{manifest['source_archive_sha256']}/.source.tar."
     )
     assert all(destination.endswith(".tmp") for destination in destinations.values())
     assert all("sync" not in " ".join(call).lower() for call in run_calls)
@@ -2421,7 +2425,7 @@ def test_formal_server_launch_uses_only_frozen_source_and_absolute_ecs_data(
     server_outer = next(source for source in launches if "REMOTE_LAUNCH_V1:server" in source)
     supervisor = _supervisor_source(server_outer)
     source_hash = fixture["source"]["source_archive_sha256"]
-    extracted_src = f"/root/GAPS/confirmation_runtime/{source_hash}/src"
+    extracted_src = f"{controller.ECS_REMOTE_RUNTIME_BASE}/{source_hash}/src"
     assert _literal_assignment(supervisor, "cwd") == extracted_src
     assert f"environment['PYTHONPATH'] = {extracted_src!r}" in supervisor
     command = _literal_assignment(supervisor, "command")
@@ -2429,7 +2433,9 @@ def test_formal_server_launch_uses_only_frozen_source_and_absolute_ecs_data(
     assert command[data_index + 1] == "/root/GAPS/dataset/frozen_dataset"
     assert "/root/GAPS" != _literal_assignment(supervisor, "cwd")
     run_id = confirmation_run_id("B2", 42)
-    remote_attempt = f"/root/GAPS/confirmation_runtime/{source_hash}/attempts/{run_id}__a001"
+    remote_attempt = (
+        f"{controller.ECS_REMOTE_RUNTIME_BASE}/{source_hash}/attempts/{run_id}__a001"
+    )
     assert command == [
         "python",
         "-m",
