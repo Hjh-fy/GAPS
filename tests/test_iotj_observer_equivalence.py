@@ -701,6 +701,57 @@ def _training_identity(producer: str, client_id: str | None) -> ObserverIdentity
     )
 
 
+def _expected_training_binding() -> dict:
+    server = _training_identity("server", None)
+    return {
+        "schema_version": "iotj.confirmation.observability.v1",
+        "run_id": server.run_id,
+        "attempt_id": server.attempt_id,
+        "group_id": server.group_id,
+        "training_seed": server.training_seed,
+        "confirmation_commit": server.confirmation_commit,
+        "source_archive_sha256": server.source_archive_sha256,
+        "dataset_manifest_sha256": server.dataset_manifest_sha256,
+        "algorithm_config_sha256": server.algorithm_config_sha256,
+        "producers": {
+            "server": {"host_id": "server", "producer": "server", "client_id": None},
+            "C1": {"host_id": "c1", "producer": "client", "client_id": "C1"},
+            "C2": {"host_id": "c2", "producer": "client", "client_id": "C2"},
+        },
+    }
+
+
+def _expected_resource_binding(client_id: str) -> dict:
+    identity = _resource_identity(client_id)
+    return {
+        "schema_version": "iotj.confirmation.observability.v1",
+        "run_id": identity.run_id,
+        "attempt_id": identity.attempt_id,
+        "group_id": identity.group_id,
+        "training_seed": identity.training_seed,
+        "client_id": identity.client_id,
+        "host_id": identity.host_id,
+        "producer": identity.producer,
+        "confirmation_commit": identity.confirmation_commit,
+        "source_archive_sha256": identity.source_archive_sha256,
+        "dataset_manifest_sha256": identity.dataset_manifest_sha256,
+        "algorithm_config_sha256": identity.algorithm_config_sha256,
+    }
+
+
+def _rewrite_event_rows(path: Path, mutate) -> None:
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    mutate(rows)
+    path.write_text(
+        "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+    close_path = path.with_suffix(".close.json")
+    close = json.loads(close_path.read_text(encoding="utf-8"))
+    close["observer_event_bytes_written"] = path.stat().st_size
+    close_path.write_text(json.dumps(close), encoding="utf-8")
+
+
 def _write_training_sidecars(root: Path, *, duplicate_c1_fitres: bool = False) -> None:
     root.mkdir()
     downlink_audit = {
@@ -817,7 +868,9 @@ def test_training_sidecar_validator_rejects_duplicate_round_client_matrix(
     root = tmp_path / "matrix"
     _write_training_sidecars(root, duplicate_c1_fitres=True)
     with pytest.raises(ValueError, match="matrix|C2"):
-        _validate_observer_sidecars(root, enabled=True)
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
 
 
 def test_training_sidecar_validator_binds_close_bytes_to_jsonl_size(
@@ -830,7 +883,9 @@ def test_training_sidecar_validator_binds_close_bytes_to_jsonl_size(
     close["observer_event_bytes_written"] += 1
     close_path.write_text(json.dumps(close), encoding="utf-8")
     with pytest.raises(ValueError, match="byte"):
-        _validate_observer_sidecars(root, enabled=True)
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
 
 
 def test_training_sidecar_validator_rejects_invalid_application_audit(
@@ -854,7 +909,82 @@ def test_training_sidecar_validator_rejects_invalid_application_audit(
     close_path.write_text(json.dumps(close), encoding="utf-8")
 
     with pytest.raises(ValueError, match="application.*audit|message byte"):
-        _validate_observer_sidecars(root, enabled=True)
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_validator_rejects_string_close_integer(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "string-close"
+    _write_training_sidecars(root)
+    close_path = root / "server_events.close.json"
+    close = json.loads(close_path.read_text(encoding="utf-8"))
+    close["observer_event_count"] = str(close["observer_event_count"])
+    close_path.write_text(json.dumps(close), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="type|integer|close"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_validator_rejects_string_overhead_integer(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "string-overhead"
+    _write_training_sidecars(root)
+    event_path = root / "server_events.jsonl"
+
+    def mutate(rows: list[dict]) -> None:
+        overhead = next(row for row in rows if row["event_type"] == "observer_overhead")
+        value = overhead["payload"]["observer_event_count"]
+        overhead["payload"]["observer_event_count"] = str(value)
+
+    _rewrite_event_rows(event_path, mutate)
+    with pytest.raises(ValueError, match="type|integer|overhead"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_validator_rejects_detected_reparse_event_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "reparse-event"
+    _write_training_sidecars(root)
+    event_path = root / "server_events.jsonl"
+    original_detector = gate_module._is_reparse_or_link
+    monkeypatch.setattr(
+        gate_module,
+        "_is_reparse_or_link",
+        lambda path: Path(path) == event_path or original_detector(Path(path)),
+    )
+
+    with pytest.raises(ValueError, match="symlink|reparse"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
+
+
+def test_training_sidecar_validator_rejects_consistent_wrong_binding(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "wrong-binding"
+    _write_training_sidecars(root)
+    for event_path in root.glob("*events.jsonl"):
+        _rewrite_event_rows(
+            event_path,
+            lambda rows: [
+                row.__setitem__("confirmation_commit", "f" * 40) for row in rows
+            ],
+        )
+
+    with pytest.raises(ValueError, match="binding|confirmation_commit"):
+        _validate_observer_sidecars(
+            root, enabled=True, expected_binding=_expected_training_binding()
+        )
 
 
 def _resource_payload(start_ns: int, end_ns: int, *, rss: int = 1024) -> dict:
@@ -943,12 +1073,30 @@ def test_formal_resource_sidecar_requires_exact_schema_finite_nonnegative_values
     assert callable(validator), "missing strict formal resource-sidecar validator"
     good = tmp_path / "good"
     _write_resource_sidecar(good)
-    result = validator(good, "C2")
+    result = validator(good, "C2", expected_binding=_expected_resource_binding("C2"))
     assert result["sample_count"] == 2
     bad = tmp_path / "bad"
     _write_resource_sidecar(bad, rss=-1)
     with pytest.raises(ValueError, match="nonnegative|rss"):
-        validator(bad, "C2")
+        validator(bad, "C2", expected_binding=_expected_resource_binding("C2"))
+
+
+def test_formal_resource_sidecar_rejects_consistent_wrong_binding(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "resource-wrong-binding"
+    _write_resource_sidecar(root)
+    _rewrite_event_rows(
+        root / "resource.jsonl",
+        lambda rows: [
+            row.__setitem__("confirmation_commit", "f" * 40) for row in rows
+        ],
+    )
+
+    with pytest.raises(ValueError, match="binding|confirmation_commit"):
+        gate_module._validate_formal_resource_sidecar(
+            root, "C2", expected_binding=_expected_resource_binding("C2")
+        )
 
 
 def test_portable_evidence_path_rejects_absolute_or_escaping_paths(

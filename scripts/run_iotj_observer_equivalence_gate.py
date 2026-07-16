@@ -1326,7 +1326,30 @@ def _launch_attempt(
         for handle in handles:
             handle.close()
 
-    sidecars = _validate_observer_sidecars(attempt, enabled=mode == "on")
+    local_identity = _observer_context(
+        group_id=group_id,
+        producer="server",
+        client_id=None,
+        fixture_sha=fixture_sha,
+    )
+    local_binding = _expected_training_binding(
+        run_id=local_identity["run_id"],
+        attempt_id=local_identity["attempt_id"],
+        group_id=local_identity["group_id"],
+        training_seed=local_identity["training_seed"],
+        confirmation_commit=local_identity["confirmation_commit"],
+        source_archive_sha256=local_identity["source_archive_sha256"],
+        dataset_manifest_sha256=local_identity["dataset_manifest_sha256"],
+        algorithm_config_sha256=local_identity["algorithm_config_sha256"],
+        server_host_id="local-loopback",
+        c1_host_id="local-loopback",
+        c2_host_id="local-loopback",
+    )
+    sidecars = _validate_observer_sidecars(
+        attempt,
+        enabled=mode == "on",
+        expected_binding=local_binding,
+    )
     return {
         "attempt": attempt,
         "server_output": server_output,
@@ -1529,8 +1552,169 @@ def _validate_application_audit(audit: Any, *, direction: str) -> None:
         raise ValueError(f"{direction} application audit SHA-256 is invalid")
 
 
+_BINDING_COMMON_KEYS = {
+    "schema_version",
+    "run_id",
+    "attempt_id",
+    "group_id",
+    "training_seed",
+    "confirmation_commit",
+    "source_archive_sha256",
+    "dataset_manifest_sha256",
+    "algorithm_config_sha256",
+}
+
+
+def _require_lower_hex_binding(field: str, value: Any, length: int) -> None:
+    if (
+        not isinstance(value, str)
+        or len(value) != length
+        or value != value.lower()
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"expected binding {field} is not lowercase {length}-hex")
+
+
+def _validate_binding_common(binding: Mapping[str, Any]) -> None:
+    if binding["schema_version"] != "iotj.confirmation.observability.v1":
+        raise ValueError("expected binding schema_version is invalid")
+    if type(binding["training_seed"]) is not int or binding["training_seed"] not in {
+        42,
+        43,
+        44,
+        45,
+        46,
+    }:
+        raise ValueError("expected binding training_seed is invalid")
+    group = binding["group_id"]
+    if group not in _GROUPS:
+        raise ValueError("expected binding group_id is invalid")
+    expected_run = f"c12_to_c5__{str(group).lower()}__s{binding['training_seed']}"
+    if binding["run_id"] != expected_run:
+        raise ValueError("expected binding run_id differs from group/seed")
+    attempt_id = binding["attempt_id"]
+    if (
+        not isinstance(attempt_id, str)
+        or not attempt_id.startswith(f"{expected_run}__a")
+        or len(attempt_id) != len(expected_run) + 6
+        or not attempt_id[-3:].isdigit()
+    ):
+        raise ValueError("expected binding attempt_id differs from run_id")
+    _require_lower_hex_binding(
+        "confirmation_commit", binding["confirmation_commit"], 40
+    )
+    for field in (
+        "source_archive_sha256",
+        "dataset_manifest_sha256",
+        "algorithm_config_sha256",
+    ):
+        _require_lower_hex_binding(field, binding[field], 64)
+
+
+def _validate_expected_training_binding(
+    expected_binding: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if not isinstance(expected_binding, Mapping) or set(expected_binding) != (
+        _BINDING_COMMON_KEYS | {"producers"}
+    ):
+        raise ValueError("training sidecars require an exact expected binding")
+    binding = copy.deepcopy(dict(expected_binding))
+    _validate_binding_common(binding)
+    producers = binding["producers"]
+    if not isinstance(producers, Mapping) or set(producers) != {"server", "C1", "C2"}:
+        raise ValueError("training expected binding producer matrix is invalid")
+    for logical_name, endpoint in producers.items():
+        if not isinstance(endpoint, Mapping) or set(endpoint) != {
+            "host_id",
+            "producer",
+            "client_id",
+        }:
+            raise ValueError("training expected binding endpoint schema is invalid")
+        expected_producer = "server" if logical_name == "server" else "client"
+        expected_client = None if logical_name == "server" else logical_name
+        if (
+            endpoint["producer"] != expected_producer
+            or endpoint["client_id"] != expected_client
+            or not isinstance(endpoint["host_id"], str)
+            or not endpoint["host_id"]
+        ):
+            raise ValueError("training expected binding endpoint identity is invalid")
+    return binding
+
+
+def _validate_expected_resource_binding(
+    expected_binding: Mapping[str, Any] | None,
+    client_id: str,
+) -> dict[str, Any]:
+    expected_keys = _BINDING_COMMON_KEYS | {"client_id", "host_id", "producer"}
+    if not isinstance(expected_binding, Mapping) or set(expected_binding) != expected_keys:
+        raise ValueError("resource sidecar requires an exact expected binding")
+    binding = copy.deepcopy(dict(expected_binding))
+    _validate_binding_common(binding)
+    if (
+        binding["client_id"] != client_id
+        or binding["producer"] != "resource_sampler"
+        or not isinstance(binding["host_id"], str)
+        or not binding["host_id"]
+    ):
+        raise ValueError("resource expected binding endpoint identity is invalid")
+    return binding
+
+
+def _expected_training_binding(
+    *,
+    run_id: str,
+    attempt_id: str,
+    group_id: str,
+    training_seed: int,
+    confirmation_commit: str,
+    source_archive_sha256: str,
+    dataset_manifest_sha256: str,
+    algorithm_config_sha256: str,
+    server_host_id: str,
+    c1_host_id: str,
+    c2_host_id: str,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "iotj.confirmation.observability.v1",
+        "run_id": run_id,
+        "attempt_id": attempt_id,
+        "group_id": group_id,
+        "training_seed": training_seed,
+        "confirmation_commit": confirmation_commit,
+        "source_archive_sha256": source_archive_sha256,
+        "dataset_manifest_sha256": dataset_manifest_sha256,
+        "algorithm_config_sha256": algorithm_config_sha256,
+        "producers": {
+            "server": {
+                "host_id": server_host_id,
+                "producer": "server",
+                "client_id": None,
+            },
+            "C1": {"host_id": c1_host_id, "producer": "client", "client_id": "C1"},
+            "C2": {"host_id": c2_host_id, "producer": "client", "client_id": "C2"},
+        },
+    }
+
+
+def _expected_resource_binding(
+    training_binding: Mapping[str, Any], *, client_id: str, host_id: str
+) -> dict[str, Any]:
+    return {
+        key: training_binding[key]
+        for key in _BINDING_COMMON_KEYS
+    } | {
+        "client_id": client_id,
+        "host_id": host_id,
+        "producer": "resource_sampler",
+    }
+
+
 def _validate_observer_sidecars(
-    attempt_dir: Path, *, enabled: bool
+    attempt_dir: Path,
+    *,
+    enabled: bool,
+    expected_binding: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate actual JSONL/close sidecars and derive counts from disk."""
 
@@ -1554,6 +1738,9 @@ def _validate_observer_sidecars(
             "missing required server/C1/C2 observer sidecars: "
             f"event_files={len(event_files)}, close_summaries={len(close_files)}"
         )
+    binding = _validate_expected_training_binding(expected_binding)
+    event_files = [_require_regular_file(path) for path in event_files]
+    close_files = [_require_regular_file(path) for path in close_files]
 
     required_event_keys = {
         "schema_version",
@@ -1623,8 +1810,19 @@ def _validate_observer_sidecars(
                 raise ValueError(f"observer schema version mismatch: {event_path}")
             if row["sequence"] != index:
                 raise ValueError(f"non-contiguous observer sequence: {event_path}")
+            if type(row["monotonic_ns"]) is not int or row["monotonic_ns"] < 0:
+                raise ValueError(f"observer monotonic_ns must be a nonnegative integer: {event_path}")
+            if row["round"] is not None and (
+                type(row["round"]) is not int or row["round"] not in {1, 2}
+            ):
+                raise ValueError(f"observer round must be null or frozen integer 1/2: {event_path}")
             if any(row[key] != common_identity[key] for key in identity_keys):
                 raise ValueError(f"observer identity mismatch: {event_path}:{index}")
+            for key in identity_keys:
+                if row[key] != binding[key]:
+                    raise ValueError(
+                        f"observer binding mismatch for {key}: {event_path}:{index}"
+                    )
             expected_suffix = f"/{row['process_instance_id']}/{index}"
             if not str(row["event_id"]).endswith(expected_suffix):
                 raise ValueError(f"event_id/sequence mismatch: {event_path}:{index}")
@@ -1657,19 +1855,26 @@ def _validate_observer_sidecars(
             }
             if set(payload) != expected_overhead_keys:
                 raise ValueError(f"observer overhead schema mismatch: {event_path}")
+            numeric_fields = expected_overhead_keys - {"observed_event_id"}
+            if any(
+                type(payload[field]) is not int or payload[field] < 0
+                for field in numeric_fields
+            ):
+                raise ValueError(
+                    f"observer overhead integer type/nonnegative mismatch: {event_path}"
+                )
             components = [
-                int(payload["observer_flower_serialize_ns"]),
-                int(payload["observer_event_encode_ns"]),
-                int(payload["observer_io_write_ns"]),
-                int(payload["observer_fsync_ns"]),
+                payload["observer_flower_serialize_ns"],
+                payload["observer_event_encode_ns"],
+                payload["observer_io_write_ns"],
+                payload["observer_fsync_ns"],
             ]
-            if any(value < 0 for value in components):
-                raise ValueError(f"negative observer overhead: {event_path}")
-            if int(payload["observer_total_ns"]) != sum(components):
+            if payload["observer_total_ns"] != sum(components):
                 raise ValueError(f"observer overhead total mismatch: {event_path}")
-            if int(payload["observer_event_bytes_written"]) <= 0 or int(
-                payload["observer_event_count"]
-            ) <= 0:
+            if (
+                payload["observer_event_bytes_written"] <= 0
+                or payload["observer_event_count"] <= 0
+            ):
                 raise ValueError(f"invalid observer overhead accounting: {event_path}")
         client_ids = {
             str(row["client_id"])
@@ -1687,6 +1892,12 @@ def _validate_observer_sidecars(
             raise ValueError(f"observer producer is not server/C1/C2: {event_path}")
         if logical_name in producer_rows:
             raise ValueError(f"duplicate observer producer: {logical_name}")
+        endpoint = binding["producers"][logical_name]
+        if first["host_id"] != endpoint["host_id"] or first["producer"] != endpoint["producer"]:
+            raise ValueError(f"observer producer binding mismatch: {logical_name}")
+        expected_client_id = endpoint["client_id"]
+        if logical_name != "server" and client_ids != {expected_client_id}:
+            raise ValueError(f"observer client binding mismatch: {logical_name}")
 
         close_path = event_path.with_suffix(".close.json")
         if close_path not in close_files:
@@ -1701,21 +1912,34 @@ def _validate_observer_sidecars(
         for key in ("schema_version", "run_id", "attempt_id", "host_id", "producer", "process_instance_id"):
             if close[key] != first[key]:
                 raise ValueError(f"observer close identity mismatch: {close_path}")
-        if int(close["observer_event_count"]) != len(rows):
+        close_numeric_fields = required_close_keys - {
+            "schema_version",
+            "run_id",
+            "attempt_id",
+            "host_id",
+            "producer",
+            "process_instance_id",
+        }
+        if any(
+            type(close[field]) is not int or close[field] < 0
+            for field in close_numeric_fields
+        ):
+            raise ValueError(
+                f"observer close integer type/nonnegative mismatch: {close_path}"
+            )
+        if close["observer_event_count"] != len(rows):
             raise ValueError(f"observer close event count mismatch: {close_path}")
-        if int(close["observer_event_bytes_written"]) != event_path.stat().st_size:
+        if close["observer_event_bytes_written"] != event_path.stat().st_size:
             raise ValueError(
                 f"observer close byte count differs from JSONL size: {close_path}"
             )
         close_components = [
-            int(close["observer_flower_serialize_ns"]),
-            int(close["observer_event_encode_ns"]),
-            int(close["observer_io_write_ns"]),
-            int(close["observer_fsync_ns"]),
+            close["observer_flower_serialize_ns"],
+            close["observer_event_encode_ns"],
+            close["observer_io_write_ns"],
+            close["observer_fsync_ns"],
         ]
-        if any(value < 0 for value in close_components):
-            raise ValueError(f"negative close overhead: {close_path}")
-        if int(close["observer_total_ns"]) != sum(close_components):
+        if close["observer_total_ns"] != sum(close_components):
             raise ValueError(f"observer close total mismatch: {close_path}")
 
         type_counts: dict[str, int] = {}
@@ -1739,8 +1963,8 @@ def _validate_observer_sidecars(
             "substantive_events": len(substantive),
             "overhead_events": len(overhead),
             "event_type_counts": type_counts,
-            "observer_total_ns": int(close["observer_total_ns"]),
-            "observer_event_bytes_written": int(close["observer_event_bytes_written"]),
+            "observer_total_ns": close["observer_total_ns"],
+            "observer_event_bytes_written": close["observer_event_bytes_written"],
         }
         substantive_by_producer[logical_name] = substantive
 
@@ -1758,7 +1982,7 @@ def _validate_observer_sidecars(
             raise ValueError(f"{client} event counts differ from two-round contract: {counts}")
         client_rows = substantive_by_producer[client]
         observed_client_matrix = {
-            (int(row["round"]), str(row["event_type"]), str(row["client_id"]))
+            (row["round"], str(row["event_type"]), str(row["client_id"]))
             for row in client_rows
         }
         expected_client_matrix = {
@@ -1792,7 +2016,7 @@ def _validate_observer_sidecars(
     fit_res_matrix: list[tuple[int, str]] = []
     for row in fit_res_rows:
         _validate_application_audit(row["payload"].get("uplink_audit"), direction="uplink")
-        round_idx = int(row["round"])
+        round_idx = row["round"]
         client_id = str(row["client_id"])
         proxy_id = str(row["payload"].get("proxy_id"))
         key = (round_idx, proxy_id)
@@ -1814,7 +2038,7 @@ def _validate_observer_sidecars(
         _validate_application_audit(
             row["payload"].get("downlink_audit"), direction="downlink"
         )
-        round_idx = int(row["round"])
+        round_idx = row["round"]
         client_id = proxy_clients.get(
             (round_idx, str(row["payload"].get("proxy_id")))
         )
@@ -1828,6 +2052,7 @@ def _validate_observer_sidecars(
         "event_files": len(event_files),
         "close_summaries": len(close_files),
         "producers": producer_rows,
+        "binding_sha256": _sha256_bytes(_canonical_bytes(binding)),
     }
 
 
@@ -2320,7 +2545,10 @@ def _capture_formal_artifacts(attempt_root: Path) -> dict[str, Any]:
 
 
 def _validate_formal_resource_sidecar(
-    host_root: Path, client_id: str
+    host_root: Path,
+    client_id: str,
+    *,
+    expected_binding: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Strictly validate one formal host's resource sampler evidence."""
 
@@ -2328,6 +2556,9 @@ def _validate_formal_resource_sidecar(
     expected_client = str(client_id)
     if expected_client not in {"C1", "C2"}:
         raise ValueError(f"resource sidecar client must be C1 or C2: {client_id!r}")
+    binding = _validate_expected_resource_binding(
+        expected_binding, expected_client
+    )
     event_path = _require_regular_file(root / "resource.jsonl")
     close_path = _require_regular_file(root / "resource.close.json")
     rows = _read_events(event_path)
@@ -2380,6 +2611,11 @@ def _validate_formal_resource_sidecar(
         or identity["producer"] != "resource_sampler"
     ):
         raise ValueError(f"resource sidecar identity mismatch: {event_path}")
+    for key, expected_value in binding.items():
+        if identity[key] != expected_value:
+            raise ValueError(
+                f"resource binding mismatch for {key}: {event_path}"
+            )
     event_ids: set[str] = set()
     for index, row in enumerate(rows, start=1):
         if set(row) != event_keys:
@@ -2648,8 +2884,17 @@ def _validate_formal_resource_sidecar(
         close["observer_flower_serialize_ns"], close["observer_event_encode_ns"],
         close["observer_io_write_ns"], close["observer_fsync_ns"],
     ]
-    if any(type(value) is not int or value < 0 for value in close_components):
-        raise ValueError("resource close summary overhead must be nonnegative")
+    close_numeric_fields = close_keys - {
+        "schema_version", "run_id", "attempt_id", "host_id", "producer",
+        "process_instance_id",
+    }
+    if any(
+        type(close[field]) is not int or close[field] < 0
+        for field in close_numeric_fields
+    ):
+        raise ValueError(
+            "resource close summary integers must have exact nonnegative type"
+        )
     if close["observer_total_ns"] != sum(close_components):
         raise ValueError("resource close summary overhead total mismatch")
     if close["observer_event_count"] != len(rows):
@@ -2665,17 +2910,24 @@ def _validate_formal_resource_sidecar(
         "close_summary": _portable_evidence_path(root, close_path),
         "event_sha256": _sha256_file(event_path),
         "close_sha256": _sha256_file(close_path),
+        "binding_sha256": _sha256_bytes(_canonical_bytes(binding)),
     }
 
 
-def _formal_resource_samples_per_client_round(on_root: Path) -> int:
+def _formal_resource_samples_per_client_round(
+    on_root: Path, resource_validations: Mapping[str, Mapping[str, Any]]
+) -> int:
     minimum: int | None = None
     for client_id, host_root in (
         ("C1", on_root / "raw" / "pi"),
         ("C2", on_root / "raw" / "pc"),
     ):
-        client_events = _read_events(host_root / "events.jsonl")
-        resource_validation = _validate_formal_resource_sidecar(host_root, client_id)
+        client_events = _read_events(
+            _require_regular_file(host_root / "events.jsonl")
+        )
+        resource_validation = resource_validations.get(client_id)
+        if not isinstance(resource_validation, Mapping):
+            raise ValueError(f"formal resource validation is missing for {client_id}")
         valid_intervals = resource_validation["valid_intervals"]
         for round_idx in (1, 2):
             starts = [
@@ -2694,8 +2946,8 @@ def _formal_resource_samples_per_client_round(on_root: Path) -> int:
             ]
             if len(starts) != 1 or len(ends) != 1:
                 raise ValueError(f"{client_id} round {round_idx} fit interval is invalid")
-            start_ns = int(starts[0]["monotonic_ns"])
-            end_ns = int(ends[0]["monotonic_ns"])
+            start_ns = starts[0]["monotonic_ns"]
+            end_ns = ends[0]["monotonic_ns"]
             overlapping = 0
             for sample_start, sample_end in valid_intervals:
                 if sample_start <= end_ns and sample_end >= start_ns:
@@ -2753,7 +3005,7 @@ def _run_formal_bound_gate(
             initial_checkpoint_sha256=initial["raw_sha256"],
         )
         attempt_root = root / mode
-        run_noncanonical_smoke_attempt(
+        smoke_attempt = run_noncanonical_smoke_attempt(
             attempt_root,
             run_id=frozen_run.run_id,
             mode=mode,
@@ -2761,15 +3013,39 @@ def _run_formal_bound_gate(
             hooks=build_production_hooks(runtime, smoke=smoke),
         )
         attempts[mode] = attempt_root
+        provenance = frozen_run.provenance
+        training_binding = _expected_training_binding(
+            run_id=smoke_attempt.run_id,
+            attempt_id=smoke_attempt.attempt_id,
+            group_id=frozen_run.group_id,
+            training_seed=frozen_run.seed,
+            confirmation_commit=provenance.confirmation_commit,
+            source_archive_sha256=provenance.source_archive_sha256,
+            dataset_manifest_sha256=provenance.dataset_manifest_sha256,
+            algorithm_config_sha256=provenance.algorithm_config_sha256,
+            server_host_id="ecs",
+            c1_host_id="pi-c1",
+            c2_host_id="pc-c2",
+        )
         sidecars[mode] = _validate_observer_sidecars(
-            attempt_root, enabled=mode == "on"
+            attempt_root,
+            enabled=mode == "on",
+            expected_binding=training_binding,
         )
         resource_sidecars[mode] = {
             "C1": _validate_formal_resource_sidecar(
-                attempt_root / "raw" / "pi", "C1"
+                attempt_root / "raw" / "pi",
+                "C1",
+                expected_binding=_expected_resource_binding(
+                    training_binding, client_id="C1", host_id="pi-c1"
+                ),
             ),
             "C2": _validate_formal_resource_sidecar(
-                attempt_root / "raw" / "pc", "C2"
+                attempt_root / "raw" / "pc",
+                "C2",
+                expected_binding=_expected_resource_binding(
+                    training_binding, client_id="C2", host_id="pc-c2"
+                ),
             ),
         }
         artifacts[mode] = _capture_formal_artifacts(attempt_root)
@@ -2779,7 +3055,9 @@ def _run_formal_bound_gate(
     comparison = compare_fingerprints(
         artifacts["off"], artifacts["on"], artifacts["off"]
     )
-    resource_minimum = _formal_resource_samples_per_client_round(attempts["on"])
+    resource_minimum = _formal_resource_samples_per_client_round(
+        attempts["on"], resource_sidecars["on"]
+    )
     messages = _message_fingerprints({"attempt": attempts["on"]})
     try:
         message_cross_validation = _cross_validate_message_audits(
