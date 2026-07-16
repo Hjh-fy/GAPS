@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import uuid
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -27,7 +28,7 @@ from scripts.summarize_iotj_classification_ablation import (
     evaluate_checkpoint_stream,
     resolve_device,
 )
-from scripts.validate_iotj_confirmation_attempt import read_events
+from scripts.freeze_iotj_confirmation_protocol import build_dataset_manifest
 
 
 SEEDS = (42, 43, 44, 45, 46)
@@ -36,6 +37,18 @@ EXPECTED_IDENTITIES = tuple((group, seed) for group in GROUPS for seed in SEEDS)
 RUN_RE = re.compile(r"^c12_to_c5__(b2|b5)__s(42|43|44|45|46)$")
 ATTEMPT_RE = re.compile(
     r"^(c12_to_c5__(?:b2|b5)__s(?:42|43|44|45|46))__a(\d{3})$"
+)
+AUDITED_EVIDENCE_PATHS = (
+    "raw/ecs/events.close.json",
+    "raw/ecs/events.jsonl",
+    "raw/pc/events.close.json",
+    "raw/pc/events.jsonl",
+    "raw/pc/resource.close.json",
+    "raw/pc/resource.jsonl",
+    "raw/pi/events.close.json",
+    "raw/pi/events.jsonl",
+    "raw/pi/resource.close.json",
+    "raw/pi/resource.jsonl",
 )
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -234,6 +247,12 @@ TABLE_FIELDS = {
     "observer_overhead_summary.csv": OVERHEAD_FIELDS,
 }
 
+PublishedToken = tuple[int, int, int, str]
+PublishedReceipt = tuple[Path, PublishedToken, Path, PublishedToken]
+_ACTIVE_STREAM_RECEIPTS: ContextVar[list[PublishedReceipt] | None] = ContextVar(
+    "iotj_confirmation_stream_receipts", default=None
+)
+
 
 def _canonical_json_bytes(value: Any) -> bytes:
     try:
@@ -260,6 +279,13 @@ def _reject_constant(raw: str) -> Any:
     raise ValueError(f"non-finite JSON constant {raw}")
 
 
+def _parse_finite_float(raw: str) -> float:
+    value = float(raw)
+    if not math.isfinite(value):
+        raise ValueError(f"non-finite JSON number {raw}")
+    return value
+
+
 def _object_no_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -274,6 +300,7 @@ def _load_json(path: Path) -> dict[str, Any]:
         value = json.loads(
             Path(path).read_text(encoding="utf-8"),
             parse_constant=_reject_constant,
+            parse_float=_parse_finite_float,
             object_pairs_hook=_object_no_duplicates,
         )
     except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
@@ -281,6 +308,48 @@ def _load_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise RuntimeError(f"JSON object required: {path}")
     return value
+
+
+def _decode_json_text(raw: str, *, label: str) -> Any:
+    try:
+        return json.loads(
+            raw,
+            parse_constant=_reject_constant,
+            parse_float=_parse_finite_float,
+            object_pairs_hook=_object_no_duplicates,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise RuntimeError(f"invalid JSON {label}: {exc}") from exc
+
+
+def _parse_json_object_bytes(data: bytes, *, label: str) -> dict[str, Any]:
+    try:
+        text = data.decode("utf-8")
+    except UnicodeError as exc:
+        raise RuntimeError(f"invalid UTF-8 {label}: {exc}") from exc
+    value = _decode_json_text(text, label=label)
+    if not isinstance(value, dict):
+        raise RuntimeError(f"JSON object required: {label}")
+    return value
+
+
+def _parse_jsonl_bytes(data: bytes, *, label: str) -> list[dict[str, Any]]:
+    try:
+        text = data.decode("utf-8")
+    except UnicodeError as exc:
+        raise RuntimeError(f"invalid UTF-8 {label}: {exc}") from exc
+    lines = text.splitlines()
+    if not lines:
+        raise RuntimeError(f"audit input event file is empty: {label}")
+    events: list[dict[str, Any]] = []
+    for line_number, line in enumerate(lines, 1):
+        if not line.strip():
+            raise RuntimeError(f"audit input has blank JSONL line: {label}:{line_number}")
+        value = _decode_json_text(line, label=f"{label}:{line_number}")
+        if not isinstance(value, dict):
+            raise RuntimeError(f"event must be a JSON object: {label}:{line_number}")
+        events.append(value)
+    return events
 
 
 def _is_reparse(path: Path) -> bool:
@@ -611,6 +680,61 @@ def classification_row(row: Mapping[str, Any], metrics: Mapping[str, Any]) -> di
     return result
 
 
+def _build_bound_dataset_manifest(
+    data_root: Path,
+    rows: Sequence[Mapping[str, Any]],
+    protocol: Mapping[str, Any] | None,
+    *,
+    changed_message: bool = False,
+) -> dict[str, Any]:
+    """Rebuild Task5's exact active-file manifest and bind it to the Gate."""
+
+    try:
+        manifest = build_dataset_manifest(Path(data_root))
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        if changed_message:
+            raise RuntimeError(
+                f"dataset changed during sealed evaluation: {type(exc).__name__}: {exc}"
+            ) from exc
+        raise RuntimeError(f"dataset manifest validation failed: {exc}") from exc
+    expected_sha = str(rows[0]["dataset_manifest_sha256"])
+    actual_sha = manifest.get("dataset_manifest_sha256")
+    if actual_sha != expected_sha:
+        label = (
+            "dataset changed during sealed evaluation"
+            if changed_message
+            else "dataset_manifest_sha256 does not match frozen confirmation"
+        )
+        raise RuntimeError(f"{label}: expected {expected_sha}, got {actual_sha}")
+    if (
+        manifest.get("direction") != "C1/C2 -> C5"
+        or manifest.get("active_source_clients") != [1, 2]
+        or manifest.get("active_target_clients") != [5]
+        or manifest.get("sample_counts", {}).get("C5")
+        != {"calibration": 320, "test": 1360}
+    ):
+        label = (
+            "dataset changed during sealed evaluation"
+            if changed_message
+            else "dataset active-client/count contract mismatch"
+        )
+        raise RuntimeError(label)
+    if protocol is not None:
+        if (
+            protocol.get("dataset_manifest_sha256") != actual_sha
+            or protocol.get("direction") != "C1/C2 -> C5"
+            or protocol.get("active_source_clients") != ["C1", "C2"]
+            or protocol.get("active_target_clients") != ["C5"]
+        ):
+            label = (
+                "dataset changed during sealed evaluation"
+                if changed_message
+                else "protocol dataset/direction/active-client binding mismatch"
+            )
+            raise RuntimeError(label)
+    return manifest
+
+
 def _write_exclusive_bytes(path: Path, payload: bytes) -> None:
     path = Path(path)
     if path.exists() or path.is_symlink():
@@ -654,6 +778,101 @@ def _stream_bytes(rows: Sequence[Mapping[str, Any]]) -> bytes:
     return csv_bytes(rows, fields)
 
 
+def _classification_stream_path(row: Mapping[str, Any]) -> Path:
+    return (
+        Path(row["attempt_dir"])
+        / "raw"
+        / "ecs"
+        / "evaluation"
+        / "classification_test_stream.csv"
+    )
+
+
+def _preflight_stream_destinations(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[Path]:
+    paths: list[Path] = []
+    for row in rows:
+        attempt_dir = Path(row["attempt_dir"])
+        path = _classification_stream_path(row)
+        if not _within(path, attempt_dir) or _has_link_component(path.parent, attempt_dir):
+            raise RuntimeError(f"classification stream path is unsafe: {path}")
+        if path.exists() or path.is_symlink() or _is_reparse(path):
+            raise FileExistsError(f"refusing to overwrite output: {path}")
+        paths.append(path)
+    if len(paths) != len({path.resolve() for path in paths}):
+        raise RuntimeError("classification stream destinations are not unique")
+    return paths
+
+
+def _publish_stream(path: Path, payload: bytes) -> None:
+    """Publish one prepared stream exclusively; caller owns transaction rollback."""
+
+    receipts = _ACTIVE_STREAM_RECEIPTS.get()
+    if receipts is None:
+        raise RuntimeError("classification stream publication lacks transaction ownership")
+    path = Path(path)
+    if path.exists() or path.is_symlink() or _is_reparse(path):
+        raise FileExistsError(f"refusing to overwrite output: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.parent.is_symlink() or _is_reparse(path.parent):
+        raise RuntimeError(f"classification stream parent is unsafe: {path.parent}")
+    temporary = path.parent / f".{path.name}.{uuid.uuid4().hex}.tmp"
+    linked = False
+    recorded = False
+    try:
+        with temporary.open("xb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary_token = _published_token(temporary)
+        os.link(temporary, path)
+        linked = True
+        receipts.append((path, temporary_token, temporary, temporary_token))
+        recorded = True
+        final_token = _published_token(path)
+        if final_token != temporary_token:
+            raise RuntimeError("published classification stream identity mismatch")
+    finally:
+        if not linked or recorded:
+            temporary.unlink(missing_ok=True)
+
+
+def _published_token(path: Path) -> PublishedToken:
+    stat_result = path.stat(follow_symlinks=False)
+    return (
+        int(stat_result.st_dev),
+        int(stat_result.st_ino),
+        int(stat_result.st_size),
+        _sha256_file(path),
+    )
+
+
+def _unlink_owned_path(path: Path, token: PublishedToken, errors: list[str]) -> None:
+    try:
+        if not path.exists() and not path.is_symlink():
+            return
+        if (
+            not path.is_file()
+            or path.is_symlink()
+            or _is_reparse(path)
+            or _published_token(path) != token
+        ):
+            errors.append(f"ownership changed; preserved {path}")
+            return
+        path.unlink()
+    except OSError as exc:
+        errors.append(f"cannot rollback {path}: {type(exc).__name__}: {exc}")
+
+
+def _rollback_published_streams(published: Sequence[PublishedReceipt]) -> list[str]:
+    errors: list[str] = []
+    for path, token, temporary, temporary_token in reversed(published):
+        _unlink_owned_path(path, token, errors)
+        _unlink_owned_path(temporary, temporary_token, errors)
+    return errors
+
+
 def evaluate_canonical_attempts(
     canonical_rows: Sequence[Mapping[str, Any]],
     *,
@@ -667,8 +886,12 @@ def evaluate_canonical_attempts(
     """Open sealed C5 test only after the complete canonical Gate succeeds."""
 
     rows = assert_test_gate(canonical_rows, protocol=protocol, raw_root=raw_root)
-    output: list[dict[str, Any]] = []
-    for row in rows:
+    initial_dataset = _build_bound_dataset_manifest(
+        Path(data_root), rows, protocol
+    )
+    stream_paths = _preflight_stream_destinations(rows)
+    prepared: list[tuple[Path, bytes, dict[str, Any]]] = []
+    for row, raw_path in zip(rows, stream_paths):
         stream, metrics = evaluator(
             Path(row["checkpoint_path"]),
             data_root=Path(data_root),
@@ -691,16 +914,31 @@ def evaluate_canonical_attempts(
                 raise RuntimeError(
                     "sealed C5 prediction stream identity/order mismatch"
                 )
-        raw_path = (
-            Path(row["attempt_dir"])
-            / "raw"
-            / "ecs"
-            / "evaluation"
-            / "classification_test_stream.csv"
+        prepared.append(
+            (raw_path, _stream_bytes(stream), classification_row(row, metrics))
         )
-        _write_exclusive_bytes(raw_path, _stream_bytes(stream))
-        output.append(classification_row(row, metrics))
-    return output
+    final_dataset = _build_bound_dataset_manifest(
+        Path(data_root), rows, protocol, changed_message=True
+    )
+    if final_dataset != initial_dataset:
+        raise RuntimeError("dataset changed during sealed evaluation")
+
+    published: list[PublishedReceipt] = []
+    receipt_token = _ACTIVE_STREAM_RECEIPTS.set(published)
+    try:
+        for raw_path, payload, _classification in prepared:
+            _publish_stream(raw_path, payload)
+    except BaseException as exc:
+        rollback_errors = _rollback_published_streams(published)
+        if rollback_errors:
+            raise RuntimeError(
+                "classification stream publish failed and rollback was incomplete: "
+                + "; ".join(rollback_errors)
+            ) from exc
+        raise
+    finally:
+        _ACTIVE_STREAM_RECEIPTS.reset(receipt_token)
+    return [classification for _path, _payload, classification in prepared]
 
 
 def build_classification_multiseed_summary(
@@ -1228,6 +1466,25 @@ def _overhead_rows(
     return output
 
 
+class SystemTables(dict[str, list[dict[str, Any]]]):
+    """Summary tables plus the exact bytes consumed under Task7 audit approval."""
+
+    def __init__(
+        self,
+        tables: Mapping[str, list[dict[str, Any]]],
+        *,
+        evidence_bindings: Mapping[str, Mapping[str, Mapping[str, str]]],
+    ) -> None:
+        super().__init__(tables)
+        self.evidence_bindings = {
+            attempt_id: {
+                kind: dict(sorted(hashes.items()))
+                for kind, hashes in binding.items()
+            }
+            for attempt_id, binding in sorted(evidence_bindings.items())
+        }
+
+
 def build_system_tables(
     canonical_rows: Sequence[Mapping[str, Any]],
     evidence_loader: Callable[[Mapping[str, Any]], Mapping[str, Any]],
@@ -1236,9 +1493,30 @@ def build_system_tables(
     raw_root: Path | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     rows = assert_test_gate(canonical_rows, protocol=protocol, raw_root=raw_root)
-    evidence_by_attempt = {
-        str(row["attempt_id"]): evidence_loader(row) for row in rows
-    }
+    evidence_by_attempt: dict[str, Mapping[str, Any]] = {}
+    evidence_bindings: dict[str, dict[str, dict[str, str]]] = {}
+    for row in rows:
+        attempt_id = str(row["attempt_id"])
+        evidence = evidence_loader(row)
+        evidence_by_attempt[attempt_id] = evidence
+        binding = evidence.get("_evidence_binding")
+        if binding is None:
+            continue
+        if not isinstance(binding, Mapping):
+            raise RuntimeError("audit evidence binding must be an object")
+        approved = binding.get("audit_approved")
+        consumed = binding.get("consumed")
+        if (
+            not isinstance(approved, Mapping)
+            or not isinstance(consumed, Mapping)
+            or dict(approved) != dict(consumed)
+            or set(approved) != set(AUDITED_EVIDENCE_PATHS)
+        ):
+            raise RuntimeError("audit-approved and consumed evidence SHA-256 bindings differ")
+        evidence_bindings[attempt_id] = {
+            "audit_approved": dict(approved),
+            "consumed": dict(consumed),
+        }
     communication, communication_summary = _communication_tables(rows, evidence_by_attempt)
     tables = {
         "flower_communication_per_round.csv": communication,
@@ -1249,7 +1527,7 @@ def build_system_tables(
     }
     for name, table_rows in tables.items():
         csv_bytes(table_rows, TABLE_FIELDS[name])
-    return tables
+    return SystemTables(tables, evidence_bindings=evidence_bindings)
 
 
 def _relative(path: Path, root: Path) -> str:
@@ -1300,7 +1578,10 @@ def _attempt_registry(rows: Sequence[Mapping[str, Any]], raw_root: Path) -> list
 
 
 def _input_manifest(
-    rows: Sequence[Mapping[str, Any]], protocol: Mapping[str, Any], raw_root: Path
+    rows: Sequence[Mapping[str, Any]],
+    protocol: Mapping[str, Any],
+    raw_root: Path,
+    evidence_bindings: Mapping[str, Mapping[str, Mapping[str, str]]],
 ) -> dict[str, Any]:
     attempts: list[dict[str, Any]] = []
     for row in rows:
@@ -1312,12 +1593,36 @@ def _input_manifest(
             if path.is_file() and not path.is_symlink() and not _is_reparse(path):
                 relative = _relative(path, raw_root)
                 input_files[relative] = _sha256_file(path)
+        binding = evidence_bindings.get(str(row["attempt_id"]))
+        if not isinstance(binding, Mapping):
+            raise RuntimeError(
+                f"missing audit-approved consumed evidence binding: {row['attempt_id']}"
+            )
+        approved = binding.get("audit_approved")
+        consumed = binding.get("consumed")
+        if (
+            not isinstance(approved, Mapping)
+            or not isinstance(consumed, Mapping)
+            or dict(approved) != dict(consumed)
+            or set(approved) != set(AUDITED_EVIDENCE_PATHS)
+        ):
+            raise RuntimeError("audit-approved and consumed evidence binding mismatch")
+        for relative, consumed_sha in consumed.items():
+            current_sha = input_files.get(
+                (attempt_dir / str(relative)).resolve().relative_to(raw_root.resolve()).as_posix()
+            )
+            if current_sha != consumed_sha:
+                raise RuntimeError(
+                    f"audit input changed after summary consumption: {row['attempt_id']} {relative}"
+                )
         attempts.append(
             {
                 "run_id": row["run_id"],
                 "attempt_id": row["attempt_id"],
                 "audit_sha256": row["audit_sha256"],
                 "checkpoint_sha256": row["checkpoint_sha256"],
+                "audit_approved_evidence_inputs": dict(sorted(approved.items())),
+                "consumed_evidence_inputs": dict(sorted(consumed.items())),
                 "input_files": input_files,
             }
         )
@@ -1381,7 +1686,14 @@ def write_summary_bundle(
     if set(system_tables) != set(TABLE_FIELDS):
         raise RuntimeError("system table set is not exact")
     registry = _attempt_registry(rows, Path(raw_root))
-    input_manifest = _input_manifest(rows, protocol, Path(raw_root))
+    bindings = getattr(system_tables, "evidence_bindings", None)
+    if not isinstance(bindings, Mapping) or set(bindings) != {
+        str(row["attempt_id"]) for row in rows
+    }:
+        raise RuntimeError("system tables lack exact audit-approved evidence bindings")
+    input_manifest = _input_manifest(
+        rows, protocol, Path(raw_root), bindings
+    )
     staging = output_root.parent / f".{output_root.name}.{uuid.uuid4().hex}.staging"
     staging.mkdir()
     try:
@@ -1514,25 +1826,76 @@ def discover_canonical_attempts(
 
 def load_attempt_evidence(row: Mapping[str, Any]) -> dict[str, Any]:
     attempt_dir = Path(row["attempt_dir"])
-    paths = {
-        "server": attempt_dir / "raw" / "ecs" / "events.jsonl",
-        "C1": attempt_dir / "raw" / "pi" / "events.jsonl",
-        "C2": attempt_dir / "raw" / "pc" / "events.jsonl",
-        "resource_C1": attempt_dir / "raw" / "pi" / "resource.jsonl",
-        "resource_C2": attempt_dir / "raw" / "pc" / "resource.jsonl",
+    evidence_keys = {
+        "raw/ecs/events.jsonl": "server",
+        "raw/pi/events.jsonl": "C1",
+        "raw/pi/resource.jsonl": "resource_C1",
+        "raw/pc/events.jsonl": "C2",
+        "raw/pc/resource.jsonl": "resource_C2",
     }
+    audit = _read_audit(row)
+    approved = audit.get("inputs")
+    if not isinstance(approved, Mapping) or set(approved) != set(
+        AUDITED_EVIDENCE_PATHS
+    ):
+        raise RuntimeError(
+            "audit input set must equal the exact five JSONL plus five close summaries"
+        )
+    approved_hashes: dict[str, str] = {}
+    for relative in AUDITED_EVIDENCE_PATHS:
+        value = approved.get(relative)
+        if not isinstance(value, str) or HASH_RE.fullmatch(value) is None:
+            raise RuntimeError(f"audit input SHA-256 is invalid: {relative}")
+        approved_hashes[relative] = value
+
+    raw_root = attempt_dir / "raw"
+    actual_candidates: set[str] = set()
+    if raw_root.is_dir():
+        for path in raw_root.rglob("*"):
+            if path.is_symlink() or _is_reparse(path):
+                raise RuntimeError(f"audit input evidence tree contains symlink: {path}")
+            if path.is_file() and (
+                path.name.endswith(".jsonl") or path.name.endswith(".close.json")
+            ):
+                actual_candidates.add(path.relative_to(attempt_dir).as_posix())
+    if actual_candidates != set(AUDITED_EVIDENCE_PATHS):
+        missing = sorted(set(AUDITED_EVIDENCE_PATHS) - actual_candidates)
+        extra = sorted(actual_candidates - set(AUDITED_EVIDENCE_PATHS))
+        raise RuntimeError(
+            f"audit input evidence file set mismatch; missing={missing}, extra={extra}"
+        )
+
     result: dict[str, Any] = {}
     close_summaries: list[dict[str, Any]] = []
-    for key, path in paths.items():
+    consumed_hashes: dict[str, str] = {}
+    for relative in AUDITED_EVIDENCE_PATHS:
+        path = attempt_dir / relative
         if not _within(path, attempt_dir) or _has_link_component(path, attempt_dir):
-            raise RuntimeError(f"evidence path escapes or is a symlink: {path}")
+            raise RuntimeError(f"audit input path escapes or is a symlink: {path}")
         try:
-            result[key] = read_events(path)
-        except ValueError as exc:
-            raise RuntimeError(f"invalid event evidence {path}: {exc}") from exc
-        close_path = path.with_suffix(".close.json")
-        close_summaries.append(_load_json(close_path))
+            data = path.read_bytes()
+        except OSError as exc:
+            raise RuntimeError(f"cannot read audit input {relative}: {exc}") from exc
+        actual_sha = hashlib.sha256(data).hexdigest()
+        if actual_sha != approved_hashes[relative]:
+            raise RuntimeError(
+                f"audit-approved evidence SHA-256 mismatch: {relative}; "
+                f"expected {approved_hashes[relative]}, got {actual_sha}"
+            )
+        consumed_hashes[relative] = actual_sha
+        if relative.endswith(".jsonl"):
+            result[evidence_keys[relative]] = _parse_jsonl_bytes(
+                data, label=relative
+            )
+        else:
+            close_summaries.append(
+                _parse_json_object_bytes(data, label=relative)
+            )
     result["close_summaries"] = close_summaries
+    result["_evidence_binding"] = {
+        "audit_approved": dict(sorted(approved_hashes.items())),
+        "consumed": dict(sorted(consumed_hashes.items())),
+    }
     return result
 
 

@@ -14,11 +14,57 @@ import numpy as np
 import pytest
 
 from scripts import summarize_iotj_confirmation_observability as summary
+from scripts.freeze_iotj_confirmation_protocol import build_dataset_manifest
 
 
 COMMIT = "a" * 40
 SOURCE_SHA = "b" * 64
-DATASET_SHA = "c" * 64
+
+
+def _write_split(directory: Path, split: str, rows: int) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    np.save(
+        directory / f"{split}_features.npy",
+        np.arange(rows, dtype=np.int32).reshape(rows, 1),
+    )
+    np.save(
+        directory / f"{split}_classification_labels.npy",
+        np.zeros(rows, dtype=np.int64),
+    )
+    np.save(
+        directory / f"{split}_regression_labels.npy",
+        np.zeros((rows, 3), dtype=np.float32),
+    )
+
+
+def _write_dataset(root: Path, *, norm_payload: bytes = b"frozen-normalization") -> Path:
+    root.mkdir(parents=True)
+    (root / "split_info.json").write_text(
+        json.dumps(
+            {
+                "protocol": "c12_to_c5",
+                "source_clients": [1, 2, 3, 4],
+                "target_clients": [5],
+                "seed": 42,
+                "target_split": {
+                    "train_used": False,
+                    "calibration": 0.2,
+                    "test": 0.8,
+                },
+                "stratify_by": ["client", "class", "concentration"],
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (root / "norm_stats.npz").write_bytes(norm_payload)
+    for client_id in (1, 2):
+        for split in ("train", "calibration", "test"):
+            _write_split(root / f"client_{client_id}", split, 3)
+    _write_split(root / "client_5", "calibration", 320)
+    _write_split(root / "client_5", "test", 1360)
+    return root
 
 
 def _canonical_bytes(value: Any) -> bytes:
@@ -43,6 +89,9 @@ def _write_json(path: Path, value: Any) -> None:
 @pytest.fixture
 def canonical_fixture(tmp_path: Path) -> dict[str, Any]:
     raw_root = tmp_path / "raw"
+    data_root = _write_dataset(tmp_path / "sealed_dataset")
+    dataset_manifest = build_dataset_manifest(data_root)
+    dataset_sha = dataset_manifest["dataset_manifest_sha256"]
     rows: list[dict[str, Any]] = []
     schedule: list[dict[str, Any]] = []
     for group in ("B2", "B5"):
@@ -76,7 +125,7 @@ def canonical_fixture(tmp_path: Path) -> dict[str, Any]:
                     "historical_seed42_included": False,
                     "confirmation_commit": COMMIT,
                     "source_archive_sha256": SOURCE_SHA,
-                    "dataset_manifest_sha256": DATASET_SHA,
+                    "dataset_manifest_sha256": dataset_sha,
                     "algorithm_config_sha256": algorithm_sha,
                     "checkpoint_path": checkpoint,
                     "checkpoint_sha256": _sha_file(checkpoint),
@@ -95,7 +144,7 @@ def canonical_fixture(tmp_path: Path) -> dict[str, Any]:
         "historical_seed42_included": False,
         "confirmation_commit": COMMIT,
         "source_archive_sha256": SOURCE_SHA,
-        "dataset_manifest_sha256": DATASET_SHA,
+        "dataset_manifest_sha256": dataset_sha,
         "schedule": schedule,
     }
     protocol["protocol_manifest_sha256"] = hashlib.sha256(
@@ -147,7 +196,13 @@ def canonical_fixture(tmp_path: Path) -> dict[str, Any]:
                 "algorithm_config_sha256": row["algorithm_config_sha256"],
             },
         )
-    return {"raw_root": raw_root, "rows": rows, "protocol": protocol}
+    return {
+        "raw_root": raw_root,
+        "rows": rows,
+        "protocol": protocol,
+        "data_root": data_root,
+        "dataset_manifest": dataset_manifest,
+    }
 
 
 def test_test_gate_requires_exact_matrix_and_common_frozen_revision(
@@ -261,6 +316,44 @@ def _fake_metrics(group: str, seed: int) -> dict[str, Any]:
     }
 
 
+def _fake_stream() -> list[dict[str, Any]]:
+    return [
+        {
+            "client": "C5",
+            "split": "test",
+            "sample_index": sample_index,
+            "pred_class": 0,
+            "true_class": 0,
+        }
+        for sample_index in range(1360)
+    ]
+
+
+def _successful_evaluator(canonical_fixture: dict[str, Any], calls: list[Path] | None = None):
+    def evaluator(path: Path, **_kwargs):
+        if calls is not None:
+            calls.append(path)
+        row = next(
+            item
+            for item in canonical_fixture["rows"]
+            if item["checkpoint_path"] == path
+        )
+        return _fake_stream(), _fake_metrics(row["group_id"], row["seed"])
+
+    return evaluator
+
+
+def _stream_paths(canonical_fixture: dict[str, Any]) -> list[Path]:
+    return [
+        row["attempt_dir"]
+        / "raw"
+        / "ecs"
+        / "evaluation"
+        / "classification_test_stream.csv"
+        for row in canonical_fixture["rows"]
+    ]
+
+
 def test_evaluator_is_zero_call_until_all_ten_pass_gate(
     canonical_fixture: dict[str, Any], tmp_path: Path
 ) -> None:
@@ -273,12 +366,150 @@ def test_evaluator_is_zero_call_until_all_ten_pass_gate(
     with pytest.raises(RuntimeError, match="10 canonical"):
         summary.evaluate_canonical_attempts(
             canonical_fixture["rows"][:-1],
-            data_root=tmp_path / "sealed_c5",
+            data_root=canonical_fixture["data_root"],
             device="cpu",
             batch_size=32,
             evaluator=evaluator,
         )
     assert calls == []
+
+
+def test_dataset_binding_rejects_wrong_root_before_evaluator(
+    canonical_fixture: dict[str, Any], tmp_path: Path
+) -> None:
+    wrong_root = _write_dataset(
+        tmp_path / "wrong_but_structurally_valid_dataset",
+        norm_payload=b"different-normalization",
+    )
+    calls: list[Path] = []
+    with pytest.raises(RuntimeError, match="dataset_manifest_sha256"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=wrong_root,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture, calls),
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert calls == []
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
+def test_dataset_is_rechecked_after_evaluation_before_stream_publish(
+    canonical_fixture: dict[str, Any]
+) -> None:
+    calls: list[Path] = []
+    delegate = _successful_evaluator(canonical_fixture, calls)
+
+    def mutating_evaluator(path: Path, **kwargs):
+        result = delegate(path, **kwargs)
+        if len(calls) == 5:
+            (canonical_fixture["data_root"] / "norm_stats.npz").write_bytes(
+                b"changed-during-evaluation"
+            )
+        return result
+
+    with pytest.raises(RuntimeError, match="changed during sealed evaluation"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=mutating_evaluator,
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert len(calls) == 10
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
+def test_stream_transaction_evaluator_failure_publishes_none_and_is_retryable(
+    canonical_fixture: dict[str, Any]
+) -> None:
+    calls: list[Path] = []
+    delegate = _successful_evaluator(canonical_fixture, calls)
+
+    def failing_evaluator(path: Path, **kwargs):
+        if len(calls) == 4:
+            calls.append(path)
+            raise RuntimeError("synthetic evaluator failure")
+        return delegate(path, **kwargs)
+
+    with pytest.raises(RuntimeError, match="synthetic evaluator failure"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=failing_evaluator,
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert len(calls) == 5
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+    retried = summary.evaluate_canonical_attempts(
+        canonical_fixture["rows"],
+        data_root=canonical_fixture["data_root"],
+        device="cpu",
+        batch_size=32,
+        evaluator=_successful_evaluator(canonical_fixture),
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
+    )
+    assert len(retried) == 10
+    assert all(path.is_file() for path in _stream_paths(canonical_fixture))
+
+
+def test_stream_transaction_preflights_all_final_paths_before_evaluator(
+    canonical_fixture: dict[str, Any]
+) -> None:
+    existing = _stream_paths(canonical_fixture)[-1]
+    existing.parent.mkdir(parents=True)
+    existing.write_bytes(b"preexisting-owner-data")
+    calls: list[Path] = []
+    with pytest.raises(FileExistsError, match="overwrite"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture, calls),
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert calls == []
+    assert existing.read_bytes() == b"preexisting-owner-data"
+
+
+def test_stream_transaction_rolls_back_only_its_own_mid_publish_files(
+    canonical_fixture: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original_publish = summary._publish_stream
+    publish_calls: list[Path] = []
+
+    def failing_publish(path: Path, payload: bytes) -> None:
+        publish_calls.append(path)
+        if len(publish_calls) == 5:
+            original_publish(path, payload)
+            raise OSError("synthetic publish failure")
+        original_publish(path, payload)
+
+    monkeypatch.setattr(summary, "_publish_stream", failing_publish)
+    with pytest.raises(OSError, match="synthetic publish failure"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert len(publish_calls) == 5
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+    assert not list(canonical_fixture["raw_root"].rglob("*.tmp"))
 
 
 def test_classification_rows_stream_location_and_multiseed_statistics(
@@ -303,7 +534,7 @@ def test_classification_rows_stream_location_and_multiseed_statistics(
 
     per_run = summary.evaluate_canonical_attempts(
         canonical_fixture["rows"],
-        data_root=tmp_path / "sealed_c5",
+        data_root=canonical_fixture["data_root"],
         device="cpu",
         batch_size=32,
         evaluator=evaluator,
@@ -513,12 +744,72 @@ def _evidence_for(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+EVIDENCE_LAYOUT = {
+    "server": "raw/ecs/events.jsonl",
+    "C1": "raw/pi/events.jsonl",
+    "resource_C1": "raw/pi/resource.jsonl",
+    "C2": "raw/pc/events.jsonl",
+    "resource_C2": "raw/pc/resource.jsonl",
+}
+
+
+def _rebind_audit(row: dict[str, Any], audit: dict[str, Any]) -> None:
+    _write_json(row["audit_path"], audit)
+    row["audit_sha256"] = _sha_file(row["audit_path"])
+    status_path = row["attempt_dir"] / "attempt_status.json"
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    status["audit_sha256"] = row["audit_sha256"]
+    _write_json(status_path, status)
+
+
+def _write_audit_approved_evidence(
+    row: dict[str, Any], evidence: dict[str, Any]
+) -> dict[str, str]:
+    close_identity = {
+        "server": ("ecs", "server"),
+        "C1": ("pi-c1", "client"),
+        "resource_C1": ("pi-c1", "resource_sampler"),
+        "C2": ("pc-c2", "client"),
+        "resource_C2": ("pc-c2", "resource_sampler"),
+    }
+    hashes: dict[str, str] = {}
+    for key, relative in EVIDENCE_LAYOUT.items():
+        path = row["attempt_dir"] / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = b"".join(_canonical_bytes(event) + b"\n" for event in evidence[key])
+        path.write_bytes(payload)
+        hashes[relative] = _sha_file(path)
+        host_id, producer = close_identity[key]
+        close = next(
+            item
+            for item in evidence["close_summaries"]
+            if item["host_id"] == host_id and item["producer"] == producer
+        )
+        close_path = path.with_suffix(".close.json")
+        _write_json(close_path, close)
+        hashes[close_path.relative_to(row["attempt_dir"]).as_posix()] = _sha_file(
+            close_path
+        )
+    audit = json.loads(row["audit_path"].read_text(encoding="utf-8"))
+    audit["inputs"] = {key: hashes[key] for key in sorted(hashes)}
+    _rebind_audit(row, audit)
+    return hashes
+
+
+def _install_all_audit_approved_evidence(canonical_fixture: dict[str, Any]) -> None:
+    for row in canonical_fixture["rows"]:
+        _write_audit_approved_evidence(row, _evidence_for(row))
+
+
 def test_system_tables_are_exact_deterministic_and_use_parallel_critical_path(
     canonical_fixture: dict[str, Any]
 ) -> None:
-    evidence = {row["attempt_id"]: _evidence_for(row) for row in canonical_fixture["rows"]}
+    _install_all_audit_approved_evidence(canonical_fixture)
     tables = summary.build_system_tables(
-        canonical_fixture["rows"], lambda row: evidence[row["attempt_id"]]
+        canonical_fixture["rows"],
+        summary.load_attempt_evidence,
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
     )
     communication = tables["flower_communication_per_round.csv"]
     assert len(communication) == 10 * 25 * 2
@@ -563,6 +854,55 @@ def test_system_tables_are_exact_deterministic_and_use_parallel_critical_path(
     )
     assert total["close_observer_total_ns"] == 500
     assert total["observer_total_to_round_wall_ratio"] == pytest.approx(500 / 25_000)
+
+
+def test_post_audit_evidence_rewrite_is_rejected_before_summary_consumes_it(
+    canonical_fixture: dict[str, Any]
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    first = sorted(canonical_fixture["rows"], key=lambda row: row["run_id"])[0]
+    tampered = first["attempt_dir"] / "raw" / "ecs" / "events.jsonl"
+    tampered.write_bytes(tampered.read_bytes() + b"{}\n")
+    consumed: list[str] = []
+
+    def audited_loader(row: dict[str, Any]):
+        evidence = summary.load_attempt_evidence(row)
+        consumed.append(row["attempt_id"])
+        return evidence
+
+    with pytest.raises(RuntimeError, match="audit-approved.*SHA-256"):
+        summary.build_system_tables(
+            canonical_fixture["rows"],
+            audited_loader,
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert consumed == []
+
+
+@pytest.mark.parametrize("failure", ["missing", "extra_file", "extra_audit", "wrong_hash"])
+def test_audit_input_set_and_hash_are_exact(
+    canonical_fixture: dict[str, Any], failure: str
+) -> None:
+    row = canonical_fixture["rows"][0]
+    _write_audit_approved_evidence(row, _evidence_for(row))
+    event_path = row["attempt_dir"] / "raw" / "ecs" / "events.jsonl"
+    if failure == "missing":
+        event_path.unlink()
+    elif failure == "extra_file":
+        (row["attempt_dir"] / "raw" / "ecs" / "extra.jsonl").write_text(
+            "{}\n", encoding="utf-8"
+        )
+    else:
+        audit = json.loads(row["audit_path"].read_text(encoding="utf-8"))
+        if failure == "extra_audit":
+            audit["inputs"]["raw/ecs/extra.jsonl"] = "0" * 64
+        else:
+            audit["inputs"]["raw/ecs/events.jsonl"] = "0" * 64
+        _rebind_audit(row, audit)
+
+    with pytest.raises(RuntimeError, match="audit input|audit-approved"):
+        summary.load_attempt_evidence(row)
 
 
 @pytest.mark.parametrize(
@@ -623,9 +963,12 @@ def test_exclusive_summary_output_records_inputs_and_claim_boundaries(
         )
         stream_path.parent.mkdir(parents=True, exist_ok=True)
         stream_path.write_text("sample_index\n0\n", encoding="utf-8")
-    evidence = {row["attempt_id"]: _evidence_for(row) for row in canonical_fixture["rows"]}
+    _install_all_audit_approved_evidence(canonical_fixture)
     tables = summary.build_system_tables(
-        canonical_fixture["rows"], lambda row: evidence[row["attempt_id"]]
+        canonical_fixture["rows"],
+        summary.load_attempt_evidence,
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
     )
     output = tmp_path / "summary"
     summary.write_summary_bundle(
@@ -662,6 +1005,11 @@ def test_exclusive_summary_output_records_inputs_and_claim_boundaries(
         "protocol_manifest_sha256"
     ]
     assert len(input_manifest["attempts"]) == 10
+    for attempt in input_manifest["attempts"]:
+        approved = attempt["audit_approved_evidence_inputs"]
+        consumed = attempt["consumed_evidence_inputs"]
+        assert len(approved) == 10
+        assert approved == consumed
     with pytest.raises(FileExistsError, match="overwrite"):
         summary.write_summary_bundle(
             output,
