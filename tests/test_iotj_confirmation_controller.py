@@ -60,6 +60,41 @@ def _allocate_bound(tmp_path: Path, run_id: str):
     return attempt
 
 
+def _execute_generated_remote_source(source: str) -> dict[str, object]:
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        exec(compile(source, "<generated-remote-source>", "exec"), {})
+    lines = [line for line in output.getvalue().splitlines() if line.strip()]
+    assert lines, "generated remote source did not emit its acknowledgement"
+    return json.loads(lines[-1])
+
+
+def _write_tampered_status_chain(attempt, events: list[dict[str, object]]) -> None:
+    events_root = attempt.path / "status_events"
+    events_root.mkdir(exist_ok=True)
+    for existing in events_root.iterdir():
+        existing.unlink()
+    for sequence, event in enumerate(events, start=1):
+        payload = {
+            "sequence": sequence,
+            "run_id": attempt.run_id,
+            "attempt_id": attempt.attempt_id,
+            "state": event["state"],
+            "event_type": event["event_type"],
+            "reason": event["reason"],
+            "reason_category": controller.STATUS_REASON_CATEGORIES[event["reason"]],
+            "wall_time_utc": "2026-07-15T12:00:00.000000Z",
+            "confirmation_commit": PROVENANCE.confirmation_commit,
+            "source_archive_sha256": PROVENANCE.source_archive_sha256,
+            "dataset_manifest_sha256": PROVENANCE.dataset_manifest_sha256,
+            "algorithm_config_sha256": PROVENANCE.algorithm_config_sha256,
+            "audit_sha256": event.get("audit_sha256"),
+        }
+        _write_json(events_root / f"status_{sequence:03d}.json", payload)
+        if sequence == len(events):
+            _write_json(attempt.path / "attempt_status.json", payload)
+
+
 def _source_fixture(tmp_path: Path) -> tuple[Path, dict[str, object]]:
     tmp_path.mkdir(parents=True, exist_ok=True)
     payload = b"print('frozen source')\n"
@@ -234,9 +269,11 @@ def test_allocate_attempt_never_overwrites_and_stops_after_canonical(
     second = allocate_attempt(tmp_path, "c12_to_c5__b2__s42")
     assert first.attempt_id.endswith("__a001")
     assert second.attempt_id.endswith("__a002")
-    bind_attempt_provenance(first, PROVENANCE)
+    bind_attempt_provenance(second, PROVENANCE)
+    mark_attempt(second.path, "running", reason="attempt_allocated")
+    mark_attempt(second.path, "running", reason="preflight_passed")
     mark_attempt(
-        first.path,
+        second.path,
         "canonical",
         audit_sha256="a" * 64,
         reason="validator_accepted",
@@ -308,6 +345,7 @@ def test_status_events_append_and_current_status_is_atomically_replaced(
 
 def test_new_attempt_requires_objective_failure_category(tmp_path: Path) -> None:
     attempt = _allocate_bound(tmp_path, "c12_to_c5__b2__s44")
+    mark_attempt(attempt.path, "running", reason="attempt_allocated")
     mark_attempt(
         attempt.path,
         "failed",
@@ -717,6 +755,195 @@ def test_fresh_remote_archive_transfer_uses_verified_temp_then_atomic_install(
     assert all("os.lstat" in source and "os.link" in source for source in install_sources)
 
 
+def test_generated_remote_reserve_hash_and_install_source_succeeds_atomically(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    temporary = runtime_root / ".source.tar.behavior.tmp"
+    final = runtime_root / "source.tar"
+    payload = b"exact frozen source archive bytes\x00\xff"
+    expected_sha256 = controller.sha256_bytes(payload)
+
+    reserve = _execute_generated_remote_source(
+        controller._remote_reserve_archive_source(
+            str(temporary), str(runtime_root)
+        )
+    )
+    assert reserve == {"state": "reserved"}
+    assert temporary.is_file() and temporary.read_bytes() == b""
+    reserved_inode = temporary.stat().st_ino
+
+    temporary.write_bytes(payload)
+    installed = _execute_generated_remote_source(
+        controller._remote_install_archive_source(
+            str(temporary), str(final), expected_sha256, str(runtime_root)
+        )
+    )
+
+    assert installed == {"source_archive_sha256": expected_sha256}
+    assert final.is_file() and not final.is_symlink()
+    assert final.read_bytes() == payload
+    assert final.stat().st_ino == reserved_inode
+    assert not temporary.exists() and not temporary.is_symlink()
+
+
+def test_generated_remote_install_wrong_hash_leaves_final_absent_and_temp_intact(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    temporary = runtime_root / ".source.tar.wrong.tmp"
+    final = runtime_root / "source.tar"
+    payload = b"wrong archive bytes"
+    _execute_generated_remote_source(
+        controller._remote_reserve_archive_source(
+            str(temporary), str(runtime_root)
+        )
+    )
+    temporary.write_bytes(payload)
+
+    with pytest.raises(RuntimeError, match="SHA-256 mismatch"):
+        _execute_generated_remote_source(
+            controller._remote_install_archive_source(
+                str(temporary), str(final), "0" * 64, str(runtime_root)
+            )
+        )
+
+    assert not final.exists() and not final.is_symlink()
+    assert temporary.is_file() and temporary.read_bytes() == payload
+
+
+def test_generated_remote_reserve_rejects_existing_and_unsafe_leaves(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    existing = runtime_root / ".source.tar.existing.tmp"
+    existing.write_bytes(b"do not truncate")
+
+    with pytest.raises(RuntimeError, match="already exists"):
+        _execute_generated_remote_source(
+            controller._remote_reserve_archive_source(
+                str(existing), str(runtime_root)
+            )
+        )
+    assert existing.read_bytes() == b"do not truncate"
+
+    escaped = runtime_root.parent / ".source.tar.escaped.tmp"
+    with pytest.raises(RuntimeError, match="escapes runtime root"):
+        _execute_generated_remote_source(
+            controller._remote_reserve_archive_source(
+                str(escaped), str(runtime_root)
+            )
+        )
+    assert not escaped.exists()
+
+
+@pytest.mark.parametrize("dangling", [False, True], ids=["symlink", "dangling"])
+def test_generated_remote_reserve_rejects_symlink_and_dangling_leaf(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, dangling: bool
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    temporary = runtime_root / ".source.tar.unsafe.tmp"
+    if not dangling:
+        temporary.write_bytes(b"symlink target bytes")
+    original_lstat = os.lstat
+
+    class _SyntheticSymlinkStat:
+        st_mode = stat.S_IFLNK | 0o777
+        st_file_attributes = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+
+    monkeypatch.setattr(
+        os,
+        "lstat",
+        lambda path, *args, **kwargs: (
+            _SyntheticSymlinkStat()
+            if Path(path) == temporary
+            else original_lstat(path, *args, **kwargs)
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="symlink|reparse"):
+        _execute_generated_remote_source(
+            controller._remote_reserve_archive_source(
+                str(temporary), str(runtime_root)
+            )
+        )
+
+
+def test_generated_remote_install_refuses_existing_final_without_overwrite(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    temporary = runtime_root / ".source.tar.install.tmp"
+    final = runtime_root / "source.tar"
+    incoming = b"incoming frozen archive"
+    final.write_bytes(b"existing final bytes")
+    temporary.write_bytes(incoming)
+
+    with pytest.raises(RuntimeError, match="already exists"):
+        _execute_generated_remote_source(
+            controller._remote_install_archive_source(
+                str(temporary),
+                str(final),
+                controller.sha256_bytes(incoming),
+                str(runtime_root),
+            )
+        )
+
+    assert final.read_bytes() == b"existing final bytes"
+    assert temporary.read_bytes() == incoming
+
+
+def test_generated_remote_install_rejects_nonregular_temp(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    temporary = runtime_root / ".source.tar.directory.tmp"
+    temporary.mkdir()
+    final = runtime_root / "source.tar"
+
+    with pytest.raises(RuntimeError, match="not a real file"):
+        _execute_generated_remote_source(
+            controller._remote_install_archive_source(
+                str(temporary), str(final), "0" * 64, str(runtime_root)
+            )
+        )
+
+    assert temporary.is_dir()
+    assert not final.exists()
+
+
+def test_generated_remote_install_rejects_leaves_outside_reserved_runtime(
+    tmp_path: Path,
+) -> None:
+    runtime_root = tmp_path / "runtime" / "hash"
+    runtime_root.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    temporary = outside / ".source.tar.unsafe.tmp"
+    final = outside / "source.tar"
+    payload = b"must not install outside the pinned runtime"
+    temporary.write_bytes(payload)
+
+    with pytest.raises(RuntimeError, match="escapes runtime root"):
+        _execute_generated_remote_source(
+            controller._remote_install_archive_source(
+                str(temporary),
+                str(final),
+                controller.sha256_bytes(payload),
+                str(runtime_root),
+            )
+        )
+
+    assert temporary.read_bytes() == payload
+    assert not final.exists()
+
+
 @pytest.mark.parametrize(
     ("field", "value", "match"),
     [
@@ -870,29 +1097,37 @@ def test_status_updates_are_serialized_and_current_matches_latest_event(
     tmp_path: Path,
 ) -> None:
     attempt = _allocate_bound(tmp_path, "c12_to_c5__b2__s43")
+    first = mark_attempt(attempt.path, "running", reason="attempt_allocated")
+
+    def append_preflight(_index: int):
+        try:
+            return mark_attempt(
+                attempt.path,
+                "running",
+                event_type="preflight_passed",
+                reason="preflight_passed",
+            )
+        except RuntimeError as exc:
+            return exc
 
     with ThreadPoolExecutor(max_workers=8) as pool:
-        statuses = list(
-            pool.map(
-                lambda _index: mark_attempt(
-                    attempt.path,
-                    "running",
-                    event_type="controller_progress",
-                    reason="preflight_passed",
-                ),
-                range(24),
-            )
-        )
+        results = list(pool.map(append_preflight, range(24)))
 
-    assert sorted(int(status["sequence"]) for status in statuses) == list(range(1, 25))
+    statuses = [result for result in results if isinstance(result, dict)]
+    failures = [result for result in results if isinstance(result, RuntimeError)]
+    assert first["sequence"] == 1
+    assert len(statuses) == 1 and statuses[0]["sequence"] == 2
+    assert len(failures) == 23
+    assert all("preflight_passed" in str(failure) for failure in failures)
     events = sorted((attempt.path / "status_events").glob("status_*.json"))
-    assert len(events) == 24
+    assert len(events) == 2
     latest = json.loads(events[-1].read_text(encoding="utf-8"))
     assert _read_status(attempt.path) == latest
 
 
 def test_terminal_status_cannot_be_replaced(tmp_path: Path) -> None:
     attempt = _allocate_bound(tmp_path, "c12_to_c5__b5__s44")
+    mark_attempt(attempt.path, "running", reason="attempt_allocated")
     mark_attempt(attempt.path, "failed", reason="process_failure")
 
     with pytest.raises(RuntimeError, match="terminal"):
@@ -901,6 +1136,8 @@ def test_terminal_status_cannot_be_replaced(tmp_path: Path) -> None:
 
 def test_allocator_reads_canonical_from_immutable_events(tmp_path: Path) -> None:
     attempt = _allocate_bound(tmp_path, "c12_to_c5__b2__s45")
+    mark_attempt(attempt.path, "running", reason="attempt_allocated")
+    mark_attempt(attempt.path, "running", reason="preflight_passed")
     mark_attempt(
         attempt.path,
         "canonical",
@@ -926,6 +1163,152 @@ def test_malformed_or_gapped_status_chain_fails_closed(tmp_path: Path) -> None:
         allocate_attempt(tmp_path, attempt.run_id)
     with pytest.raises(RuntimeError, match="status.*gap"):
         mark_attempt(attempt.path, "failed", reason="process_failure")
+
+
+@pytest.mark.parametrize(
+    ("case", "events"),
+    [
+        (
+            "canonical_first",
+            [
+                {
+                    "state": "canonical",
+                    "event_type": "attempt_end",
+                    "reason": "validator_accepted",
+                    "audit_sha256": "e" * 64,
+                }
+            ],
+        ),
+        (
+            "preflight_first",
+            [
+                {
+                    "state": "running",
+                    "event_type": "preflight_passed",
+                    "reason": "preflight_passed",
+                }
+            ],
+        ),
+        (
+            "duplicated_start",
+            [
+                {
+                    "state": "running",
+                    "event_type": "attempt_start",
+                    "reason": "attempt_allocated",
+                },
+                {
+                    "state": "running",
+                    "event_type": "attempt_start",
+                    "reason": "attempt_allocated",
+                },
+            ],
+        ),
+        (
+            "reordered_start",
+            [
+                {
+                    "state": "running",
+                    "event_type": "preflight_passed",
+                    "reason": "preflight_passed",
+                },
+                {
+                    "state": "running",
+                    "event_type": "attempt_start",
+                    "reason": "attempt_allocated",
+                },
+            ],
+        ),
+        (
+            "duplicated_preflight",
+            [
+                {
+                    "state": "running",
+                    "event_type": "attempt_start",
+                    "reason": "attempt_allocated",
+                },
+                {
+                    "state": "running",
+                    "event_type": "preflight_passed",
+                    "reason": "preflight_passed",
+                },
+                {
+                    "state": "running",
+                    "event_type": "preflight_passed",
+                    "reason": "preflight_passed",
+                },
+            ],
+        ),
+        (
+            "canonical_before_preflight",
+            [
+                {
+                    "state": "running",
+                    "event_type": "attempt_start",
+                    "reason": "attempt_allocated",
+                },
+                {
+                    "state": "canonical",
+                    "event_type": "attempt_end",
+                    "reason": "validator_accepted",
+                    "audit_sha256": "e" * 64,
+                },
+            ],
+        ),
+        (
+            "invalid_before_preflight",
+            [
+                {
+                    "state": "running",
+                    "event_type": "attempt_start",
+                    "reason": "attempt_allocated",
+                },
+                {
+                    "state": "invalid",
+                    "event_type": "attempt_failure",
+                    "reason": "validator_rejected",
+                },
+            ],
+        ),
+    ],
+    ids=lambda value: value if isinstance(value, str) else None,
+)
+def test_status_chain_rejects_exact_lifecycle_tampering_even_when_current_matches(
+    tmp_path: Path, case: str, events: list[dict[str, object]]
+) -> None:
+    del case
+    attempt = _allocate_bound(tmp_path, "c12_to_c5__b2__s46")
+    _write_tampered_status_chain(attempt, events)
+
+    with pytest.raises(RuntimeError, match="lifecycle"):
+        controller._read_status_chain(attempt.path, verify_current=True)
+
+
+def test_prepare_failure_chain_and_objective_rerun_remain_legal(tmp_path: Path) -> None:
+    events: list[object] = []
+    hooks = _hooks(events)
+
+    def fail_prepare(_attempt) -> None:
+        raise ArchiveMismatch("archive mismatch before preflight")
+
+    with pytest.raises(ArchiveMismatch, match="archive mismatch"):
+        run_confirmation_attempt(
+            tmp_path,
+            "c12_to_c5__b5__s46",
+            provenance=PROVENANCE,
+            hooks=controller.replace(hooks, prepare=fail_prepare),
+        )
+
+    run_id = "c12_to_c5__b5__s46"
+    first_path = tmp_path / run_id / f"{run_id}__a001"
+    chain = controller._read_status_chain(first_path, verify_current=True)
+    assert [
+        (row["state"], row["event_type"], row["reason"]) for row in chain
+    ] == [
+        ("running", "attempt_start", "attempt_allocated"),
+        ("failed", "attempt_failure", "archive_integrity_failure"),
+    ]
+    assert allocate_attempt(tmp_path, run_id).attempt_id.endswith("__a002")
 
 
 @pytest.mark.parametrize("metric_key", ["accuracy", "loss", "nll", "ece", "recall", "f1", "metric", "metrics"])

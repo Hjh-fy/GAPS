@@ -583,10 +583,7 @@ def _status_combination_is_legal(payload: Mapping[str, Any]) -> bool:
     if state == "running":
         return audit is None and (
             (reason == "attempt_allocated" and event_type == "attempt_start")
-            or (
-                reason == "preflight_passed"
-                and event_type in {"preflight_passed", "controller_progress"}
-            )
+            or (reason == "preflight_passed" and event_type == "preflight_passed")
         )
     if state == "canonical":
         return (
@@ -656,6 +653,46 @@ def _validate_status_payload(
         raise RuntimeError("status audit SHA-256 has invalid type")
     if not _status_combination_is_legal(payload):
         raise RuntimeError("status event/state/reason/audit combination is invalid")
+
+
+def _validate_lifecycle_chain(chain: Sequence[Mapping[str, Any]]) -> None:
+    if not chain:
+        return
+    first = chain[0]
+    if (
+        first["state"],
+        first["event_type"],
+        first["reason"],
+    ) != ("running", "attempt_start", "attempt_allocated"):
+        raise RuntimeError(
+            "status lifecycle sequence 1 must be running/attempt_start/attempt_allocated"
+        )
+    start_count = 0
+    preflight_seen = False
+    terminal_seen = False
+    for payload in chain:
+        event_type = payload["event_type"]
+        state = payload["state"]
+        if terminal_seen:
+            raise RuntimeError("status lifecycle terminal event has a later event")
+        if event_type == "attempt_start":
+            start_count += 1
+            if start_count != 1 or payload is not first:
+                raise RuntimeError("status lifecycle attempt_start must occur exactly once")
+        elif event_type == "preflight_passed":
+            if preflight_seen:
+                raise RuntimeError("status lifecycle preflight_passed may occur at most once")
+            if start_count != 1:
+                raise RuntimeError("status lifecycle preflight_passed requires attempt_start")
+            preflight_seen = True
+        if state in {"canonical", "invalid"} and not preflight_seen:
+            raise RuntimeError(
+                f"status lifecycle {state} terminal requires preflight_passed"
+            )
+        if state in TERMINAL_ATTEMPT_STATES:
+            terminal_seen = True
+    if start_count != 1:
+        raise RuntimeError("status lifecycle attempt_start must occur exactly once")
 
 
 def bind_attempt_provenance(attempt: Attempt, provenance: Provenance) -> Path:
@@ -741,6 +778,7 @@ def _read_status_chain(
         if state in TERMINAL_ATTEMPT_STATES:
             terminal_seen = True
         chain.append(payload)
+    _validate_lifecycle_chain(chain)
     if bound.get("run_id") != run_id or bound.get("attempt_id") != attempt_id:
         raise RuntimeError("bound attempt provenance identity mismatch")
     if verify_current:
@@ -810,6 +848,7 @@ def mark_attempt(
             attempt_id=attempt_id,
             provenance=_provenance_payload(provenance),
         )
+        _validate_lifecycle_chain([*chain, status])
         events_root = attempt_path / "status_events"
         if not events_root.exists():
             events_root.mkdir(parents=False)
@@ -1068,7 +1107,10 @@ print(json.dumps({{'state': 'reserved'}}, sort_keys=True))
 
 
 def _remote_install_archive_source(
-    temp_path: str, archive_path: str, expected_sha256: str
+    temp_path: str,
+    archive_path: str,
+    expected_sha256: str,
+    runtime_root: str,
 ) -> str:
     helpers = _remote_runtime_path_helpers()
     return f"""# REMOTE_INSTALL_ARCHIVE_V1
@@ -1077,8 +1119,9 @@ from pathlib import Path
 {helpers}
 temp_path = Path({temp_path!r})
 archive_path = Path({archive_path!r})
-pin_directory_chain(archive_path.parent, 'content-addressed runtime root')
-if temp_path.parent != archive_path.parent:
+runtime_root = Path({runtime_root!r})
+pin_directory_chain(runtime_root, 'content-addressed runtime root')
+if archive_path.parent != runtime_root or temp_path.parent != runtime_root:
     raise RuntimeError('temporary archive escapes runtime root')
 pin_leaf(temp_path, 'temporary source archive', 'file')
 if pin_leaf(archive_path, 'source archive', 'file', missing_ok=True) is not None:
@@ -1339,7 +1382,7 @@ def deploy_source_archive(
                 host,
                 python_bin,
                 _remote_install_archive_source(
-                    remote_temp, remote_archive, source_hash
+                    remote_temp, remote_archive, source_hash, root
                 ),
                 timeout=60,
             )
