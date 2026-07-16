@@ -460,6 +460,17 @@ def test_protocol_builds_ten_attempt_independent_command_manifests(
     )
 
     command_manifests = protocol["command_manifests"]
+    standalone_protocol = freeze._manifest_payloads(protocol)[1][0]
+    assert all(
+        row["transport_status"] == "not_collected"
+        for row in standalone_protocol["schedule"]
+    )
+    unhashed_protocol = copy.deepcopy(standalone_protocol)
+    claimed_protocol_hash = unhashed_protocol.pop("protocol_manifest_sha256")
+    assert canonical_sha256(unhashed_protocol) == claimed_protocol_hash
+    tampered_protocol = copy.deepcopy(unhashed_protocol)
+    tampered_protocol["schedule"][0]["transport_status"] = "collected"
+    assert canonical_sha256(tampered_protocol) != claimed_protocol_hash
     assert [item["run_id"] for item in command_manifests] == [
         confirmation_run_id(group, seed) for group, seed in CONFIRMATION_SCHEDULE
     ]

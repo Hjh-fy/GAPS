@@ -161,6 +161,7 @@ def _frozen_input_fixture(tmp_path: Path) -> dict[str, object]:
                 "group_id": group,
                 "seed": seed,
                 "algorithm_config_sha256": algorithm_hash,
+                "transport_status": "not_collected",
             }
         )
         command_payloads[run_id] = {
@@ -187,6 +188,7 @@ def _frozen_input_fixture(tmp_path: Path) -> dict[str, object]:
             "regular_members_sha256": source_manifest["regular_members_sha256"],
             "dataset_manifest_sha256": dataset_manifest["dataset_manifest_sha256"],
             "algorithm_config_sha256": algorithm_hash,
+            "transport_status": "not_collected",
         }
     protocol_manifest: dict[str, object] = {
         "schema_version": 1,
@@ -1558,6 +1560,87 @@ def test_frozen_loader_rejects_protocol_self_hash_mismatch(tmp_path: Path) -> No
 
     with pytest.raises(ValueError, match="protocol.*self.*SHA-256"):
         _load_frozen(fixture)
+
+
+@pytest.mark.parametrize("bad_status", [None, "collected", "NOT_COLLECTED"])
+def test_frozen_loader_rejects_protocol_transport_status_before_external_action(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    bad_status: str | None,
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    protocol = copy.deepcopy(fixture["protocol"])
+    if bad_status is None:
+        protocol["schedule"][0].pop("transport_status")
+    else:
+        protocol["schedule"][0]["transport_status"] = bad_status
+    protocol.pop("protocol_manifest_sha256")
+    protocol["protocol_manifest_sha256"] = canonical_sha256(protocol)
+    _write_json(fixture["protocol_path"], protocol)
+    for run_id, original in fixture["commands"].items():
+        command = copy.deepcopy(original)
+        command["protocol_manifest_sha256"] = protocol["protocol_manifest_sha256"]
+        _write_json(
+            fixture["command_root"] / run_id / "command_manifest.json", command
+        )
+    monkeypatch.setattr(
+        controller,
+        "_wait_for_pi",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid protocol transport status reached an external action"
+        ),
+    )
+
+    with pytest.raises(ValueError, match="transport"):
+        controller.main(_controller_argv(fixture, tmp_path, "--validate-inputs-only"))
+
+
+def test_frozen_loader_rejects_conflicting_protocol_transport_declaration(
+    tmp_path: Path,
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    protocol = copy.deepcopy(fixture["protocol"])
+    protocol["transport_status"] = "collected"
+    protocol.pop("protocol_manifest_sha256")
+    protocol["protocol_manifest_sha256"] = canonical_sha256(protocol)
+    _write_json(fixture["protocol_path"], protocol)
+    for run_id, original in fixture["commands"].items():
+        command = copy.deepcopy(original)
+        command["protocol_manifest_sha256"] = protocol["protocol_manifest_sha256"]
+        _write_json(
+            fixture["command_root"] / run_id / "command_manifest.json", command
+        )
+
+    with pytest.raises(ValueError, match="transport"):
+        controller.main(_controller_argv(fixture, tmp_path, "--validate-inputs-only"))
+
+
+@pytest.mark.parametrize("bad_status", [None, "collected", "NOT_COLLECTED"])
+def test_frozen_loader_rejects_command_transport_status_before_external_action(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    bad_status: str | None,
+) -> None:
+    fixture = _frozen_input_fixture(tmp_path)
+    first_run = confirmation_run_id(*CONFIRMATION_SCHEDULE[0])
+    command = copy.deepcopy(fixture["commands"][first_run])
+    if bad_status is None:
+        command.pop("transport_status")
+    else:
+        command["transport_status"] = bad_status
+    _write_json(
+        fixture["command_root"] / first_run / "command_manifest.json", command
+    )
+    monkeypatch.setattr(
+        controller,
+        "_wait_for_pi",
+        lambda *_args, **_kwargs: pytest.fail(
+            "invalid command transport status reached an external action"
+        ),
+    )
+
+    with pytest.raises(ValueError, match="transport"):
+        controller.main(_controller_argv(fixture, tmp_path, "--validate-inputs-only"))
 
 
 def test_frozen_loader_rejects_source_and_command_commit_mismatch(

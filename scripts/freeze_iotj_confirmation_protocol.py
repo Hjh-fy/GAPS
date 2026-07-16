@@ -459,6 +459,7 @@ def build_protocol_manifest(
                 "group_id": group_id,
                 "seed": seed,
                 "algorithm_config_sha256": algorithm["algorithm_config_sha256"],
+                "transport_status": "not_collected",
                 **_claim_fields(group_id),
             }
         )

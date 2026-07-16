@@ -1462,6 +1462,10 @@ def validate_command_manifest(
     expected_run_id = confirmation_run_id(group_id, seed)
     if manifest.get("run_id") != expected_run_id or manifest.get("group_id") != group_id:
         raise ValueError("command manifest identity does not match allowlist")
+    if manifest.get("transport_status") != "not_collected":
+        raise ValueError(
+            "command manifest transport_status must be explicitly not_collected"
+        )
     protocol = manifest.get("protocol")
     if not isinstance(protocol, Mapping) or protocol.get("source_clients") != [1, 2] or protocol.get(
         "target_clients"
@@ -1528,25 +1532,42 @@ def validate_command_manifest(
 
 
 def validate_protocol_schedule(protocol_manifest: Mapping[str, Any]) -> None:
+    if (
+        "transport_status" in protocol_manifest
+        and protocol_manifest.get("transport_status") != "not_collected"
+    ):
+        raise ValueError(
+            "protocol transport_status conflicts with explicit schedule declarations"
+        )
     rows = protocol_manifest.get("schedule")
     expected = [
         {
             "run_id": confirmation_run_id(group, seed),
             "group_id": group,
             "seed": seed,
+            "transport_status": "not_collected",
         }
         for group, seed in CONFIRMATION_SCHEDULE
     ]
     if not isinstance(rows, list) or len(rows) != len(expected):
-        raise ValueError("protocol schedule does not equal confirmation allowlist")
+        raise ValueError(
+            "protocol schedule identity/transport does not equal confirmation allowlist"
+        )
     actual = [
-        {"run_id": row.get("run_id"), "group_id": row.get("group_id"), "seed": row.get("seed")}
+        {
+            "run_id": row.get("run_id"),
+            "group_id": row.get("group_id"),
+            "seed": row.get("seed"),
+            "transport_status": row.get("transport_status"),
+        }
         if isinstance(row, Mapping)
         else None
         for row in rows
     ]
     if actual != expected:
-        raise ValueError("protocol schedule does not equal confirmation allowlist")
+        raise ValueError(
+            "protocol schedule identity/transport does not equal confirmation allowlist"
+        )
 
 
 def _validate_self_hash(
