@@ -292,6 +292,38 @@ def _sorted_unique(reasons: Sequence[str]) -> list[str]:
     return sorted(set(reasons))
 
 
+def _semantic_measurement_reasons(value: Any, label: str) -> list[str]:
+    """Validate numeric byte/timing values without judging unrelated metrics."""
+
+    reasons: list[str] = []
+    if isinstance(value, Mapping):
+        for key in sorted(value):
+            child = value[key]
+            child_label = f"{label}.{key}"
+            normalized_key = str(key).lower()
+            exact_numeric_semantics = normalized_key.endswith(
+                ("_bytes", "_ns")
+            )
+            broad_numeric_semantics = (
+                "byte" in normalized_key or "timing" in normalized_key
+            )
+            if exact_numeric_semantics and child is not None:
+                reason = _number_reason(child_label, child)
+                if reason:
+                    reasons.append(reason)
+            elif broad_numeric_semantics and isinstance(child, (int, float)):
+                if not isinstance(child, bool):
+                    reason = _number_reason(child_label, child)
+                    if reason:
+                        reasons.append(reason)
+            reasons.extend(_semantic_measurement_reasons(child, child_label))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            child_label = f"{label}[{index}]"
+            reasons.extend(_semantic_measurement_reasons(child, child_label))
+    return reasons
+
+
 def _protocol_context(
     protocol: Mapping[str, Any], run_hint: str | None = None
 ) -> tuple[dict[str, Any], list[str]]:
@@ -434,6 +466,12 @@ def validate_common_fields(
             reasons.append(f"{label} schema_version mismatch")
         if not isinstance(event.get("payload"), Mapping):
             reasons.append(f"{label} payload must be an object")
+        else:
+            reasons.extend(
+                _semantic_measurement_reasons(
+                    event["payload"], f"{event.get('event_id')} payload"
+                )
+            )
 
         for field in (
             "run_id",
@@ -907,7 +945,6 @@ def validate_resource_coverage(
 
     reasons: list[str] = []
     result: dict[str, Any] = {}
-    all_events = [event for events in events_by_host.values() for event in events]
 
     for client_id in EXPECTED_CLIENTS:
         hosts = {
@@ -931,27 +968,44 @@ def validate_resource_coverage(
             if event.get("event_type") == "resource_sample"
             and event.get("client_id") == client_id
         ]
-        valid_intervals: list[tuple[int, int]] = []
-        for sample in samples:
+        valid_intervals: list[tuple[int, int, int]] = []
+        for sample_index, sample in enumerate(samples):
+            reason_count_before_sample = len(reasons)
             label = f"{client_id} resource sample {sample.get('event_id')}"
             if sample.get("round") is not None:
                 reasons.append(f"{label} round must be null")
+            if sample.get("status") != "succeeded":
+                reasons.append(f"{label} status must be succeeded")
             payload = sample.get("payload")
             if not isinstance(payload, Mapping):
                 reasons.append(f"{label} payload must be an object")
                 continue
             reasons.extend(_recursive_resource_number_reasons(payload, label))
-            reasons.extend(_numeric_payload_reasons(payload, RESOURCE_NUMERIC_FIELDS, label))
-            for field in ("root_pid", "sampler_pid_excluded", "process_count_tree", "thread_count_tree", "logical_cpu_count", "sample_interval_start_monotonic_ns", "sample_interval_end_monotonic_ns", "sample_interval_wall_ns"):
+            reasons.extend(
+                _numeric_payload_reasons(
+                    payload, RESOURCE_NUMERIC_FIELDS, label
+                )
+            )
+            for field in (
+                "root_pid",
+                "sampler_pid_excluded",
+                "process_count_tree",
+                "thread_count_tree",
+                "logical_cpu_count",
+                "sample_interval_start_monotonic_ns",
+                "sample_interval_end_monotonic_ns",
+                "sample_interval_wall_ns",
+            ):
                 if field in payload and not _is_int(payload.get(field)):
                     reasons.append(f"{label} {field} must be an integer")
             start = payload.get("sample_interval_start_monotonic_ns")
             end = payload.get("sample_interval_end_monotonic_ns")
             wall = payload.get("sample_interval_wall_ns")
+            candidate_interval: tuple[int, int, int] | None = None
             if _is_int(start) and _is_int(end) and start >= 0 and end >= start:
                 if wall != end - start:
                     reasons.append(f"{label} sample interval wall mismatch")
-                valid_intervals.append((start, end))
+                candidate_interval = (sample_index, start, end)
             else:
                 reasons.append(f"{label} sample interval is invalid")
             event_clock = sample.get("monotonic_ns")
@@ -972,6 +1026,11 @@ def validate_resource_coverage(
                 reasons.append(f"{label} sample_errors must be a list")
             elif sample_errors:
                 reasons.append(f"{label} contains resource sampling errors")
+            if (
+                candidate_interval is not None
+                and len(reasons) == reason_count_before_sample
+            ):
+                valid_intervals.append(candidate_interval)
 
         sampler_ends = [
             event
@@ -1014,35 +1073,60 @@ def validate_resource_coverage(
                     )
 
         covered_rounds: list[int] = []
+        active_intervals: list[tuple[int, int, int]] = []
+        expected_sample_points = 0
         for round_idx in EXPECTED_ROUNDS:
             starts = _events_for_key(
                 host_events, "client_fit_start", round_idx, client_id
             )
             ends = _events_for_key(host_events, "client_fit_end", round_idx, client_id)
             covered = False
+            valid_fit_interval = False
             if len(starts) == 1 and len(ends) == 1:
                 fit_start = _monotonic_value(starts[0])
                 fit_end = _monotonic_value(ends[0])
                 if fit_start is not None and fit_end is not None and fit_start <= fit_end:
+                    valid_fit_interval = True
+                    duration_ns = fit_end - fit_start
+                    expected_sample_points += max(
+                        1, (duration_ns + 1_000_000_000 - 1) // 1_000_000_000
+                    )
+                    active_intervals.append((round_idx, fit_start, fit_end))
                     covered = any(
                         sample_start <= fit_end and sample_end >= fit_start
-                        for sample_start, sample_end in valid_intervals
+                        for _sample_index, sample_start, sample_end in valid_intervals
                     )
+            if not valid_fit_interval:
+                expected_sample_points += 1
             if covered:
                 covered_rounds.append(round_idx)
             else:
                 reasons.append(
                     f"{client_id} round {round_idx} has no overlapping resource sample"
                 )
-        coverage = len(covered_rounds) / len(EXPECTED_ROUNDS)
+        covered_sample_points = sum(
+            1
+            for _sample_index, sample_start, sample_end in valid_intervals
+            if any(
+                sample_start <= fit_end and sample_end >= fit_start
+                for _round_idx, fit_start, fit_end in active_intervals
+            )
+        )
+        coverage = (
+            min(covered_sample_points / expected_sample_points, 1.0)
+            if expected_sample_points > 0
+            else 0.0
+        )
         if coverage < RESOURCE_COVERAGE_MINIMUM:
             reasons.append(
                 f"{client_id} resource coverage {coverage:.6f} is below 0.95"
             )
         result[client_id] = {
             "coverage": coverage,
+            "covered_sample_points": covered_sample_points,
             "covered_rounds": len(covered_rounds),
             "expected_rounds": len(EXPECTED_ROUNDS),
+            "expected_sample_points": expected_sample_points,
             "sample_count": len(samples),
         }
     return {key: result[key] for key in sorted(result)}, _sorted_unique(reasons)

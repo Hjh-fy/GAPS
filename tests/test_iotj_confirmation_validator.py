@@ -318,45 +318,48 @@ def _resource_rows(
     )
     for round_idx in range(1, 26):
         base = clock_offset + round_idx * 10_000_000_000
-        producer.emit(
-            "resource_sample",
-            round_idx=None,
-            client_id=client_id,
-            monotonic_ns=base + 5_100_000_000,
-            payload={
-                "root_pid": 1000 + round_idx,
-                "sampler_pid_excluded": 2000 + round_idx,
-                "pids": [1000 + round_idx],
-                "process_identities": [
-                    {
-                        "pid": 1000 + round_idx,
-                        "create_time": 1.0,
-                        "identity_available": True,
-                    }
-                ],
-                "rss_tree_bytes": 10_000,
-                "rss_tree_peak_bytes": 20_000,
-                "process_count_tree": 1,
-                "thread_count_tree": 2,
-                "cpu_time_tree_seconds": 1.0,
-                "cpu_time_tree_delta_seconds": 0.1,
-                "cpu_percent_tree_one_core_scale": 10.0,
-                "cpu_percent_tree_host_scale": 2.5,
-                "logical_cpu_count": 4,
-                "sample_interval_start_monotonic_ns": base + 3_000_000_000,
-                "sample_interval_end_monotonic_ns": base + 5_000_000_000,
-                "sample_interval_wall_ns": 2_000_000_000,
-                "sample_errors": [],
-                "cpu_temperature_c": None,
-                "cpu_temperature_available": False,
-                "cpu_temperature_source": None,
-                "vcgencmd_available": False,
-                "throttled_raw": None,
-                "throttled_bits": None,
-                "throttled_available": False,
-                "thermal_errors": [],
-            },
-        )
+        for sample_index in range(7):
+            interval_start = base + (sample_index + 1) * 1_000_000_000
+            interval_end = interval_start + 1_000_000_000
+            producer.emit(
+                "resource_sample",
+                round_idx=None,
+                client_id=client_id,
+                monotonic_ns=interval_end + 100_000_000,
+                payload={
+                    "root_pid": 1000 + round_idx,
+                    "sampler_pid_excluded": 2000 + round_idx,
+                    "pids": [1000 + round_idx],
+                    "process_identities": [
+                        {
+                            "pid": 1000 + round_idx,
+                            "create_time": 1.0,
+                            "identity_available": True,
+                        }
+                    ],
+                    "rss_tree_bytes": 10_000,
+                    "rss_tree_peak_bytes": 20_000,
+                    "process_count_tree": 1,
+                    "thread_count_tree": 2,
+                    "cpu_time_tree_seconds": 1.0,
+                    "cpu_time_tree_delta_seconds": 0.1,
+                    "cpu_percent_tree_one_core_scale": 10.0,
+                    "cpu_percent_tree_host_scale": 2.5,
+                    "logical_cpu_count": 4,
+                    "sample_interval_start_monotonic_ns": interval_start,
+                    "sample_interval_end_monotonic_ns": interval_end,
+                    "sample_interval_wall_ns": 1_000_000_000,
+                    "sample_errors": [],
+                    "cpu_temperature_c": None,
+                    "cpu_temperature_available": False,
+                    "cpu_temperature_source": None,
+                    "vcgencmd_available": False,
+                    "throttled_raw": None,
+                    "throttled_bits": None,
+                    "throttled_available": False,
+                    "thermal_errors": [],
+                },
+            )
     producer.emit(
         "resource_sampler_end",
         round_idx=None,
@@ -367,7 +370,7 @@ def _resource_rows(
             "sampler_pid": 2001,
             "shutdown_reason": "stop_file",
             "shutdown_error": None,
-            "sample_count": 25,
+            "sample_count": 175,
             "sampler_cpu_user_seconds": 0.1,
             "sampler_cpu_system_seconds": 0.1,
             "sampler_rss_peak_bytes": 50_000,
@@ -379,7 +382,7 @@ def _resource_rows(
             "observer_io_write_ns": 100,
             "observer_fsync_ns": 0,
             "observer_event_bytes_written": 1_000,
-            "observer_event_count": 50,
+            "observer_event_count": 350,
             "observer_close_summary_path": "resource.close.json",
             "observer_close_summary_is_authoritative": True,
         },
@@ -525,6 +528,10 @@ def test_validator_requires_exact_25_by_2_message_matrix(
     assert audit["counts"]["fitres"] == 50
     assert audit["resource"]["C1"]["coverage"] >= 0.95
     assert audit["resource"]["C2"]["coverage"] >= 0.95
+    assert audit["resource"]["C1"]["expected_sample_points"] == 175
+    assert audit["resource"]["C1"]["covered_sample_points"] == 175
+    assert audit["resource"]["C2"]["expected_sample_points"] == 175
+    assert audit["resource"]["C2"]["covered_sample_points"] == 175
     assert list(audit["counts"]) == sorted(audit["counts"])
     assert audit["reasons"] == sorted(audit["reasons"])
     assert sorted(audit["inputs"]) == [
@@ -637,6 +644,105 @@ def test_negative_phase_timing_is_invalid(valid_attempt: AttemptFixture) -> None
     assert _reason_contains(audit, "client_train_core_ns")
 
 
+@pytest.mark.parametrize(
+    ("relative", "event_type", "nested_payload", "reason"),
+    [
+        (
+            "raw/pc/events.jsonl",
+            "client_fit_start",
+            {"outer": {"middle": {"diagnostic_bytes": -1}}},
+            "diagnostic_bytes",
+        ),
+        (
+            "raw/ecs/events.jsonl",
+            "fit_round_start",
+            {"outer": [{"deeper": {"timing_ns": -2}}]},
+            "timing_ns",
+        ),
+        (
+            "raw/pc/events.jsonl",
+            "client_fit_start",
+            {"outer": {"byte_timing_diagnostic": -3}},
+            "byte_timing_diagnostic",
+        ),
+        (
+            "raw/pc/events.jsonl",
+            "client_fit_start",
+            {"outer": {"diagnostic_bytes": False}},
+            "diagnostic_bytes",
+        ),
+        (
+            "raw/ecs/events.jsonl",
+            "fit_round_start",
+            {"outer": {"diagnostic_bytes": float("nan")}},
+            "non-finite",
+        ),
+        (
+            "raw/ecs/events.jsonl",
+            "fit_round_start",
+            {"outer": {"timing_ns": float("inf")}},
+            "non-finite",
+        ),
+    ],
+)
+def test_nested_byte_and_timing_values_fail_closed(
+    valid_attempt: AttemptFixture,
+    relative: str,
+    event_type: str,
+    nested_payload: dict[str, Any],
+    reason: str,
+) -> None:
+    path = valid_attempt.path / Path(relative)
+
+    def mutate(rows: list[dict[str, Any]]) -> None:
+        event = next(row for row in rows if row["event_type"] == event_type)
+        event["payload"].update(nested_payload)
+
+    _rewrite_rows(path, mutate)
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+    assert audit["status"] == "invalid"
+    assert _reason_contains(audit, reason)
+
+
+def test_unrelated_nested_negative_model_value_is_not_a_validation_signal(
+    valid_attempt: AttemptFixture,
+) -> None:
+    path = valid_attempt.path / "raw" / "pc" / "events.jsonl"
+
+    def mutate(rows: list[dict[str, Any]]) -> None:
+        event = next(row for row in rows if row["event_type"] == "client_fit_start")
+        event["payload"]["diagnostics"] = {
+            "nested": {"model_value": -123.5}
+        }
+
+    _rewrite_rows(path, mutate)
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+    assert audit["status"] == "valid", audit["reasons"]
+
+
+def test_explicitly_unavailable_nullable_resource_bytes_remain_valid(
+    valid_attempt: AttemptFixture,
+) -> None:
+    path = valid_attempt.path / "raw" / "pc" / "resource.jsonl"
+
+    def mutate(rows: list[dict[str, Any]]) -> None:
+        sampler_end = next(
+            row for row in rows if row["event_type"] == "resource_sampler_end"
+        )
+        sampler_end["payload"].update(
+            {
+                "sampler_rss_peak_bytes": None,
+                "sampler_rss_peak_available": False,
+                "sampler_rss_peak_method": "unavailable",
+                "sampler_rss_peak_error": "platform has no reliable RSS HWM",
+            }
+        )
+
+    _rewrite_rows(path, mutate)
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+    assert audit["status"] == "valid", audit["reasons"]
+
+
 def test_missing_application_message_sha_is_invalid(
     valid_attempt: AttemptFixture,
 ) -> None:
@@ -659,31 +765,47 @@ def test_resource_sample_absent_from_one_client_round_is_invalid(
 
     def mutate(rows: list[dict[str, Any]]) -> None:
         samples = [row for row in rows if row["event_type"] == "resource_sample"]
-        missing = samples[16]
-        _remove_domain_and_overhead(rows, lambda row: row is missing)
+        missing = {id(row) for row in samples[16 * 7 : 17 * 7]}
+        _remove_domain_and_overhead(rows, lambda row: id(row) in missing)
+        sampler_end = next(
+            row for row in rows if row["event_type"] == "resource_sampler_end"
+        )
+        sampler_end["payload"]["sample_count"] = 168
 
     _rewrite_rows(path, mutate)
     audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
     assert audit["status"] == "invalid"
     assert _reason_contains(audit, "C1 round 17")
     assert _reason_contains(audit, "resource sample")
-    assert audit["resource"]["C1"]["coverage"] == pytest.approx(24 / 25)
+    assert audit["resource"]["C1"]["covered_rounds"] == 24
+    assert audit["resource"]["C1"]["expected_sample_points"] == 175
+    assert audit["resource"]["C1"]["covered_sample_points"] == 168
+    assert audit["resource"]["C1"]["coverage"] == pytest.approx(168 / 175)
 
 
-def test_resource_coverage_below_point_95_is_invalid(
+def test_all_rounds_overlap_but_one_sample_per_long_round_has_low_coverage(
     valid_attempt: AttemptFixture,
 ) -> None:
     path = valid_attempt.path / "raw" / "pc" / "resource.jsonl"
 
     def mutate(rows: list[dict[str, Any]]) -> None:
         samples = [row for row in rows if row["event_type"] == "resource_sample"]
-        removed = {id(samples[0]), id(samples[1])}
+        removed = {
+            id(row) for index, row in enumerate(samples) if index % 7 != 0
+        }
         _remove_domain_and_overhead(rows, lambda row: id(row) in removed)
+        sampler_end = next(
+            row for row in rows if row["event_type"] == "resource_sampler_end"
+        )
+        sampler_end["payload"]["sample_count"] = 25
 
     _rewrite_rows(path, mutate)
     audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
     assert audit["status"] == "invalid"
-    assert audit["resource"]["C2"]["coverage"] == pytest.approx(23 / 25)
+    assert audit["resource"]["C2"]["covered_rounds"] == 25
+    assert audit["resource"]["C2"]["expected_sample_points"] == 175
+    assert audit["resource"]["C2"]["covered_sample_points"] == 25
+    assert audit["resource"]["C2"]["coverage"] == pytest.approx(25 / 175)
     assert _reason_contains(audit, "coverage")
     assert _reason_contains(audit, "0.95")
 
