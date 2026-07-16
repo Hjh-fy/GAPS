@@ -6,6 +6,7 @@ never connect to ECS or Raspberry Pi and never start a training process.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -406,6 +407,27 @@ def _is_contained(path: Path, root: Path) -> bool:
     except (FileNotFoundError, ValueError):
         return False
     return True
+
+
+def _windows_extended_local_path(path: Path) -> Path:
+    """Use extended-length I/O only after normal-path safety gates have passed."""
+
+    path = Path(path)
+    if os.name != "nt":
+        return path
+    if not path.is_absolute():
+        raise ValueError("extended-length I/O requires an absolute local path")
+    raw = str(path)
+    drive, _tail = os.path.splitdrive(raw)
+    if not drive or raw.startswith("\\\\") or drive.startswith("\\\\"):
+        raise ValueError("extended-length I/O requires a local drive path")
+    return Path(f"\\\\?\\{raw}")
+
+
+def _compact_uuid_token() -> str:
+    """Encode all 128 UUID bits without long hexadecimal path decoration."""
+
+    return base64.urlsafe_b64encode(uuid.uuid4().bytes).rstrip(b"=").decode("ascii")
 
 
 def _guard_real_directory(
@@ -992,12 +1014,17 @@ def verify_and_extract_archive(
 ) -> dict[str, str]:
     expected = _verify_archive(Path(archive_path), source_manifest)
     destination = Path(destination)
+    _reject_symlink_components(destination.parent, "extracted source parent")
     if destination.exists():
         raise FileExistsError(f"refusing to overwrite extracted source: {destination}")
-    staging = destination.with_name(f".{destination.name}.{uuid.uuid4().hex}.staging")
+    staging = destination.with_name(f".{_compact_uuid_token()}")
     if staging.exists():
         raise FileExistsError(staging)
     staging.mkdir(parents=True)
+    _lstat_runtime_component(
+        staging, "extracted source staging", kind="directory", missing_ok=False
+    )
+    staging_io = _windows_extended_local_path(staging.absolute())
     try:
         with tarfile.open(archive_path, "r:") as archive:
             by_name = {member.name: member for member in archive.getmembers() if member.isfile()}
@@ -1009,17 +1036,21 @@ def verify_and_extract_archive(
                     raise ArchiveMismatch(f"could not extract tracked member: {relative}")
                 parts = validate_archive_member_path(relative)
                 target = staging.joinpath(*parts)
-                target.parent.mkdir(parents=True, exist_ok=True)
                 if not _is_contained(target.parent, staging):
                     raise ArchiveMismatch(f"extracted member escapes fresh src: {relative}")
-                with extracted, target.open("xb") as handle:
+                target_io = _windows_extended_local_path(target.absolute())
+                target_io.parent.mkdir(parents=True, exist_ok=True)
+                with extracted, target_io.open("xb") as handle:
                     shutil.copyfileobj(extracted, handle)
-                if target.stat().st_size != row["byte_size"] or sha256_file(target) != row["sha256"]:
+                if (
+                    target_io.stat().st_size != row["byte_size"]
+                    or sha256_file(target_io) != row["sha256"]
+                ):
                     raise ArchiveMismatch(f"extracted tracked member mismatch: {relative}")
         destination.parent.mkdir(parents=True, exist_ok=True)
         staging.replace(destination)
     except BaseException:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(staging_io, ignore_errors=True)
         raise
     return {
         "source_archive_sha256": str(source_manifest["source_archive_sha256"]),
@@ -1031,9 +1062,10 @@ def _verify_extracted_source(
     destination: Path, source_manifest: Mapping[str, Any]
 ) -> dict[str, str]:
     destination = _guard_real_directory(Path(destination), "extracted source")
+    scan_root = _windows_extended_local_path(destination.absolute())
     expected = _expected_regular_members(source_manifest)
     actual: list[dict[str, Any]] = []
-    for path in destination.rglob("*"):
+    for path in scan_root.rglob("*"):
         if path.is_symlink():
             raise ArchiveMismatch(f"extracted source contains symlink: {path}")
         if path.is_dir():
@@ -1042,7 +1074,7 @@ def _verify_extracted_source(
             raise ArchiveMismatch(f"extracted source contains non-regular path: {path}")
         actual.append(
             {
-                "relative_path": path.relative_to(destination).as_posix(),
+                "relative_path": path.relative_to(scan_root).as_posix(),
                 "byte_size": path.stat().st_size,
                 "sha256": sha256_file(path),
             }
@@ -1330,7 +1362,8 @@ def deploy_source_archive(
     elif archive_entry is not None or src_entry is not None or pc_existed:
         raise RuntimeError(f"partial PC content-addressed runtime: {pc_root}")
     else:
-        pc_temp = pc_root / f".source.tar.{uuid.uuid4().hex}.tmp"
+        # Keep all UUID entropy while avoiding MAX_PATH in long Windows worktrees.
+        pc_temp = pc_root / f".{_compact_uuid_token()}"
         _lstat_runtime_component(
             pc_temp, "PC temporary source archive", kind="file", missing_ok=True
         )

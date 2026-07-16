@@ -445,6 +445,65 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     assert (Path(deployments["pc"].src_path) / "app.py").is_file()
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows MAX_PATH regression")
+def test_pc_deploy_temp_name_fits_long_content_root(tmp_path: Path) -> None:
+    archive_path, manifest = _source_fixture(tmp_path / "source")
+    source_hash = str(manifest["source_archive_sha256"])
+    target_root_length = 219
+    padding = target_root_length - len(str(tmp_path.absolute())) - len(source_hash) - 2
+    if padding < 1:
+        pytest.skip("pytest temporary path is too long for the MAX_PATH boundary fixture")
+    runtime = tmp_path / ("r" * padding)
+    content_root = runtime / source_hash
+    legacy_temp = content_root / f".source.tar.{'0' * 32}.tmp"
+    assert len(str(content_root.absolute())) == target_root_length
+    assert len(str(legacy_temp.absolute())) >= 260
+
+    remote_report = json.dumps(
+        {
+            "source_archive_sha256": manifest["source_archive_sha256"],
+            "regular_members_sha256": manifest["regular_members_sha256"],
+        }
+    )
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source:
+            return json.dumps({"state": "complete"})
+        assert "REMOTE_EXTRACT_SOURCE_V1" in source
+        return remote_report
+
+    deployments = deploy_source_archive(
+        archive_path,
+        manifest,
+        ecs_host="root@ecs",
+        pi_host="gaps@pi",
+        pc_runtime_root=runtime,
+        run=lambda *_args, **_kwargs: pytest.fail("complete remote runtime transferred"),
+        ssh=lambda *_args, **_kwargs: pytest.fail("complete remote runtime used ssh"),
+        remote_python=fake_remote_python,
+    )
+
+    assert Path(deployments["pc"].archive_path).read_bytes() == archive_path.read_bytes()
+    assert (Path(deployments["pc"].src_path) / "app.py").is_file()
+
+    (Path(deployments["pc"].src_path) / "app.py").write_text(
+        "tampered\n", encoding="utf-8"
+    )
+    with pytest.raises(ArchiveMismatch, match="tracked member"):
+        deploy_source_archive(
+            archive_path,
+            manifest,
+            ecs_host="root@ecs",
+            pi_host="gaps@pi",
+            pc_runtime_root=runtime,
+            run=lambda *_args, **_kwargs: pytest.fail("tampered runtime transferred"),
+            ssh=lambda *_args, **_kwargs: pytest.fail("tampered runtime used ssh"),
+            remote_python=lambda *_args, **_kwargs: pytest.fail(
+                "tampered runtime contacted host"
+            ),
+        )
+
+
 def test_remote_extract_source_verifies_complete_reuse_and_rejects_partial(
     tmp_path: Path,
 ) -> None:
