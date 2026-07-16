@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import ctypes
+import errno
 import hashlib
 import io
 import json
@@ -17,6 +19,7 @@ import math
 import os
 import re
 import shutil
+import sys
 import uuid
 from contextvars import ContextVar
 from pathlib import Path
@@ -233,8 +236,6 @@ ATTEMPT_REGISTRY_FIELDS = (
     "checkpoint_sha256",
     "classification_stream_sha256",
     "classification_stream_size_bytes",
-    "classification_stream_device",
-    "classification_stream_inode",
     "attempt_relative_path",
     "audit_relative_path",
     "checkpoint_relative_path",
@@ -252,8 +253,14 @@ TABLE_FIELDS = {
 
 PublishedToken = tuple[int, int, int, str]
 PublishedReceipt = tuple[Path, PublishedToken, Path, PublishedToken]
+SummaryTreeEntry = tuple[str, str, int, int, int, str]
+SummaryToken = tuple[int, int, tuple[SummaryTreeEntry, ...]]
+SummaryReceipt = tuple[Path, SummaryToken]
 _ACTIVE_STREAM_RECEIPTS: ContextVar[list[PublishedReceipt] | None] = ContextVar(
     "iotj_confirmation_stream_receipts", default=None
+)
+_ACTIVE_STREAM_TRANSACTION: ContextVar[Any | None] = ContextVar(
+    "iotj_confirmation_stream_transaction", default=None
 )
 
 
@@ -896,6 +903,178 @@ def _rollback_published_streams(published: Sequence[PublishedReceipt]) -> list[s
     return errors
 
 
+def _atomic_rename_noreplace(source: Path, destination: Path) -> None:
+    """Atomically rename without replacement, or fail closed if unavailable."""
+
+    source = Path(source)
+    destination = Path(destination)
+    if os.name == "nt":
+        try:
+            # Windows os.rename uses MoveFile and rejects an existing target.
+            os.rename(source, destination)
+        except OSError as exc:
+            if (
+                destination.exists()
+                or destination.is_symlink()
+                or _is_reparse(destination)
+            ):
+                raise FileExistsError(
+                    errno.EEXIST,
+                    "atomic no-replace destination already exists",
+                    str(destination),
+                ) from exc
+            raise
+        return
+    if sys.platform.startswith("linux"):
+        try:
+            libc = ctypes.CDLL(None, use_errno=True)
+            renameat2 = libc.renameat2
+        except (AttributeError, OSError) as exc:
+            raise RuntimeError(
+                "atomic no-replace renameat2 is unavailable; refusing publication"
+            ) from exc
+        renameat2.argtypes = (
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        )
+        renameat2.restype = ctypes.c_int
+        at_fdcwd = -100
+        rename_noreplace = 1
+        result = renameat2(
+            at_fdcwd,
+            os.fsencode(source),
+            at_fdcwd,
+            os.fsencode(destination),
+            rename_noreplace,
+        )
+        if result == 0:
+            return
+        error_number = ctypes.get_errno()
+        if error_number in {errno.EEXIST, errno.ENOTEMPTY}:
+            raise FileExistsError(
+                error_number,
+                "atomic no-replace destination already exists",
+                str(destination),
+            )
+        if error_number in {errno.ENOSYS, errno.EINVAL, errno.ENOTSUP}:
+            raise RuntimeError(
+                "atomic no-replace renameat2 is unsupported; refusing publication"
+            )
+        raise OSError(error_number, os.strerror(error_number), str(destination))
+    raise RuntimeError(
+        f"atomic no-replace rename is unsupported on {sys.platform}; "
+        "refusing publication"
+    )
+
+
+def _summary_tree_token(root: Path) -> SummaryToken:
+    """Bind an owned summary root to its complete regular-file tree."""
+
+    root = Path(root)
+    if (
+        not root.is_dir()
+        or root.is_symlink()
+        or _is_reparse(root)
+    ):
+        raise RuntimeError(f"summary root is missing or unsafe: {root}")
+    root_stat = root.stat(follow_symlinks=False)
+    entries: list[SummaryTreeEntry] = []
+    for current_text, directory_names, file_names in os.walk(
+        root, topdown=True, followlinks=False
+    ):
+        current = Path(current_text)
+        directory_names.sort()
+        file_names.sort()
+        for name in directory_names:
+            path = current / name
+            if not path.is_dir() or path.is_symlink() or _is_reparse(path):
+                raise RuntimeError(f"summary tree contains an unsafe directory: {path}")
+            stat_result = path.stat(follow_symlinks=False)
+            entries.append(
+                (
+                    "directory",
+                    path.relative_to(root).as_posix(),
+                    int(stat_result.st_dev),
+                    int(stat_result.st_ino),
+                    0,
+                    "",
+                )
+            )
+        for name in file_names:
+            path = current / name
+            if not path.is_file() or path.is_symlink() or _is_reparse(path):
+                raise RuntimeError(f"summary tree contains an unsafe file: {path}")
+            stat_result = path.stat(follow_symlinks=False)
+            entries.append(
+                (
+                    "file",
+                    path.relative_to(root).as_posix(),
+                    int(stat_result.st_dev),
+                    int(stat_result.st_ino),
+                    int(stat_result.st_size),
+                    _sha256_file(path),
+                )
+            )
+    return (
+        int(root_stat.st_dev),
+        int(root_stat.st_ino),
+        tuple(sorted(entries)),
+    )
+
+
+def _summary_path_absent(path: Path) -> bool:
+    return not path.exists() and not path.is_symlink() and not _is_reparse(path)
+
+
+def _rollback_owned_summary(receipt: SummaryReceipt) -> tuple[bool, list[str]]:
+    """Remove an unchanged owned summary; preserve changed/unsafe destinations."""
+
+    path, expected_token = receipt
+    if _summary_path_absent(path):
+        return True, []
+    try:
+        actual_token = _summary_tree_token(path)
+    except (OSError, RuntimeError) as exc:
+        return False, [
+            f"summary ownership changed or became unsafe; preserved {path}: {exc}"
+        ]
+    if actual_token != expected_token:
+        return False, [f"summary ownership changed; preserved {path}"]
+
+    quarantine = path.parent / f".{path.name}.{uuid.uuid4().hex}.rollback"
+    try:
+        _atomic_rename_noreplace(path, quarantine)
+    except BaseException as exc:
+        return False, [
+            f"cannot safely isolate owned summary {path}: {type(exc).__name__}: {exc}"
+        ]
+    try:
+        isolated_token = _summary_tree_token(quarantine)
+        if isolated_token != expected_token:
+            restore_error = ""
+            try:
+                _atomic_rename_noreplace(quarantine, path)
+            except BaseException as exc:
+                restore_error = (
+                    f"; cannot restore preserved summary from {quarantine}: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+            return False, [
+                "summary ownership changed during rollback; preserved summary"
+                + restore_error
+            ]
+        shutil.rmtree(quarantine)
+    except BaseException as exc:
+        return False, [
+            f"cannot safely remove isolated owned summary {quarantine}: "
+            f"{type(exc).__name__}: {exc}"
+        ]
+    return True, []
+
+
 def _verify_checkpoint_stability(
     row: Mapping[str, Any], *, phase: str
 ) -> str:
@@ -931,7 +1110,9 @@ class StreamTransaction:
         self.paths = _preflight_stream_destinations(self.rows)
         self.receipts: list[PublishedReceipt] = []
         self.prepared: dict[Path, tuple[int, str]] = {}
+        self.summary_receipt: SummaryReceipt | None = None
         self._context_token: Any = None
+        self._transaction_context_token: Any = None
         self.active = False
         self.committed = False
 
@@ -941,8 +1122,14 @@ class StreamTransaction:
         # Repeat immediately before ownership begins to close construction races.
         _preflight_stream_destinations(self.rows)
         self._context_token = _ACTIVE_STREAM_RECEIPTS.set(self.receipts)
+        self._transaction_context_token = _ACTIVE_STREAM_TRANSACTION.set(self)
         self.active = True
         return self
+
+    def clear_summary_reservation(self, receipt: SummaryReceipt) -> None:
+        if self.summary_receipt != receipt:
+            raise RuntimeError("summary transaction reservation mismatch")
+        self.summary_receipt = None
 
     def register_prepared(self, path: Path, payload: bytes) -> None:
         if not self.active or self.committed:
@@ -1011,6 +1198,18 @@ class StreamTransaction:
     def commit_after_summary_publish(self) -> None:
         if not self.active or self.committed:
             raise RuntimeError("stream transaction cannot be committed")
+        self.verify_streams()
+        if self.summary_receipt is None:
+            raise RuntimeError("summary transaction receipt is missing")
+        summary_path, expected_token = self.summary_receipt
+        try:
+            actual_token = _summary_tree_token(summary_path)
+        except (OSError, RuntimeError) as exc:
+            raise RuntimeError(
+                "summary ownership changed before transaction commit"
+            ) from exc
+        if actual_token != expected_token:
+            raise RuntimeError("summary ownership changed before transaction commit")
         self.committed = True
 
     def commit_standalone(self) -> None:
@@ -1023,17 +1222,43 @@ class StreamTransaction:
     def __exit__(self, exc_type, exc, traceback) -> bool:
         rollback_errors: list[str] = []
         if not self.committed:
-            rollback_errors = _rollback_published_streams(self.receipts)
+            summary_absent = True
+            if self.summary_receipt is not None:
+                summary_absent, summary_errors = _rollback_owned_summary(
+                    self.summary_receipt
+                )
+                rollback_errors.extend(summary_errors)
+            # A changed or non-removable published summary must remain paired
+            # with its verified streams; do not manufacture split evidence.
+            if summary_absent:
+                rollback_errors.extend(_rollback_published_streams(self.receipts))
+        if self._transaction_context_token is not None:
+            _ACTIVE_STREAM_TRANSACTION.reset(self._transaction_context_token)
+            self._transaction_context_token = None
         if self._context_token is not None:
             _ACTIVE_STREAM_RECEIPTS.reset(self._context_token)
             self._context_token = None
         self.active = False
         if rollback_errors:
-            raise RuntimeError(
-                "stream transaction rollback reported ownership changed/incomplete: "
-                + "; ".join(rollback_errors)
-            ) from exc
+            prefix = (
+                "incomplete summary transaction"
+                if self.summary_receipt is not None
+                else "stream transaction rollback incomplete"
+            )
+            raise RuntimeError(prefix + ": " + "; ".join(rollback_errors)) from exc
         return False
+
+
+def _record_summary_receipt(
+    transaction: StreamTransaction, receipt: SummaryReceipt
+) -> None:
+    """Injectable reservation seam; registration occurs before atomic rename."""
+
+    if not transaction.active or transaction.committed:
+        raise RuntimeError("summary publication lacks an active transaction")
+    if transaction.summary_receipt is not None:
+        raise RuntimeError("summary transaction already owns a destination")
+    transaction.summary_receipt = receipt
 
 
 def evaluate_canonical_attempts(
@@ -1728,8 +1953,6 @@ def _attempt_registry(
             "checkpoint_sha256": row["checkpoint_sha256"],
             "classification_stream_sha256": fingerprint["sha256"],
             "classification_stream_size_bytes": fingerprint["size_bytes"],
-            "classification_stream_device": fingerprint["device"],
-            "classification_stream_inode": fingerprint["inode"],
             "attempt_relative_path": _relative(Path(row["attempt_dir"]), raw_root),
             "audit_relative_path": _relative(Path(row["audit_path"]), raw_root),
             "checkpoint_relative_path": _relative(Path(row["checkpoint_path"]), raw_root),
@@ -1827,11 +2050,45 @@ def _claim_map() -> str:
 
 
 def _publish_summary_staging(staging: Path, destination: Path) -> None:
-    """Injectable final atomic publish seam with an immediate no-overwrite check."""
+    """Atomically publish and bind the summary to the active transaction."""
 
     if destination.exists() or destination.is_symlink() or _is_reparse(destination):
         raise FileExistsError(f"refusing to overwrite summary output: {destination}")
-    staging.rename(destination)
+    transaction = _ACTIVE_STREAM_TRANSACTION.get()
+    if (
+        not isinstance(transaction, StreamTransaction)
+        or not transaction.active
+        or transaction.committed
+    ):
+        raise RuntimeError("summary publication lacks an active transaction")
+    expected_token = _summary_tree_token(staging)
+    receipt = (Path(destination), expected_token)
+    try:
+        # Reserve ownership first. If the atomic call succeeds but an injected
+        # wrapper raises immediately afterwards, __exit__ can still reconcile.
+        _record_summary_receipt(transaction, receipt)
+    except BaseException:
+        if transaction.summary_receipt == receipt:
+            transaction.clear_summary_reservation(receipt)
+        raise
+    try:
+        _atomic_rename_noreplace(staging, destination)
+    except BaseException:
+        # A still-present source proves no rename occurred. A missing source is
+        # treated as possibly published and remains transaction-owned.
+        if not _summary_path_absent(staging):
+            transaction.clear_summary_reservation(receipt)
+        raise
+    try:
+        actual_token = _summary_tree_token(destination)
+    except (OSError, RuntimeError) as exc:
+        raise RuntimeError(
+            "summary ownership changed immediately after atomic publication"
+        ) from exc
+    if actual_token != expected_token:
+        raise RuntimeError(
+            "summary ownership changed immediately after atomic publication"
+        )
 
 
 def write_summary_bundle(

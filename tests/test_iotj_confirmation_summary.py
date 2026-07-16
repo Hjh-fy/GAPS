@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -916,6 +917,201 @@ def test_summarize_write_failure_rolls_back_streams_and_is_retryable(
     assert all(path.is_file() for path in _stream_paths(canonical_fixture))
 
 
+def test_summary_rename_then_baseexception_rolls_back_bundle_and_streams_for_retry(
+    canonical_fixture: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class PostRenameFailure(BaseException):
+        pass
+
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    original_publish = summary._publish_summary_staging
+
+    def publish_then_fail(staging: Path, destination: Path) -> None:
+        original_publish(staging, destination)
+        raise PostRenameFailure("synthetic failure after summary rename")
+
+    monkeypatch.setattr(summary, "_publish_summary_staging", publish_then_fail)
+    with pytest.raises(PostRenameFailure, match="after summary rename"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+        )
+    assert not output.exists()
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+    monkeypatch.setattr(summary, "_publish_summary_staging", original_publish)
+    summary.summarize_confirmation(
+        raw_root=canonical_fixture["raw_root"],
+        protocol=canonical_fixture["protocol"],
+        data_root=canonical_fixture["data_root"],
+        output_root=output,
+        device="cpu",
+        batch_size=32,
+        evaluator=_successful_evaluator(canonical_fixture),
+    )
+    assert output.is_dir()
+    assert all(path.is_file() for path in _stream_paths(canonical_fixture))
+
+
+def test_changed_summary_after_rename_reports_incomplete_and_preserves_bundle_and_streams(
+    canonical_fixture: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class PostRenameFailure(BaseException):
+        pass
+
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    original_publish = summary._publish_summary_staging
+
+    def publish_change_then_fail(staging: Path, destination: Path) -> None:
+        original_publish(staging, destination)
+        (destination / "claim_boundary.md").write_bytes(b"external-replacement")
+        raise PostRenameFailure("synthetic failure after external summary rewrite")
+
+    monkeypatch.setattr(
+        summary, "_publish_summary_staging", publish_change_then_fail
+    )
+    with pytest.raises(RuntimeError, match="incomplete.*summary.*ownership changed"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+        )
+    assert (output / "claim_boundary.md").read_bytes() == b"external-replacement"
+    assert all(path.is_file() for path in _stream_paths(canonical_fixture))
+
+
+def test_summary_deleted_after_rename_is_safe_absence_and_streams_roll_back(
+    canonical_fixture: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class PostRenameFailure(BaseException):
+        pass
+
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    original_publish = summary._publish_summary_staging
+
+    def publish_delete_then_fail(staging: Path, destination: Path) -> None:
+        original_publish(staging, destination)
+        shutil.rmtree(destination)
+        raise PostRenameFailure("synthetic failure after summary deletion")
+
+    monkeypatch.setattr(
+        summary, "_publish_summary_staging", publish_delete_then_fail
+    )
+    with pytest.raises(PostRenameFailure, match="after summary deletion"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+        )
+    assert not output.exists()
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
+def test_summary_receipt_registration_failure_self_cleans_and_is_retryable(
+    canonical_fixture: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class ReceiptFailure(BaseException):
+        pass
+
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    original_record = summary._record_summary_receipt
+    calls = 0
+
+    def failing_record(transaction, receipt) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            original_record(transaction, receipt)
+            raise ReceiptFailure("synthetic summary receipt failure")
+        original_record(transaction, receipt)
+
+    monkeypatch.setattr(summary, "_record_summary_receipt", failing_record)
+    with pytest.raises(ReceiptFailure, match="summary receipt"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+        )
+    assert not output.exists()
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+    monkeypatch.setattr(summary, "_record_summary_receipt", original_record)
+    summary.summarize_confirmation(
+        raw_root=canonical_fixture["raw_root"],
+        protocol=canonical_fixture["protocol"],
+        data_root=canonical_fixture["data_root"],
+        output_root=output,
+        device="cpu",
+        batch_size=32,
+        evaluator=_successful_evaluator(canonical_fixture),
+    )
+    assert output.is_dir()
+    assert all(path.is_file() for path in _stream_paths(canonical_fixture))
+
+
+def test_atomic_summary_publish_preserves_concurrent_destination(
+    canonical_fixture: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    original_rename = summary._atomic_rename_noreplace
+    injected = False
+
+    def racing_rename(source: Path, destination: Path) -> None:
+        nonlocal injected
+        if not injected and destination == output:
+            injected = True
+            destination.mkdir()
+            (destination / "external.txt").write_text("external", encoding="utf-8")
+        original_rename(source, destination)
+
+    monkeypatch.setattr(summary, "_atomic_rename_noreplace", racing_rename)
+    with pytest.raises(FileExistsError):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+        )
+    assert (output / "external.txt").read_text(encoding="utf-8") == "external"
+    assert {path.name for path in output.iterdir()} == {"external.txt"}
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
 def test_evidence_change_after_consumption_rolls_back_all_streams(
     canonical_fixture: dict[str, Any], tmp_path: Path
 ) -> None:
@@ -1264,6 +1460,12 @@ def test_exclusive_summary_output_records_inputs_and_claim_boundaries(
         "claim_to_evidence_map.md",
     }
     assert expected <= {path.name for path in output.iterdir()}
+    registry_fields = (output / "attempt_registry.csv").read_text(
+        encoding="utf-8"
+    ).splitlines()[0].split(",")
+    assert "classification_stream_size_bytes" in registry_fields
+    assert "classification_stream_device" not in registry_fields
+    assert "classification_stream_inode" not in registry_fields
     boundary = (output / "claim_boundary.md").read_text(encoding="utf-8")
     assert "post-screen exploratory" in boundary
     assert "predeclared full method" in boundary
