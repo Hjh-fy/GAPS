@@ -512,6 +512,77 @@ def test_stream_transaction_rolls_back_only_its_own_mid_publish_files(
     assert not list(canonical_fixture["raw_root"].rglob("*.tmp"))
 
 
+def test_link_receipt_failure_self_cleans_and_allows_retry(
+    canonical_fixture: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class ReceiptFailure(BaseException):
+        pass
+
+    original_record = summary._record_stream_receipt
+    calls = 0
+
+    def failing_record(receipts, receipt) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise ReceiptFailure("synthetic link-to-receipt failure")
+        original_record(receipts, receipt)
+
+    monkeypatch.setattr(summary, "_record_stream_receipt", failing_record)
+    with pytest.raises(ReceiptFailure, match="link-to-receipt"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+    assert not list(canonical_fixture["raw_root"].rglob("*.tmp"))
+
+    monkeypatch.setattr(summary, "_record_stream_receipt", original_record)
+    assert len(
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    ) == 10
+
+
+def test_later_checkpoint_replacement_stops_before_that_evaluator(
+    canonical_fixture: dict[str, Any]
+) -> None:
+    ordered = sorted(canonical_fixture["rows"], key=lambda row: row["run_id"])
+    calls: list[Path] = []
+    delegate = _successful_evaluator(canonical_fixture, calls)
+
+    def replacing_evaluator(path: Path, **kwargs):
+        result = delegate(path, **kwargs)
+        if len(calls) == 1:
+            ordered[1]["checkpoint_path"].write_bytes(b"replaced-after-gate")
+        return result
+
+    with pytest.raises(RuntimeError, match="checkpoint.*SHA-256"):
+        summary.evaluate_canonical_attempts(
+            canonical_fixture["rows"],
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=replacing_evaluator,
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+        )
+    assert len(calls) == 1
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
 def test_classification_rows_stream_location_and_multiseed_statistics(
     canonical_fixture: dict[str, Any], tmp_path: Path
 ) -> None:
@@ -801,6 +872,202 @@ def _install_all_audit_approved_evidence(canonical_fixture: dict[str, Any]) -> N
         _write_audit_approved_evidence(row, _evidence_for(row))
 
 
+def test_summarize_write_failure_rolls_back_streams_and_is_retryable(
+    canonical_fixture: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    original_publish = summary._publish_summary_staging
+    publish_calls = 0
+
+    def failing_publish(staging: Path, destination: Path) -> None:
+        nonlocal publish_calls
+        publish_calls += 1
+        if publish_calls == 1:
+            raise OSError("synthetic summary rename failure")
+        original_publish(staging, destination)
+
+    monkeypatch.setattr(summary, "_publish_summary_staging", failing_publish)
+    with pytest.raises(OSError, match="summary rename"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+        )
+    assert not output.exists()
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+    summary.summarize_confirmation(
+        raw_root=canonical_fixture["raw_root"],
+        protocol=canonical_fixture["protocol"],
+        data_root=canonical_fixture["data_root"],
+        output_root=output,
+        device="cpu",
+        batch_size=32,
+        evaluator=_successful_evaluator(canonical_fixture),
+    )
+    assert output.is_dir()
+    assert all(path.is_file() for path in _stream_paths(canonical_fixture))
+
+
+def test_evidence_change_after_consumption_rolls_back_all_streams(
+    canonical_fixture: dict[str, Any], tmp_path: Path
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    output = tmp_path / "summary"
+    calls: list[Path] = []
+    delegate = _successful_evaluator(canonical_fixture, calls)
+    first_evidence = (
+        sorted(canonical_fixture["rows"], key=lambda row: row["run_id"])[0][
+            "attempt_dir"
+        ]
+        / "raw"
+        / "ecs"
+        / "events.jsonl"
+    )
+
+    def mutating_evaluator(path: Path, **kwargs):
+        result = delegate(path, **kwargs)
+        if len(calls) == 10:
+            first_evidence.write_bytes(first_evidence.read_bytes() + b"{}\n")
+        return result
+
+    with pytest.raises(RuntimeError, match="changed after summary consumption"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=output,
+            device="cpu",
+            batch_size=32,
+            evaluator=mutating_evaluator,
+        )
+    assert not output.exists()
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
+def test_post_publish_stream_rewrite_blocks_summary_and_preserves_external_owner(
+    canonical_fixture: dict[str, Any], tmp_path: Path
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    rows = summary.assert_test_gate(
+        canonical_fixture["rows"],
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
+    )
+    tables = summary.build_system_tables(
+        rows,
+        summary.load_attempt_evidence,
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
+    )
+    output = tmp_path / "summary"
+    changed = _stream_paths(canonical_fixture)[0]
+    with pytest.raises(RuntimeError, match="ownership changed"):
+        with summary.StreamTransaction(rows) as transaction:
+            per_run = summary.evaluate_canonical_attempts(
+                rows,
+                data_root=canonical_fixture["data_root"],
+                device="cpu",
+                batch_size=32,
+                evaluator=_successful_evaluator(canonical_fixture),
+                protocol=canonical_fixture["protocol"],
+                raw_root=canonical_fixture["raw_root"],
+                stream_transaction=transaction,
+            )
+            changed.write_bytes(b"external-replacement")
+            summary.write_summary_bundle(
+                output,
+                rows,
+                canonical_fixture["protocol"],
+                per_run,
+                tables,
+                raw_root=canonical_fixture["raw_root"],
+                stream_transaction=transaction,
+            )
+    assert not output.exists()
+    assert changed.read_bytes() == b"external-replacement"
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture)[1:])
+
+
+def test_post_publish_stream_disappearance_is_reported_and_rolls_back_owned_streams(
+    canonical_fixture: dict[str, Any], tmp_path: Path
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    rows = summary.assert_test_gate(
+        canonical_fixture["rows"],
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
+    )
+    tables = summary.build_system_tables(
+        rows,
+        summary.load_attempt_evidence,
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
+    )
+    output = tmp_path / "summary"
+    disappeared = _stream_paths(canonical_fixture)[0]
+    with pytest.raises(RuntimeError, match="ownership changed or disappeared"):
+        with summary.StreamTransaction(rows) as transaction:
+            per_run = summary.evaluate_canonical_attempts(
+                rows,
+                data_root=canonical_fixture["data_root"],
+                device="cpu",
+                batch_size=32,
+                evaluator=_successful_evaluator(canonical_fixture),
+                protocol=canonical_fixture["protocol"],
+                raw_root=canonical_fixture["raw_root"],
+                stream_transaction=transaction,
+            )
+            disappeared.unlink()
+            summary.write_summary_bundle(
+                output,
+                rows,
+                canonical_fixture["protocol"],
+                per_run,
+                tables,
+                raw_root=canonical_fixture["raw_root"],
+                stream_transaction=transaction,
+            )
+    assert not output.exists()
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
+def test_checkpoint_change_before_final_summary_publish_rolls_back_streams(
+    canonical_fixture: dict[str, Any], tmp_path: Path
+) -> None:
+    _install_all_audit_approved_evidence(canonical_fixture)
+    calls: list[Path] = []
+    delegate = _successful_evaluator(canonical_fixture, calls)
+    first_checkpoint = sorted(
+        canonical_fixture["rows"], key=lambda row: row["run_id"]
+    )[0]["checkpoint_path"]
+
+    def late_mutation(path: Path, **kwargs):
+        result = delegate(path, **kwargs)
+        if len(calls) == 10:
+            first_checkpoint.write_bytes(b"late-checkpoint-replacement")
+        return result
+
+    with pytest.raises(RuntimeError, match="checkpoint.*SHA-256"):
+        summary.summarize_confirmation(
+            raw_root=canonical_fixture["raw_root"],
+            protocol=canonical_fixture["protocol"],
+            data_root=canonical_fixture["data_root"],
+            output_root=tmp_path / "summary",
+            device="cpu",
+            batch_size=32,
+            evaluator=late_mutation,
+        )
+    assert not any(path.exists() for path in _stream_paths(canonical_fixture))
+
+
 def test_system_tables_are_exact_deterministic_and_use_parallel_critical_path(
     canonical_fixture: dict[str, Any]
 ) -> None:
@@ -950,35 +1217,39 @@ def test_csv_serialization_is_canonical_and_rejects_schema_drift() -> None:
 def test_exclusive_summary_output_records_inputs_and_claim_boundaries(
     canonical_fixture: dict[str, Any], tmp_path: Path
 ) -> None:
-    per_run = []
-    for row in canonical_fixture["rows"]:
-        metrics = _fake_metrics(row["group_id"], row["seed"])
-        per_run.append(summary.classification_row(row, metrics))
-        stream_path = (
-            row["attempt_dir"]
-            / "raw"
-            / "ecs"
-            / "evaluation"
-            / "classification_test_stream.csv"
-        )
-        stream_path.parent.mkdir(parents=True, exist_ok=True)
-        stream_path.write_text("sample_index\n0\n", encoding="utf-8")
     _install_all_audit_approved_evidence(canonical_fixture)
-    tables = summary.build_system_tables(
+    rows = summary.assert_test_gate(
         canonical_fixture["rows"],
+        protocol=canonical_fixture["protocol"],
+        raw_root=canonical_fixture["raw_root"],
+    )
+    tables = summary.build_system_tables(
+        rows,
         summary.load_attempt_evidence,
         protocol=canonical_fixture["protocol"],
         raw_root=canonical_fixture["raw_root"],
     )
     output = tmp_path / "summary"
-    summary.write_summary_bundle(
-        output,
-        canonical_fixture["rows"],
-        canonical_fixture["protocol"],
-        per_run,
-        tables,
-        raw_root=canonical_fixture["raw_root"],
-    )
+    with summary.StreamTransaction(rows) as transaction:
+        per_run = summary.evaluate_canonical_attempts(
+            rows,
+            data_root=canonical_fixture["data_root"],
+            device="cpu",
+            batch_size=32,
+            evaluator=_successful_evaluator(canonical_fixture),
+            protocol=canonical_fixture["protocol"],
+            raw_root=canonical_fixture["raw_root"],
+            stream_transaction=transaction,
+        )
+        summary.write_summary_bundle(
+            output,
+            rows,
+            canonical_fixture["protocol"],
+            per_run,
+            tables,
+            raw_root=canonical_fixture["raw_root"],
+            stream_transaction=transaction,
+        )
     expected = {
         "classification_per_run.csv",
         "classification_multiseed_summary.csv",
@@ -1018,6 +1289,7 @@ def test_exclusive_summary_output_records_inputs_and_claim_boundaries(
             per_run,
             tables,
             raw_root=canonical_fixture["raw_root"],
+            stream_transaction=transaction,
         )
 
 

@@ -232,6 +232,9 @@ ATTEMPT_REGISTRY_FIELDS = (
     "audit_sha256",
     "checkpoint_sha256",
     "classification_stream_sha256",
+    "classification_stream_size_bytes",
+    "classification_stream_device",
+    "classification_stream_inode",
     "attempt_relative_path",
     "audit_relative_path",
     "checkpoint_relative_path",
@@ -828,7 +831,19 @@ def _publish_stream(path: Path, payload: bytes) -> None:
         temporary_token = _published_token(temporary)
         os.link(temporary, path)
         linked = True
-        receipts.append((path, temporary_token, temporary, temporary_token))
+        receipt = (path, temporary_token, temporary, temporary_token)
+        try:
+            _record_stream_receipt(receipts, receipt)
+        except BaseException as exc:
+            cleanup_errors: list[str] = []
+            _unlink_owned_path(path, temporary_token, cleanup_errors)
+            _unlink_owned_path(temporary, temporary_token, cleanup_errors)
+            if cleanup_errors:
+                raise RuntimeError(
+                    "link-to-receipt failure cleanup was incomplete: "
+                    + "; ".join(cleanup_errors)
+                ) from exc
+            raise
         recorded = True
         final_token = _published_token(path)
         if final_token != temporary_token:
@@ -836,6 +851,14 @@ def _publish_stream(path: Path, payload: bytes) -> None:
     finally:
         if not linked or recorded:
             temporary.unlink(missing_ok=True)
+
+
+def _record_stream_receipt(
+    receipts: list[PublishedReceipt], receipt: PublishedReceipt
+) -> None:
+    """Injectable seam; the publisher self-cleans if registration raises."""
+
+    receipts.append(receipt)
 
 
 def _published_token(path: Path) -> PublishedToken:
@@ -873,6 +896,146 @@ def _rollback_published_streams(published: Sequence[PublishedReceipt]) -> list[s
     return errors
 
 
+def _verify_checkpoint_stability(
+    row: Mapping[str, Any], *, phase: str
+) -> str:
+    attempt_dir = Path(row["attempt_dir"])
+    path = Path(row["checkpoint_path"])
+    if (
+        not _within(path, attempt_dir)
+        or _has_link_component(path, attempt_dir)
+        or not path.is_file()
+    ):
+        raise RuntimeError(f"checkpoint is missing or unsafe {phase}: {path}")
+    actual = _sha256_file(path)
+    if actual != row.get("checkpoint_sha256"):
+        raise RuntimeError(
+            f"checkpoint SHA-256 changed {phase}: {row['attempt_id']}; "
+            f"expected {row.get('checkpoint_sha256')}, got {actual}"
+        )
+    return actual
+
+
+def _verify_all_checkpoints(
+    rows: Sequence[Mapping[str, Any]], *, phase: str
+) -> None:
+    for row in rows:
+        _verify_checkpoint_stability(row, phase=phase)
+
+
+class StreamTransaction:
+    """Own final prediction streams until the summary directory is published."""
+
+    def __init__(self, rows: Sequence[Mapping[str, Any]]) -> None:
+        self.rows = [dict(row) for row in rows]
+        self.paths = _preflight_stream_destinations(self.rows)
+        self.receipts: list[PublishedReceipt] = []
+        self.prepared: dict[Path, tuple[int, str]] = {}
+        self._context_token: Any = None
+        self.active = False
+        self.committed = False
+
+    def __enter__(self) -> "StreamTransaction":
+        if self.active or self.committed:
+            raise RuntimeError("stream transaction cannot be entered twice")
+        # Repeat immediately before ownership begins to close construction races.
+        _preflight_stream_destinations(self.rows)
+        self._context_token = _ACTIVE_STREAM_RECEIPTS.set(self.receipts)
+        self.active = True
+        return self
+
+    def register_prepared(self, path: Path, payload: bytes) -> None:
+        if not self.active or self.committed:
+            raise RuntimeError("stream transaction is not active")
+        path = Path(path)
+        if path not in self.paths or path in self.prepared:
+            raise RuntimeError(f"unexpected or duplicate prepared stream: {path}")
+        self.prepared[path] = (len(payload), hashlib.sha256(payload).hexdigest())
+
+    def publish(self, prepared: Sequence[tuple[Path, bytes, dict[str, Any]]]) -> None:
+        if not self.active or self.committed:
+            raise RuntimeError("stream transaction is not active")
+        if [Path(item[0]) for item in prepared] != self.paths:
+            raise RuntimeError("prepared stream matrix does not match transaction paths")
+        for path, payload, _classification in prepared:
+            self.register_prepared(path, payload)
+        for path, payload, _classification in prepared:
+            _publish_stream(path, payload)
+        self.verify_streams()
+
+    def _receipt_by_path(self) -> dict[Path, PublishedReceipt]:
+        receipts: dict[Path, PublishedReceipt] = {}
+        for receipt in self.receipts:
+            path = Path(receipt[0])
+            if path in receipts:
+                raise RuntimeError(f"duplicate stream transaction receipt: {path}")
+            receipts[path] = receipt
+        return receipts
+
+    def stream_fingerprint(self, row: Mapping[str, Any]) -> dict[str, Any]:
+        path = _classification_stream_path(row)
+        receipt = self._receipt_by_path().get(path)
+        prepared = self.prepared.get(path)
+        if receipt is None or prepared is None:
+            raise RuntimeError(f"missing prepared/receipt stream binding: {path}")
+        expected_size, expected_sha = prepared
+        try:
+            actual_token = _published_token(path)
+        except OSError as exc:
+            raise RuntimeError(
+                f"classification stream ownership changed or disappeared: {path}"
+            ) from exc
+        receipt_token = receipt[1]
+        if actual_token != receipt_token:
+            raise RuntimeError(f"classification stream ownership changed: {path}")
+        if actual_token[2] != expected_size or actual_token[3] != expected_sha:
+            raise RuntimeError(f"classification stream differs from prepared payload: {path}")
+        return {
+            "path": path,
+            "size_bytes": expected_size,
+            "sha256": expected_sha,
+            "device": actual_token[0],
+            "inode": actual_token[1],
+        }
+
+    def verify_streams(self) -> None:
+        if not self.active or self.committed:
+            raise RuntimeError("stream transaction is not active")
+        if set(self.prepared) != set(self.paths):
+            raise RuntimeError("stream transaction prepared matrix is incomplete")
+        if set(self._receipt_by_path()) != set(self.paths):
+            raise RuntimeError("stream transaction receipt matrix is incomplete")
+        for row in self.rows:
+            self.stream_fingerprint(row)
+
+    def commit_after_summary_publish(self) -> None:
+        if not self.active or self.committed:
+            raise RuntimeError("stream transaction cannot be committed")
+        self.committed = True
+
+    def commit_standalone(self) -> None:
+        self.verify_streams()
+        _verify_all_checkpoints(
+            self.rows, phase="before standalone stream transaction commit"
+        )
+        self.committed = True
+
+    def __exit__(self, exc_type, exc, traceback) -> bool:
+        rollback_errors: list[str] = []
+        if not self.committed:
+            rollback_errors = _rollback_published_streams(self.receipts)
+        if self._context_token is not None:
+            _ACTIVE_STREAM_RECEIPTS.reset(self._context_token)
+            self._context_token = None
+        self.active = False
+        if rollback_errors:
+            raise RuntimeError(
+                "stream transaction rollback reported ownership changed/incomplete: "
+                + "; ".join(rollback_errors)
+            ) from exc
+        return False
+
+
 def evaluate_canonical_attempts(
     canonical_rows: Sequence[Mapping[str, Any]],
     *,
@@ -882,63 +1045,66 @@ def evaluate_canonical_attempts(
     evaluator: Callable[..., tuple[list[dict[str, Any]], dict[str, Any]]] = evaluate_checkpoint_stream,
     protocol: Mapping[str, Any] | None = None,
     raw_root: Path | None = None,
+    stream_transaction: StreamTransaction | None = None,
 ) -> list[dict[str, Any]]:
     """Open sealed C5 test only after the complete canonical Gate succeeds."""
 
     rows = assert_test_gate(canonical_rows, protocol=protocol, raw_root=raw_root)
-    initial_dataset = _build_bound_dataset_manifest(
-        Path(data_root), rows, protocol
-    )
-    stream_paths = _preflight_stream_destinations(rows)
-    prepared: list[tuple[Path, bytes, dict[str, Any]]] = []
-    for row, raw_path in zip(rows, stream_paths):
-        stream, metrics = evaluator(
-            Path(row["checkpoint_path"]),
-            data_root=Path(data_root),
-            target_client=5,
-            split="test",
-            device=device,
-            batch_size=batch_size,
+    def run_evaluation(transaction: StreamTransaction) -> list[dict[str, Any]]:
+        if not transaction.active or transaction.committed:
+            raise RuntimeError("caller-owned stream transaction is not active")
+        if [str(row["attempt_id"]) for row in transaction.rows] != [
+            str(row["attempt_id"]) for row in rows
+        ]:
+            raise RuntimeError("stream transaction attempt matrix mismatch")
+        initial_dataset = _build_bound_dataset_manifest(
+            Path(data_root), rows, protocol
         )
-        if len(stream) != 1360:
-            raise RuntimeError(
-                f"sealed C5 evaluator must return exactly 1360 rows; got {len(stream)}"
+        prepared: list[tuple[Path, bytes, dict[str, Any]]] = []
+        for row, raw_path in zip(rows, transaction.paths):
+            _verify_checkpoint_stability(row, phase="immediately before evaluator")
+            stream, metrics = evaluator(
+                Path(row["checkpoint_path"]),
+                data_root=Path(data_root),
+                target_client=5,
+                split="test",
+                device=device,
+                batch_size=batch_size,
             )
-        for sample_index, stream_row in enumerate(stream):
-            if (
-                not isinstance(stream_row, Mapping)
-                or stream_row.get("client") != "C5"
-                or stream_row.get("split") != "test"
-                or stream_row.get("sample_index") != sample_index
-            ):
+            _verify_checkpoint_stability(row, phase="immediately after evaluator")
+            if len(stream) != 1360:
                 raise RuntimeError(
-                    "sealed C5 prediction stream identity/order mismatch"
+                    f"sealed C5 evaluator must return exactly 1360 rows; got {len(stream)}"
                 )
-        prepared.append(
-            (raw_path, _stream_bytes(stream), classification_row(row, metrics))
+            for sample_index, stream_row in enumerate(stream):
+                if (
+                    not isinstance(stream_row, Mapping)
+                    or stream_row.get("client") != "C5"
+                    or stream_row.get("split") != "test"
+                    or stream_row.get("sample_index") != sample_index
+                ):
+                    raise RuntimeError(
+                        "sealed C5 prediction stream identity/order mismatch"
+                    )
+            prepared.append(
+                (raw_path, _stream_bytes(stream), classification_row(row, metrics))
+            )
+        final_dataset = _build_bound_dataset_manifest(
+            Path(data_root), rows, protocol, changed_message=True
         )
-    final_dataset = _build_bound_dataset_manifest(
-        Path(data_root), rows, protocol, changed_message=True
-    )
-    if final_dataset != initial_dataset:
-        raise RuntimeError("dataset changed during sealed evaluation")
+        if final_dataset != initial_dataset:
+            raise RuntimeError("dataset changed during sealed evaluation")
+        _verify_all_checkpoints(rows, phase="after all evaluators before stream publish")
+        transaction.publish(prepared)
+        return [classification for _path, _payload, classification in prepared]
 
-    published: list[PublishedReceipt] = []
-    receipt_token = _ACTIVE_STREAM_RECEIPTS.set(published)
-    try:
-        for raw_path, payload, _classification in prepared:
-            _publish_stream(raw_path, payload)
-    except BaseException as exc:
-        rollback_errors = _rollback_published_streams(published)
-        if rollback_errors:
-            raise RuntimeError(
-                "classification stream publish failed and rollback was incomplete: "
-                + "; ".join(rollback_errors)
-            ) from exc
-        raise
-    finally:
-        _ACTIVE_STREAM_RECEIPTS.reset(receipt_token)
-    return [classification for _path, _payload, classification in prepared]
+    if stream_transaction is not None:
+        return run_evaluation(stream_transaction)
+    owned_transaction = StreamTransaction(rows)
+    with owned_transaction:
+        result = run_evaluation(owned_transaction)
+        owned_transaction.commit_standalone()
+        return result
 
 
 def build_classification_multiseed_summary(
@@ -1537,22 +1703,15 @@ def _relative(path: Path, root: Path) -> str:
         raise RuntimeError(f"path escapes raw root: {path}") from exc
 
 
-def _attempt_registry(rows: Sequence[Mapping[str, Any]], raw_root: Path) -> list[dict[str, Any]]:
+def _attempt_registry(
+    rows: Sequence[Mapping[str, Any]],
+    raw_root: Path,
+    stream_transaction: StreamTransaction,
+) -> list[dict[str, Any]]:
     registry: list[dict[str, Any]] = []
     for row in rows:
-        stream_path = (
-            Path(row["attempt_dir"])
-            / "raw"
-            / "ecs"
-            / "evaluation"
-            / "classification_test_stream.csv"
-        )
-        if not stream_path.is_file() or _has_link_component(
-            stream_path, Path(row["attempt_dir"])
-        ):
-            raise RuntimeError(
-                f"sealed classification stream is missing or unsafe: {stream_path}"
-            )
+        fingerprint = stream_transaction.stream_fingerprint(row)
+        stream_path = Path(fingerprint["path"])
         registry.append({
             "run_id": row["run_id"],
             "attempt_id": row["attempt_id"],
@@ -1567,7 +1726,10 @@ def _attempt_registry(rows: Sequence[Mapping[str, Any]], raw_root: Path) -> list
             "protocol_manifest_sha256": row["protocol_manifest_sha256"],
             "audit_sha256": row["audit_sha256"],
             "checkpoint_sha256": row["checkpoint_sha256"],
-            "classification_stream_sha256": _sha256_file(stream_path),
+            "classification_stream_sha256": fingerprint["sha256"],
+            "classification_stream_size_bytes": fingerprint["size_bytes"],
+            "classification_stream_device": fingerprint["device"],
+            "classification_stream_inode": fingerprint["inode"],
             "attempt_relative_path": _relative(Path(row["attempt_dir"]), raw_root),
             "audit_relative_path": _relative(Path(row["audit_path"]), raw_root),
             "checkpoint_relative_path": _relative(Path(row["checkpoint_path"]), raw_root),
@@ -1664,6 +1826,14 @@ def _claim_map() -> str:
 """
 
 
+def _publish_summary_staging(staging: Path, destination: Path) -> None:
+    """Injectable final atomic publish seam with an immediate no-overwrite check."""
+
+    if destination.exists() or destination.is_symlink() or _is_reparse(destination):
+        raise FileExistsError(f"refusing to overwrite summary output: {destination}")
+    staging.rename(destination)
+
+
 def write_summary_bundle(
     output_root: Path,
     canonical_rows: Sequence[Mapping[str, Any]],
@@ -1672,6 +1842,7 @@ def write_summary_bundle(
     system_tables: Mapping[str, Sequence[Mapping[str, Any]]],
     *,
     raw_root: Path,
+    stream_transaction: StreamTransaction,
 ) -> None:
     rows = assert_test_gate(canonical_rows, protocol=protocol, raw_root=raw_root)
     output_root = Path(output_root)
@@ -1681,11 +1852,20 @@ def write_summary_bundle(
         raise RuntimeError("summary output parent must be a regular directory")
     if _has_link_component(output_root.parent):
         raise RuntimeError("summary output parent contains a symlink/reparse point")
+    if not stream_transaction.active or stream_transaction.committed:
+        raise RuntimeError("summary publication requires an active stream transaction")
+    if [str(row["attempt_id"]) for row in stream_transaction.rows] != [
+        str(row["attempt_id"]) for row in rows
+    ]:
+        raise RuntimeError("summary/stream transaction attempt matrix mismatch")
+    stream_transaction.verify_streams()
     per_run = [dict(row) for row in classification_per_run]
     multiseed = build_classification_multiseed_summary(per_run)
     if set(system_tables) != set(TABLE_FIELDS):
         raise RuntimeError("system table set is not exact")
-    registry = _attempt_registry(rows, Path(raw_root))
+    registry = _attempt_registry(
+        rows, Path(raw_root), stream_transaction
+    )
     bindings = getattr(system_tables, "evidence_bindings", None)
     if not isinstance(bindings, Mapping) or set(bindings) != {
         str(row["attempt_id"]) for row in rows
@@ -1716,7 +1896,19 @@ def write_summary_bundle(
                 handle.write(files[name])
                 handle.flush()
                 os.fsync(handle.fileno())
-        staging.replace(output_root)
+        # Recheck every mutable input immediately before the only summary
+        # publish operation. The second manifest must be byte-for-byte stable.
+        stream_transaction.verify_streams()
+        _verify_all_checkpoints(
+            rows, phase="immediately before final summary publish"
+        )
+        final_input_manifest = _input_manifest(
+            rows, protocol, Path(raw_root), bindings
+        )
+        if final_input_manifest != input_manifest:
+            raise RuntimeError("inputs changed before final summary publish")
+        _publish_summary_staging(staging, output_root)
+        stream_transaction.commit_after_summary_publish()
     finally:
         if staging.exists():
             shutil.rmtree(staging)
@@ -1914,23 +2106,29 @@ def summarize_confirmation(
     system_tables = build_system_tables(
         rows, load_attempt_evidence, protocol=protocol, raw_root=raw_root
     )
-    per_run = evaluate_canonical_attempts(
-        rows,
-        data_root=data_root,
-        device=device,
-        batch_size=batch_size,
-        evaluator=evaluator,
-        protocol=protocol,
-        raw_root=raw_root,
-    )
-    write_summary_bundle(
-        output_root,
-        rows,
-        protocol,
-        per_run,
-        system_tables,
-        raw_root=raw_root,
-    )
+    # Keep stream ownership inside one transaction until the summary directory
+    # is durably published.  Any evaluator, evidence, staging, fsync, or rename
+    # failure therefore removes every stream that this attempt still owns.
+    with StreamTransaction(rows) as stream_transaction:
+        per_run = evaluate_canonical_attempts(
+            rows,
+            data_root=data_root,
+            device=device,
+            batch_size=batch_size,
+            evaluator=evaluator,
+            protocol=protocol,
+            raw_root=raw_root,
+            stream_transaction=stream_transaction,
+        )
+        write_summary_bundle(
+            output_root,
+            rows,
+            protocol,
+            per_run,
+            system_tables,
+            raw_root=raw_root,
+            stream_transaction=stream_transaction,
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
