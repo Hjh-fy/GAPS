@@ -2127,6 +2127,75 @@ def _supervisor_source(outer_source: str) -> str:
     raise AssertionError("remote supervisor source not found")
 
 
+def test_local_content_addressed_launch_disables_bytecode_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    popen_kwargs: dict[str, object] = {}
+
+    def fake_popen(command, **kwargs):
+        popen_kwargs.update(kwargs)
+        return _FakePopen(command, **kwargs)
+
+    monkeypatch.setenv("PYTHONDONTWRITEBYTECODE", "0")
+    monkeypatch.setattr(controller.subprocess, "Popen", fake_popen)
+    process = controller._local_launch_process(
+        label="pc-client",
+        command=[sys.executable, "-m", "gaps_flower.client_app"],
+        cwd=tmp_path / "runtime" / ("a" * 64) / "src",
+        log_root=tmp_path / "attempt" / "client_logs",
+    )
+    try:
+        environment = popen_kwargs.get("env", {})
+        assert isinstance(environment, dict)
+        assert environment.get("PYTHONDONTWRITEBYTECODE") == "1"
+    finally:
+        for handle in process.log_handles:
+            handle.close()
+
+
+def test_remote_content_addressed_launch_disables_child_bytecode_writes() -> None:
+    captured: list[str] = []
+    identity: dict[str, object] = {}
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        captured.append(source)
+        if "REMOTE_LAUNCH_V1" in source:
+            identity.update(
+                {
+                    "schema_version": 1,
+                    "label": "pi-client",
+                    "launch_token": _literal_assignment(source, "launch_token"),
+                    "registration_path": _literal_assignment(
+                        source, "registration_path"
+                    ),
+                    "child_pid": 4202,
+                    "owner_pid": 4201,
+                    "owner_pgid": 4201,
+                    "owner_start_ticks": 7654321,
+                }
+            )
+            return json.dumps(identity)
+        assert "REMOTE_READ_REGISTRATION_V1" in source
+        return json.dumps(identity)
+
+    controller._remote_launch_process(
+        host_id="pi",
+        label="pi-client",
+        host="gaps@pi",
+        python_bin="/venv/bin/python",
+        command=["/venv/bin/python", "-m", "gaps_flower.client_app"],
+        cwd="/runtime/hash/src",
+        log_path="/runtime/attempt/client.log",
+        exit_path="/runtime/attempt/client.exit",
+        python_path="/runtime/hash/src",
+        registration_path="/runtime/attempt/client.registration.json",
+        remote_python=fake_remote_python,
+    )
+
+    supervisor = _supervisor_source(captured[0])
+    assert "environment['PYTHONDONTWRITEBYTECODE'] = '1'" in supervisor
+
+
 def test_remote_launcher_publishes_child_pid_separately_from_owned_group() -> None:
     captured: list[str] = []
     identity: dict[str, object] = {}

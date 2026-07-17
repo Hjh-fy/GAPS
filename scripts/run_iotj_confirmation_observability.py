@@ -2367,6 +2367,7 @@ pid_path = Path({pid_path!r})
 log_path.parent.mkdir(parents=True, exist_ok=True)
 environment = os.environ.copy()
 environment['PYTHONPATH'] = {python_path!r}
+environment['PYTHONDONTWRITEBYTECODE'] = '1'
 with log_path.open('ab', buffering=0) as log:
     child = subprocess.Popen(command, cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log, env=environment)
     try:
@@ -2523,6 +2524,8 @@ def _local_launch_process(
     launch_cwd = Path(cwd)
     if os.name == "nt":
         launch_cwd = _windows_extended_local_path(launch_cwd.absolute())
+    environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
     try:
         process = subprocess.Popen(
             [str(item) for item in command],
@@ -2530,6 +2533,7 @@ def _local_launch_process(
             stdin=subprocess.DEVNULL,
             stdout=stdout,
             stderr=stderr,
+            env=environment,
         )
     except BaseException:
         stdout.close()
