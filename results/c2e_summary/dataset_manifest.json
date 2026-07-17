@@ -1,0 +1,175 @@
+{
+  "active_source_clients": [
+    1,
+    2
+  ],
+  "active_target_clients": [
+    5
+  ],
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "declared_source_clients": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "direction": "C1/C2 -> C5",
+  "files": [
+    {
+      "byte_size": 1408,
+      "relative_path": "client_1/calibration_classification_labels.npy",
+      "sha256": "36134282f09d683eae6134b18bd5d4b40845c872024ff047186a10822a6c0d83"
+    },
+    {
+      "byte_size": 2048128,
+      "relative_path": "client_1/calibration_features.npy",
+      "sha256": "59e78e667a86bf98724bd416e87c9518fb433515578b2b05173352b5911e3ae4"
+    },
+    {
+      "byte_size": 5248,
+      "relative_path": "client_1/calibration_regression_labels.npy",
+      "sha256": "e4a835341a4c86714ae3ce58f9603c1961eaac41db331ab40f6027fbe9f885e9"
+    },
+    {
+      "byte_size": 2848,
+      "relative_path": "client_1/test_classification_labels.npy",
+      "sha256": "b998453e1e4f7d923d7da9573519c29dc2218f831cc842fc092a3a666d4749a8"
+    },
+    {
+      "byte_size": 4352128,
+      "relative_path": "client_1/test_features.npy",
+      "sha256": "ca20c40ec50c53ca172946eafa71586f06bdb5ac727bfdddb479042c448d3297"
+    },
+    {
+      "byte_size": 11008,
+      "relative_path": "client_1/test_regression_labels.npy",
+      "sha256": "d9c445bdcbf81758748fe158e17d51fe1330e301e50a52e9503620ef1b21a4f9"
+    },
+    {
+      "byte_size": 9568,
+      "relative_path": "client_1/train_classification_labels.npy",
+      "sha256": "ba7f93d58d3e4173b411e1338a5d2430a31651520fe8ae18ef85075f23a01ad0"
+    },
+    {
+      "byte_size": 15104128,
+      "relative_path": "client_1/train_features.npy",
+      "sha256": "97929e1481b96918fb259e2bac6e1102727a3821f0049b056f184ce26c751da2"
+    },
+    {
+      "byte_size": 37888,
+      "relative_path": "client_1/train_regression_labels.npy",
+      "sha256": "aad18c0fddfda76b10ee8dafed169e810dc86fd3e4f7d2dba86d688be0331b84"
+    },
+    {
+      "byte_size": 1408,
+      "relative_path": "client_2/calibration_classification_labels.npy",
+      "sha256": "b5040fabb7f4522ebc5a1a71cc80309aa9c45e2bec502b1ae46f4a342c10f5b2"
+    },
+    {
+      "byte_size": 2048128,
+      "relative_path": "client_2/calibration_features.npy",
+      "sha256": "9e9819e86b9825980ae9a22cd8fd1a6a8982cd07de638eeab9663995142746e1"
+    },
+    {
+      "byte_size": 5248,
+      "relative_path": "client_2/calibration_regression_labels.npy",
+      "sha256": "14bdad18f6011f4ecac43277ae992403ca26230f2933f7a95f7272baa07bc71e"
+    },
+    {
+      "byte_size": 2848,
+      "relative_path": "client_2/test_classification_labels.npy",
+      "sha256": "0444598e0191e346019d318e06860f3e79e507e972f551b9d151e904fbe48cae"
+    },
+    {
+      "byte_size": 4352128,
+      "relative_path": "client_2/test_features.npy",
+      "sha256": "dbde186dac18cb13196a43e3b56d37bcf4966984f4cc9b78a64dbba214d8022a"
+    },
+    {
+      "byte_size": 11008,
+      "relative_path": "client_2/test_regression_labels.npy",
+      "sha256": "7ededcbb891b89ef161ef801661aa7935d10f6c806f075012cdc6ff6e6531028"
+    },
+    {
+      "byte_size": 9568,
+      "relative_path": "client_2/train_classification_labels.npy",
+      "sha256": "153d2700060b232abef186831a4473c998e10fc50c50872b6c7c5cb8ca267060"
+    },
+    {
+      "byte_size": 15104128,
+      "relative_path": "client_2/train_features.npy",
+      "sha256": "6582beb6db7aebdfe0722b59ce58c6c08461fcf936997ecec5727172b4d44b5b"
+    },
+    {
+      "byte_size": 37888,
+      "relative_path": "client_2/train_regression_labels.npy",
+      "sha256": "7af4f82faf82c87c4f88f640adfe055826415c102aad8ccba5ba1fdd98ebc004"
+    },
+    {
+      "byte_size": 1408,
+      "relative_path": "client_5/calibration_classification_labels.npy",
+      "sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2"
+    },
+    {
+      "byte_size": 2048128,
+      "relative_path": "client_5/calibration_features.npy",
+      "sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e"
+    },
+    {
+      "byte_size": 5248,
+      "relative_path": "client_5/calibration_regression_labels.npy",
+      "sha256": "665e7fd4883a596ad2161704adaf0b8cf9c8251a5080e8273deef138b0b63619"
+    },
+    {
+      "byte_size": 5568,
+      "relative_path": "client_5/test_classification_labels.npy",
+      "sha256": "e1485405cd2249e3f05446939ace84c67b0ec824cd1a7fd330870a5a1218f456"
+    },
+    {
+      "byte_size": 8704128,
+      "relative_path": "client_5/test_features.npy",
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82"
+    },
+    {
+      "byte_size": 21888,
+      "relative_path": "client_5/test_regression_labels.npy",
+      "sha256": "1d0d42364e3efb4fca2f88760b5c2a54e2834fd8d0460eb0030a704239061021"
+    },
+    {
+      "byte_size": 628,
+      "relative_path": "norm_stats.npz",
+      "sha256": "b0dccda365b114a88541d87d1e6edfe9ce412ec27a24d6eeea8a14bfde1ddc71"
+    },
+    {
+      "byte_size": 469,
+      "relative_path": "split_info.json",
+      "sha256": "281c6fbb91d8e54dda4b0165afa6697d594cf5fa81818af5cc1ff36257d0e66f"
+    }
+  ],
+  "inactive_declared_source_clients": [
+    3,
+    4
+  ],
+  "inactive_shared_dataset_clients": [
+    "C3",
+    "C4"
+  ],
+  "sample_counts": {
+    "C1": {
+      "calibration": 320,
+      "test": 680,
+      "train": 2360
+    },
+    "C2": {
+      "calibration": 320,
+      "test": 680,
+      "train": 2360
+    },
+    "C5": {
+      "calibration": 320,
+      "test": 1360
+    }
+  },
+  "schema_version": 1,
+  "split_seed": 42
+}

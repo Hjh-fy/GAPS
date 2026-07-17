@@ -390,7 +390,7 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 后续执行顺序冻结为：P0 完成 -> final B2/B5 classifier checkpoints/prediction streams 冻结 -> Source-head dependency ablation -> 决定是否需要 distributed Ridge -> 正式 12/24/48/80/Full low-calibration batch。
 - 最有价值的回归后续实验是：首先在同一冻结 prediction stream 和同一 C5 calibration keys 下成组执行 source Ridge/per-gas MLP/shared MLP removal 以及 source-head-free baseline；其中 Experiment A（去掉 source Ridge）与 Experiment D（只保留 target Ridge/MLP）最直接回答 final dependency 和论文方法边界。
 - 现在不建议直接实现 distributed sufficient-statistics Ridge。只有 Experiment A 显示 source Ridge 对 R4/QC 有稳定且重要的贡献时，才执行 C1/C2 本地计算 `X^T X`、`X^T y` 并由 server 聚合求解的 equivalence experiment；否则该实现对投稿的边际证据价值不足。
-- 产物完整性：`regression_provenance_map.csv` 为 `12395 bytes / e1656bedbd3c8441d9e2253d69fae29169b934be05d1e87eb11769901bec70e5`；`regression_dependency_graph.md` 为 `6765 / 3ba1b9c00f76d687552fac778f58eb6b1bded58e51ddfabb9d57b6c82349351f`；`regression_federated_boundary_audit.md` 为 `5986 / 545be3a4c96cb1c6d849a6293a4172c9cbf62312f580cdffbe1e0773f5c647a5`；`regression_source_head_followup_plan.md` 为 `4841 / c7453168505d7dfbe06c8d469525e8e7da9a3bb198a992a3a5d66d618946f21b`。
+- 产物完整性：`regression_provenance_map.csv` 为 `12395 bytes / e1656bedbd3c8441d9e2253d69fae29169b934be05d1e87eb11769901bec70e5`；`regression_dependency_graph.md` 为 `6762 / 6285d4280df5e8240071a21513d614b8ce93ea40bd520974f16057cd34c1851a`；`regression_federated_boundary_audit.md` 为 `5983 / eb4c911e9d0ace44e030d34336989d707effff87e0ac1968e10afe6d18e1db53`；`regression_source_head_followup_plan.md` 为 `4838 / 0ca725610dde0504d3188b42c9df96bee4371f77a62cd538be09a9f7156c2478`。
 
 ### P0 B5 blocker 当前证据边界
 
@@ -407,3 +407,12 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 最小修复仅在 `gaps_flower/strategy.py` 增加 `canonicalize_fit_results()`，要求上传的正整数 `client_id` 唯一，并在 `GapsStrategy.aggregate_fit()` 的所有 float32 aggregation/statistics/DA 路径前按该身份排序。未修改模型、loss、B2/B5 配置、数据协议、训练超参数或 server DA 数学定义。
 - TDD/验证：新排序合同先 RED 后 GREEN；focused B5 诊断 `18 passed`，Observer Gate tests `72 passed, 1 skipped`；修复后的本地 B2/B5 OFF-A/ON/OFF-B 均为 `status=equivalent`、`max_abs_delta=0`。confirmation 其余模块短路径验证为 `290 passed, 3 skipped`，summary 在 `D:\itj7` 为 `39 passed, 1 skipped`；较深 basetemp 的失败均由 Windows `MAX_PATH` 复现，不属于代码回归。
 - 当前仍未创建新 candidate commit/archive/freeze record，也未启动正式 25-round run。下一步是把最小修复与诊断/文档形成新 candidate commit，重建唯一 archive 和 hashes，重跑三主机 preflight 与同一 revision 的 B2/B5 formal smoke；只有二者都精确等价才可进入十运行队列。
+
+### P0 confirmation freeze 已完成（2026-07-17）
+
+- 最终算法源码 revision 冻结为 `2ef7aea77b9dfabdd09da4f38742907a37c58c30`。唯一 source archive 位于 `results/c2e/source/confirmation_source.tar`，SHA-256 为 `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`；dataset manifest SHA-256 为 `fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430`。
+- 三机 preflight 已通过，ECS、Raspberry Pi、PC 均绑定相同 archive/protocol/dataset。首次使用长 candidate 路径生成 archive 时因 Windows `MAX_PATH` 在 staging 文件名处失败；该失败目录被保留，随后只缩短输出根为 `results/c2e*`，未改变归档内容或算法 revision。
+- B2 formal report：`status=equivalent`、`max_abs_delta=0`、message/trace `matched`、每客户端每轮最少 12 个资源采样、0 mismatch；report SHA-256 `1f395b7209b94abc049ab16679c483e3d89565212e2266f868506dbbb1ad92d1`。
+- B5 formal report：`status=equivalent`、`max_abs_delta=0`、message/trace `matched`、每客户端每轮最少 12 个资源采样、0 mismatch；report SHA-256 `36016723cfa253f1e7df1292964dbd4c4ef0960a5e4fe2e0a8c75f8088f8207f`。
+- `results/c2e_summary/confirmation_freeze_record.json` 已将 commit、archive、regular members、dataset、protocol 及两个 smoke report 哈希绑定；`target_test_opened=false`。冻结输入 validator 返回规定的 10-run 交替队列。
+- 下一步是从该 archive 启动正式 10×25 canonical queue。所有训练侧 application bytes、round/local train/server aggregation/server DA/wall time、Pi/PC RSS/CPU 与 Pi 温度随运行同步采集；formal smoke 的两轮指标仍只作 Gate/diagnostic，不进入正式论文 25-round 汇总。

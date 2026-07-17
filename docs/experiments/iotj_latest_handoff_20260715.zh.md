@@ -266,7 +266,7 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 当前 source heads 必须称为 `centrally pooled multi-source regression references`，C5 阶段称为 `target-personalized calibration/QC`；只能把分类主线称为真实设备联邦训练。禁止把当前系统概括成“端到端全流程联邦”或“source data 从未集中”。
 - 当前 tracked runtime 仍是 legacy C12 -> C3/C4/C5 路径，不等价于正式 C5 R4/H8 + high-coverage QC。final C5 bundle 与 1360-row parity 尚未完成，不能宣称正式 R4 runtime 已冻结部署。
 - 严格后续顺序：P0 -> 冻结 final classifier checkpoints/prediction streams -> source-head dependency ablation -> 依据 Experiment A 决定是否做 distributed sufficient-statistics Ridge -> 正式 low-calibration batch。本轮未修改训练代码，也未启动回归训练。
-- 四个审计产物 SHA-256：provenance CSV `e1656bedbd3c8441d9e2253d69fae29169b934be05d1e87eb11769901bec70e5`；dependency graph `3ba1b9c00f76d687552fac778f58eb6b1bded58e51ddfabb9d57b6c82349351f`；boundary audit `545be3a4c96cb1c6d849a6293a4172c9cbf62312f580cdffbe1e0773f5c647a5`；follow-up plan `c7453168505d7dfbe06c8d469525e8e7da9a3bb198a992a3a5d66d618946f21b`。
+- 四个审计产物 SHA-256：provenance CSV `e1656bedbd3c8441d9e2253d69fae29169b934be05d1e87eb11769901bec70e5`；dependency graph `6285d4280df5e8240071a21513d614b8ce93ea40bd520974f16057cd34c1851a`；boundary audit `eb4c911e9d0ace44e030d34336989d707effff87e0ac1968e10afe6d18e1db53`；follow-up plan `0ca725610dde0504d3188b42c9df96bee4371f77a62cd538be09a9f7156c2478`。
 
 ### 12.3 P0 B5 blocker 当前定位（2026-07-17）
 
@@ -282,3 +282,11 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 最小修复是 `gaps_flower.strategy.canonicalize_fit_results()`：按上传 `client_id` 唯一、正整数、升序规范化 `GapsStrategy.aggregate_fit()` 输入。它不改变模型、loss、配置、数据、超参数或 DA 公式，只消除 edge timing 对 float32 reduction order 的选择。
 - 修复后本地真实 Flower B2/B5 OFF-A/ON/OFF-B 都为 `equivalent`、`max_abs_delta=0`。focused/相关验证为 `18 passed`、`72 passed, 1 skipped`、`290 passed, 3 skipped`、summary `39 passed, 1 skipped`；深目录产生的 MAX_PATH 失败已在 `D:\itj7` 短 basetemp 重跑排除。
 - 仍未创建新 confirmation commit/archive/freeze record，十个 25-round runs 仍未启动。严格下一步：candidate commit -> 唯一 source archive/protocol hashes -> 三主机 preflight -> 新 revision B2 formal smoke -> 新 revision B5 formal smoke -> 两者精确等价后自动进入预授权的正式队列。
+
+### 12.5 最终 confirmation freeze（2026-07-17）
+
+- 冻结算法 commit：`2ef7aea77b9dfabdd09da4f38742907a37c58c30`；source archive：`results/c2e/source/confirmation_source.tar`；archive SHA-256：`52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`。
+- manifests/commands：`results/c2e_summary/` 与 `results/c2e_commands/`。dataset manifest SHA-256：`fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430`；protocol manifest SHA-256：`ba289bf87a7d4526f3e3a3639e6e04881c75aececc84bdd8fd918b89b054f57b`。
+- 三机 preflight 已通过。B2 与 B5 formal-topology OFF/ON 均为 `equivalent`、`max_abs_delta=0`、message/trace `matched`、0 mismatch；两个 report 分别位于 `results/c2e_smoke_b2/`、`results/c2e_smoke_b5/`。
+- `results/c2e_summary/confirmation_freeze_record.json` 已通过哈希交叉验证；冻结队列顺序为 B2-s42、B5-s42、B5-s43、B2-s43、B2-s44、B5-s44、B5-s45、B2-s45、B2-s46、B5-s46。
+- 正式队列必须继续使用上述 archive，而不是后续仅记录 freeze evidence 的文档 commit。运行中同步采集通信、时延、RSS/CPU/温度；不得打开新的 test 排名，失败 attempt 保留但不纳入 confirmation。
