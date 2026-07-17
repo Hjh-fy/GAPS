@@ -280,6 +280,7 @@ def _run_vcgencmd(executable: str, argument: str) -> str:
 
 def read_thermal_state(
     *,
+    platform: str | None = None,
     sysfs_temp_path: str | os.PathLike[str] = DEFAULT_SYSFS_TEMP_PATH,
     vcgencmd_resolver: Callable[[str], str | None] = shutil.which,
 ) -> dict[str, Any]:
@@ -296,6 +297,10 @@ def read_thermal_state(
         "throttled_available": False,
         "thermal_errors": thermal_errors,
     }
+
+    current_platform = sys.platform if platform is None else platform
+    if current_platform.startswith("win"):
+        return result
 
     thermal_path = Path(sysfs_temp_path)
     try:

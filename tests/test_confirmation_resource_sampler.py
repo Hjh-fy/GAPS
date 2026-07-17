@@ -372,6 +372,7 @@ def test_linux_thermal_value_is_converted_from_millidegrees(tmp_path: Path) -> N
     thermal.write_text("48750\n", encoding="ascii")
 
     reading = read_thermal_state(
+        platform="linux",
         sysfs_temp_path=thermal,
         vcgencmd_resolver=lambda _: None,
     )
@@ -392,6 +393,32 @@ def test_missing_vcgencmd_is_null_with_explicit_availability(tmp_path: Path) -> 
     assert reading["cpu_temperature_available"] is False
     assert reading["throttled_raw"] is None
     assert reading["throttled_available"] is False
+
+
+def test_windows_thermal_state_is_unavailable_without_linux_probes() -> None:
+    class ForbiddenSysfsPath:
+        def __fspath__(self) -> str:
+            raise AssertionError("Windows must not probe Linux sysfs")
+
+    def forbidden_vcgencmd(_: str) -> str | None:
+        raise AssertionError("Windows must not resolve vcgencmd")
+
+    reading = read_thermal_state(
+        platform="win32",
+        sysfs_temp_path=ForbiddenSysfsPath(),
+        vcgencmd_resolver=forbidden_vcgencmd,
+    )
+
+    assert reading == {
+        "cpu_temperature_c": None,
+        "cpu_temperature_available": False,
+        "cpu_temperature_source": None,
+        "vcgencmd_available": False,
+        "throttled_raw": None,
+        "throttled_bits": None,
+        "throttled_available": False,
+        "thermal_errors": [],
+    }
 
 
 def test_linux_vm_hwm_is_converted_from_kibibytes_to_bytes(tmp_path: Path) -> None:
