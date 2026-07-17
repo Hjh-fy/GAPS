@@ -290,3 +290,9 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 三机 preflight 已通过。B2 与 B5 formal-topology OFF/ON 均为 `equivalent`、`max_abs_delta=0`、message/trace `matched`、0 mismatch；两个 report 分别位于 `results/c2e_smoke_b2/`、`results/c2e_smoke_b5/`。
 - `results/c2e_summary/confirmation_freeze_record.json` 已通过哈希交叉验证；冻结队列顺序为 B2-s42、B5-s42、B5-s43、B2-s43、B2-s44、B5-s44、B5-s45、B2-s45、B2-s46、B5-s46。
 - 正式队列必须继续使用上述 archive，而不是后续仅记录 freeze evidence 的文档 commit。运行中同步采集通信、时延、RSS/CPU/温度；不得打开新的 test 排名，失败 attempt 保留但不纳入 confirmation。
+
+### 12.6 正式 confirmation 运行状态（2026-07-17 22:04 Asia/Shanghai）
+
+- 10×25 controller 已作为隐藏后台进程启动，PID `1664`；日志根 `results/c2e_runs/`。
+- 当前首项 `c12_to_c5__b2__s42__a001` 已通过 attempt preflight，`state=running`；其 provenance 与 freeze record 的 commit/archive/dataset hashes 完全一致。
+- 后续由同一 controller 严格按冻结的 10-run 顺序串行推进，无需再次人工批准。只读监控不得改动 attempt 目录；任一运行若失败或 validator 拒绝，controller 将保留状态/原始证据并 fail closed，不得把该 attempt 纳入正式 mean/std。

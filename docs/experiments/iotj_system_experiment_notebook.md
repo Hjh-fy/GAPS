@@ -416,3 +416,10 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - B5 formal report：`status=equivalent`、`max_abs_delta=0`、message/trace `matched`、每客户端每轮最少 12 个资源采样、0 mismatch；report SHA-256 `36016723cfa253f1e7df1292964dbd4c4ef0960a5e4fe2e0a8c75f8088f8207f`。
 - `results/c2e_summary/confirmation_freeze_record.json` 已将 commit、archive、regular members、dataset、protocol 及两个 smoke report 哈希绑定；`target_test_opened=false`。冻结输入 validator 返回规定的 10-run 交替队列。
 - 下一步是从该 archive 启动正式 10×25 canonical queue。所有训练侧 application bytes、round/local train/server aggregation/server DA/wall time、Pi/PC RSS/CPU 与 Pi 温度随运行同步采集；formal smoke 的两轮指标仍只作 Gate/diagnostic，不进入正式论文 25-round 汇总。
+
+### 正式 10×25 confirmation 已启动（2026-07-17 22:04 Asia/Shanghai）
+
+- 后台 controller PID：`1664`；stdout/stderr：`results/c2e_runs/controller.stdout.log` 与 `results/c2e_runs/controller.stderr.log`；raw/runtime 根：`results/c2e_runs/raw`、`results/c2e_runs/runtime`。
+- 首项为 `c12_to_c5__b2__s42 / c12_to_c5__b2__s42__a001`，已记录 `preflight_passed` 并进入 `state=running`。attempt provenance 精确绑定 `confirmation_commit=2ef7aea77b9dfabdd09da4f38742907a37c58c30`、archive `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`、dataset `fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430`。
+- PC `resource.jsonl` 已开始写入，说明正式训练侧系统采样与 run 同步启动。controller 将完成当前 attempt 的 validator 后才按冻结顺序进入下一项；failed/invalid attempt 会保留且不计入 confirmation。
+- 运行时监控只读入口：检查 PID `1664`、`attempt_status.json`、`controller.stderr.log` 和最新 `resource.jsonl/events.jsonl`；禁止在队列运行中重新打包源码或手工并行启动相同 run。
