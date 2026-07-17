@@ -494,10 +494,10 @@ def run_sampler(
                     expected_root_identity=expected_root_identity,
                 )
             except TargetProcessNotFound as exc:
-                shutdown_error = str(exc)
                 if expected_root_identity is None:
                     status = "failed"
                     shutdown_reason = "target_not_found_initial"
+                    shutdown_error = str(exc)
                 else:
                     shutdown_reason = "target_exited"
                 break

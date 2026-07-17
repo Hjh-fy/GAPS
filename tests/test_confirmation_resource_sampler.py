@@ -510,6 +510,7 @@ def test_target_exit_emits_successful_durable_end_with_self_accounting(
     assert result.status == "succeeded"
     assert end["status"] == "succeeded"
     assert payload["shutdown_reason"] == "target_exited"
+    assert payload["shutdown_error"] is None
     assert payload["sample_count"] == 1
     assert payload["sampler_cpu_user_seconds"] >= 0.0
     assert payload["sampler_cpu_system_seconds"] >= 0.0
@@ -561,6 +562,7 @@ def test_run_sampler_reports_initially_missing_target_clearly(
     assert result.status == "failed"
     assert result.shutdown_reason == "target_not_found_initial"
     assert end["payload"]["shutdown_reason"] == "target_not_found_initial"
+    assert end["payload"]["shutdown_error"] == "target PID 54321 does not exist"
 
 
 def test_cli_defaults_to_one_second_interval(tmp_path: Path) -> None:
