@@ -53,6 +53,129 @@ def _save_checkpoint(path: Path, state: OrderedDict[str, torch.Tensor]) -> Path:
     return path
 
 
+def _write_path_bound_checkpoint_attempt(root: Path, producer_attempt: str) -> Path:
+    training = root / "raw" / "ecs" / "training"
+    training.mkdir(parents=True)
+    producer_root = (
+        PurePosixPath("/root/GAPS/confirmation_runtime/frozen/attempts")
+        / producer_attempt
+        / "raw/server/training"
+    )
+    (training / "run_config.json").write_text(
+        json.dumps({"args": {"output_dir": str(producer_root)}}),
+        encoding="utf-8",
+    )
+    semantic_path = training / "semantic_protos_round_002.json"
+    semantic_path.write_text(
+        json.dumps({"round": 2, "prototypes": {"0,0": [1.0, 2.0]}}),
+        encoding="utf-8",
+    )
+    model_state = OrderedDict(
+        [("weight", torch.tensor([[1.0, 2.0]], dtype=torch.float32))]
+    )
+    torch.save(
+        OrderedDict(
+            [
+                ("round", 2),
+                ("model_state", model_state),
+                ("run_name", "trusted-fixture"),
+            ]
+        ),
+        training / "server_latest.pth",
+    )
+    torch.save(
+        OrderedDict(
+            [
+                ("round", 2),
+                ("model_state", model_state),
+                (
+                    "diagnostics",
+                    OrderedDict(
+                        [
+                            ("val_loss", 0.25),
+                            ("other_output_path", "metadata/sidecar.json"),
+                            (
+                                "semantic_protos_after_da",
+                                str(producer_root / semantic_path.name),
+                            ),
+                        ]
+                    ),
+                ),
+                ("parameter_keys", ["weight"]),
+                (
+                    "semantic_protos",
+                    OrderedDict(
+                        [
+                            (
+                                "0,0",
+                                torch.tensor([1.0, 2.0], dtype=torch.float32),
+                            )
+                        ]
+                    ),
+                ),
+            ]
+        ),
+        training / "server_latest_adapted.pth",
+    )
+    (root / "raw" / "ecs" / "common_trace.jsonl").write_text(
+        "{}\n", encoding="utf-8"
+    )
+    for round_idx in (1, 2):
+        for stem in ("prototype_stats", "semantic_protos"):
+            target = training / f"{stem}_round_{round_idx:03d}.json"
+            if target != semantic_path:
+                target.write_text("{}", encoding="utf-8")
+        (training / f"client_stats_round_{round_idx:03d}.json").write_text(
+            json.dumps({"clients": [{"client_id": 1}, {"client_id": 2}]}),
+            encoding="utf-8",
+        )
+        bound_semantic = training / f"semantic_protos_round_{round_idx:03d}.json"
+        (training / f"domain_adapt_round_{round_idx:03d}.json").write_text(
+            json.dumps(
+                {
+                    "loss": 0.25,
+                    "semantic_protos_after_da": str(bound_semantic),
+                }
+            ),
+            encoding="utf-8",
+        )
+    return training
+
+
+def _checkpoint_semantic_fingerprint(checkpoint: Path, output_root: Path):
+    fingerprint = getattr(gate_module, "checkpoint_semantic_fingerprint", None)
+    assert callable(fingerprint), "missing strict checkpoint semantic fingerprint"
+    return fingerprint(checkpoint, output_root)
+
+
+def _rewrite_adapted_checkpoint(training: Path, mutation: str) -> None:
+    checkpoint = training / "server_latest_adapted.pth"
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    if mutation == "tensor_bytes":
+        payload["model_state"]["weight"][0, 0] = 9.0
+    elif mutation == "tensor_dtype":
+        payload["model_state"]["weight"] = payload["model_state"]["weight"].double()
+    elif mutation == "tensor_shape":
+        payload["model_state"]["weight"] = payload["model_state"]["weight"].reshape(2)
+    elif mutation == "mapping_key_order":
+        payload["diagnostics"] = OrderedDict(
+            reversed(list(payload["diagnostics"].items()))
+        )
+    elif mutation == "mapping_container_type":
+        payload["diagnostics"] = dict(payload["diagnostics"])
+    elif mutation == "scalar_type":
+        payload["round"] = 2.0
+    elif mutation == "list_container_type":
+        payload["parameter_keys"] = tuple(payload["parameter_keys"])
+    elif mutation == "non_path_scalar":
+        payload["diagnostics"]["val_loss"] = 0.5
+    elif mutation == "non_allowlisted_path":
+        payload["diagnostics"]["other_output_path"] = "other/sidecar.json"
+    else:
+        raise AssertionError(f"unknown checkpoint mutation: {mutation}")
+    torch.save(payload, checkpoint)
+
+
 def _base_json() -> dict[str, object]:
     return {
         "run_config": {
@@ -285,23 +408,200 @@ def test_compare_equivalent_result_is_deterministic_and_carries_hashes() -> None
     assert first["artifact_hashes"]["off_a"]["artifact"] == "a" * 64
 
 
-def test_compare_requires_raw_checkpoint_sha_equality() -> None:
+def test_compare_rejects_raw_difference_without_canonical_semantic_equality() -> None:
     off = {
-        "final_checkpoint_raw": {
+        "final_checkpoint": {
             "artifact_sha256": "a" * 64,
             "content_sha256": "a" * 64,
-            "comparison": {"raw_file_sha256": "a" * 64},
+            "raw_file_sha256": "a" * 64,
+            "canonical_semantic_sha256": "a" * 64,
+            "comparison": {"kind": "checkpoint_canonical_semantic", "value": 1},
         }
     }
     on = {
-        "final_checkpoint_raw": {
+        "final_checkpoint": {
             "artifact_sha256": "b" * 64,
             "content_sha256": "b" * 64,
-            "comparison": {"raw_file_sha256": "b" * 64},
+            "raw_file_sha256": "b" * 64,
+            "canonical_semantic_sha256": "b" * 64,
+            "comparison": {"kind": "checkpoint_canonical_semantic", "value": 2},
         }
     }
     result = compare_fingerprints(off, on, off)
     assert result["status"] == "observer_path_mutation"
+    assert result["artifact_hashes"]["off_a"]["final_checkpoint"] == "a" * 64
+    assert result["artifact_hashes"]["on"]["final_checkpoint"] == "b" * 64
+
+
+def test_formal_checkpoint_path_binding_uses_semantic_not_raw_equivalence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    off_root = tmp_path / "off"
+    on_root = tmp_path / "on"
+    off_training = _write_path_bound_checkpoint_attempt(off_root, "run__a998")
+    on_training = _write_path_bound_checkpoint_attempt(on_root, "run__a999")
+    off_raw = gate_module._sha256_file(
+        off_training / "server_latest_adapted.pth"
+    )
+    on_raw = gate_module._sha256_file(on_training / "server_latest_adapted.pth")
+    assert off_raw != on_raw
+
+    monkeypatch.setattr(
+        gate_module,
+        "json_fingerprint",
+        lambda *_args, **_kwargs: {
+            "artifact_sha256": "a" * 64,
+            "content_sha256": "b" * 64,
+            "comparison": {},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "_common_trace_fingerprint",
+        lambda _path: {
+            "artifact_sha256": "c" * 64,
+            "content_sha256": "d" * 64,
+            "comparison": {},
+        },
+    )
+    monkeypatch.setattr(
+        gate_module,
+        "_fixed_adapted_logits",
+        lambda *_args, **_kwargs: {
+            "content_sha256": "e" * 64,
+            "comparison": {},
+        },
+    )
+
+    off = gate_module._capture_formal_artifacts(off_root)
+    on = gate_module._capture_formal_artifacts(on_root)
+    result = compare_fingerprints(off, on, off)
+
+    assert result["status"] == "equivalent"
+    assert result["equivalent"] is True
+    assert result["max_abs_delta"] == 0.0
+    assert result["artifact_hashes"]["off_a"]["final_adapted_checkpoint"] == off_raw
+    assert result["artifact_hashes"]["on"]["final_adapted_checkpoint"] == on_raw
+
+
+def test_checkpoint_semantic_fingerprint_normalizes_only_bound_output_path(
+    tmp_path: Path,
+) -> None:
+    off_training = _write_path_bound_checkpoint_attempt(
+        tmp_path / "off-semantic", "run__a998"
+    )
+    on_training = _write_path_bound_checkpoint_attempt(
+        tmp_path / "on-semantic", "run__a999"
+    )
+
+    off = _checkpoint_semantic_fingerprint(
+        off_training / "server_latest_adapted.pth", off_training
+    )
+    on = _checkpoint_semantic_fingerprint(
+        on_training / "server_latest_adapted.pth", on_training
+    )
+
+    assert off["raw_file_sha256"] != on["raw_file_sha256"]
+    assert off["canonical_semantic_sha256"] == on["canonical_semantic_sha256"]
+    assert off["comparison"] == on["comparison"]
+    assert off["comparison"]["bound_files"] == [
+        {
+            "checkpoint_path": "diagnostics.semantic_protos_after_da",
+            "output_relative_path": "semantic_protos_round_002.json",
+            "raw_file_sha256": gate_module._sha256_file(
+                off_training / "semantic_protos_round_002.json"
+            ),
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "tensor_bytes",
+        "tensor_dtype",
+        "tensor_shape",
+        "mapping_key_order",
+        "mapping_container_type",
+        "scalar_type",
+        "list_container_type",
+        "non_path_scalar",
+        "non_allowlisted_path",
+    ],
+)
+def test_checkpoint_semantic_fingerprint_rejects_non_allowlisted_mutations(
+    tmp_path: Path, mutation: str
+) -> None:
+    off_training = _write_path_bound_checkpoint_attempt(
+        tmp_path / f"off-{mutation}", "run__a998"
+    )
+    on_training = _write_path_bound_checkpoint_attempt(
+        tmp_path / f"on-{mutation}", "run__a999"
+    )
+    _rewrite_adapted_checkpoint(on_training, mutation)
+
+    off = _checkpoint_semantic_fingerprint(
+        off_training / "server_latest_adapted.pth", off_training
+    )
+    on = _checkpoint_semantic_fingerprint(
+        on_training / "server_latest_adapted.pth", on_training
+    )
+
+    assert off["canonical_semantic_sha256"] != on["canonical_semantic_sha256"]
+    result = compare_fingerprints(
+        {"final_adapted_checkpoint": off},
+        {"final_adapted_checkpoint": on},
+        {"final_adapted_checkpoint": off},
+    )
+    assert result["status"] == "observer_path_mutation"
+
+
+def test_checkpoint_semantic_fingerprint_binds_referenced_file_content(
+    tmp_path: Path,
+) -> None:
+    off_training = _write_path_bound_checkpoint_attempt(
+        tmp_path / "off-bound-content", "run__a998"
+    )
+    on_training = _write_path_bound_checkpoint_attempt(
+        tmp_path / "on-bound-content", "run__a999"
+    )
+    (on_training / "semantic_protos_round_002.json").write_text(
+        json.dumps({"round": 2, "prototypes": {"0,0": [1.0, 9.0]}}),
+        encoding="utf-8",
+    )
+
+    off = _checkpoint_semantic_fingerprint(
+        off_training / "server_latest_adapted.pth", off_training
+    )
+    on = _checkpoint_semantic_fingerprint(
+        on_training / "server_latest_adapted.pth", on_training
+    )
+    assert off["canonical_semantic_sha256"] != on["canonical_semantic_sha256"]
+
+
+def test_checkpoint_semantic_fingerprint_rejects_invalid_bound_path_and_nonfinite_scalar(
+    tmp_path: Path,
+) -> None:
+    training = _write_path_bound_checkpoint_attempt(
+        tmp_path / "invalid-checkpoint", "run__a998"
+    )
+    checkpoint = training / "server_latest_adapted.pth"
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    payload["diagnostics"]["semantic_protos_after_da"] = str(
+        tmp_path / "outside.json"
+    )
+    torch.save(payload, checkpoint)
+    with pytest.raises(ValueError, match="root|outside|escape|regular|path"):
+        _checkpoint_semantic_fingerprint(checkpoint, training)
+
+    payload["diagnostics"]["semantic_protos_after_da"] = (
+        "/root/GAPS/confirmation_runtime/frozen/attempts/run__a998/"
+        "raw/server/training/semantic_protos_round_002.json"
+    )
+    payload["diagnostics"]["val_loss"] = float("nan")
+    torch.save(payload, checkpoint)
+    with pytest.raises(ValueError, match="non-finite"):
+        _checkpoint_semantic_fingerprint(checkpoint, training)
 
 
 def test_json_object_insertion_order_is_not_a_value_difference() -> None:
@@ -638,7 +938,13 @@ def test_real_flower_chain_detects_injected_on_fitins_key(
         "observer_injected_post_audit_metrics_key" in mismatch
         for mismatch in report["mismatches"]
     )
-    assert len(set(report["final_checkpoint_sha256"].values())) == 1
+    canonical = report["final_checkpoint_canonical_semantic_sha256"]
+    assert len({row["adapted"] for row in canonical.values()}) == 1
+    assert set(report["final_checkpoint_raw_file_sha256"]) == {
+        "off_a",
+        "on",
+        "off_b",
+    }
 
 
 def test_observer_message_audit_must_match_independent_common_trace() -> None:
@@ -1415,7 +1721,7 @@ def test_portable_evidence_path_rejects_absolute_or_escaping_paths(
         portable(root, tmp_path / "outside.jsonl")
 
 
-def test_formal_capture_includes_raw_checkpoint_sha_boundaries(
+def test_formal_capture_reports_raw_and_canonical_checkpoint_hashes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     attempt = tmp_path / "formal"
@@ -1443,10 +1749,15 @@ def test_formal_capture_includes_raw_checkpoint_sha_boundaries(
         )
     monkeypatch.setattr(
         gate_module,
-        "tensor_fingerprint",
-        lambda path: {
+        "checkpoint_semantic_fingerprint",
+        lambda path, _output_root: {
             "artifact_sha256": ("a" if "adapted" not in path.name else "b") * 64,
             "content_sha256": "c" * 64,
+            "raw_file_sha256": (
+                "a" if "adapted" not in path.name else "b"
+            )
+            * 64,
+            "canonical_semantic_sha256": "c" * 64,
             "comparison": {"path_kind": path.name},
         },
     )
@@ -1477,12 +1788,14 @@ def test_formal_capture_includes_raw_checkpoint_sha_boundaries(
         },
     )
     artifacts = gate_module._capture_formal_artifacts(attempt)
-    assert artifacts["final_aggregated_checkpoint_raw"]["comparison"] == {
-        "raw_file_sha256": "a" * 64
-    }
-    assert artifacts["final_adapted_checkpoint_raw"]["comparison"] == {
-        "raw_file_sha256": "b" * 64
-    }
+    assert artifacts["final_aggregated_checkpoint"]["raw_file_sha256"] == "a" * 64
+    assert artifacts["final_adapted_checkpoint"]["raw_file_sha256"] == "b" * 64
+    assert (
+        artifacts["final_adapted_checkpoint"]["canonical_semantic_sha256"]
+        == "c" * 64
+    )
+    assert "final_aggregated_checkpoint_raw" not in artifacts
+    assert "final_adapted_checkpoint_raw" not in artifacts
 
 
 def test_da_diagnostics_compare_semantic_path_and_referenced_json_bytes(
@@ -1577,10 +1890,15 @@ def test_da_diagnostics_compare_semantic_path_and_referenced_json_bytes(
 
     monkeypatch.setattr(
         gate_module,
-        "tensor_fingerprint",
-        lambda path: {
+        "checkpoint_semantic_fingerprint",
+        lambda path, _output_root: {
             "artifact_sha256": ("a" if "adapted" not in path.name else "b") * 64,
             "content_sha256": "c" * 64,
+            "raw_file_sha256": (
+                "a" if "adapted" not in path.name else "b"
+            )
+            * 64,
+            "canonical_semantic_sha256": "c" * 64,
             "comparison": {"path_kind": path.name},
         },
     )

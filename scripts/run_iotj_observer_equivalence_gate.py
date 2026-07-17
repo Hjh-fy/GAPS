@@ -234,6 +234,206 @@ def tensor_fingerprint(checkpoint: Path) -> dict[str, Any]:
     }
 
 
+def _checkpoint_type_name(value: Any) -> str:
+    value_type = type(value)
+    return f"{value_type.__module__}.{value_type.__qualname__}"
+
+
+def _checkpoint_bound_output_file(
+    declared_value: str, output_root: Path
+) -> tuple[str, str]:
+    root = Path(output_root)
+    _require_no_link_ancestors(root)
+    if _is_reparse_or_link(root) or not root.is_dir():
+        raise ValueError(f"checkpoint output root is not a regular directory: {root}")
+    root = root.resolve(strict=True)
+    declared, declared_is_absolute = _declared_path_parts(declared_value)
+    native_declared = Path(declared_value)
+    if native_declared.is_absolute():
+        try:
+            relative_parts = native_declared.relative_to(root).parts
+        except ValueError:
+            relative_parts = _relative_to_recorded_output(root, declared)
+    elif declared_is_absolute:
+        relative_parts = _relative_to_recorded_output(root, declared)
+    else:
+        relative_parts = declared.parts
+    if not relative_parts or any(part == ".." for part in relative_parts):
+        raise ValueError(
+            "checkpoint diagnostics.semantic_protos_after_da is not "
+            "output-root-relative"
+        )
+    candidate = root.joinpath(*relative_parts)
+    stable_relative = _portable_evidence_path(root, candidate)
+    semantic_path, semantic_raw, _ = _load_finite_json_file(candidate)
+    if semantic_path.resolve(strict=True) != candidate.resolve(strict=True):
+        raise ValueError(
+            "checkpoint diagnostics.semantic_protos_after_da did not resolve "
+            "to the bound regular file"
+        )
+    return stable_relative, _sha256_bytes(semantic_raw)
+
+
+def _checkpoint_semantic_value(
+    value: Any,
+    *,
+    output_root: Path,
+    path: tuple[Any, ...] = (),
+    tensors: OrderedDict[str, dict[str, Any]],
+    bound_files: list[dict[str, str]],
+) -> dict[str, Any]:
+    if isinstance(value, torch.Tensor):
+        if (value.is_floating_point() or value.is_complex()) and not bool(
+            torch.isfinite(value).all().item()
+        ):
+            raise ValueError(f"checkpoint contains non-finite tensor at {path!r}")
+        raw = _tensor_bytes(value)
+        tensor_path = ".".join(map(str, path)) or "<root>"
+        if tensor_path in tensors:
+            raise ValueError(f"checkpoint tensor path is ambiguous: {tensor_path}")
+        record = {
+            "dtype": str(value.dtype),
+            "shape": list(value.shape),
+            "numel": int(value.numel()),
+            "raw_bytes": len(raw),
+            "raw_sha256": _sha256_bytes(raw),
+            "_raw": raw,
+        }
+        tensors[tensor_path] = record
+        return {
+            "type": "torch.Tensor",
+            **{key: item for key, item in record.items() if key != "_raw"},
+        }
+
+    if isinstance(value, Mapping):
+        items: list[dict[str, Any]] = []
+        for key, item in value.items():
+            encoded_key = _checkpoint_semantic_value(
+                key,
+                output_root=output_root,
+                path=path + ("<mapping-key>",),
+                tensors=tensors,
+                bound_files=bound_files,
+            )
+            item_path = path + (key,)
+            normalized_item = item
+            if item_path == ("diagnostics", "semantic_protos_after_da"):
+                if type(item) is not str or not item:
+                    raise ValueError(
+                        "checkpoint diagnostics.semantic_protos_after_da must "
+                        "have exact nonempty string path type"
+                    )
+                stable_relative, referenced_sha256 = _checkpoint_bound_output_file(
+                    item, output_root
+                )
+                normalized_item = stable_relative
+                bound_files.append(
+                    {
+                        "checkpoint_path": "diagnostics.semantic_protos_after_da",
+                        "output_relative_path": stable_relative,
+                        "raw_file_sha256": referenced_sha256,
+                    }
+                )
+            items.append(
+                {
+                    "key": encoded_key,
+                    "value": _checkpoint_semantic_value(
+                        normalized_item,
+                        output_root=output_root,
+                        path=item_path,
+                        tensors=tensors,
+                        bound_files=bound_files,
+                    ),
+                }
+            )
+        return {"type": _checkpoint_type_name(value), "items": items}
+
+    if isinstance(value, (list, tuple)):
+        return {
+            "type": _checkpoint_type_name(value),
+            "items": [
+                _checkpoint_semantic_value(
+                    item,
+                    output_root=output_root,
+                    path=path + (index,),
+                    tensors=tensors,
+                    bound_files=bound_files,
+                )
+                for index, item in enumerate(value)
+            ],
+        }
+
+    value_type = _checkpoint_type_name(value)
+    if value is None:
+        encoded_scalar: Any = None
+    elif type(value) is bool:
+        encoded_scalar = value
+    elif type(value) is int:
+        encoded_scalar = str(value)
+    elif type(value) is float:
+        if not math.isfinite(value):
+            raise ValueError(f"checkpoint contains non-finite scalar at {path!r}")
+        encoded_scalar = value.hex()
+    elif type(value) is complex:
+        if not math.isfinite(value.real) or not math.isfinite(value.imag):
+            raise ValueError(f"checkpoint contains non-finite scalar at {path!r}")
+        encoded_scalar = {"real": value.real.hex(), "imag": value.imag.hex()}
+    elif type(value) is str:
+        encoded_scalar = value
+    elif type(value) is bytes:
+        encoded_scalar = base64.b64encode(value).decode("ascii")
+    elif isinstance(value, torch.dtype):
+        encoded_scalar = str(value)
+    elif isinstance(value, torch.device):
+        encoded_scalar = str(value)
+    else:
+        raise ValueError(
+            f"unsupported checkpoint value type at {path!r}: {value_type}"
+        )
+    return {"type": value_type, "value": encoded_scalar}
+
+
+def checkpoint_semantic_fingerprint(
+    checkpoint: Path, output_root: Path
+) -> dict[str, Any]:
+    """Fingerprint the complete checkpoint while binding one exact DA output path."""
+
+    path = _require_regular_file(Path(checkpoint))
+    root = Path(output_root).resolve(strict=True)
+    _portable_evidence_path(root, path)
+    try:
+        payload = torch.load(path, map_location="cpu", weights_only=True)
+    except Exception as exc:
+        raise ValueError(f"cannot load checkpoint {path}: {exc}") from exc
+    tensors: OrderedDict[str, dict[str, Any]] = OrderedDict()
+    bound_files: list[dict[str, str]] = []
+    encoded_payload = _checkpoint_semantic_value(
+        payload,
+        output_root=root,
+        tensors=tensors,
+        bound_files=bound_files,
+    )
+    if not tensors:
+        raise ValueError(f"checkpoint contains no tensors: {path}")
+    comparison = {
+        "kind": "checkpoint_canonical_semantic",
+        "payload": encoded_payload,
+        "bound_files": bound_files,
+    }
+    raw_file_sha256 = _sha256_file(path)
+    canonical_semantic_sha256 = _sha256_bytes(_canonical_bytes(comparison))
+    return {
+        "kind": "checkpoint_canonical_semantic",
+        "artifact_sha256": raw_file_sha256,
+        "content_sha256": canonical_semantic_sha256,
+        "raw_file_sha256": raw_file_sha256,
+        "canonical_semantic_sha256": canonical_semantic_sha256,
+        "key_order": list(tensors),
+        "tensors": tensors,
+        "comparison": comparison,
+    }
+
+
 def _scalar_record(value: Any) -> dict[str, Any]:
     """Preserve the exact Flower Scalar type and value in a JSON-safe record."""
 
@@ -1584,16 +1784,12 @@ def _capture_artifacts(attempt: Mapping[str, Any]) -> dict[str, Any]:
     attempt_root = Path(attempt["attempt"])
     output = Path(attempt["server_output"])
     artifacts: OrderedDict[str, Any] = OrderedDict()
-    artifacts["final_aggregated_checkpoint"] = tensor_fingerprint(output / "server_latest.pth")
-    artifacts["final_adapted_checkpoint"] = tensor_fingerprint(output / "server_latest_adapted.pth")
-    for label in ("final_aggregated_checkpoint", "final_adapted_checkpoint"):
-        raw_sha = artifacts[label]["artifact_sha256"]
-        artifacts[f"{label}_raw"] = {
-            "kind": "raw_checkpoint",
-            "artifact_sha256": raw_sha,
-            "content_sha256": raw_sha,
-            "comparison": {"raw_file_sha256": raw_sha},
-        }
+    artifacts["final_aggregated_checkpoint"] = checkpoint_semantic_fingerprint(
+        output / "server_latest.pth", output
+    )
+    artifacts["final_adapted_checkpoint"] = checkpoint_semantic_fingerprint(
+        output / "server_latest_adapted.pth", output
+    )
 
     artifacts["run_config"] = _run_config_fingerprint(
         output / "run_config.json", attempt
@@ -2667,21 +2863,17 @@ def run_local_gate(output_root: Path, group_id: str) -> dict[str, Any]:
             "mismatches": comparison["mismatches"],
             "artifact_hashes": comparison["artifact_hashes"],
             "artifact_content_set_sha256": content_hashes,
-            "final_checkpoint_sha256": {
-                mode: artifacts[mode]["final_adapted_checkpoint"]["artifact_sha256"]
-                for mode in _MODES
-            },
-            "final_checkpoint_raw_sha256": {
+            "final_checkpoint_raw_file_sha256": {
                 mode: {
-                    "aggregated": artifacts[mode]["final_aggregated_checkpoint"]["artifact_sha256"],
-                    "adapted": artifacts[mode]["final_adapted_checkpoint"]["artifact_sha256"],
+                    "aggregated": artifacts[mode]["final_aggregated_checkpoint"]["raw_file_sha256"],
+                    "adapted": artifacts[mode]["final_adapted_checkpoint"]["raw_file_sha256"],
                 }
                 for mode in _MODES
             },
-            "final_checkpoint_tensor_content_sha256": {
+            "final_checkpoint_canonical_semantic_sha256": {
                 mode: {
-                    "aggregated": artifacts[mode]["final_aggregated_checkpoint"]["content_sha256"],
-                    "adapted": artifacts[mode]["final_adapted_checkpoint"]["content_sha256"],
+                    "aggregated": artifacts[mode]["final_aggregated_checkpoint"]["canonical_semantic_sha256"],
+                    "adapted": artifacts[mode]["final_adapted_checkpoint"]["canonical_semantic_sha256"],
                 }
                 for mode in _MODES
             },
@@ -2776,20 +2968,12 @@ def _capture_formal_artifacts(attempt_root: Path) -> dict[str, Any]:
     output = attempt_root / "raw" / "ecs" / "training"
     trace = attempt_root / "raw" / "ecs" / "common_trace.jsonl"
     artifacts: OrderedDict[str, Any] = OrderedDict()
-    artifacts["final_aggregated_checkpoint"] = tensor_fingerprint(
-        output / "server_latest.pth"
+    artifacts["final_aggregated_checkpoint"] = checkpoint_semantic_fingerprint(
+        output / "server_latest.pth", output
     )
-    artifacts["final_adapted_checkpoint"] = tensor_fingerprint(
-        output / "server_latest_adapted.pth"
+    artifacts["final_adapted_checkpoint"] = checkpoint_semantic_fingerprint(
+        output / "server_latest_adapted.pth", output
     )
-    for label in ("final_aggregated_checkpoint", "final_adapted_checkpoint"):
-        raw_sha = artifacts[label]["artifact_sha256"]
-        artifacts[f"{label}_raw"] = {
-            "kind": "raw_checkpoint",
-            "artifact_sha256": raw_sha,
-            "content_sha256": raw_sha,
-            "comparison": {"raw_file_sha256": raw_sha},
-        }
     artifacts["common_trace"] = _common_trace_fingerprint(trace)
     for round_idx in (1, 2):
         artifacts[f"adapted_logits_round_{round_idx}"] = _fixed_adapted_logits(
@@ -3430,6 +3614,28 @@ def _run_formal_bound_gate(
         "frozen_initial_checkpoint": {
             **initial,
             "path": _portable_evidence_path(root, Path(initial["path"])),
+        },
+        "final_checkpoint_raw_file_sha256": {
+            mode: {
+                "aggregated": artifacts[mode]["final_aggregated_checkpoint"][
+                    "raw_file_sha256"
+                ],
+                "adapted": artifacts[mode]["final_adapted_checkpoint"][
+                    "raw_file_sha256"
+                ],
+            }
+            for mode in ("off", "on")
+        },
+        "final_checkpoint_canonical_semantic_sha256": {
+            mode: {
+                "aggregated": artifacts[mode]["final_aggregated_checkpoint"][
+                    "canonical_semantic_sha256"
+                ],
+                "adapted": artifacts[mode]["final_adapted_checkpoint"][
+                    "canonical_semantic_sha256"
+                ],
+            }
+            for mode in ("off", "on")
         },
         "artifact_hashes": comparison["artifact_hashes"],
         "mismatches": comparison["mismatches"],
