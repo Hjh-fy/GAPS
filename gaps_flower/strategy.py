@@ -22,6 +22,26 @@ from gaps_flower.flower_message_audit import audit_fit_ins, audit_fit_res
 from gaps_flower.observability import NullObserver
 
 
+def canonicalize_fit_results(
+    results: List[Tuple[ClientProxy, FitRes]],
+) -> List[Tuple[ClientProxy, FitRes]]:
+    """Return FitRes values in stable uploaded-client order, failing closed."""
+
+    keyed: list[tuple[int, Tuple[ClientProxy, FitRes]]] = []
+    seen: set[int] = set()
+    for item in results:
+        _proxy, fit_res = item
+        metrics = fit_res.metrics
+        client_id = metrics.get("client_id") if isinstance(metrics, dict) else None
+        if type(client_id) is not int or client_id <= 0:
+            raise ValueError("FitRes metrics require a positive integer client_id")
+        if client_id in seen:
+            raise ValueError(f"duplicate FitRes client_id: {client_id}")
+        seen.add(client_id)
+        keyed.append((client_id, item))
+    return [item for _client_id, item in sorted(keyed, key=lambda row: row[0])]
+
+
 class CheckpointFedAvg(fl.server.strategy.FedAvg):
     """FedAvg strategy that saves checkpoints, history, and client statistics."""
 
@@ -533,6 +553,11 @@ class GapsStrategy(CheckpointFedAvg):
             return None, {}
 
         # ── 1. 每个客户端: Flower Parameters → state_dict(OrderedDict) ──
+        # Flower returns successful FitRes values in arrival order.  Use a
+        # stable identity order before every float32 aggregation/statistics/DA
+        # path so edge timing cannot select a different numerical reduction.
+        results = canonicalize_fit_results(results)
+
         client_state_dicts: List[OrderedDict] = []
         num_examples_list: List[int] = []
         for proxy, fit_res in results:

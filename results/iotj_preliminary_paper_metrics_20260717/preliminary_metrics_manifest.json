@@ -1,0 +1,241 @@
+{
+  "schema_version": "iotj.preliminary_paper_metrics.v1",
+  "generated_date": "2026-07-17",
+  "scope": "classification -> regression -> QC -> B2 real-topology two-round system pilot",
+  "confirmation_status": "not_started_blocked_by_b5_observer_gate",
+  "classification_seed42_role": "screening_historical_excluded_from_confirmation_mean_std",
+  "regression_code_revision": "7106e5c",
+  "system_pilot_binding": {
+    "archive_sha256": "c96fd135c159f0a4b28ecbc40008436510f79bb3adab347536d76a0305b01e1f",
+    "command_manifest_sha256": "d9c70c8a4e480296484e36e9ff73abe7be29f72fbbc67de8bd31509c050bfced",
+    "confirmation_commit": "7ec77e35d57797ad1fc42d153221c3f3dff81644",
+    "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+    "group_id": "B2",
+    "protocol_manifest_sha256": "96d9d43441e3da2d28cef875d4e982ad530984e12b3cadc47d78acfb7af43175",
+    "regular_members_sha256": "de24b72b0dbc204f276c384bc82b0933b0cfed9e64075e042e3795d03848def9",
+    "seed": 42,
+    "source_archive_sha256": "c96fd135c159f0a4b28ecbc40008436510f79bb3adab347536d76a0305b01e1f"
+  },
+  "b2_observer_gate": {
+    "status": "equivalent",
+    "max_abs_delta": 0
+  },
+  "source_files": [
+    {
+      "relative_path": "workspace/results/iotj_classification_ablation_20260712_v3_summary/B1_proto_replay_corrected_server_da_c12_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2136,
+      "sha256": "c4b3b43644a237551430fea3de87ebfdd2354fed1316ca762267bd2a95454295"
+    },
+    {
+      "relative_path": "workspace/results/iotj_classification_ablation_20260712_v3_summary/B2_proto_replay_corrected_server_da_c12_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2147,
+      "sha256": "655eb69a306fc220b2ff0be57c3b873063f264e146329f5262e7b04912cc77a7"
+    },
+    {
+      "relative_path": "workspace/results/iotj_classification_ablation_20260712_v3_summary/B3_proto_replay_corrected_server_da_c12_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2159,
+      "sha256": "1826e47df966f863802d0fff388a777b0872807cfd183493eb41013633b7fbbb"
+    },
+    {
+      "relative_path": "workspace/results/iotj_classification_ablation_20260712_v3_summary/B4_proto_replay_corrected_server_da_c12_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2141,
+      "sha256": "3f414bae72ae359b64d3969abdca9a401c6b36d6e03c9feccf11841964fa364e"
+    },
+    {
+      "relative_path": "workspace/results/iotj_classification_ablation_20260712_v3_summary/B5_proto_replay_corrected_full_da_c12_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2155,
+      "sha256": "bb20a25a3153f7b5b5aecbf10eeda6097a5185a821f99f6141585099f9f6be05"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260715_f1_summary/B2_proto_replay_corrected_server_da_f1_c1_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2145,
+      "sha256": "af7b9f54289d69c6f9e9e1243d7b61a9ed9591b1d10bff2362fce61239fdb16e"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260715_f1_summary/B5_proto_replay_corrected_full_da_f1_c1_to_c5_s42_r25/classification_metrics.json",
+      "bytes": 2154,
+      "sha256": "973762f62149300511cfb20813c890d45acceb800471a732036e34230c7b1c6d"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260714_r1_summary/B2_proto_replay_corrected_server_da_r1_c5_to_c1_s42_r25/classification_metrics.json",
+      "bytes": 2284,
+      "sha256": "ef7805e9a3a6f2bc884d3591feb1d4b26c250ff727c1e4a1d3ab2a4efb320740"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260714_r1_summary/B5_proto_replay_corrected_full_da_r1_c5_to_c1_s42_r25/classification_metrics.json",
+      "bytes": 2233,
+      "sha256": "f42b0b6e2c79194494d666ed0bfb641b9cb03fe5cda6255b2986d766b950df78"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260715_r2_summary/B2_proto_replay_corrected_server_da_r2_c45_to_c1_s42_r25/classification_metrics.json",
+      "bytes": 2268,
+      "sha256": "e63caaeb52fa418051dd04ec57e833aa54cd0989ec776eb31ce7a791a0774284"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260715_r2_summary/B5_proto_replay_corrected_full_da_r2_c45_to_c1_s42_r25/classification_metrics.json",
+      "bytes": 2276,
+      "sha256": "b1ef79c9a635f955df237528b9702221c1b041579b0881bf2f33b19f77dc6ced"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260715_f1_summary/paired_direction_comparison.json",
+      "bytes": 1816,
+      "sha256": "bb01c87bec9f5583ccff9c75f22ef0ede1f50b1f83b65450ecbe4d55a5218388"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260714_r1_summary/paired_direction_comparison.json",
+      "bytes": 1840,
+      "sha256": "39d3b52d0a9918050a46acb0da923f8b57ebcdae38730e912ed9f6d15f1d36dc"
+    },
+    {
+      "relative_path": "workspace/results/iotj_b2_b5_cross_direction_20260715_r2_summary/paired_direction_comparison.json",
+      "bytes": 1839,
+      "sha256": "6ec60ad72798046c794b94c254db45d70a76b308ce6cc4007df395bb0a5ba3cc"
+    },
+    {
+      "relative_path": "workspace/results/iotj_c5_formal_regression_20260713_v2_summary/formal_regression_report.md",
+      "bytes": 5434,
+      "sha256": "138316c1f3a9609083bfe5149efb39ffe357e9aa15cf6f2e7c4d9d4b2c236534"
+    },
+    {
+      "relative_path": "workspace/results/iotj_c5_formal_regression_20260713_v2_summary/manifest.json",
+      "bytes": 11014,
+      "sha256": "fc9d8568bd5c2986bd9ead9ce20355d769c9b8b2264cc569a59ec513b7fc3167"
+    },
+    {
+      "relative_path": "confirmation_worktree/results/iotj_main_confirmation_observability_20260715/smoke/b2/formal_observer_equivalence_report.json",
+      "bytes": 64664,
+      "sha256": "c84a69327a8e88da89a5c12bb61a595363bdbeb29112f21bfae0d899b9c980cd"
+    },
+    {
+      "relative_path": "confirmation_worktree/results/iotj_main_confirmation_observability_20260715/smoke/b2/on/raw/ecs/events.jsonl",
+      "bytes": 45393,
+      "sha256": "fcfa45cec524cb5a97698b249316029e19897e3bee37b3098f920fc60772da52"
+    },
+    {
+      "relative_path": "confirmation_worktree/results/iotj_main_confirmation_observability_20260715/smoke/b2/on/raw/pi/events.jsonl",
+      "bytes": 16400,
+      "sha256": "bcffa65962b67a961b0e575e3a7e934d1bf15310ad51ce2872164b6e7e1c86d4"
+    },
+    {
+      "relative_path": "confirmation_worktree/results/iotj_main_confirmation_observability_20260715/smoke/b2/on/raw/pc/events.jsonl",
+      "bytes": 16421,
+      "sha256": "9bf1b678c5401fdcbda95b5b65cfcc2a3ff7bdf762daece0a35a0306c67149e2"
+    },
+    {
+      "relative_path": "confirmation_worktree/results/iotj_main_confirmation_observability_20260715/smoke/b2/on/raw/pi/resource.jsonl",
+      "bytes": 1121215,
+      "sha256": "7aa9d6bc8bc209c7cd13d50813f8caaaaaf258f0d20ae3e03b1123a2a84a745a"
+    },
+    {
+      "relative_path": "confirmation_worktree/results/iotj_main_confirmation_observability_20260715/smoke/b2/on/raw/pc/resource.jsonl",
+      "bytes": 1100972,
+      "sha256": "983d46d65e09a0c01ba9e3e19b9fbc149ccb7a613b11fe66f6d246f590c4ddf0"
+    }
+  ],
+  "output_files": {
+    "build_trace.log": {
+      "bytes": 5081,
+      "sha256": "a41ba57c850cac89a3c196e9a21c239b4b67d4eeff83620c2623e3f97b11f53d"
+    },
+    "claim_boundary.md": {
+      "bytes": 1863,
+      "sha256": "2c4bc8bf27a169b4f75db77a06cc9f875b3135e3c1386236deb740d94fd9865f"
+    },
+    "classification_directional.csv": {
+      "bytes": 1536,
+      "sha256": "3f87c4ce04c1de73c5de928c65679ec24571269557409e332f7bce722b51d9ac"
+    },
+    "classification_paired_comparison.csv": {
+      "bytes": 1030,
+      "sha256": "1b6e4c3f83e913fcfd0112db5991dba3b4cc35119512efc5d034147d738419f5"
+    },
+    "evidence_sources.csv": {
+      "bytes": 4345,
+      "sha256": "b03c229ed157791fdae4aee6c6041653d0eb83edf8f51d612b9b3bfe76b8fc33"
+    },
+    "iotj_paper_evidence_gap_matrix.csv": {
+      "bytes": 7597,
+      "sha256": "6321ba1518d191345537b08c5e86693803790b53f5f37ecd5026e49589d88582"
+    },
+    "iotj_preliminary_paper_metrics_20260717.xlsx": {
+      "bytes": 25361,
+      "sha256": "a45a3c83f5e43339f926139613d117573fc4cea1c96e40ac9e957d2a28dfc96d"
+    },
+    "iotj_preliminary_results_analysis.md": {
+      "bytes": 10926,
+      "sha256": "1db8d0992e1000cefe8152dbf0539ccad5fa583d434434190ae8a82822adf30a"
+    },
+    "overview.png": {
+      "bytes": 109867,
+      "sha256": "c91a541b843118e6bfa06075f6c2168b1ed4d6af811c89f52b0741e1d87fb1c9"
+    },
+    "overview.render_report.json": {
+      "bytes": 607,
+      "sha256": "74d1df3d0772d5167445accfccb5ce840ff418ecced8eb348f43835738ebe70c"
+    },
+    "paper_kpis.csv": {
+      "bytes": 1013,
+      "sha256": "5fa2aa10397cb426ea1e712aaa553324500985a09ba8bb6d330e25ff1dca8ab1"
+    },
+    "system_pilot_resource_summary.csv": {
+      "bytes": 746,
+      "sha256": "0ed48779c9c33f2afa4e49d3c93054578fe5e3aa7ce2d483b445acdc489d4690"
+    },
+    "system_pilot_round_metrics.csv": {
+      "bytes": 699,
+      "sha256": "89b919f61349f8d8c3296edee5e306325ee80122a1d8cdc9f709006ef0861cd4"
+    }
+  },
+  "inspection": {
+    "formulas": {
+      "ndjson": "{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B14\",\"formula\":\"='Main Classification'!F6\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B15\",\"formula\":\"='Main Classification'!F9\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B16\",\"formula\":\"=(B14-B15)*100\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B17\",\"formula\":\"=Regression!E45\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B18\",\"formula\":\"='Operational QC'!F13\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B19\",\"formula\":\"='Operational QC'!D13\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B20\",\"formula\":\"='Operational QC'!F10\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B21\",\"formula\":\"=SUM('System Timing'!D5:D6)/1048576\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B22\",\"formula\":\"=AVERAGE('System Timing'!H5:H6)\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B23\",\"formula\":\"=AVERAGE('System Timing'!K5:K6)\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B24\",\"formula\":\"=AVERAGE('System Timing'!M5:M6)\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B25\",\"formula\":\"=AVERAGE('System Timing'!N5:N6)\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B26\",\"formula\":\"='System Resources'!E5\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B27\",\"formula\":\"='System Resources'!E7\"}\n{\"kind\":\"formula\",\"sheet\":\"Overview\",\"address\":\"B28\",\"formula\":\"=SUM('Observer Audit'!E5:E7)\"}",
+      "truncated": false,
+      "metadata": {
+        "revision": "fvedk1",
+        "target": {
+          "id": "wb/92vc44",
+          "beforeLines": 0,
+          "afterLines": 0
+        },
+        "kind": {
+          "requested": "formula",
+          "tokens": [
+            "formula"
+          ]
+        },
+        "include": {
+          "tokens": []
+        },
+        "exclude": {
+          "tokens": []
+        },
+        "notices": []
+      }
+    },
+    "overview": {
+      "ndjson": "{\"kind\":\"region\",\"sheet\":\"Overview\",\"address\":\"A13:E28\",\"rows\":16,\"cols\":5,\"nonEmpty\":80,\"text\":80,\"maxTextLength\":46,\"preview\":[[\"Headline metric\",\"Value\",\"Unit\",\"Evidence status\",\"Interpretation\"],[\"Main B2 accuracy\",\"0.9926470588235294\",\"fraction\",\"seed-42 screening\",\"99.26% on 1360 C5 test windows\"],[\"Main B5 accuracy\",\"0.9889705882352942\",\"fraction\",\"seed-42 screening\",\"98.90% on 1360 C5 test windows\"],[\"Main B2-B5 accuracy\",\"0.3676470588235281\",\"percentage points\",\"descriptive only\",\"B2 is +0.37 pp in this historical seed\"],[\"B2 R4 FULL actual RMSE\",\"14.6564\",\"ppm\",\"formal regression\",\"Actual predicted-class route\"]],\"previewAddress\":\"A13:E17\",\"previewRows\":5,\"previewCols\":5}\n{\"kind\":\"region\",\"sheet\":\"Overview\",\"address\":\"A4:E11\",\"rows\":8,\"cols\":5,\"nonEmpty\":32,\"blank\":8,\"text\":32,\"maxTextLength\":33,\"preview\":[[\"Evidence block\",\"State\",\"Paper role\",\"Boundary\",null],[\"Main classification\",\"available\",\"Seed-42 screening/historical\",\"No confirmation mean/std\",null],[\"Cross-direction B2/B5\",\"available\",\"Appendix/generalization\",\"Three directions, seed 42 only\",null],[\"Formal regression/QC\",\"available\",\"Main paper metrics\",\"Oracle columns diagnostic only\",null],[\"B2 system pilot\",\"available\",\"Preliminary system metrics\",\"Two rounds; no transport bytes\",null]],\"previewAddress\":\"A4:E8\",\"previewRows\":5,\"previewCols\":5}",
+      "truncated": false,
+      "metadata": {
+        "revision": "v5dzn5",
+        "target": {
+          "id": "wb/gpg0se",
+          "beforeLines": 0,
+          "afterLines": 0
+        },
+        "kind": {
+          "requested": "region",
+          "tokens": [
+            "region"
+          ]
+        },
+        "include": {
+          "tokens": []
+        },
+        "exclude": {
+          "tokens": []
+        },
+        "notices": []
+      }
+    }
+  }
+}

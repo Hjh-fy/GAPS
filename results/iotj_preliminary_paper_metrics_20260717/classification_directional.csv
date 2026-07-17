@@ -1,0 +1,7 @@
+direction,group_id,seed,rounds,N,accuracy,macro_f1,nll,ece,worst_recall,evidence_role,run_name
+F1_C1_TO_C5,B2,42,25,1360,0.9889705882352942,0.9889539773984188,0.10081357824069066,0.010651978455922178,0.9794117647058823,appendix/generalization seed-42; not multi-seed confirmation,B2_proto_replay_corrected_server_da_f1_c1_to_c5_s42_r25
+F1_C1_TO_C5,B5,42,25,1360,0.9830882352941176,0.983130673740016,0.13223446287536667,0.014969853706219609,0.9676470588235294,appendix/generalization seed-42; not multi-seed confirmation,B5_proto_replay_corrected_full_da_f1_c1_to_c5_s42_r25
+R1_C5_TO_C1,B2,42,25,2680,0.9764925373134329,0.9765251242782818,0.27685948761624446,0.023724445355917032,0.9597014925373134,appendix/generalization seed-42; not multi-seed confirmation,B2_proto_replay_corrected_server_da_r1_c5_to_c1_s42_r25
+R1_C5_TO_C1,B5,42,25,2680,0.9835820895522388,0.9836046899894706,0.17175490973439106,0.01561448365005092,0.9746268656716418,appendix/generalization seed-42; not multi-seed confirmation,B5_proto_replay_corrected_full_da_r1_c5_to_c1_s42_r25
+R2_C45_TO_C1,B2,42,25,2680,0.9895522388059701,0.9895649401938136,0.10585891088928671,0.009554196093509415,0.9835820895522388,appendix/generalization seed-42; not multi-seed confirmation,B2_proto_replay_corrected_server_da_r2_c45_to_c1_s42_r25
+R2_C45_TO_C1,B5,42,25,2680,0.9914179104477612,0.9914360761215912,0.08935576084548508,0.008248767479142192,0.991044776119403,appendix/generalization seed-42; not multi-seed confirmation,B5_proto_replay_corrected_full_da_r2_c45_to_c1_s42_r25

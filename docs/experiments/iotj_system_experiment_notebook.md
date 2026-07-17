@@ -314,3 +314,96 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 用户于 2026-07-17 预授权：仅在 Tasks 10--12 完成，且 candidate freeze、三主机 preflight、B2/B5 formal smoke、archive/hash/schema/runtime identity 与十运行 dry-run queue Gate 全部 fail-closed 通过后，可无需再次人工批准而启动冻结的十个 25 轮运行。任一 Gate 失败仍必须立即停止并保留证据。Task 10 本身只生成本地 archive/manifests，不执行 preflight、formal smoke、训练或 C5 evaluation。
 
 操作入口：安全本地 Gate 使用 `python -m scripts.run_iotj_observer_equivalence_gate --group B2|B5 --output-root <new-empty-root>`；本地冻结使用 `python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit <FULL_HEAD> --data-root dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid --archive-output results/iotj_main_confirmation_observability_20260715/source/confirmation_source.tar --command-root results/iotj_main_confirmation_observability_20260715_commands --summary-root results/iotj_main_confirmation_observability_20260715_summary`。formal topology、preflight、`--validate-inputs-only` dry-run queue、sealed summarizer 和正式 controller 的完整可复制命令及其网络边界见 `docs/experiments/iotj_latest_handoff_20260715.zh.md` 第 11.3 节。
+
+## 论文指标闭环优先与初步证据包（2026-07-17）
+
+### 优先级调整
+
+- 当前停止继续扩展 Spec A 内部诊断范围；不新增 Observer 功能，不继续追逐非阻塞审计项。
+- 正式 10×25 confirmation 仍未启动。B2 formal-topology OFF/ON 已满足 `status=equivalent`、`max_abs_delta=0`；B5 在 round 2 保留真实 parity 失败，因此仍禁止生成 confirmation freeze record 或把任何新运行写成正式 confirmation。
+- 当前论文闭环按“分类 -> 回归 -> QC -> 真实拓扑系统 pilot”组织。历史 `feaa75b` 主方向 seed-42 只作 screening/historical；三个跨方向 seed-42 只作 appendix/generalization；二者都不进入未来 confirmation mean/std。
+
+### 已生成的统一入口
+
+- 结果根：`results/iotj_preliminary_paper_metrics_20260717/`
+- 审计工作簿：`iotj_preliminary_paper_metrics_20260717.xlsx`
+- 轻量表：`paper_kpis.csv`、`classification_directional.csv`、`classification_paired_comparison.csv`、`system_pilot_round_metrics.csv`、`system_pilot_resource_summary.csv`
+- 证据与边界：`evidence_sources.csv`、`claim_boundary.md`、`preliminary_metrics_manifest.json`
+- 工作簿含 Overview、主方向分类、跨方向配对、正式回归、正式 QC、消息、时延、资源、Observer 开销、claim boundary 和源文件 SHA-256。公式检查无错误；首页轻量快照视觉检查通过。artifact-tool 原生 render 在 Windows 发生可重复 native crash，Excel COM 又被 Office RPC 拒绝，因此视觉检查使用只读 openpyxl+Pillow fallback，并在 `overview.render_report.json` 中明确记录。
+
+### 当前可用于论文分析的初步指标
+
+- 主方向 seed-42：B2 Accuracy/Macro-F1 为 `0.992647/0.992657`；B5 为 `0.988971/0.988990`；B2-B5 Accuracy 为 `+0.3676 pp`。这只是历史单种子描述，不是 confirmation 结论。
+- 正式 C5 回归：B2 R4 FULL actual-route RMSE/NRMSE 为 `14.6564/0.1059`；B5 为 `17.4473/0.1352`。
+- 正式 C5 QC：B2 HC90 Yield 为 `0.8949`，accepted RMSE/NRMSE 为 `11.5866/0.0747`；B5 HC90 Yield 为 `0.8824`，accepted RMSE/NRMSE 为 `15.3599/0.1151`。
+- B2 真实 ECS + Pi C1 + PC C2 两轮 pilot：serialized application messages 合计 `1,395,868 bytes = 1.3312 MiB`；logical payload 合计 `1,391,310 bytes`；transport bytes 未采集。
+- 两轮平均 round wall 为 `193.0714 s`，平均 server DA 为 `168.5313 s`，DA 约占 round wall 的 `87.3%`。当前系统瓶颈首先是 ECS server DA，而不是消息体大小。
+- Pi/PC 平均 local train core 为 `11.1061/20.4351 s`；training-overlap peak RSS 为 `511.91/426.21 MiB`。Pi training-overlap 平均/峰值主机 CPU 为 `80.50%/90.63%`，平均/峰值温度为 `55.0/58.4 °C`。只有两轮，不能据此宣称 Pi 持续快于 PC。
+- Observer 编码/序列化/I/O 自测总开销为 `24.8501 ms`；与 386 秒级两轮 wall time 相比很小，但仍只属于 pilot 口径。
+
+### 下一步最小实验原则
+
+1. 不再为了完善 Spec A 而推迟论文指标闭环。
+2. 先使用本包更新论文主表/系统表草稿，并把 B2 两轮系统值明确标为 preliminary。
+3. 低校准当前只完成 budgets、sample-key、stratified sampling、统计合同和工具校验，不生成正式批量结果；正式结果必须等待十个 confirmation run 完成并冻结 classifier prediction stream。
+4. B5 Gate 未解决前不启动正式 10×25；如需系统初步值，继续使用已完成的 B2 real-topology pilot，不把它伪装为 25-round total。
+
+### 论文导向分析与剩余证据矩阵（2026-07-17）
+
+- 新增 `results/iotj_preliminary_paper_metrics_20260717/iotj_preliminary_results_analysis.md`：将工作簿严格定位为“已有算法证据与新系统 pilot 的论文初步指标整合”，不是新的完整训练结果。
+- 新增 `results/iotj_preliminary_paper_metrics_20260717/iotj_paper_evidence_gap_matrix.csv`：共 10 项，P0/P1/P2 分别为 3/5/2 项，逐项记录论文价值、最低实验范围、前置条件、计算/工程成本、主文角色和 fail-closed 停止条件。
+- 两个新增产物的 bytes/SHA-256 已写入 `preliminary_metrics_manifest.json`；本次只整理与分析已有证据，没有新增训练、打开新的 test 排名或扩展 Observer/Gate。
+- 初步系统结论收紧为：B2 两轮真实拓扑 pilot 中，server-side DA 是当前测得的主导耗时组成（约占总 round wall 的 87.3%），Pi local training 不是主要时间瓶颈；transport latency 未独立采集，不能表述为已排除网络瓶颈。
+- 修订后的最小路线为：P0 先做 B5 第一处分叉的最小修复，再运行同一冻结 revision 下的 B2/B5 × seeds 42--46 十个 25-round canonical runs，并同步收集正式通信/时延/资源证据；P1 才是正式 low-calibration、bundle、1360-row parity 与 Pi/PC inference；P2 为 availability 与至少 1 h 稳定性，详细长稳结果优先进入 appendix。
+- 下一项最值得投入计算资源的实验是 P0 十个正式 25-round confirmation runs；按当前 B2 pilot 的顺序运行粗略下限约 13.4 h，实际应预留 14--24 h。它同时补齐分类 mean/sample std、正式 25-round 系统表，并冻结后续 low-calibration/deployment 所需 prediction stream。
+
+## Regression Provenance Audit（2026-07-17，只读）
+
+### 审计范围与产物
+
+- 本轮只读取现有训练入口、正式 R0--R7 汇总脚本、正式 H8/QC 结果清单和当前部署代码；没有修改模型、loss、数据协议、训练超参数、回归头或正式结果，也没有启动任何新的回归训练。
+- 审计产物位于 `results/iotj_regression_provenance_audit_20260717/`：
+  - `regression_provenance_map.csv`
+  - `regression_dependency_graph.md`
+  - `regression_federated_boundary_audit.md`
+  - `regression_source_head_followup_plan.md`
+
+### 已确认的训练方式
+
+- Source Ridge（H1）：Ethanol、CO、Ethylene、Methane 都先把 C1/C2 的 source-train 窗口读入同一进程，再按 gas 过滤并 pooled fitting；alpha 由合并后的 C1/C2 calibration 选择，最终在 pooled train+calibration 上重拟合。不存在 Flower 消息、FedAvg 或按客户端参数聚合。
+- Source per-gas MLP（H2）：四个 gas 各有一个 MLP，但每个 MLP 都使用同一进程中的 C1+C2 pooled source data 集中训练；不存在联邦训练。
+- Source shared MLP（H3）：C1/C2 四类 source data 合并后，加入 predicted/oracle gas route one-hot 特征，集中训练一个 shared MLP；不存在联邦训练。
+- 上述 source heads 读取的是已生成的 window feature/label/metadata 数组。它们代表 source 窗口数据在一个进程中的集中拟合，不能表述成“source raw/window data 从未集中”。
+- R0 的 R3aK16 source checkpoint 属于另一条 offline FedAvg-style reference：各客户端本地训练后按样本数加权平均 checkpoint；现有实现是单机/文件式模拟，不构成真实 Flower 网络回归训练。R0 不进入 R4 的数值计算，但当前 formal input builder 与 legacy runtime 仍保留该 artifact plumbing。
+
+### R4/H8、QC 与部署依赖边界
+
+- 正式固定 R4/H8 数值链路为：classifier logits -> predicted gas route -> H1 source Ridge prediction + H2 source per-gas MLP prediction + H3 source shared MLP prediction -> C5 calibration 上拟合的 per-gas augmented target Ridge -> R4 ppm prediction。
+- 因此 R4 的数值推断强依赖 H1/H2/H3 三个 source heads，任一缺失都不能视作同一个正式 R4。R4 本身不依赖 target per-gas MLP（R2/H23）或 R0 R3aK16 prediction。
+- 正式 high-coverage QC 还使用 classifier confidence、H23/R4 disagreement 和 H1/H2/H3 source-head spread。因此 target MLP 虽不进入固定 R4 数值路径，却进入当前正式 QC 的风险特征；三个 source heads 同时影响 R4 prediction 与 QC risk。
+- 现有 Git-tracked runtime 仍是 legacy C12 -> C3/C4/C5 路径，并带有 predicted-CO 分支/回退语义；它不等于已经冻结的 formal C5 R4/H8 + high-coverage QC runtime。最终 C5 deployment bundle 及 1360-row parity 尚未完成，论文不能写成“正式 R4 runtime 已部署并验证”。
+
+### 论文联邦边界与后续顺序
+
+- 当前可安全称为 federated 的核心是分类训练；R0 最多称为 offline FedAvg source-regression reference。H1/H2/H3 应称为 `centrally pooled multi-source regression references`，C5 Ridge/MLP/H8/QC 应称为 `target-personalized calibration and decision pipeline`。
+- 安全总表述：GAPS combines real-device federated classification with centrally pooled multi-source regression references and target-personalized calibration/QC。禁止笼统写成“端到端全流程联邦”或“source regression data 从未集中”。
+- 后续执行顺序冻结为：P0 完成 -> final B2/B5 classifier checkpoints/prediction streams 冻结 -> Source-head dependency ablation -> 决定是否需要 distributed Ridge -> 正式 12/24/48/80/Full low-calibration batch。
+- 最有价值的回归后续实验是：首先在同一冻结 prediction stream 和同一 C5 calibration keys 下成组执行 source Ridge/per-gas MLP/shared MLP removal 以及 source-head-free baseline；其中 Experiment A（去掉 source Ridge）与 Experiment D（只保留 target Ridge/MLP）最直接回答 final dependency 和论文方法边界。
+- 现在不建议直接实现 distributed sufficient-statistics Ridge。只有 Experiment A 显示 source Ridge 对 R4/QC 有稳定且重要的贡献时，才执行 C1/C2 本地计算 `X^T X`、`X^T y` 并由 server 聚合求解的 equivalence experiment；否则该实现对投稿的边际证据价值不足。
+- 产物完整性：`regression_provenance_map.csv` 为 `12395 bytes / e1656bedbd3c8441d9e2253d69fae29169b934be05d1e87eb11769901bec70e5`；`regression_dependency_graph.md` 为 `6765 / 3ba1b9c00f76d687552fac778f58eb6b1bded58e51ddfabb9d57b6c82349351f`；`regression_federated_boundary_audit.md` 为 `5986 / 545be3a4c96cb1c6d849a6293a4172c9cbf62312f580cdffbe1e0773f5c647a5`；`regression_source_head_followup_plan.md` 为 `4841 / c7453168505d7dfbe06c8d469525e8e7da9a3bb198a992a3a5d66d618946f21b`。
+
+### P0 B5 blocker 当前证据边界
+
+- P0 优先级未改变，也未启动任何正式 25-round run。B5 formal OFF/ON 报告继续保留为 `observer_path_mutation`，`max_abs_delta=0.01269597525242716`；失败证据未被覆盖。
+- 第一处分叉审计目前只能证明：round 2 的 FitRes arrival order 为 OFF `[C2,C1]`、ON `[C1,C2]`；每客户端 normalized FitRes、post-aggregate/pre-DA checkpoint 均一致，最早捕获到的数值分叉位于 server DA。B2 round 2 顺序一致且 `max_abs_delta=0`。
+- 固定状态 replay 证明：相同顺序精确等价、RNG 状态未改变；逆序只改变初始 prototype-loss scalar `0.00390625`，但该 replay 的梯度 mismatch count 为 0。因此当前证据不足以把“排序 FitRes”宣布为已证实根因，也不足以授权补丁。
+- focused replay test 为 `14 passed in 37.64s`。本轮新增未跟踪的只读诊断脚本 `scripts/diagnose_b5_fixed_state_order_replay.py` 与 focused test `tests/test_b5_fixed_state_order_replay.py`，但没有修改训练/runtime 数值路径，也没有形成候选修复。由于尚未获得 formal OFF-A/OFF-B 的独立重复性证据，没有创建新 candidate commit，也没有生成 confirmation freeze record。
+
+### P0 B5 blocker 根因确认与最小修复（2026-07-17）
+
+- 独立 formal OFF-B 使用保留的 `7ec77e3` archive、相同 frozen checkpoint/命令/数据与新的非 canonical `a997` 身份完成两轮。旧 OFF-A 与新 OFF-B 的比较为 `status=environment_nondeterminism`、`max_abs_delta=0.02182745933532715`；因此原 OFF/ON 差异不能归因于 Observer。repeat report SHA-256 为 `6be58896b1fabd5425538b84dd28d907facf3d3978e7a86e47501c745d3b3fd7`。
+- 第一处真实分叉已前移到 round 1：frozen initial checkpoint、C1/C2 FitIns、两个客户端 FitRes 张量/指标以及 plain parameter aggregate 都精确相同；旧 OFF-A 的 FitRes arrival order 为 `[C2,C1]`，新 OFF-B 为 `[C1,C2]`。到达顺序未经规范化进入 float32 prototype/statistics reduction，首先使 `semantic_protos["0,0"][0]` 相差 `1.0728836059570312e-05`，round-1 semantic prototype 最大绝对差为 `1.5351921319961548e-05`，随后传播至 DA 和 round 2。
+- 结构化证据位于 `results/iotj_main_confirmation_observability_20260715/smoke/b5_formal_off_repeat_a997_7ec77e3_v2/b5_first_divergence_report.json`。旧 B5 OFF/ON 与所有失败 probe 目录均未覆盖或删除。
+- 最小修复仅在 `gaps_flower/strategy.py` 增加 `canonicalize_fit_results()`，要求上传的正整数 `client_id` 唯一，并在 `GapsStrategy.aggregate_fit()` 的所有 float32 aggregation/statistics/DA 路径前按该身份排序。未修改模型、loss、B2/B5 配置、数据协议、训练超参数或 server DA 数学定义。
+- TDD/验证：新排序合同先 RED 后 GREEN；focused B5 诊断 `18 passed`，Observer Gate tests `72 passed, 1 skipped`；修复后的本地 B2/B5 OFF-A/ON/OFF-B 均为 `status=equivalent`、`max_abs_delta=0`。confirmation 其余模块短路径验证为 `290 passed, 3 skipped`，summary 在 `D:\itj7` 为 `39 passed, 1 skipped`；较深 basetemp 的失败均由 Windows `MAX_PATH` 复现，不属于代码回归。
+- 当前仍未创建新 candidate commit/archive/freeze record，也未启动正式 25-round run。下一步是把最小修复与诊断/文档形成新 candidate commit，重建唯一 archive 和 hashes，重跑三主机 preflight 与同一 revision 的 B2/B5 formal smoke；只有二者都精确等价才可进入十运行队列。
