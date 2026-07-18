@@ -314,5 +314,6 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 ### 12.9 Controller deadline 终止与 a004 重跑（2026-07-19）
 
 - `a003` 并非训练数值失败：Controller stderr 的唯一终止原因是 `TimeoutError: server process exceeded formal timeout`。默认 18,000 s（5 h）在 C2 完成 round 22 后、25-round canonical validation 前终止该 attempt；因此它只能保留为 failed evidence，绝不能从 round 23 续跑或进入任何正式汇总。
+- a003 的 22 个完成轮次显示 mean/median round wall 为 `803.56/810.89 s`：PC C2 local train `647.97/658.46 s`，ECS server DA `152.68/149.69 s`，Pi C1 local train `41.84/42.25 s`。因此当前正式 CPU 拓扑的关键路径是 PC C2 training + ECS DA；不是 Observer（PC sampler 五小时自测总开销仅 `5.238 s`）或已测 application message。此前由两轮 pilot 得出的 14--24 h 十运行估计作废；B2 单个 25-round run 暂按约 5.6 h 加验证余量，B5 可能更慢，10-run 串行队列应按数天安排。
 - a003 的远端原始证据已先回收到本地 `results/c2e_runs/raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a003/raw/`：PC/ECS/Pi 文件数分别为 8/142/11（总 161 文件、112,270,916 bytes）。核对后才删除 ECS/Pi 上这一个 stale runtime directory；两台设备均确认无残留训练进程。
 - 同一冻结 archive 再次通过三机 preflight。新 Controller PID `34712` 于 2026-07-19 00:35 Asia/Shanghai 启动并创建 `B2-s42 / a004`；唯一控制层调整是显式 `--run-timeout-seconds 172800`（48 h），不改变算法、数据、模型、loss 或训练超参数。应继续以 `latest_controller_launch.json` 获取实时 PID/log；a004 必须从 round 1 完整重跑、通过 validator 后才可成为 B2 seed-42 的 canonical candidate。
