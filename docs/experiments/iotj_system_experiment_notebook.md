@@ -423,3 +423,11 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 首项为 `c12_to_c5__b2__s42 / c12_to_c5__b2__s42__a001`，已记录 `preflight_passed` 并进入 `state=running`。attempt provenance 精确绑定 `confirmation_commit=2ef7aea77b9dfabdd09da4f38742907a37c58c30`、archive `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`、dataset `fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430`。
 - PC `resource.jsonl` 已开始写入，说明正式训练侧系统采样与 run 同步启动。controller 将完成当前 attempt 的 validator 后才按冻结顺序进入下一项；failed/invalid attempt 会保留且不计入 confirmation。
 - 运行时监控只读入口：检查 PID `1664`、`attempt_status.json`、`controller.stderr.log` 和最新 `resource.jsonl/events.jsonl`；禁止在队列运行中重新打包源码或手工并行启动相同 run。
+
+### 断网失败与正式队列恢复（2026-07-18）
+
+- 首次 `B2 seed-42 / a001` 于 2026-07-17 22:25 Asia/Shanghai 因本地到 ECS 的 SSH 状态查询连续 30 秒无响应而 fail closed：`subprocess.TimeoutExpired`。Controller 正确写入 `state=failed / reason=process_failure` 后退出；ECS、Pi、PC 未发现残留该 attempt 的训练或采样进程。
+- `a001` 已完成 round-1 并收到 round-2 FitIns，但未完成 25 轮且未经过 validator，因此永久排除在 confirmation mean/std 之外。其 PC `resource.close.json` 与事件证据保留在原目录，不覆盖、不删除。
+- 2026-07-18 13:09 重新执行相同冻结 archive 的三机 preflight，10-run queue、commit/archive/dataset hashes 全部通过。Controller/validator/训练代码与冻结 `2ef7aea` 无差异，没有重新冻结算法 revision。
+- 2026-07-18 13:10 使用相同 `results/c2e_runs/raw` 恢复队列，新 attempt 为 `c12_to_c5__b2__s42__a002`；新 Controller PID `25268`，日志为 `results/c2e_runs/controller_restart_20260718_131057.stdout.log`、`controller_restart_20260718_131057.stderr.log`。`a002` 已进入 `preflight_passed / running`，PC resource sampler 已开始写入，stderr 为 0 bytes。
+- 后续监控应读取 `results/c2e_runs/latest_controller_launch.json` 获取最新 PID/日志，不再硬编码旧 PID `1664`。网络再次中断时仍按 fail-closed 保留 attempt，并从下一 attempt ID 恢复，禁止把 failed attempt 改写为 canonical。

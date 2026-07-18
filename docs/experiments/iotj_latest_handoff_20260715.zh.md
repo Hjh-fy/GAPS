@@ -296,3 +296,10 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 10×25 controller 已作为隐藏后台进程启动，PID `1664`；日志根 `results/c2e_runs/`。
 - 当前首项 `c12_to_c5__b2__s42__a001` 已通过 attempt preflight，`state=running`；其 provenance 与 freeze record 的 commit/archive/dataset hashes 完全一致。
 - 后续由同一 controller 严格按冻结的 10-run 顺序串行推进，无需再次人工批准。只读监控不得改动 attempt 目录；任一运行若失败或 validator 拒绝，controller 将保留状态/原始证据并 fail closed，不得把该 attempt 纳入正式 mean/std。
+
+### 12.7 断网后的队列恢复（2026-07-18）
+
+- 昨晚 Controller PID `1664` 已因到 ECS 的 SSH 状态查询 30 秒超时退出；仅创建 `B2 seed-42 / a001`，状态已封存为 `failed`，其余九项未启动。三台主机均无残留进程。
+- `a001` 到达 round 2，但没有完成 25 轮或通过 validator，不能作为算法结果或正式系统统计；所有本地/远端证据继续保留。
+- 当前网络恢复后，同一 `2ef7aea / 52bdbf...` archive 已重新通过三机 preflight。恢复 Controller PID 为 `25268`，从 `B2 seed-42 / a002` 开始；状态 `preflight_passed / running`，PC resource sampler 正常写入，restart stderr 为空。
+- 最新 Controller 身份与日志入口记录在 `results/c2e_runs/latest_controller_launch.json`；恢复没有修改训练代码、模型、配置、数据或冻结 revision。
