@@ -431,3 +431,10 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 2026-07-18 13:09 重新执行相同冻结 archive 的三机 preflight，10-run queue、commit/archive/dataset hashes 全部通过。Controller/validator/训练代码与冻结 `2ef7aea` 无差异，没有重新冻结算法 revision。
 - 2026-07-18 13:10 使用相同 `results/c2e_runs/raw` 恢复队列，新 attempt 为 `c12_to_c5__b2__s42__a002`；新 Controller PID `25268`，日志为 `results/c2e_runs/controller_restart_20260718_131057.stdout.log`、`controller_restart_20260718_131057.stderr.log`。`a002` 已进入 `preflight_passed / running`，PC resource sampler 已开始写入，stderr 为 0 bytes。
 - 后续监控应读取 `results/c2e_runs/latest_controller_launch.json` 获取最新 PID/日志，不再硬编码旧 PID `1664`。网络再次中断时仍按 fail-closed 保留 attempt，并从下一 attempt ID 恢复，禁止把 failed attempt 改写为 canonical。
+
+### 第二次断网后的安全清理与 a003 重启（2026-07-18）
+
+- `B2 seed-42 / a002` 在 2026-07-18 17:12 Asia/Shanghai 因 ECS SSH port 22 connection timeout 被 Controller 标记为 `failed / process_failure`。PC 已完成 20 个完整 `client_fit_end`，round 21 的 C2 local training 已结束，但 server 未完成 25 rounds/validator，故不能计入正式结果或系统统计。
+- 网络恢复后发现 Controller 无法在断网时清理的 ECS supervisor/child（`791300/791301`）仍在运行；Pi、PC 无残留进程。通过 `server.registration.json` 的 label、launch token、PID/PGID、start ticks 逐项验证身份后，仅终止该受控 process group；注册记录被远端清理逻辑归档为 `.cleaned`。
+- 在删除远端 runtime attempt 目录前，a001/a002 的 ECS 与 Pi 原始目录均已回收到本地。保留位置为 `results/c2e_runs/raw/c12_to_c5__b2__s42/`：a001 约 `7,574,722 bytes`，a002 约 `91,623,842 bytes`，均包含 PC/ECS/Pi 子目录。之后仅删除 ECS/Pi 上这两个精确 attempt 的 runtime dirs，未删除本地证据、冻结 archive、协议或命令 manifest。
+- 清理后 ECS/Pi 无残留 `a001/a002` process/attempt 目录；同一 archive 的三机 preflight 再次通过。2026-07-18 18:25 启动 `c12_to_c5__b2__s42__a003`，Controller PID `47056`；已达到 `preflight_passed / running`，新 stderr 为空，PC resource sampler 已开始写入。训练算法、数据、超参数和 confirmation archive 均未修改。

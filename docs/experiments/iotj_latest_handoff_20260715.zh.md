@@ -303,3 +303,10 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - `a001` 到达 round 2，但没有完成 25 轮或通过 validator，不能作为算法结果或正式系统统计；所有本地/远端证据继续保留。
 - 当前网络恢复后，同一 `2ef7aea / 52bdbf...` archive 已重新通过三机 preflight。恢复 Controller PID 为 `25268`，从 `B2 seed-42 / a002` 开始；状态 `preflight_passed / running`，PC resource sampler 正常写入，restart stderr 为空。
 - 最新 Controller 身份与日志入口记录在 `results/c2e_runs/latest_controller_launch.json`；恢复没有修改训练代码、模型、配置、数据或冻结 revision。
+
+### 12.8 第二次断网、受控清理与 a003（2026-07-18）
+
+- `a002` 在本机到 ECS 的 SSH 22 端口再次 timeout 后 fail closed；它到达 round 21 但未完成 canonical validation。`a001/a002` 永久保留为 failed evidence，不进入 mean/std。
+- 断网使 ECS 的 a002 server process group 未能被自动清理。网络恢复后按远端注册记录验证其 launch token、PID/PGID/start ticks，安全终止该 group；Pi/PC 无残留进程。
+- 两次失败的 ECS/Pi raw evidence 已复制至本地 `results/c2e_runs/raw/` 后，才删除远端的两个 stale attempt directories。冻结 archive 与十个 command manifests 未受影响。
+- 清理后的三机 preflight 通过；当前 Controller PID `47056` 已从 `B2-s42 / a003` 恢复，状态 `preflight_passed / running`。动态监控继续只读 `results/c2e_runs/latest_controller_launch.json`，不要使用旧 PID。
