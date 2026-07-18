@@ -438,3 +438,10 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 网络恢复后发现 Controller 无法在断网时清理的 ECS supervisor/child（`791300/791301`）仍在运行；Pi、PC 无残留进程。通过 `server.registration.json` 的 label、launch token、PID/PGID、start ticks 逐项验证身份后，仅终止该受控 process group；注册记录被远端清理逻辑归档为 `.cleaned`。
 - 在删除远端 runtime attempt 目录前，a001/a002 的 ECS 与 Pi 原始目录均已回收到本地。保留位置为 `results/c2e_runs/raw/c12_to_c5__b2__s42/`：a001 约 `7,574,722 bytes`，a002 约 `91,623,842 bytes`，均包含 PC/ECS/Pi 子目录。之后仅删除 ECS/Pi 上这两个精确 attempt 的 runtime dirs，未删除本地证据、冻结 archive、协议或命令 manifest。
 - 清理后 ECS/Pi 无残留 `a001/a002` process/attempt 目录；同一 archive 的三机 preflight 再次通过。2026-07-18 18:25 启动 `c12_to_c5__b2__s42__a003`，Controller PID `47056`；已达到 `preflight_passed / running`，新 stderr 为空，PC resource sampler 已开始写入。训练算法、数据、超参数和 confirmation archive 均未修改。
+
+### Controller deadline 终止、证据回收与 a004 重跑（2026-07-19）
+
+- `B2 seed-42 / a003` 不是数值、checkpoint、schema 或 parity 失败：Controller stderr 明确为 `TimeoutError: server process exceeded formal timeout`。该 Controller 的默认 `--run-timeout-seconds=18_000`（5 h）在 2026-07-18 15:26 UTC 终止了尚未完成的 server process；最后完整的 C2 `client_fit_end` 为 round 22。它未完成 25 rounds/validator，故永久作为 `failed / process_failure` evidence，不能续跑第 23 轮，也不能计入 confirmation 或系统汇总。
+- 先回收再清理：a003 的本地 `raw/` 已保留 PC 8、ECS 142、Pi 11 个文件（共 161 文件、`112,270,916` bytes）。ECS/Pi 原始 attempt 目录分别约 11 MiB/50 MiB；文件数核对一致后，才删除远端这两个精确的 stale runtime directories。检查确认没有残留 a003 训练进程；本地失败证据、archive、command manifests 和先前 failed attempts 均未删除或覆盖。
+- 2026-07-19 00:33 Asia/Shanghai，使用完全相同的 `2ef7aea / 52bdbf...` archive、protocol/dataset manifests 和 10-run queue 完成新的三机 preflight。唯一运行控制变更是将 Controller 单 attempt deadline 显式设置为 `--run-timeout-seconds 172800`（48 h）；它不进入模型数值路径，不改变模型、loss、数据协议、25 global rounds、local epochs、batch size、learning rate 或 server-DA steps。
+- 2026-07-19 00:35 Asia/Shanghai 已启动新 Controller PID `34712`，日志为 `results/c2e_runs/controller_restart_20260719_003506.stdout.log` / `.stderr.log`，身份入口仍为 `results/c2e_runs/latest_controller_launch.json`。它自动创建 `c12_to_c5__b2__s42__a004`，该 attempt 必须从 round 1 重跑完整 25 rounds 并通过 validator；成功后才按已冻结的交替顺序继续后续九项。

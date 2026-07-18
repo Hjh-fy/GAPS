@@ -310,3 +310,9 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 断网使 ECS 的 a002 server process group 未能被自动清理。网络恢复后按远端注册记录验证其 launch token、PID/PGID/start ticks，安全终止该 group；Pi/PC 无残留进程。
 - 两次失败的 ECS/Pi raw evidence 已复制至本地 `results/c2e_runs/raw/` 后，才删除远端的两个 stale attempt directories。冻结 archive 与十个 command manifests 未受影响。
 - 清理后的三机 preflight 通过；当前 Controller PID `47056` 已从 `B2-s42 / a003` 恢复，状态 `preflight_passed / running`。动态监控继续只读 `results/c2e_runs/latest_controller_launch.json`，不要使用旧 PID。
+
+### 12.9 Controller deadline 终止与 a004 重跑（2026-07-19）
+
+- `a003` 并非训练数值失败：Controller stderr 的唯一终止原因是 `TimeoutError: server process exceeded formal timeout`。默认 18,000 s（5 h）在 C2 完成 round 22 后、25-round canonical validation 前终止该 attempt；因此它只能保留为 failed evidence，绝不能从 round 23 续跑或进入任何正式汇总。
+- a003 的远端原始证据已先回收到本地 `results/c2e_runs/raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a003/raw/`：PC/ECS/Pi 文件数分别为 8/142/11（总 161 文件、112,270,916 bytes）。核对后才删除 ECS/Pi 上这一个 stale runtime directory；两台设备均确认无残留训练进程。
+- 同一冻结 archive 再次通过三机 preflight。新 Controller PID `34712` 于 2026-07-19 00:35 Asia/Shanghai 启动并创建 `B2-s42 / a004`；唯一控制层调整是显式 `--run-timeout-seconds 172800`（48 h），不改变算法、数据、模型、loss 或训练超参数。应继续以 `latest_controller_launch.json` 获取实时 PID/log；a004 必须从 round 1 完整重跑、通过 validator 后才可成为 B2 seed-42 的 canonical candidate。
