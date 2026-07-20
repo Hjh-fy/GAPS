@@ -697,6 +697,7 @@ def test_ecs_c2_tunnel_commands_keep_all_flower_endpoints_loopback() -> None:
     assert commands[2][-2:] == ["127.0.0.1:18080:127.0.0.1:18080", "root@c2"]
     assert "-L" in commands[0]
     assert "-R" in commands[1] and "-R" in commands[2]
+    assert all("ServerAliveCountMax=20" in command for command in commands)
     assert all("0.0.0.0" not in " ".join(command) for command in commands)
 
 
@@ -852,11 +853,11 @@ def test_controller_remote_python_streams_long_probe_over_utf8_stdin(
         "-o",
         "BatchMode=yes",
         "-o",
-        "ConnectTimeout=10",
+        "ConnectTimeout=20",
         "-o",
         "ServerAliveInterval=15",
         "-o",
-        "ServerAliveCountMax=2",
+        "ServerAliveCountMax=3",
         "root@ecs",
         "/root/gaps_env/bin/python",
         "-",
@@ -915,6 +916,76 @@ def test_controller_remote_python_preserves_nonzero_failure_detail(
             "gaps@pi", "/home/gaps/GAPS/gaps_rpi_env/bin/python", "print('probe')"
         )
     assert "remote probe failed" in str(exc_info.value)
+
+
+def test_remote_python_classifies_ssh_255_as_transport_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        controller.subprocess,
+        "run",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess(
+            ["ssh"], 255, "", "ssh: transient network failure"
+        ),
+    )
+
+    with pytest.raises(controller.RemoteTransportError, match="transient network"):
+        controller._remote_python(
+            "root@ecs", "/root/gaps_env/bin/python", "print('probe')"
+        )
+
+
+def test_remote_monitor_retries_transient_transport_and_recovers() -> None:
+    process = controller.OwnedProcess(host_id="ecs", label="server", pid=123)
+    states: list[object] = [
+        controller.RemoteTransportError("temporary outage"),
+        (True, None),
+        (False, 0),
+    ]
+    sleeps: list[float] = []
+    events: list[str] = []
+
+    def read_state(_process):
+        value = states.pop(0)
+        if isinstance(value, BaseException):
+            raise value
+        return value
+
+    ticks = iter((0.0, 1.0, 2.0, 3.0, 4.0, 5.0))
+    controller._monitor_remote_server(
+        process,
+        timeout_seconds=60,
+        poll_seconds=1,
+        transport_grace_seconds=10,
+        state_reader=read_state,
+        sleeper=sleeps.append,
+        monotonic=lambda: next(ticks),
+        transport_event=events.append,
+    )
+
+    assert states == []
+    assert sleeps == [1, 1]
+    assert events[0].startswith("transport_lost:")
+    assert events[1] == "transport_recovered"
+
+
+def test_remote_monitor_fails_after_transport_grace() -> None:
+    process = controller.OwnedProcess(host_id="ecs", label="server", pid=123)
+
+    def fail_state(_process):
+        raise controller.RemoteTransportError("still offline")
+
+    ticks = iter((0.0, 1.0, 5.0, 12.0))
+    with pytest.raises(controller.RemoteTransportError, match="grace exceeded"):
+        controller._monitor_remote_server(
+            process,
+            timeout_seconds=60,
+            poll_seconds=1,
+            transport_grace_seconds=10,
+            state_reader=fail_state,
+            sleeper=lambda _seconds: None,
+            monotonic=lambda: next(ticks),
+        )
 
 
 def test_remote_extract_source_verifies_complete_reuse_and_rejects_partial(

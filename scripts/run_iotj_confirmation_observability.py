@@ -53,6 +53,7 @@ DEFAULT_PC_RUNTIME_ROOT = Path(
 ECS_REMOTE_RUNTIME_BASE = "/root/GAPS/confirmation_runtime"
 PI_REMOTE_RUNTIME_BASE = "/home/gaps/GAPS/confirmation_runtime"
 ECS_C2_REMOTE_RUNTIME_BASE = "/root/GAPS/confirmation_runtime_c2"
+REMOTE_MONITOR_TRANSPORT_GRACE_SECONDS = 600.0
 EXPECTED_DEPENDENCY_VERSIONS = {
     "flwr": "1.23.0",
     "protobuf": "4.25.8",
@@ -76,7 +77,7 @@ def build_ecs_c2_tunnel_commands(
         "-o", "BatchMode=yes",
         "-o", "ExitOnForwardFailure=yes",
         "-o", "ServerAliveInterval=30",
-        "-o", "ServerAliveCountMax=3",
+        "-o", "ServerAliveCountMax=20",
         "-N",
     ]
     return (
@@ -151,24 +152,34 @@ OBJECTIVE_RERUN_REASON_CATEGORIES = frozenset(
 )
 
 
+class RemoteTransportError(RuntimeError):
+    reason_category = "transport"
+
+
 def _run_source_over_stdin(
     command: Sequence[str], source: str, *, timeout: int
 ) -> subprocess.CompletedProcess[str]:
     if not isinstance(source, str):
         raise TypeError("Python source must be text")
     argv = [str(item) for item in command]
-    result = subprocess.run(
-        argv,
-        cwd=REPO_ROOT,
-        input=source,
-        text=True,
-        encoding="utf-8",
-        capture_output=True,
-        timeout=timeout,
-    )
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=REPO_ROOT,
+            input=source,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RemoteTransportError(
+            f"remote command timed out after {timeout} seconds: {' '.join(argv)}"
+        ) from exc
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
-        raise RuntimeError(
+        error_type = RemoteTransportError if result.returncode == 255 else RuntimeError
+        raise error_type(
             f"command failed ({result.returncode}): {' '.join(argv)}\n{detail}"
         )
     return result
@@ -194,11 +205,11 @@ def _remote_python(
             "-o",
             "BatchMode=yes",
             "-o",
-            "ConnectTimeout=10",
+            "ConnectTimeout=20",
             "-o",
             "ServerAliveInterval=15",
             "-o",
-            "ServerAliveCountMax=2",
+            "ServerAliveCountMax=3",
             host,
             python_bin,
             "-",
@@ -2874,6 +2885,51 @@ print(json.dumps({{'running': running, 'returncode': returncode}}))
     return bool(report["running"]), report["returncode"]
 
 
+def _monitor_remote_server(
+    process: OwnedProcess,
+    *,
+    timeout_seconds: float,
+    poll_seconds: float,
+    transport_grace_seconds: float = REMOTE_MONITOR_TRANSPORT_GRACE_SECONDS,
+    state_reader: Callable[[OwnedProcess], tuple[bool, int | None]] = _remote_process_state,
+    sleeper: Callable[[float], None] = time.sleep,
+    monotonic: Callable[[], float] = time.monotonic,
+    transport_event: Callable[[str], None] | None = None,
+) -> None:
+    if timeout_seconds <= 0 or poll_seconds <= 0 or transport_grace_seconds <= 0:
+        raise ValueError("monitor timeouts must be positive")
+    deadline = monotonic() + timeout_seconds
+    transport_lost_at: float | None = None
+    while True:
+        try:
+            running, returncode = state_reader(process)
+        except RemoteTransportError as exc:
+            now = monotonic()
+            if transport_lost_at is None:
+                transport_lost_at = now
+                if transport_event is not None:
+                    transport_event(f"transport_lost: {exc}")
+            if now - transport_lost_at >= transport_grace_seconds:
+                raise RemoteTransportError(
+                    "remote server transport grace exceeded: " + str(exc)
+                ) from exc
+            if now >= deadline:
+                raise TimeoutError("server process exceeded formal timeout") from exc
+            sleeper(poll_seconds)
+            continue
+        if transport_lost_at is not None:
+            transport_lost_at = None
+            if transport_event is not None:
+                transport_event("transport_recovered")
+        if not running:
+            if returncode != 0:
+                raise RuntimeError("server process exited unsuccessfully")
+            return
+        if monotonic() >= deadline:
+            raise TimeoutError("server process exceeded formal timeout")
+        sleeper(poll_seconds)
+
+
 def _remote_wait(process: OwnedProcess) -> None:
     source = f"""# REMOTE_WAIT_V1:{process.label}
 import json, time
@@ -3324,16 +3380,14 @@ print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
 
     def monitor(_attempt: Attempt, server: object) -> None:
         assert isinstance(server, OwnedProcess)
-        deadline = time.monotonic() + runtime.timeout_seconds
-        while True:
-            running, returncode = _remote_process_state(server)
-            if not running:
-                if returncode != 0:
-                    raise RuntimeError("server process exited unsuccessfully")
-                return
-            if time.monotonic() >= deadline:
-                raise TimeoutError("server process exceeded formal timeout")
-            time.sleep(runtime.poll_seconds)
+        _monitor_remote_server(
+            server,
+            timeout_seconds=runtime.timeout_seconds,
+            poll_seconds=runtime.poll_seconds,
+            transport_event=lambda message: _append_controller_log(
+                _attempt.path, message
+            ),
+        )
 
     def stop_sampler(_attempt: Attempt, process: object) -> None:
         assert isinstance(process, OwnedProcess)
