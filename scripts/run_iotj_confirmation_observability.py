@@ -51,6 +51,7 @@ DEFAULT_PC_RUNTIME_ROOT = Path(
 )
 ECS_REMOTE_RUNTIME_BASE = "/root/GAPS/confirmation_runtime"
 PI_REMOTE_RUNTIME_BASE = "/home/gaps/GAPS/confirmation_runtime"
+ECS_C2_REMOTE_RUNTIME_BASE = "/root/GAPS/confirmation_runtime_c2"
 EXPECTED_DEPENDENCY_VERSIONS = {
     "flwr": "1.23.0",
     "protobuf": "4.25.8",
@@ -60,6 +61,7 @@ _REMOTE_PYTHON_BINARIES = frozenset(
     {
         "/root/gaps_env/bin/python",
         "/home/gaps/GAPS/gaps_rpi_env/bin/python",
+        "/root/gaps_c2_cpu_env/bin/python",
     }
 )
 VALID_ATTEMPT_STATES = {"running", "failed", "aborted", "invalid", "canonical"}
@@ -1424,6 +1426,9 @@ def deploy_source_archive(
     *,
     ecs_host: str,
     pi_host: str,
+    c2_host: str | None = None,
+    c2_python: str | None = None,
+    c2_runtime_base: str = ECS_C2_REMOTE_RUNTIME_BASE,
     pc_runtime_root: Path = DEFAULT_PC_RUNTIME_ROOT,
     run: Callable[..., subprocess.CompletedProcess[str]] = _run,
     ssh: Callable[..., subprocess.CompletedProcess[str]] = _ssh,
@@ -1433,6 +1438,28 @@ def deploy_source_archive(
     _verify_archive(archive_path, source_manifest)
     source_hash = str(source_manifest["source_archive_sha256"])
     members_hash = str(source_manifest["regular_members_sha256"])
+    if c2_host is not None:
+        if not c2_host or not c2_python:
+            raise ValueError("remote C2 host and Python are both required")
+        if c2_python not in _REMOTE_PYTHON_BINARIES:
+            raise ValueError("remote C2 Python binary is not allowlisted")
+        if not c2_runtime_base.startswith("/"):
+            raise ValueError("remote C2 runtime base must be absolute")
+        return _deploy_remote_source_archives(
+            archive_path,
+            source_hash=source_hash,
+            members_hash=members_hash,
+            source_manifest=source_manifest,
+            remote_rows=(
+                ("ecs", ecs_host, f"{ECS_REMOTE_RUNTIME_BASE}/{source_hash}", "/root/gaps_env/bin/python"),
+                ("pi", pi_host, f"{PI_REMOTE_RUNTIME_BASE}/{source_hash}", "/home/gaps/GAPS/gaps_rpi_env/bin/python"),
+                ("ecs_c2", c2_host, f"{c2_runtime_base}/{source_hash}", c2_python),
+            ),
+            run=run,
+            remote_python=remote_python,
+        )
+    if c2_python is not None or c2_runtime_base != ECS_C2_REMOTE_RUNTIME_BASE:
+        raise ValueError("remote C2 options require --c2-host")
     pc_runtime_parent = Path(pc_runtime_root)
     runtime_parent_entry = _lstat_runtime_component(
         pc_runtime_parent,
@@ -1509,6 +1536,102 @@ def deploy_source_archive(
             "/home/gaps/GAPS/gaps_rpi_env/bin/python",
         ),
     )
+    for host_id, host, root, python_bin in remote_rows:
+        remote_archive = f"{root}/source.tar"
+        remote_src = f"{root}/src"
+        state_output = remote_python(
+            host,
+            python_bin,
+            _remote_deploy_state_source(remote_archive, remote_src),
+            timeout=30,
+        )
+        try:
+            state_report = json.loads(state_output.splitlines()[-1])
+        except (IndexError, json.JSONDecodeError) as exc:
+            raise ArchiveMismatch(f"invalid {host_id} deployment state report") from exc
+        if not isinstance(state_report, dict) or set(state_report) != {"state"}:
+            raise ArchiveMismatch(f"invalid {host_id} deployment state report")
+        state = state_report["state"]
+        if state == "partial":
+            raise ArchiveMismatch(f"partial {host_id} content-addressed runtime")
+        if state not in {"absent", "complete"}:
+            raise ArchiveMismatch(f"invalid {host_id} deployment state")
+        if state == "absent":
+            remote_temp = f"{root}/.source.tar.{uuid.uuid4().hex}.tmp"
+            reserve_output = remote_python(
+                host,
+                python_bin,
+                _remote_reserve_archive_source(remote_temp, root),
+                timeout=30,
+            )
+            try:
+                reserve_report = json.loads(reserve_output.splitlines()[-1])
+            except (IndexError, json.JSONDecodeError) as exc:
+                raise ArchiveMismatch(
+                    f"invalid {host_id} archive reservation report"
+                ) from exc
+            if reserve_report != {"state": "reserved"}:
+                raise ArchiveMismatch(f"invalid {host_id} archive reservation report")
+            transfer = run(
+                ["scp", "-p", str(archive_path), f"{host}:{remote_temp}"],
+                timeout=300,
+            )
+            if transfer.returncode != 0:
+                raise ArchiveMismatch(f"{host_id} source archive transfer failed")
+            install_output = remote_python(
+                host,
+                python_bin,
+                _remote_install_archive_source(
+                    remote_temp, remote_archive, source_hash, root
+                ),
+                timeout=60,
+            )
+            try:
+                install_report = json.loads(install_output.splitlines()[-1])
+            except (IndexError, json.JSONDecodeError) as exc:
+                raise ArchiveMismatch(
+                    f"invalid {host_id} archive installation report"
+                ) from exc
+            if install_report != {"source_archive_sha256": source_hash}:
+                raise ArchiveMismatch(f"invalid {host_id} archive installation report")
+        output = remote_python(
+            host,
+            python_bin,
+            _remote_extract_source(
+                remote_archive,
+                remote_src,
+                source_manifest,
+                allow_fresh_extract=state == "absent",
+            ),
+            timeout=300,
+        )
+        try:
+            report = json.loads(output.splitlines()[-1])
+        except (IndexError, json.JSONDecodeError) as exc:
+            raise ArchiveMismatch(f"invalid {host_id} archive verification report") from exc
+        if report != {
+            "source_archive_sha256": source_hash,
+            "regular_members_sha256": members_hash,
+        }:
+            raise ArchiveMismatch(f"{host_id} archive verification mismatch")
+        deployments[host_id] = HostDeployment(
+            host_id, remote_archive, remote_src, source_hash, members_hash
+        )
+    return deployments
+
+
+def _deploy_remote_source_archives(
+    archive_path: Path,
+    *,
+    source_hash: str,
+    members_hash: str,
+    source_manifest: Mapping[str, Any],
+    remote_rows: Sequence[tuple[str, str, str, str]],
+    run: Callable[..., subprocess.CompletedProcess[str]],
+    remote_python: Callable[..., str],
+) -> dict[str, HostDeployment]:
+    """Deploy an immutable archive to remote hosts without creating PC state."""
+    deployments: dict[str, HostDeployment] = {}
     for host_id, host, root, python_bin in remote_rows:
         remote_archive = f"{root}/source.tar"
         remote_src = f"{root}/src"

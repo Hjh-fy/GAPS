@@ -537,6 +537,60 @@ def test_source_deployment_uses_one_tar_for_all_hosts_and_fresh_pc_src(
     assert (Path(deployments["pc"].src_path) / "app.py").is_file()
 
 
+def test_remote_c2_deployment_skips_local_pc_runtime(tmp_path: Path) -> None:
+    archive_path, manifest = _source_fixture(tmp_path / "source")
+    run_calls: list[list[str]] = []
+
+    def fake_run(command, **_kwargs):
+        run_calls.append([str(item) for item in command])
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    remote_report = json.dumps(
+        {
+            "source_archive_sha256": manifest["source_archive_sha256"],
+            "regular_members_sha256": manifest["regular_members_sha256"],
+        }
+    )
+
+    def fake_remote_python(_host, _python, source, **_kwargs):
+        if "REMOTE_DEPLOY_STATE_V1" in source:
+            return json.dumps({"state": "absent"})
+        if "REMOTE_RESERVE_ARCHIVE_V1" in source:
+            return json.dumps({"state": "reserved"})
+        if "REMOTE_INSTALL_ARCHIVE_V1" in source:
+            return json.dumps(
+                {"source_archive_sha256": manifest["source_archive_sha256"]}
+            )
+        return remote_report
+
+    runtime = tmp_path / "must-not-exist"
+    deployments = deploy_source_archive(
+        archive_path,
+        manifest,
+        ecs_host="root@ecs",
+        pi_host="gaps@pi",
+        c2_host="root@c2",
+        c2_python="/root/gaps_c2_cpu_env/bin/python",
+        c2_runtime_base="/root/GAPS/confirmation_runtime_c2",
+        pc_runtime_root=runtime,
+        run=fake_run,
+        ssh=lambda *_args, **_kwargs: pytest.fail("deployment used ssh helper"),
+        remote_python=fake_remote_python,
+    )
+
+    assert set(deployments) == {"ecs", "pi", "ecs_c2"}
+    assert deployments["ecs_c2"].host_id == "ecs_c2"
+    assert str(deployments["ecs_c2"].src_path).startswith(
+        "/root/GAPS/confirmation_runtime_c2/"
+    )
+    assert not runtime.exists()
+    assert {call[3].split(":", 1)[0] for call in run_calls if call[0] == "scp"} == {
+        "root@ecs",
+        "gaps@pi",
+        "root@c2",
+    }
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows MAX_PATH regression")
 def test_pc_deploy_temp_name_fits_long_content_root(tmp_path: Path) -> None:
     archive_path, manifest = _source_fixture(tmp_path / "source")
