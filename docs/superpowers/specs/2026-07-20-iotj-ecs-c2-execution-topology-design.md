@@ -66,8 +66,19 @@ than relabeling the PC. It will separately launch, own, sample and recover:
 
 The topology manifest binds C2 host identity, IP-independent host label,
 archive and dataset hashes, runtime dependency versions, and resource sampler
-metadata. It is separate from the algorithm manifest. Result labels must use
-`ecs-c2` (never `pc-c2`) and record whether the Pi uses the PC hotspot.
+metadata. It is separate from the algorithm manifest.  Crucially, it must bind
+the complete `run_id -> algorithm_config_sha256` mapping for all ten frozen
+runs, rather than a single configuration hash: B2/B5 and each seed have
+distinct frozen configuration hashes. Result labels must use `ecs-c2` (never
+`pc-c2`) and record whether the Pi uses the PC hotspot.
+
+The controller machine retains the existing loopback-only server tunnel and
+creates a separate loopback reverse tunnel to both remote clients. Thus C1 and
+ECS-C2 each connect to `127.0.0.1:18080` on their own host; the Flower port is
+not newly exposed on either ECS public interface. C2 receives only its own
+immutable `client_2` dataset subset and a subset manifest. The full multi-client
+dataset manifest remains an immutable protocol input, but cannot be used as the
+remote-C2 file-presence check.
 
 ## Gates and stopping rules
 

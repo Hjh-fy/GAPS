@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+import scripts.generate_iotj_ecs_c2_topology_manifest as topology_generator
 import scripts.run_iotj_confirmation_observability as controller
 from scripts.freeze_iotj_confirmation_protocol import (
     CONFIRMATION_SCHEDULE,
@@ -48,6 +49,97 @@ PROVENANCE = Provenance(
     dataset_manifest_sha256="c" * 64,
     algorithm_config_sha256="d" * 64,
 )
+
+
+def _write_ecs_c2_topology_manifest(
+    path: Path, *, archive_sha: str, config_by_run: dict[str, str]
+) -> Path:
+    payload = {
+        "topology_id": "ecs_c2_pi_c1",
+        "source_archive_sha256": archive_sha,
+        "algorithm_config_sha256_by_run": config_by_run,
+        "hosts": {
+            "C2": {
+                "host_id": "ecs-c2",
+                "ssh_host": "root@114.55.171.63",
+            }
+        },
+    }
+    payload["execution_topology_manifest_sha256"] = canonical_sha256(payload)
+    path.write_text(
+        json.dumps(payload),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_ecs_c2_topology_manifest_binds_every_frozen_run_hash(
+    tmp_path: Path,
+) -> None:
+    configs = {
+        "c12_to_c5__b2__s42": "a" * 64,
+        "c12_to_c5__b5__s42": "b" * 64,
+    }
+    path = _write_ecs_c2_topology_manifest(
+        tmp_path / "topology.json", archive_sha="c" * 64, config_by_run=configs
+    )
+
+    actual = controller.load_execution_topology_manifest(
+        path, expected_archive_sha="c" * 64, expected_config_by_run=configs
+    )
+
+    assert actual["algorithm_config_sha256_by_run"] == configs
+
+
+def test_ecs_c2_topology_manifest_rejects_single_run_config_mismatch(
+    tmp_path: Path,
+) -> None:
+    path = _write_ecs_c2_topology_manifest(
+        tmp_path / "topology.json",
+        archive_sha="c" * 64,
+        config_by_run={"c12_to_c5__b2__s42": "a" * 64},
+    )
+
+    with pytest.raises(RuntimeError, match="algorithm config"):
+        controller.load_execution_topology_manifest(
+            path,
+            expected_archive_sha="c" * 64,
+            expected_config_by_run={"c12_to_c5__b2__s42": "b" * 64},
+        )
+
+
+def test_ecs_c2_topology_manifest_rejects_self_hash_mismatch(tmp_path: Path) -> None:
+    configs = {"c12_to_c5__b2__s42": "a" * 64}
+    path = _write_ecs_c2_topology_manifest(
+        tmp_path / "topology.json", archive_sha="c" * 64, config_by_run=configs
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["hosts"]["C2"]["ssh_host"] = "root@wrong-host"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="self SHA-256"):
+        controller.load_execution_topology_manifest(
+            path, expected_archive_sha="c" * 64, expected_config_by_run=configs
+        )
+
+
+def test_ecs_c2_topology_generator_binds_exact_protocol_schedule(tmp_path: Path) -> None:
+    protocol = {
+        "source_archive_sha256": "a" * 64,
+        "schedule": [
+            {"run_id": "c12_to_c5__b2__s42", "algorithm_config_sha256": "b" * 64},
+            {"run_id": "c12_to_c5__b5__s42", "algorithm_config_sha256": "c" * 64},
+        ],
+    }
+
+    manifest = topology_generator.build_execution_topology_manifest(protocol)
+
+    assert manifest["source_archive_sha256"] == "a" * 64
+    assert manifest["algorithm_config_sha256_by_run"] == {
+        "c12_to_c5__b2__s42": "b" * 64,
+        "c12_to_c5__b5__s42": "c" * 64,
+    }
+    assert manifest["hosts"]["C2"]["host_id"] == "ecs-c2"
 
 
 def _read_status(path: Path) -> dict[str, object]:

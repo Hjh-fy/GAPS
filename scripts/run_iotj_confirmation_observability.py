@@ -297,6 +297,45 @@ class FrozenInputs:
     runs: tuple[FrozenRun, ...]
 
 
+def load_execution_topology_manifest(
+    path: Path,
+    *,
+    expected_archive_sha: str,
+    expected_config_by_run: Mapping[str, str],
+) -> Mapping[str, Any]:
+    """Load and bind the remote-C2 placement to every frozen run config."""
+    if not path.is_file() or path.is_symlink():
+        raise RuntimeError(f"execution topology manifest must be a regular file: {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("execution topology manifest is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("execution topology manifest must be an object")
+    claimed_hash = payload.get("execution_topology_manifest_sha256")
+    if not isinstance(claimed_hash, str) or not _HASH_RE.fullmatch(claimed_hash):
+        raise RuntimeError("execution topology manifest self SHA-256 is invalid")
+    unhashed = {
+        key: value
+        for key, value in payload.items()
+        if key != "execution_topology_manifest_sha256"
+    }
+    if canonical_sha256(unhashed) != claimed_hash:
+        raise RuntimeError("execution topology manifest self SHA-256 mismatch")
+    if payload.get("topology_id") != "ecs_c2_pi_c1":
+        raise RuntimeError("execution topology identifier mismatch")
+    if payload.get("source_archive_sha256") != expected_archive_sha:
+        raise RuntimeError("execution topology source archive mismatch")
+    if payload.get("algorithm_config_sha256_by_run") != dict(expected_config_by_run):
+        raise RuntimeError("execution topology algorithm config mapping mismatch")
+    if payload.get("hosts", {}).get("C2") != {
+        "host_id": "ecs-c2",
+        "ssh_host": "root@114.55.171.63",
+    }:
+        raise RuntimeError("execution topology C2 host mismatch")
+    return payload
+
+
 @dataclass(frozen=True)
 class OwnedProcess:
     host_id: str
