@@ -175,7 +175,7 @@ def _run_source_over_stdin(
 
 
 def _remote_python(
-    host: str, python_bin: str, source: str, *, timeout: int = 30
+    host: str, python_bin: str, source: str, *, timeout: int = 120
 ) -> str:
     if python_bin not in _REMOTE_PYTHON_BINARIES or not PurePosixPath(
         python_bin
@@ -416,6 +416,12 @@ class ProductionRuntime:
     poll_seconds: float
     timeout_seconds: float
     pc_runtime_root: Path
+    c2_host: str | None = None
+    c2_python: str | None = None
+    c2_runtime_base: str = ECS_C2_REMOTE_RUNTIME_BASE
+    c2_data_root: str | None = None
+    c2_dataset_subset: Mapping[str, Any] | None = None
+    execution_topology: Mapping[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -2026,17 +2032,21 @@ def write_host_contexts(
     group_id: str,
     seed: int,
     provenance: Provenance,
+    c2_host_id: str = "pc-c2",
 ) -> dict[str, Path]:
     validate_requested_run(group_id, seed)
     provenance.require_complete()
     if attempt.run_id != confirmation_run_id(group_id, seed):
         raise ValueError("attempt and requested run identity mismatch")
+    if c2_host_id not in {"pc-c2", "ecs-c2"}:
+        raise ValueError("C2 context host identity is invalid")
+    c2_prefix = "pc" if c2_host_id == "pc-c2" else "ecs_c2"
     contexts = (
         ("ecs_server", "ecs", "server", None),
         ("pi_client", "pi-c1", "client", "C1"),
         ("pi_sampler", "pi-c1", "resource_sampler", "C1"),
-        ("pc_client", "pc-c2", "client", "C2"),
-        ("pc_sampler", "pc-c2", "resource_sampler", "C2"),
+        (f"{c2_prefix}_client", c2_host_id, "client", "C2"),
+        (f"{c2_prefix}_sampler", c2_host_id, "resource_sampler", "C2"),
     )
     result: dict[str, Path] = {}
     for name, host_id, producer, client_id in contexts:
@@ -2262,6 +2272,62 @@ def _host_attempt_root(deployment: HostDeployment, attempt_id: str) -> str:
     return str(archive_parent / "attempts" / attempt_id)
 
 
+def _remote_attempt_binding(
+    attempt: Attempt,
+    *,
+    topology: Mapping[str, Any],
+    deployments: Mapping[str, HostDeployment],
+) -> dict[str, Any]:
+    """Bind an ECS-C2 attempt to globally unique, auditable remote roots."""
+    _provenance, bound = _load_bound_provenance(attempt.path)
+    owner = bound.get("controller_owner")
+    owner_instance_id = owner.get("instance_id") if isinstance(owner, Mapping) else None
+    if not isinstance(owner_instance_id, str) or not _INSTANCE_RE.fullmatch(owner_instance_id):
+        raise RuntimeError("attempt controller owner instance identity is invalid")
+    topology_id = topology.get("topology_id")
+    topology_sha = topology.get("execution_topology_manifest_sha256")
+    if topology_id != "ecs_c2_pi_c1":
+        raise RuntimeError("remote attempt topology identifier mismatch")
+    if not isinstance(topology_sha, str) or not _HASH_RE.fullmatch(topology_sha):
+        raise RuntimeError("remote attempt topology manifest SHA-256 is invalid")
+    remote_directory_name = f"{attempt.attempt_id}__{owner_instance_id}"
+    roots = {
+        host_id: str(
+            PurePosixPath(str(deployments[host_id].archive_path)).parent
+            / "attempts"
+            / topology_id
+            / remote_directory_name
+        )
+        for host_id in ("ecs", "pi", "ecs_c2")
+    }
+    payload: dict[str, Any] = {
+        "schema_version": "iotj.remote_attempt_binding.v1",
+        "run_id": attempt.run_id,
+        "attempt_id": attempt.attempt_id,
+        "topology_id": topology_id,
+        "execution_topology_manifest_sha256": topology_sha,
+        "controller_owner_instance_id": owner_instance_id,
+        "remote_directory_name": remote_directory_name,
+        "remote_roots": roots,
+    }
+    payload["binding_sha256"] = canonical_sha256(payload)
+    return payload
+
+
+def bind_remote_attempt_paths(
+    attempt: Attempt,
+    *,
+    topology: Mapping[str, Any],
+    deployments: Mapping[str, HostDeployment],
+) -> dict[str, Any]:
+    payload = _remote_attempt_binding(
+        attempt, topology=topology, deployments=deployments
+    )
+    _write_json_exclusive(attempt.path / "execution_topology_manifest.json", topology)
+    _write_json_exclusive(attempt.path / "remote_attempt_binding.json", payload)
+    return payload
+
+
 def _algorithm_payload(frozen_run: FrozenRun) -> dict[str, Any]:
     return {
         field: frozen_run.manifest[field]
@@ -2357,28 +2423,48 @@ print(json.dumps({{
 def preflight_frozen_run(runtime: ProductionRuntime, attempt_id: str) -> None:
     commands = runtime.frozen_run.manifest["commands"]
     data_root_name = str(runtime.frozen_run.manifest["protocol"]["data_root"])
-    roots = {
+    roots: dict[str, str] = {
         "ecs": f"/root/GAPS/dataset/{data_root_name}",
         "pi": _command_option(commands["client_c1_pi"], "--data-root"),
-        "pc": _command_option(commands["client_c2_pc"], "--data-root"),
     }
+    if runtime.c2_host is not None:
+        if not runtime.c2_python or not runtime.c2_data_root or runtime.c2_dataset_subset is None:
+            raise RuntimeError("remote C2 preflight inputs are incomplete")
+        roots["ecs_c2"] = runtime.c2_data_root
+    else:
+        roots["pc"] = _command_option(commands["client_c2_pc"], "--data-root")
     reports: dict[str, Mapping[str, Any]] = {}
-    remote_rows = (
+    remote_rows: list[tuple[str, str, str]] = [
         ("ecs", runtime.ecs_host, "/root/gaps_env/bin/python"),
         ("pi", runtime.pi_host, "/home/gaps/GAPS/gaps_rpi_env/bin/python"),
-    )
+    ]
+    if runtime.c2_host is not None:
+        remote_rows.append(("ecs_c2", runtime.c2_host, runtime.c2_python))
     for host_id, host, python_bin in remote_rows:
         source = _host_preflight_source(
             host_id=host_id,
             attempt_id=attempt_id,
             deployment=runtime.deployments[host_id],
             dataset_root=roots[host_id],
-            dataset_manifest=runtime.frozen.dataset_manifest,
+            dataset_manifest=(
+                runtime.c2_dataset_subset
+                if host_id == "ecs_c2"
+                else runtime.frozen.dataset_manifest
+            ),
             frozen_run=runtime.frozen_run,
         )
         reports[host_id] = json.loads(
             _remote_python(host, python_bin, source, timeout=300).splitlines()[-1]
         )
+    if runtime.c2_host is not None:
+        for host_id in ("ecs", "pi", "ecs_c2"):
+            validate_host_preflight(
+                reports[host_id],
+                host_id=host_id,
+                provenance=runtime.frozen_run.provenance,
+                regular_members_sha256=runtime.deployments[host_id].regular_members_sha256,
+            )
+        return
     pc_source = _host_preflight_source(
         host_id="pc",
         attempt_id=attempt_id,
@@ -2863,15 +2949,36 @@ def build_production_hooks(
 
     def paths(attempt: Attempt) -> dict[str, str | Path]:
         deployments = active_runtime().deployments
-        ecs_root = _host_attempt_root(deployments["ecs"], attempt.attempt_id)
-        pi_root = _host_attempt_root(deployments["pi"], attempt.attempt_id)
-        return {
+        active = active_runtime()
+        binding = state.get("remote_attempt_binding")
+        if active.c2_host is not None:
+            if not isinstance(binding, Mapping):
+                raise RuntimeError("remote C2 attempt paths are not immutably bound")
+            roots = binding.get("remote_roots")
+            if not isinstance(roots, Mapping):
+                raise RuntimeError("remote C2 attempt roots are invalid")
+            ecs_root = str(roots["ecs"])
+            pi_root = str(roots["pi"])
+        else:
+            ecs_root = _host_attempt_root(deployments["ecs"], attempt.attempt_id)
+            pi_root = _host_attempt_root(deployments["pi"], attempt.attempt_id)
+        paths: dict[str, str | Path] = {
             "ecs_root": ecs_root,
             "ecs_raw": f"{ecs_root}/raw/server",
             "pi_root": pi_root,
             "pi_raw": f"{pi_root}/raw/client_c1",
             "pc_raw": attempt.path / "raw" / "pc",
         }
+        if active.c2_host is not None:
+            c2_root = str(roots["ecs_c2"])
+            paths.update(
+                {
+                    "c2_root": c2_root,
+                    "c2_raw": f"{c2_root}/raw/client_c2",
+                    "ecs_c2_raw_local": attempt.path / "raw" / "ecs_c2",
+                }
+            )
+        return paths
 
     def prepare(attempt: Attempt) -> None:
         deployments = deploy_source_archive(
@@ -2879,6 +2986,9 @@ def build_production_hooks(
             runtime.frozen.source_manifest,
             ecs_host=runtime.ecs_host,
             pi_host=runtime.pi_host,
+            c2_host=runtime.c2_host,
+            c2_python=runtime.c2_python,
+            c2_runtime_base=runtime.c2_runtime_base,
             pc_runtime_root=runtime.pc_runtime_root,
             run=_run,
             ssh=_ssh,
@@ -2886,11 +2996,20 @@ def build_production_hooks(
         )
         prepared_runtime = replace(runtime, deployments=deployments)
         state["runtime"] = prepared_runtime
+        if runtime.c2_host is not None:
+            if runtime.execution_topology is None:
+                raise RuntimeError("remote C2 execution topology is not bound")
+            state["remote_attempt_binding"] = bind_remote_attempt_paths(
+                attempt,
+                topology=runtime.execution_topology,
+                deployments=deployments,
+            )
         context_paths = write_host_contexts(
             attempt,
             group_id=runtime.frozen_run.group_id,
             seed=runtime.frozen_run.seed,
             provenance=runtime.frozen_run.provenance,
+            c2_host_id="ecs-c2" if runtime.c2_host is not None else "pc-c2",
         )
         state["contexts"] = context_paths
         runtime_paths = paths(attempt)
@@ -2931,16 +3050,26 @@ def build_production_hooks(
                 encoding="utf-8",
                 newline="\n",
             )
-        for host, root in (
+        remote_roots: list[tuple[str, str]] = [
             (runtime.ecs_host, runtime_paths["ecs_root"]),
             (runtime.pi_host, runtime_paths["pi_root"]),
-        ):
+        ]
+        if runtime.c2_host is not None:
+            remote_roots.append((runtime.c2_host, runtime_paths["c2_root"]))
+        for host, root in remote_roots:
             _ssh(host, f"test ! -e '{root}' && mkdir -p '{root}/contexts' '{root}/raw'")
-        remote_contexts = (
+        remote_contexts: list[tuple[Path, str, str]] = [
             (context_paths["ecs_server"], runtime.ecs_host, f"{runtime_paths['ecs_root']}/contexts/server.json"),
             (context_paths["pi_client"], runtime.pi_host, f"{runtime_paths['pi_root']}/contexts/client.json"),
             (context_paths["pi_sampler"], runtime.pi_host, f"{runtime_paths['pi_root']}/contexts/sampler.json"),
-        )
+        ]
+        if runtime.c2_host is not None:
+            remote_contexts.extend(
+                [
+                    (context_paths["ecs_c2_client"], runtime.c2_host, f"{runtime_paths['c2_root']}/contexts/client.json"),
+                    (context_paths["ecs_c2_sampler"], runtime.c2_host, f"{runtime_paths['c2_root']}/contexts/sampler.json"),
+                ]
+            )
         for local, host, remote in remote_contexts:
             _run(["scp", "-p", str(local), f"{host}:{remote}"], timeout=120)
         if smoke is not None and smoke.initial_checkpoint_source is not None:
@@ -3085,11 +3214,38 @@ print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
 
     def launch_pc_client(attempt: Attempt) -> OwnedProcess:
         runtime_paths = state["paths"]
-        deployments = active_runtime().deployments
+        active = active_runtime()
+        deployments = active.deployments
         source_commands = (
             state["commands"] if smoke is not None else runtime.frozen_run.manifest["commands"]
         )
         command = list(source_commands["client_c2_pc"])
+        if active.c2_host is not None:
+            if not active.c2_python or not active.c2_data_root:
+                raise RuntimeError("remote C2 runtime is incomplete")
+            command[0] = active.c2_python
+            command = _replace_command_option(command, "--data-root", active.c2_data_root)
+            if smoke is None or smoke.observer_enabled:
+                command = _replace_command_option(
+                    command,
+                    "--observer-context",
+                    f"{runtime_paths['c2_root']}/contexts/client.json",
+                )
+                command = _replace_command_option(
+                    command, "--observer-events", f"{runtime_paths['c2_raw']}/events.jsonl"
+                )
+            return _remote_launch_process(
+                host_id="ecs_c2",
+                label="ecs-c2-client",
+                host=active.c2_host,
+                python_bin=active.c2_python,
+                command=command,
+                cwd=str(deployments["ecs_c2"].src_path),
+                log_path=f"{runtime_paths['c2_raw']}/client.log",
+                exit_path=f"{runtime_paths['c2_raw']}/client.exit",
+                python_path=str(deployments["ecs_c2"].src_path),
+                registration_path=f"{runtime_paths['c2_root']}/raw/ecs-c2-client.registration.json",
+            )
         command[0] = sys.executable
         if smoke is None or smoke.observer_enabled:
             command = _replace_command_option(
@@ -3112,7 +3268,38 @@ print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
     def launch_pc_sampler(attempt: Attempt, client: object) -> OwnedProcess:
         assert isinstance(client, OwnedProcess)
         runtime_paths = state["paths"]
-        deployments = active_runtime().deployments
+        active = active_runtime()
+        deployments = active.deployments
+        if active.c2_host is not None:
+            if not active.c2_python:
+                raise RuntimeError("remote C2 Python is missing")
+            stop_path = f"{runtime_paths['c2_raw']}/sampler.stop"
+            command = [
+                active.c2_python,
+                "-m",
+                "scripts.sample_iotj_process_resources",
+                "--pid",
+                str(client.pid),
+                "--observer-context",
+                f"{runtime_paths['c2_root']}/contexts/sampler.json",
+                "--observer-events",
+                f"{runtime_paths['c2_raw']}/resource.jsonl",
+                "--stop-file",
+                stop_path,
+            ]
+            process = _remote_launch_process(
+                host_id="ecs_c2",
+                label="ecs-c2-sampler",
+                host=active.c2_host,
+                python_bin=active.c2_python,
+                command=command,
+                cwd=str(deployments["ecs_c2"].src_path),
+                log_path=f"{runtime_paths['c2_raw']}/sampler.log",
+                exit_path=f"{runtime_paths['c2_raw']}/sampler.exit",
+                python_path=str(deployments["ecs_c2"].src_path),
+                registration_path=f"{runtime_paths['c2_root']}/raw/ecs-c2-sampler.registration.json",
+            )
+            return replace(process, stop_path=stop_path)
         stop_path = Path(runtime_paths["pc_raw"]) / "sampler.stop"
         command = [
             sys.executable,
@@ -3169,10 +3356,14 @@ print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
     def recover(attempt: Attempt) -> None:
         runtime_paths = state["paths"]
         raw_root = attempt.path / "raw"
-        for host_id, host, remote in (
+        recovery_rows: list[tuple[str, str, str | Path]] = [
             ("ecs", runtime.ecs_host, runtime_paths["ecs_raw"]),
             ("pi", runtime.pi_host, runtime_paths["pi_raw"]),
-        ):
+        ]
+        active = active_runtime()
+        if active.c2_host is not None:
+            recovery_rows.append(("ecs_c2", active.c2_host, runtime_paths["c2_raw"]))
+        for host_id, host, remote in recovery_rows:
             destination = raw_root / host_id
             if destination.exists() or destination.is_symlink():
                 raise FileExistsError(f"refusing to overwrite raw evidence: {destination}")
@@ -3210,7 +3401,11 @@ print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
     return LifecycleHooks(
         prepare=prepare,
         launch_server=launch_server,
-        start_tunnels=lambda _attempt: _start_tunnels(runtime.ecs_host, runtime.pi_host),
+        start_tunnels=lambda _attempt: (
+            _start_ecs_c2_tunnels(runtime.ecs_host, runtime.pi_host, runtime.c2_host)
+            if runtime.c2_host is not None
+            else _start_tunnels(runtime.ecs_host, runtime.pi_host)
+        ),
         launch_pi_client=launch_pi_client,
         launch_pi_sampler=launch_pi_sampler,
         launch_pc_client=launch_pc_client,
@@ -3494,6 +3689,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--ecs-host", default="root@121.40.139.213")
     parser.add_argument("--pi-hosts", default="gaps@192.168.31.184")
+    parser.add_argument("--c2-host")
+    parser.add_argument("--c2-python")
+    parser.add_argument("--c2-runtime-base", default=ECS_C2_REMOTE_RUNTIME_BASE)
+    parser.add_argument("--c2-data-root")
+    parser.add_argument("--c2-dataset-subset-manifest", type=Path)
+    parser.add_argument("--execution-topology-manifest", type=Path)
     parser.add_argument(
         "--runs",
         default=",".join(f"{group}:{seed}" for group, seed in DEFAULT_QUEUE),
@@ -3558,6 +3759,23 @@ def _select_frozen_runs(
         raise ValueError(f"requested run is absent from frozen inputs: {exc.args[0]}") from exc
 
 
+def _load_c2_subset_manifest(path: Path, frozen: FrozenInputs) -> Mapping[str, Any]:
+    payload = _load_json(Path(path))
+    claimed = payload.get("dataset_subset_manifest_sha256")
+    unhashed = {key: value for key, value in payload.items() if key != "dataset_subset_manifest_sha256"}
+    if not isinstance(claimed, str) or not _HASH_RE.fullmatch(claimed) or canonical_sha256(unhashed) != claimed:
+        raise ValueError("C2 dataset subset manifest self SHA-256 mismatch")
+    if payload.get("client_id") != 2 or payload.get("parent_dataset_manifest_sha256") != frozen.protocol.get("dataset_manifest_sha256"):
+        raise ValueError("C2 dataset subset manifest parent/client mismatch")
+    files = payload.get("files")
+    if not isinstance(files, list) or not files or any(
+        not isinstance(row, Mapping) or not str(row.get("relative_path", "")).startswith("client_2/")
+        for row in files
+    ):
+        raise ValueError("C2 dataset subset manifest scope is invalid")
+    return payload
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.poll_seconds <= 0 or args.run_timeout_seconds <= 0:
@@ -3567,6 +3785,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.validate_inputs_only and args.preflight_only:
         raise ValueError("validation-only and preflight-only modes are mutually exclusive")
     frozen = _validate_cli_inputs(args)
+    c2_subset: Mapping[str, Any] | None = None
+    if args.c2_host is not None:
+        if not all((args.c2_python, args.c2_data_root, args.c2_dataset_subset_manifest, args.execution_topology_manifest)):
+            raise ValueError("remote C2 requires Python, data root, subset manifest, and topology manifest")
+        expected_config_by_run = {run.run_id: str(run.provenance.algorithm_config_sha256) for run in frozen.runs}
+        topology = load_execution_topology_manifest(
+            args.execution_topology_manifest,
+            expected_archive_sha=str(frozen.source_manifest["source_archive_sha256"]),
+            expected_config_by_run=expected_config_by_run,
+        )
+        if topology["hosts"]["C2"]["ssh_host"] != args.c2_host:
+            raise ValueError("remote C2 host does not match topology manifest")
+        c2_subset = _load_c2_subset_manifest(args.c2_dataset_subset_manifest, frozen)
+    elif any((args.c2_python, args.c2_data_root, args.c2_dataset_subset_manifest, args.execution_topology_manifest)):
+        raise ValueError("remote C2 options require --c2-host")
     requested = _parse_requested_runs(args.runs)
     selected_runs = _select_frozen_runs(frozen, requested)
     if args.validate_inputs_only:
@@ -3602,6 +3835,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             ecs_host=args.ecs_host,
             pi_host=pi_host,
             pc_runtime_root=args.pc_runtime_root,
+            c2_host=args.c2_host,
+            c2_python=args.c2_python,
+            c2_runtime_base=args.c2_runtime_base,
             run=_run,
             ssh=_ssh,
             remote_python=_remote_python,
@@ -3619,6 +3855,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             poll_seconds=args.poll_seconds,
             timeout_seconds=args.run_timeout_seconds,
             pc_runtime_root=args.pc_runtime_root,
+            c2_host=args.c2_host,
+            c2_python=args.c2_python,
+            c2_runtime_base=args.c2_runtime_base,
+            c2_data_root=args.c2_data_root,
+            c2_dataset_subset=c2_subset,
+            execution_topology=topology if args.c2_host is not None else None,
         )
         if args.preflight_only:
             preflight_frozen_run(runtime, f"{frozen_run.run_id}__a000")

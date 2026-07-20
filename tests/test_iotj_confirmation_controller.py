@@ -33,6 +33,7 @@ from scripts.run_iotj_confirmation_observability import (
     ValidationOutcome,
     allocate_attempt,
     bind_attempt_provenance,
+    bind_remote_attempt_paths,
     copy_evidence_without_overwrite,
     deploy_source_archive,
     mark_attempt,
@@ -161,6 +162,79 @@ def test_c2_subset_manifest_contains_only_client_2_files() -> None:
         "client_2/train_features.npy",
     ]
     assert all(row["relative_path"].startswith("client_2/") for row in subset["files"])
+
+
+def test_remote_c2_contexts_use_ecs_identity_and_distinct_names(tmp_path: Path) -> None:
+    attempt = _allocate_bound(tmp_path, "c12_to_c5__b2__s42")
+
+    contexts = controller.write_host_contexts(
+        attempt,
+        group_id="B2",
+        seed=42,
+        provenance=PROVENANCE,
+        c2_host_id="ecs-c2",
+    )
+
+    assert {"ecs_c2_client", "ecs_c2_sampler"}.issubset(contexts)
+    assert "pc_client" not in contexts
+    client = json.loads(contexts["ecs_c2_client"].read_text(encoding="utf-8"))
+    sampler = json.loads(contexts["ecs_c2_sampler"].read_text(encoding="utf-8"))
+    assert client["host_id"] == sampler["host_id"] == "ecs-c2"
+    assert client["client_id"] == sampler["client_id"] == "C2"
+
+
+def _fake_remote_deployments(root: str) -> dict[str, controller.HostDeployment]:
+    return {
+        host_id: controller.HostDeployment(
+            host_id=host_id,
+            archive_path=f"{root}/{host_id}/source.tar",
+            src_path=f"{root}/{host_id}/src",
+            source_archive_sha256=PROVENANCE.source_archive_sha256,
+            regular_members_sha256="e" * 64,
+        )
+        for host_id in ("ecs", "pi", "ecs_c2")
+    }
+
+
+def test_ecs_c2_remote_binding_is_unique(
+    tmp_path: Path,
+) -> None:
+    topology_path = _write_ecs_c2_topology_manifest(
+        tmp_path / "topology.json",
+        archive_sha=str(PROVENANCE.source_archive_sha256),
+        config_by_run={"c12_to_c5__b2__s42": str(PROVENANCE.algorithm_config_sha256)},
+    )
+    topology = json.loads(topology_path.read_text(encoding="utf-8"))
+    first = _allocate_bound(tmp_path / "first", "c12_to_c5__b2__s42")
+    second = _allocate_bound(tmp_path / "second", "c12_to_c5__b2__s42")
+
+    first_binding = bind_remote_attempt_paths(
+        first,
+        topology=topology,
+        deployments=_fake_remote_deployments("/runtime"),
+    )
+    second_binding = bind_remote_attempt_paths(
+        second,
+        topology=topology,
+        deployments=_fake_remote_deployments("/runtime"),
+    )
+
+    assert first.attempt_id == second.attempt_id
+    assert first_binding["remote_directory_name"] != second_binding["remote_directory_name"]
+    assert set(first_binding["remote_roots"]) == {"ecs", "pi", "ecs_c2"}
+    for root in first_binding["remote_roots"].values():
+        assert f"/attempts/ecs_c2_pi_c1/{first.attempt_id}__" in root
+        assert f"/attempts/{first.attempt_id}" not in root
+    stored = json.loads(
+        (first.path / "remote_attempt_binding.json").read_text(encoding="utf-8")
+    )
+    assert stored == first_binding
+    with pytest.raises(FileExistsError):
+        bind_remote_attempt_paths(
+            first,
+            topology=topology,
+            deployments=_fake_remote_deployments("/runtime"),
+        )
 
 
 def _read_status(path: Path) -> dict[str, object]:
@@ -797,6 +871,21 @@ def test_controller_remote_python_streams_long_probe_over_utf8_stdin(
         "capture_output": True,
         "timeout": 123,
     }
+
+
+def test_controller_remote_python_default_timeout_allows_slow_content_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_run(_command, **kwargs):
+        calls.append(dict(kwargs))
+        return subprocess.CompletedProcess([], 0, "ok\n", "")
+
+    monkeypatch.setattr(controller.subprocess, "run", fake_run)
+
+    assert controller._remote_python("root@ecs", "/root/gaps_env/bin/python", "print(1)") == "ok"
+    assert calls[0]["timeout"] == 120
 
 
 def test_controller_remote_python_rejects_unapproved_binary(

@@ -148,12 +148,19 @@ SAMPLER_EVENT_TYPES = {
     "producer_failure",
 }
 
-_EXPECTED_EVIDENCE: dict[str, tuple[str, str, str | None]] = {
+_PC_EXPECTED_EVIDENCE: dict[str, tuple[str, str, str | None]] = {
     "raw/ecs/events.jsonl": ("ecs", "server", None),
     "raw/pi/events.jsonl": ("pi-c1", "client", "C1"),
     "raw/pi/resource.jsonl": ("pi-c1", "resource_sampler", "C1"),
     "raw/pc/events.jsonl": ("pc-c2", "client", "C2"),
     "raw/pc/resource.jsonl": ("pc-c2", "resource_sampler", "C2"),
+}
+_ECS_C2_EXPECTED_EVIDENCE: dict[str, tuple[str, str, str | None]] = {
+    "raw/ecs/events.jsonl": ("ecs", "server", None),
+    "raw/pi/events.jsonl": ("pi-c1", "client", "C1"),
+    "raw/pi/resource.jsonl": ("pi-c1", "resource_sampler", "C1"),
+    "raw/ecs_c2/events.jsonl": ("ecs-c2", "client", "C2"),
+    "raw/ecs_c2/resource.jsonl": ("ecs-c2", "resource_sampler", "C2"),
 }
 
 _RUN_RE = re.compile(r"^c12_to_c5__(b2|b5)__s(42|43|44|45|46)$")
@@ -1223,7 +1230,10 @@ def _within(path: Path, root: Path) -> bool:
     return True
 
 
-def _inspect_evidence_tree(attempt_dir: Path) -> list[str]:
+def _inspect_evidence_tree(
+    attempt_dir: Path,
+    expected_evidence: Mapping[str, tuple[str, str, str | None]],
+) -> list[str]:
     reasons: list[str] = []
     raw_root = attempt_dir / "raw"
     if attempt_dir.is_symlink():
@@ -1248,10 +1258,11 @@ def _inspect_evidence_tree(attempt_dir: Path) -> list[str]:
                 )
         if root_path == raw_root:
             for name in directory_names:
-                if name not in {"ecs", "pi", "pc"}:
+                allowed_hosts = {Path(relative).parts[1] for relative in expected_evidence}
+                if name not in allowed_hosts:
                     reasons.append(f"unknown host evidence directory raw/{name}")
 
-    expected_jsonl = set(_EXPECTED_EVIDENCE)
+    expected_jsonl = set(expected_evidence)
     discovered_jsonl: set[str] = set()
     for candidate in raw_root.rglob("*.jsonl"):
         if not _within(candidate, attempt_dir):
@@ -1270,9 +1281,10 @@ def _validate_evidence_role(
     relative: str,
     events: Sequence[Mapping[str, Any]],
     attempt_id: str,
+    expected_evidence: Mapping[str, tuple[str, str, str | None]],
 ) -> list[str]:
     reasons: list[str] = []
-    expected_host, expected_producer, expected_client = _EXPECTED_EVIDENCE[relative]
+    expected_host, expected_producer, expected_client = expected_evidence[relative]
     allowed_types = {
         "server": SERVER_EVENT_TYPES,
         "client": CLIENT_EVENT_TYPES,
@@ -1305,6 +1317,105 @@ def _validate_evidence_role(
             } and client_id is not None:
                 reasons.append(f"{relative} server event {event_id} client_id must be null")
     return reasons
+
+
+def _attempt_evidence_contract(
+    attempt_dir: Path,
+    *,
+    attempt_id: str,
+    run_id: str | None,
+) -> tuple[dict[str, tuple[str, str, str | None]], list[str], dict[str, str]]:
+    """Select PC or ECS-C2 evidence only from an explicit immutable binding."""
+    binding_path = attempt_dir / "remote_attempt_binding.json"
+    topology_path = attempt_dir / "execution_topology_manifest.json"
+    if not binding_path.exists() and not topology_path.exists():
+        return dict(_PC_EXPECTED_EVIDENCE), [], {}
+
+    reasons: list[str] = []
+    input_hashes: dict[str, str] = {}
+    if not binding_path.is_file() or binding_path.is_symlink():
+        reasons.append("remote attempt binding is missing or not a regular file")
+        binding: dict[str, Any] = {}
+    else:
+        try:
+            binding = _load_json_object(binding_path, label="remote attempt binding")
+            input_hashes[binding_path.name] = _sha256_file(binding_path)
+        except (OSError, ValueError) as exc:
+            reasons.append(str(exc))
+            binding = {}
+    if not topology_path.is_file() or topology_path.is_symlink():
+        reasons.append("execution topology manifest is missing or not a regular file")
+        topology: dict[str, Any] = {}
+    else:
+        try:
+            topology = _load_json_object(topology_path, label="execution topology manifest")
+            input_hashes[topology_path.name] = _sha256_file(topology_path)
+        except (OSError, ValueError) as exc:
+            reasons.append(str(exc))
+            topology = {}
+
+    expected_binding_fields = {
+        "schema_version",
+        "run_id",
+        "attempt_id",
+        "topology_id",
+        "execution_topology_manifest_sha256",
+        "controller_owner_instance_id",
+        "remote_directory_name",
+        "remote_roots",
+        "binding_sha256",
+    }
+    if set(binding) != expected_binding_fields:
+        reasons.append("remote attempt binding fields are not exact")
+    if binding.get("schema_version") != "iotj.remote_attempt_binding.v1":
+        reasons.append("remote attempt binding schema mismatch")
+    if binding.get("run_id") != run_id or binding.get("attempt_id") != attempt_id:
+        reasons.append("remote attempt binding identity mismatch")
+    if binding.get("topology_id") != "ecs_c2_pi_c1":
+        reasons.append("remote attempt binding topology mismatch")
+    owner = binding.get("controller_owner_instance_id")
+    if not isinstance(owner, str) or re.fullmatch(r"[0-9a-f]{32}", owner) is None:
+        reasons.append("remote attempt binding controller owner identity is invalid")
+    elif binding.get("remote_directory_name") != f"{attempt_id}__{owner}":
+        reasons.append("remote attempt directory identity mismatch")
+    roots = binding.get("remote_roots")
+    if not isinstance(roots, Mapping) or set(roots) != {"ecs", "pi", "ecs_c2"}:
+        reasons.append("remote attempt roots are not exact")
+    elif any(
+        not isinstance(root, str)
+        or f"/attempts/ecs_c2_pi_c1/{attempt_id}__{owner}" not in root
+        for root in roots.values()
+    ):
+        reasons.append("remote attempt root is outside the bound topology namespace")
+    binding_sha = binding.get("binding_sha256")
+    binding_unhashed = {key: value for key, value in binding.items() if key != "binding_sha256"}
+    if (
+        not isinstance(binding_sha, str)
+        or _HASH_RE.fullmatch(binding_sha) is None
+        or hashlib.sha256(_canonical_json_bytes(binding_unhashed)).hexdigest() != binding_sha
+    ):
+        reasons.append("remote attempt binding SHA-256 mismatch")
+
+    topology_sha = topology.get("execution_topology_manifest_sha256")
+    topology_unhashed = {
+        key: value
+        for key, value in topology.items()
+        if key != "execution_topology_manifest_sha256"
+    }
+    if (
+        not isinstance(topology_sha, str)
+        or _HASH_RE.fullmatch(topology_sha) is None
+        or hashlib.sha256(_canonical_json_bytes(topology_unhashed)).hexdigest() != topology_sha
+    ):
+        reasons.append("execution topology manifest SHA-256 mismatch")
+    if topology.get("topology_id") != "ecs_c2_pi_c1":
+        reasons.append("execution topology manifest identifier mismatch")
+    c2_host = topology.get("hosts", {}).get("C2") if isinstance(topology.get("hosts"), Mapping) else None
+    if c2_host != {"host_id": "ecs-c2", "ssh_host": "root@114.55.171.63"}:
+        reasons.append("execution topology manifest C2 host mismatch")
+    if binding.get("execution_topology_manifest_sha256") != topology_sha:
+        reasons.append("remote attempt binding topology SHA-256 mismatch")
+    return dict(_ECS_C2_EXPECTED_EVIDENCE), _sorted_unique(reasons), input_hashes
 
 
 def _validate_close_summary(
@@ -1365,7 +1476,7 @@ def validate_attempt(
     """Validate all immutable evidence and return a deterministic audit object."""
 
     attempt_dir = Path(attempt_dir)
-    reasons = _inspect_evidence_tree(attempt_dir)
+    reasons: list[str] = []
     attempt_match = _ATTEMPT_RE.fullmatch(attempt_dir.name)
     if attempt_match is None:
         reasons.append("attempt directory name must be run_id plus __aNNN")
@@ -1375,9 +1486,15 @@ def validate_attempt(
         attempt_id = attempt_dir.name
         run_hint = attempt_match.group(1)
 
+    expected_evidence, contract_reasons, contract_hashes = _attempt_evidence_contract(
+        attempt_dir, attempt_id=attempt_id, run_id=run_hint
+    )
+    reasons.extend(contract_reasons)
+    reasons.extend(_inspect_evidence_tree(attempt_dir, expected_evidence))
+
     events_by_relative: dict[str, list[dict[str, Any]]] = {}
-    input_hashes: dict[str, str] = {}
-    for relative in sorted(_EXPECTED_EVIDENCE):
+    input_hashes: dict[str, str] = dict(contract_hashes)
+    for relative in sorted(expected_evidence):
         path = attempt_dir / Path(relative)
         close_path = path.with_suffix(".close.json")
         for input_path in (path, close_path):
@@ -1400,7 +1517,11 @@ def validate_attempt(
             rows = []
         events_by_relative[relative] = rows
         if rows:
-            reasons.extend(_validate_evidence_role(relative, rows, attempt_id))
+            reasons.extend(
+                _validate_evidence_role(
+                    relative, rows, attempt_id, expected_evidence
+                )
+            )
         if close_path.is_file() and not close_path.is_symlink():
             reasons.extend(_validate_close_summary(close_path, rows))
 
@@ -1419,10 +1540,12 @@ def validate_attempt(
     reasons.extend(message_reasons)
     reasons.extend(validate_phase_times(all_events))
 
+    c2_prefix = "raw/ecs_c2" if "raw/ecs_c2/events.jsonl" in expected_evidence else "raw/pc"
+    c2_host_id = "ecs-c2" if c2_prefix == "raw/ecs_c2" else "pc-c2"
     host_events = {
-        "pc-c2": [
-            *events_by_relative["raw/pc/events.jsonl"],
-            *events_by_relative["raw/pc/resource.jsonl"],
+        c2_host_id: [
+            *events_by_relative[f"{c2_prefix}/events.jsonl"],
+            *events_by_relative[f"{c2_prefix}/resource.jsonl"],
         ],
         "pi-c1": [
             *events_by_relative["raw/pi/events.jsonl"],

@@ -513,6 +513,88 @@ def valid_attempt(tmp_path: Path) -> AttemptFixture:
     return _build_fixture(tmp_path)
 
 
+def _convert_to_ecs_c2_topology(fixture: AttemptFixture) -> None:
+    pc_root = fixture.path / "raw" / "pc"
+    ecs_c2_root = fixture.path / "raw" / "ecs_c2"
+    pc_root.rename(ecs_c2_root)
+    for name in ("events.jsonl", "resource.jsonl"):
+        path = ecs_c2_root / name
+
+        def mutate(rows: list[dict[str, Any]]) -> None:
+            for row in rows:
+                row["host_id"] = "ecs-c2"
+            _resequence(rows)
+
+        _rewrite_rows(path, mutate)
+
+    topology = {
+        "topology_id": "ecs_c2_pi_c1",
+        "source_archive_sha256": SOURCE_SHA,
+        "algorithm_config_sha256_by_run": {RUN_ID: ALGORITHM_SHA},
+        "hosts": {
+            "C2": {
+                "host_id": "ecs-c2",
+                "ssh_host": "root@114.55.171.63",
+            }
+        },
+    }
+    topology["execution_topology_manifest_sha256"] = hashlib.sha256(
+        _canonical_bytes(topology)
+    ).hexdigest()
+    (fixture.path / "execution_topology_manifest.json").write_bytes(
+        _canonical_bytes(topology) + b"\n"
+    )
+    owner = "f" * 32
+    remote_name = f"{ATTEMPT_ID}__{owner}"
+    binding = {
+        "schema_version": "iotj.remote_attempt_binding.v1",
+        "run_id": RUN_ID,
+        "attempt_id": ATTEMPT_ID,
+        "topology_id": "ecs_c2_pi_c1",
+        "execution_topology_manifest_sha256": topology[
+            "execution_topology_manifest_sha256"
+        ],
+        "controller_owner_instance_id": owner,
+        "remote_directory_name": remote_name,
+        "remote_roots": {
+            host: f"/runtime/{host}/attempts/ecs_c2_pi_c1/{remote_name}"
+            for host in ("ecs", "pi", "ecs_c2")
+        },
+    }
+    binding["binding_sha256"] = hashlib.sha256(_canonical_bytes(binding)).hexdigest()
+    (fixture.path / "remote_attempt_binding.json").write_bytes(
+        _canonical_bytes(binding) + b"\n"
+    )
+
+
+def test_validator_accepts_explicit_ecs_c2_topology_binding(
+    valid_attempt: AttemptFixture,
+) -> None:
+    _convert_to_ecs_c2_topology(valid_attempt)
+
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+
+    assert audit["status"] == "valid", audit["reasons"]
+    assert "raw/ecs_c2/events.jsonl" in audit["inputs"]
+    assert "raw/pc/events.jsonl" not in audit["inputs"]
+    assert "remote_attempt_binding.json" in audit["inputs"]
+    assert "execution_topology_manifest.json" in audit["inputs"]
+
+
+def test_validator_does_not_infer_ecs_c2_from_directory_name(
+    valid_attempt: AttemptFixture,
+) -> None:
+    (valid_attempt.path / "raw" / "pc").rename(
+        valid_attempt.path / "raw" / "ecs_c2"
+    )
+
+    audit = validate_attempt(valid_attempt.path, valid_attempt.protocol)
+
+    assert audit["status"] == "invalid"
+    assert _reason_contains(audit, "unknown host evidence directory raw/ecs_c2")
+    assert _reason_contains(audit, "missing expected host evidence: raw/pc")
+
+
 def _reason_contains(audit: dict[str, Any], text: str) -> bool:
     return any(text.lower() in reason.lower() for reason in audit["reasons"])
 
