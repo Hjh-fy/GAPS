@@ -1,0 +1,6 @@
+[
+  {"prompt":"把经过审计的 C5 Accuracy 改善映射为论文 Claim，并记录适用条件。","should_trigger":true,"expected_skill":"claim-evidence","reason":"Maps approved Evidence to a scoped claim."},
+  {"prompt":"检查 Abstract、Results 和 Conclusion 的每项结论能否回到 Evidence ID。","should_trigger":true,"expected_skill":"claim-evidence","reason":"Maintains manuscript claim traceability."},
+  {"prompt":"将未审计 RMSE 结果登记为 blocked Evidence，不允许 approved。","should_trigger":true,"expected_skill":"claim-evidence","reason":"Applies the Evidence approval gate."},
+  {"prompt":"替我写完整 Discussion 章节。","should_trigger":false,"expected_skill":"research-writing-skill","reason":"Full manuscript prose belongs to Research Writing."}
+]

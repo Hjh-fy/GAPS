@@ -1,0 +1,6 @@
+[
+  {"prompt":"为 Strong DA、CORAL 和 MMD 设计未见设备分类消融矩阵。","should_trigger":true,"expected_skill":"experiment-planner","reason":"Requires baseline and ablation design before execution."},
+  {"prompt":"把 per-gas selective calibration 假设转换为 none/bias/affine/full/specialist/auto_v2 实验计划。","should_trigger":true,"expected_skill":"experiment-planner","reason":"Turns a hypothesis into controlled comparisons."},
+  {"prompt":"为边缘部署可行性定义延迟、内存、参数量和通信负载证据。","should_trigger":true,"expected_skill":"experiment-planner","reason":"Defines metrics and expected Evidence."},
+  {"prompt":"润色论文 Introduction。","should_trigger":false,"expected_skill":"research-writing-skill","reason":"Academic prose editing is outside experiment planning."}
+]

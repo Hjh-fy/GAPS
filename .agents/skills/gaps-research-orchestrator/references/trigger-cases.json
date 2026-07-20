@@ -1,0 +1,6 @@
+[
+  {"prompt":"GAPS 当前处于什么阶段，最大的 Evidence Gap 是什么？","should_trigger":true,"expected_skill":"gaps-research-orchestrator","reason":"Requests stage and Evidence Gap routing."},
+  {"prompt":"根据现有产物告诉我下一步应该调用哪个科研 Skill。","should_trigger":true,"expected_skill":"gaps-research-orchestrator","reason":"Requests next-Skill prioritization."},
+  {"prompt":"registry 缺 split，而稿件已有数字冲突；请排序阻塞项。","should_trigger":true,"expected_skill":"gaps-research-orchestrator","reason":"Prioritizes prerequisites and routing."},
+  {"prompt":"直接计算三个 seed 的 RMSE 均值和置信区间。","should_trigger":false,"expected_skill":"result-analysis","reason":"The orchestrator routes but does not analyze metrics."}
+]

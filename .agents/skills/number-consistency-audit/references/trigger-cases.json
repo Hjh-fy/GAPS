@@ -1,0 +1,6 @@
+[
+  {"prompt":"核对 Abstract、Results、Table II 和 Conclusion 中的 98.98% 是否一致。","should_trigger":true,"expected_skill":"number-consistency-audit","reason":"Checks repeated manuscript numbers."},
+  {"prompt":"检查 overall RMSE 是否被误写成 Accepted RMSE 或 Route-correct RMSE。","should_trigger":true,"expected_skill":"number-consistency-audit","reason":"Checks metric identity and scope."},
+  {"prompt":"判断 12.994 显示为 12.99 是否属于允许的 rounding。","should_trigger":true,"expected_skill":"number-consistency-audit","reason":"Evaluates display precision consistency."},
+  {"prompt":"这两组实验是否公平、有没有 data leakage？","should_trigger":false,"expected_skill":"experiment-audit","reason":"Fairness and leakage belong to Experiment Audit."}
+]

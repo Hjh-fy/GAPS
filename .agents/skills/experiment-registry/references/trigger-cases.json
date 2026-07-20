@@ -1,0 +1,6 @@
+[
+  {"prompt":"登记 EXP-031 的 8:2 split、R3aK16、Strong DA、auto_v2、checkpoint 和结果路径。","should_trigger":true,"expected_skill":"experiment-registry","reason":"Creates a traceable experiment record."},
+  {"prompt":"这个 RMSE 12.99 对应哪个 checkpoint 和 commit？请核对 registry。","should_trigger":true,"expected_skill":"experiment-registry","reason":"Reconciles result provenance."},
+  {"prompt":"为新实验分配 ID，但未知 QC 时保留 unknown。","should_trigger":true,"expected_skill":"experiment-registry","reason":"Assigns identity while preserving missing facts."},
+  {"prompt":"比较三个 seed 的均值、标准差和效应量。","should_trigger":false,"expected_skill":"result-analysis","reason":"Statistical aggregation belongs to Result Analysis."}
+]

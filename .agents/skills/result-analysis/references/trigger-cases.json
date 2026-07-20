@@ -1,0 +1,6 @@
+[
+  {"prompt":"比较 seed 42、43、44 的 Accuracy 均值、标准差和置信区间。","should_trigger":true,"expected_skill":"result-analysis","reason":"Requires descriptive statistics across confirmed seeds."},
+  {"prompt":"分析 CORAL 与 Strong DA 的效应量和显著性，并检查假设。","should_trigger":true,"expected_skill":"result-analysis","reason":"Requires inferential analysis and effect size."},
+  {"prompt":"读取确认口径的 JSON，规划论文表格与异常值敏感性分析。","should_trigger":true,"expected_skill":"result-analysis","reason":"Requires analysis and presentation planning."},
+  {"prompt":"检查两组实验是否用了同一 split 和 checkpoint。","should_trigger":false,"expected_skill":"experiment-audit","reason":"Comparability belongs to Experiment Audit."}
+]

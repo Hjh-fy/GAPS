@@ -1,0 +1,6 @@
+[
+  {"prompt":"检查 Strong DA 与 fixed DA 是否使用同一 8:2 split、checkpoint 和 seed。","should_trigger":true,"expected_skill":"experiment-audit","reason":"Tests fair-comparison controls."},
+  {"prompt":"审计 calibration buffer 是否混入 target test，是否存在 data leakage。","should_trigger":true,"expected_skill":"experiment-audit","reason":"Checks leakage risk."},
+  {"prompt":"检查 R3aK16 与 R4a 比较是否缺 baseline、失败 seed 或 provenance。","should_trigger":true,"expected_skill":"experiment-audit","reason":"Checks completeness and reproducibility."},
+  {"prompt":"计算 RMSE 的均值、标准差和显著性。","should_trigger":false,"expected_skill":"result-analysis","reason":"Metric computation belongs to Result Analysis."}
+]
