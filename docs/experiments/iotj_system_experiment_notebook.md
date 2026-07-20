@@ -465,3 +465,12 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 三机 standalone preflight 于 2026-07-20 22:31 Asia/Shanghai 通过。a005 于 22:36 启动，22:37 状态链到 `preflight_passed`；server、Pi C1、ECS C2 的进程和资源 sidecar 均使用当前 a005 唯一路径。
 - round 1 初步实时诊断：Pi C1 local train `32.65 s`，ECS C2 local train `65.23 s`，两端 FitRes 均已到达 server，server 已进入 round-1 DA。该值只是运行中诊断，不能写入最终系统表；需等待 25 轮回收和 validator。
 - 完整运行命令、监控、B5 顺序与失败处理见 `docs/experiments/iotj_ecs_c2_runbook_20260720.zh.md`。
+
+## 2026-07-21：a005 证据回收、传输容错与 a006 夜间顺序运行
+
+- `B2-s42/a005` 在 23 个完整 round 后终止。失败时本地 Controller 同时无法 SSH 到 server ECS 与 ECS-C2；server 随后仍完成 round 23 DA，但客户端已退出，因此该 attempt 固定为 `failed / process_failure`，不得续跑或进入论文统计。
+- a005 三端原始证据已回收到本地 attempt 的 `raw/ecs`、`raw/pi`、`raw/ecs_c2`；远端原始目录保留。回收后按精确 launch registration 校验 PID、PGID、start ticks 与 launch token，才终止残留 server 进程。没有删除或覆盖失败证据。
+- Controller commit `495c40ceea39db16c55b24efccf737c402d0364b` 只增加执行层传输容错：SSH 255/子进程 timeout 分类为 transport failure，远端健康检查可在 600 s 窗口内恢复，长连接 tunnel 的 keepalive 容忍窗口增至约 10 min。模型、loss、数据、optimizer、25 rounds、5 local epochs、B2/B5 与 server DA 数值路径均未改变。
+- 修复后测试：controller `155 passed, 1 skipped`，validator `38 passed, 1 skipped`，cloud-edge `6 passed`，并通过 `py_compile`。
+- 2026-07-21 01:05 Asia/Shanghai，三机 preflight 通过后启动 `B2-s42/a006`；冻结算法 commit、source archive、dataset 与 B2 config SHA-256 保持不变，Controller deadline 为 48 h。01:17 快照显示已完成 3 rounds 并进入 round 4，Pi/ECS-C2 events 与 1 Hz resource streams 持续增长。
+- 夜间只允许顺序执行 B2 与 B5。`overnight_b2_then_b5.ps1` 持有独占锁，只有 a006 最终为 `canonical / validator_accepted` 且存在 64 位 audit SHA-256 时才写入 B2→B5 gate、执行 B5 preflight 并启动 `B5-s42/a001`；否则立即停止，不分配 B5 attempt。

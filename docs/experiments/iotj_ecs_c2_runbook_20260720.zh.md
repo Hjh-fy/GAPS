@@ -143,3 +143,20 @@ B5 不会由当前 B2 脚本自动启动。先确认 B2 的证据已回收、val
 - `gaps_flower/flower_message_audit.py`：logical/application message bytes 与 SHA-256；
 - `gaps_flower/strategy.py`：server round、aggregation、DA 与通信事件；
 - `gaps_flower/client_app.py`：客户端训练/fit 时延事件。
+
+## 7. 2026-07-21 当前运行与夜间顺序门控
+
+`B2-s42/a005` 已固定为 failed evidence：它完成 23 rounds 后，本地 Controller 同时失去 server ECS 与 ECS-C2 的 SSH 可达性。三端证据已回收，失败目录不得覆盖。当前重新从 round 1 运行的是 `B2-s42/a006`。
+
+通用一次快照：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File results/iotj_ecs_c2_representative_20260720/monitor_confirmation_attempt.ps1 `
+  -RunId c12_to_c5__b2__s42 `
+  -AttemptId c12_to_c5__b2__s42__a006 `
+  -Once
+```
+
+持续刷新时去掉 `-Once`。B2 的最终成功条件不是日志出现 round 25，而是 `attempt_status.json` 同时满足 `state=canonical`、`event_type=attempt_end`、`reason=validator_accepted` 且 `audit_sha256` 为 64 位十六进制值。
+
+本次夜间自动接续入口是 `overnight_b2_then_b5.ps1`。它使用独占 lock，先等待 a006 的上述成功条件；成功后写一次性 gate，运行 B5 standalone preflight，再启动 `B5-s42/a001`。B2 失败、等待超时、controller 文件 SHA 改变、B5 目录已存在或 B5 preflight 失败时都会停止，不会机械重跑，也不会删除证据。

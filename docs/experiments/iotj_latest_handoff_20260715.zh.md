@@ -333,3 +333,10 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 当前 attempt：`results/iotj_ecs_c2_representative_20260720/raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a005/`。a001--a004 均为失败证据，禁止删除、覆盖或纳入论文统计。
 - 实时监控：`powershell -ExecutionPolicy Bypass -File results/iotj_ecs_c2_representative_20260720/monitor_b2_s42_a005.ps1`。
 - 完整运行手册：`docs/experiments/iotj_ecs_c2_runbook_20260720.zh.md`。不要只根据某一端旧日志判断完成；必须核对 binding、三端时间戳、最终 status 与 validator audit。
+
+## 2026-07-21 夜间接续状态
+
+- `B2-s42/a005` 在 23 个完整 round 后因本地 Controller 同时失去两台 ECS 的 SSH 可达性而失败；它已完整回收并永久保留为 failed evidence，不能进入正式表。残留 server 进程已依据精确注册身份安全终止。
+- 当前执行控制层 commit 为 `495c40ceea39db16c55b24efccf737c402d0364b`。它只修复 SSH transport failure 分类、600 s 恢复窗口和 tunnel keepalive；冻结算法仍是 `2ef7aea77b9dfabdd09da4f38742907a37c58c30`，source archive 仍是 `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`。
+- 当前有效运行是 `B2-s42/a006`，2026-07-21 01:05 Asia/Shanghai 启动；01:17 已完成 3 rounds 并进入 round 4。监控入口改为通用脚本：`monitor_confirmation_attempt.ps1 -RunId c12_to_c5__b2__s42 -AttemptId c12_to_c5__b2__s42__a006`。
+- 夜间 watcher 已启动。只有 a006 被 validator 接受且状态为 canonical，才会按相同 archive、数据、超参数与 `ecs_c2_pi_c1` 拓扑对 `B5-s42/a001` 做 preflight 后顺序启动；任何失败、缺失 audit SHA、既有 B5 attempt 目录或 controller 文件 SHA 变化均 fail closed。
