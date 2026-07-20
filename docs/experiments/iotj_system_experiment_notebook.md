@@ -455,3 +455,13 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 先回收再清理：a003 的本地 `raw/` 已保留 PC 8、ECS 142、Pi 11 个文件（共 161 文件、`112,270,916` bytes）。ECS/Pi 原始 attempt 目录分别约 11 MiB/50 MiB；文件数核对一致后，才删除远端这两个精确的 stale runtime directories。检查确认没有残留 a003 训练进程；本地失败证据、archive、command manifests 和先前 failed attempts 均未删除或覆盖。
 - 2026-07-19 00:33 Asia/Shanghai，使用完全相同的 `2ef7aea / 52bdbf...` archive、protocol/dataset manifests 和 10-run queue 完成新的三机 preflight。唯一运行控制变更是将 Controller 单 attempt deadline 显式设置为 `--run-timeout-seconds 172800`（48 h）；它不进入模型数值路径，不改变模型、loss、数据协议、25 global rounds、local epochs、batch size、learning rate 或 server-DA steps。
 - 2026-07-19 00:35 Asia/Shanghai 已启动新 Controller PID `34712`，日志为 `results/c2e_runs/controller_restart_20260719_003506.stdout.log` / `.stderr.log`，身份入口仍为 `results/c2e_runs/latest_controller_launch.json`。它自动创建 `c12_to_c5__b2__s42__a004`，该 attempt 必须从 round 1 重跑完整 25 rounds 并通过 validator；成功后才按已冻结的交替顺序继续后续九项。
+## 2026-07-20：ECS-C2 + Pi B2-s42/a005 启动记录
+
+- 当前论文最小系统路线调整为两个代表性 25-round run：B2-s42 完成并验证后再运行 B5-s42；不启动其余 seeds。
+- 算法冻结输入不变：confirmation commit `2ef7aea77b9dfabdd09da4f38742907a37c58c30`，source archive SHA-256 `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`，B2 config SHA-256 `9f7e549e0c95ee859cb0059adfb9d614c21a7f2659f2f3d6828f6aac98ed4561`。
+- a001--a004 均保留为失败诊断证据。a004 的新本地 attempt ID 与远端 2026-07-18 Pi+PC a004 目录撞名，控制器 fail-closed 拒绝覆盖；该旧日志曾被错误当作当前运行，根因是只查看 server 日志而未同时核对三端时间戳和 owner identity。
+- 最小执行层修复固定为 controller commit `351a4e61133922af6705e6d276de24bec87c9bff`：ECS-C2 远端路径绑定 `topology_id + canonical attempt_id + controller owner instance_id`；validator 仅在显式 topology/binding 存在时接收 `raw/ecs_c2`；Pi 单次 SSH timeout 会在总等待窗口内重试。没有修改模型、loss、数据、optimizer、B2/B5 或 server DA。
+- 回归：confirmation controller `152 passed, 1 skipped`；validator `38 passed, 1 skipped`；cloud-edge controller `6 passed`。
+- 三机 standalone preflight 于 2026-07-20 22:31 Asia/Shanghai 通过。a005 于 22:36 启动，22:37 状态链到 `preflight_passed`；server、Pi C1、ECS C2 的进程和资源 sidecar 均使用当前 a005 唯一路径。
+- round 1 初步实时诊断：Pi C1 local train `32.65 s`，ECS C2 local train `65.23 s`，两端 FitRes 均已到达 server，server 已进入 round-1 DA。该值只是运行中诊断，不能写入最终系统表；需等待 25 轮回收和 validator。
+- 完整运行命令、监控、B5 顺序与失败处理见 `docs/experiments/iotj_ecs_c2_runbook_20260720.zh.md`。

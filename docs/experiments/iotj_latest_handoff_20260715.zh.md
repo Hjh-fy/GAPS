@@ -325,3 +325,11 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 推荐的未执行双轨设计位于 `track_a_track_b_execution_design.md`：Track A 用两个独立 logical Flower clients 的快速共置/快速执行拓扑完成 B2/B5 五种子算法确认；Track B 仅执行预声明 B2/B5 各一个真实 ECS+Pi+PC 25-round run 形成系统表。保留同一算法 archive、数据和训练配置，但为 host placement/controller orchestration 单独冻结 execution-topology manifests；Track A 不能称为真实异构边缘部署，Track B 两条 run 不能称为算法多种子稳定性。
 - a003 的远端原始证据已先回收到本地 `results/c2e_runs/raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a003/raw/`：PC/ECS/Pi 文件数分别为 8/142/11（总 161 文件、112,270,916 bytes）。核对后才删除 ECS/Pi 上这一个 stale runtime directory；两台设备均确认无残留训练进程。
 - 同一冻结 archive 再次通过三机 preflight。新 Controller PID `34712` 于 2026-07-19 00:35 Asia/Shanghai 启动并创建 `B2-s42 / a004`；唯一控制层调整是显式 `--run-timeout-seconds 172800`（48 h），不改变算法、数据、模型、loss 或训练超参数。应继续以 `latest_controller_launch.json` 获取实时 PID/log；a004 必须从 round 1 完整重跑、通过 validator 后才可成为 B2 seed-42 的 canonical candidate。
+## 2026-07-20 最新执行状态：ECS-C2 + Pi 代表性 B2 run
+
+- 当前只执行 B2-s42 与 B5-s42 两个代表性 25-round 系统实验；B2 完成并通过 validator 后才启动 B5，其余 seeds 暂停。
+- B2-s42/a005 已于 2026-07-20 22:36 Asia/Shanghai 启动，状态链已到 `running / preflight_passed`。拓扑为 server/DA ECS `121.40.139.213`、Pi C1 `192.168.137.172`、ECS C2 `114.55.171.63`。
+- 冻结算法仍为 commit `2ef7aea77b9dfabdd09da4f38742907a37c58c30` 与 archive `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`；执行控制器修复为 commit `351a4e61133922af6705e6d276de24bec87c9bff`。
+- 当前 attempt：`results/iotj_ecs_c2_representative_20260720/raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a005/`。a001--a004 均为失败证据，禁止删除、覆盖或纳入论文统计。
+- 实时监控：`powershell -ExecutionPolicy Bypass -File results/iotj_ecs_c2_representative_20260720/monitor_b2_s42_a005.ps1`。
+- 完整运行手册：`docs/experiments/iotj_ecs_c2_runbook_20260720.zh.md`。不要只根据某一端旧日志判断完成；必须核对 binding、三端时间戳、最终 status 与 validator audit。
