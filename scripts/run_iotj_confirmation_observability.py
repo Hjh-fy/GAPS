@@ -33,6 +33,7 @@ from scripts.freeze_iotj_confirmation_protocol import (
     sha256_file,
 )
 from scripts.run_iotj_classification_cloud_edge import (
+    _popen_hidden,
     _run,
     _ssh,
     _start_tunnels,
@@ -64,6 +65,54 @@ _REMOTE_PYTHON_BINARIES = frozenset(
         "/root/gaps_c2_cpu_env/bin/python",
     }
 )
+
+
+def build_ecs_c2_tunnel_commands(
+    ecs_host: str, pi_host: str, c2_host: str
+) -> tuple[list[str], list[str], list[str]]:
+    """Return the three loopback-only tunnels for the remote-C2 placement."""
+    common = [
+        "ssh",
+        "-o", "BatchMode=yes",
+        "-o", "ExitOnForwardFailure=yes",
+        "-o", "ServerAliveInterval=30",
+        "-o", "ServerAliveCountMax=3",
+        "-N",
+    ]
+    return (
+        [*common, "-L", "127.0.0.1:18080:127.0.0.1:8080", ecs_host],
+        [*common, "-R", "127.0.0.1:18080:127.0.0.1:18080", pi_host],
+        [*common, "-R", "127.0.0.1:18080:127.0.0.1:18080", c2_host],
+    )
+
+
+def _start_ecs_c2_tunnels(
+    ecs_host: str,
+    pi_host: str,
+    c2_host: str,
+    *,
+    popen: Callable[..., subprocess.Popen[Any]] = _popen_hidden,
+    sleeper: Callable[[float], None] = time.sleep,
+) -> list[subprocess.Popen[Any]]:
+    """Start the three tunnels atomically, cleaning up after any failure."""
+    processes: list[subprocess.Popen[Any]] = []
+    labels = ("controller-to-server", "controller-to-pi", "controller-to-ecs-c2")
+    try:
+        for label, command in zip(labels, build_ecs_c2_tunnel_commands(ecs_host, pi_host, c2_host)):
+            process = popen(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            sleeper(2)
+            if process.poll() is not None:
+                raise RuntimeError(f"{label} SSH tunnel failed to start")
+            processes.append(process)
+    except BaseException:
+        _terminate_processes(processes)
+        raise
+    return processes
 VALID_ATTEMPT_STATES = {"running", "failed", "aborted", "invalid", "canonical"}
 TERMINAL_ATTEMPT_STATES = {"failed", "aborted", "invalid", "canonical"}
 STATUS_REASON_CATEGORIES = {

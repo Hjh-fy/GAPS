@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+import scripts.build_iotj_c2_dataset_subset_manifest as c2_subset_generator
 import scripts.generate_iotj_ecs_c2_topology_manifest as topology_generator
 import scripts.run_iotj_confirmation_observability as controller
 from scripts.freeze_iotj_confirmation_protocol import (
@@ -140,6 +141,26 @@ def test_ecs_c2_topology_generator_binds_exact_protocol_schedule(tmp_path: Path)
         "c12_to_c5__b5__s42": "c" * 64,
     }
     assert manifest["hosts"]["C2"]["host_id"] == "ecs-c2"
+
+
+def test_c2_subset_manifest_contains_only_client_2_files() -> None:
+    full = {
+        "dataset_manifest_sha256": "a" * 64,
+        "files": [
+            {"relative_path": "client_1/train_features.npy", "sha256": "b" * 64, "byte_size": 1},
+            {"relative_path": "client_2/train_features.npy", "sha256": "c" * 64, "byte_size": 2},
+            {"relative_path": "client_2/train_classification_labels.npy", "sha256": "d" * 64, "byte_size": 3},
+        ],
+    }
+
+    subset = c2_subset_generator.build_client_subset_manifest(full, client_id=2)
+
+    assert subset["parent_dataset_manifest_sha256"] == "a" * 64
+    assert [row["relative_path"] for row in subset["files"]] == [
+        "client_2/train_classification_labels.npy",
+        "client_2/train_features.npy",
+    ]
+    assert all(row["relative_path"].startswith("client_2/") for row in subset["files"])
 
 
 def _read_status(path: Path) -> dict[str, object]:
@@ -589,6 +610,58 @@ def test_remote_c2_deployment_skips_local_pc_runtime(tmp_path: Path) -> None:
         "gaps@pi",
         "root@c2",
     }
+
+
+def test_ecs_c2_tunnel_commands_keep_all_flower_endpoints_loopback() -> None:
+    commands = controller.build_ecs_c2_tunnel_commands(
+        "root@server", "gaps@pi", "root@c2"
+    )
+
+    assert len(commands) == 3
+    assert commands[0][-2:] == ["127.0.0.1:18080:127.0.0.1:8080", "root@server"]
+    assert commands[1][-2:] == ["127.0.0.1:18080:127.0.0.1:18080", "gaps@pi"]
+    assert commands[2][-2:] == ["127.0.0.1:18080:127.0.0.1:18080", "root@c2"]
+    assert "-L" in commands[0]
+    assert "-R" in commands[1] and "-R" in commands[2]
+    assert all("0.0.0.0" not in " ".join(command) for command in commands)
+
+
+def test_ecs_c2_tunnel_start_failure_reclaims_prior_tunnels() -> None:
+    events: list[str] = []
+
+    class Tunnel:
+        def __init__(self, label: str, failed: bool) -> None:
+            self.label = label
+            self.failed = failed
+            self.terminated = False
+
+        def poll(self):
+            return 1 if self.failed else None
+
+        def terminate(self) -> None:
+            self.terminated = True
+            events.append(f"terminate:{self.label}")
+
+        def wait(self, timeout=None):
+            return 0
+
+        def kill(self) -> None:
+            events.append(f"kill:{self.label}")
+
+    created: list[Tunnel] = []
+
+    def fake_popen(command, **_kwargs):
+        tunnel = Tunnel(str(command[-1]), failed=len(created) == 2)
+        created.append(tunnel)
+        return tunnel
+
+    with pytest.raises(RuntimeError, match="ecs-c2"):
+        controller._start_ecs_c2_tunnels(
+            "root@server", "gaps@pi", "root@c2", popen=fake_popen, sleeper=lambda _x: None
+        )
+
+    assert events == ["terminate:root@server", "terminate:gaps@pi"]
+    assert not created[2].terminated
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows MAX_PATH regression")
