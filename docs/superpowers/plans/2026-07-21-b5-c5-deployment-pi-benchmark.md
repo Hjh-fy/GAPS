@@ -18,7 +18,7 @@
 - Benchmark both Pi and PC: batch 1 primary, batch 32 auxiliary; 30 warm-up plus at least 100 measurements; report load/classification/regression/QC/total p50/p95/p99, throughput, peak/steady RSS and average/peak CPU.
 - No training run or overwrite of existing evidence. Missing artifact, schema mismatch or parity failure stops the workflow.
 
-### Task 1: Bind deployment inputs — code complete; asset rebuild pending
+### Task 1: Bind deployment inputs — code complete; bind rebuilt assets next
 
 **Files:** create `scripts/inspect_b5_c5_deployment_inputs.py`; create `tests/test_inspect_b5_c5_deployment_inputs.py`; create `results/iotj_b5_c5_deployment_p1_20260721/input_audit.json`.
 
@@ -33,10 +33,19 @@ def test_input_audit_rejects_legacy_path(tmp_path):
 
 - [ ] Run `python -m pytest -q tests/test_inspect_b5_c5_deployment_inputs.py`; expect missing `inspect_inputs` failure.
 - [ ] Implement `inspect_inputs(repo_root: Path) -> dict[str, object]`: bind only explicit B5/C5 inputs; hash them; return `blocked` for missing/legacy fields without guessing path semantics.
-- [x] Run the audit. It is correctly `blocked`: current B5 classifier SHA-256 is bound, while the ten C5 deployment assets must be rebuilt against that classifier instead of being borrowed from a historical classifier with a different SHA-256.
+- [x] The B5 checkpoint and C5-only rebuilt regression/QC assets are now available. The input map must bind the actual asset roles below without duplicating a file to satisfy an obsolete key shape:
+
+  - `classifier`;
+  - `r4_policy` (contains H1 source Ridge, H2 per-gas MLP, H3 shared MLP and C5 target Ridge);
+  - `h23_reference`;
+  - `qc_risk_policy`, `qc_component_calibrator`, `qc_feature_reference`, `qc_risk_selection`;
+  - `feature_schema`, `class_map`, `normalization`;
+  - external `offline_reference_1360` for parity only.
+
+  The external 1360-row reference is audited but must not be copied into the device runtime bundle. `R3aK16` remains a historical offline reference only and is forbidden from every final runtime asset.
 - [ ] Commit only this task's files with `feat: audit B5 C5 deployment inputs`.
 
-### Task 2: Build C5-only B5 bundle — packager complete; source assets pending
+### Task 2: Build C5-only B5 bundle — packager contract update and actual build pending
 
 **Files:** create `scripts/build_iotj_b5_c5_deployment_bundle.py`; create `tests/test_build_iotj_b5_c5_deployment_bundle.py`; create `results/iotj_b5_c5_deployment_p1_20260721/bundle/manifest.json`.
 
@@ -50,9 +59,10 @@ def test_bundle_rejects_legacy_input_audit(tmp_path):
 
 - [ ] Run `python -m pytest -q tests/test_build_iotj_b5_c5_deployment_bundle.py`; expect missing `build_bundle` failure.
 - [ ] Implement `build_bundle(input_audit: Path, output_dir: Path) -> dict[str, object]`: refuse non-ready audit, copy only bound B5/C5 assets, emit schema/class map/QC/normalisation/file hashes.
-- [x] Verify the packager rejects legacy/non-ready input and rechecks source hashes before copying. Real bundle creation remains blocked until the C5-only rebuild produces a `ready` audit.
+- [x] Verify the packager rejects legacy/non-ready input and rechecks source hashes before copying.
+- [ ] Update the packager to distinguish runtime assets from the external parity reference, then construct the immutable B5/C5 bundle only after a `ready` audit. The bundle must copy each physical asset once and retain the source/audit SHA-256 closure.
 
-**Current external state (2026-07-21):** The C5-only rebuild controller was stopped before it could create an ECS output because the local machine could not reach the configured ECS SSH port (`121.40.139.213:22`). No remote partial output was created. The fixed R3aK16 checkpoint was recovered with SHA-256 `790fc6ff…0f83` only for reproducing historical offline comparison fields; the bundle audit/packager explicitly forbid it from the final deployment package.
+**Current external state (2026-07-21):** The C5-only rebuild completed on ECS and was recovered under `results/iotj_b5_c5_deployment_p1_20260721/rebuilt_suite/B5canonical/`. The fixed R3aK16 checkpoint was recovered with SHA-256 `790fc6ff…0f83` only for reproducing historical offline comparison fields; the bundle audit/packager explicitly forbid it from the final deployment package.
 - [ ] Commit only this task's files with `feat: build B5 C5 deployment bundle`.
 
 ### Task 3: Gate exact offline/runtime parity

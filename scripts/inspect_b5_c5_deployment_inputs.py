@@ -11,12 +11,12 @@ from typing import Mapping
 
 REQUIRED_KEYS = (
     "classifier",
-    "source_ridge",
-    "source_per_gas_mlp",
-    "source_shared_mlp",
-    "target_r4",
-    "target_mlp_qc_reference",
-    "qc_policy",
+    "r4_policy",
+    "h23_reference",
+    "qc_risk_policy",
+    "qc_component_calibrator",
+    "qc_feature_reference",
+    "qc_risk_selection",
     "feature_schema",
     "class_map",
     "normalization",

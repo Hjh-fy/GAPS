@@ -11,6 +11,7 @@ from typing import Any
 
 
 FORBIDDEN_TOKENS = ("c3", "c4", "r3ak16", "h8+c4", "p4")
+PARITY_REFERENCE_KEY = "offline_reference_1360"
 
 
 def _sha256(path: Path) -> str:
@@ -55,6 +56,7 @@ def build_bundle(input_audit: Path, output_dir: Path) -> dict[str, Any]:
     asset_dir = output_dir / "assets"
     asset_dir.mkdir(parents=True, exist_ok=True)
     packaged: dict[str, Any] = {}
+    parity_reference: dict[str, Any] | None = None
     for key in sorted(assets):
         descriptor = assets[key]
         if not isinstance(descriptor, dict):
@@ -65,6 +67,13 @@ def build_bundle(input_audit: Path, output_dir: Path) -> dict[str, Any]:
         source_sha = _sha256(source)
         if source_sha != str(descriptor.get("sha256", "")):
             raise ValueError(f"audited asset hash changed: {key}")
+        if key == PARITY_REFERENCE_KEY:
+            parity_reference = {
+                "source_path": source.as_posix(),
+                "bytes": source.stat().st_size,
+                "sha256": source_sha,
+            }
+            continue
         destination = asset_dir / f"{key}{source.suffix}"
         shutil.copy2(source, destination)
         packaged[key] = {
@@ -73,11 +82,14 @@ def build_bundle(input_audit: Path, output_dir: Path) -> dict[str, Any]:
             "bytes": destination.stat().st_size,
             "sha256": _sha256(destination),
         }
+    if parity_reference is None:
+        raise ValueError("input audit is missing parity reference")
     manifest = {
         "schema_version": "iotj.b5_c5_deployment_bundle.v1",
         "status": "ready",
         "input_audit": audit_path.as_posix(),
         "assets": packaged,
+        "parity_reference": parity_reference,
         "forbidden": ["C3", "C4", "R3aK16", "H8+C4", "P4"],
     }
     (output_dir / "manifest.json").write_text(
