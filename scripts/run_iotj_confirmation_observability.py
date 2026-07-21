@@ -538,6 +538,18 @@ def _reject_symlink_components(path: Path, label: str) -> None:
         current = current.parent
 
 
+def ensure_raw_recovery_root(attempt: Attempt) -> Path:
+    """Create the local raw parent required by remote-only evidence recovery."""
+    raw_root = attempt.path / "raw"
+    _reject_symlink_components(attempt.path, "attempt root")
+    try:
+        raw_root.mkdir(parents=False, exist_ok=False)
+    except FileExistsError:
+        pass
+    _reject_symlink_components(raw_root, "raw evidence root")
+    return raw_root
+
+
 def _lstat_runtime_component(
     path: Path,
     label: str,
@@ -3409,7 +3421,7 @@ print(json.dumps({{'initial_checkpoint_sha256': digest}}, sort_keys=True))
 
     def recover(attempt: Attempt) -> None:
         runtime_paths = state["paths"]
-        raw_root = attempt.path / "raw"
+        raw_root = ensure_raw_recovery_root(attempt)
         recovery_rows: list[tuple[str, str, str | Path]] = [
             ("ecs", runtime.ecs_host, runtime_paths["ecs_raw"]),
             ("pi", runtime.pi_host, runtime_paths["pi_raw"]),

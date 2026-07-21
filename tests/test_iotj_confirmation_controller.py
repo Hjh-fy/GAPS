@@ -247,6 +247,19 @@ def _allocate_bound(tmp_path: Path, run_id: str):
     return attempt
 
 
+def test_remote_only_recovery_creates_raw_parent_before_scp(tmp_path: Path) -> None:
+    attempt = _allocate_bound(tmp_path, "c12_to_c5__b5__s42")
+    raw_root = attempt.path / "raw"
+    assert not raw_root.exists()
+
+    actual = controller.ensure_raw_recovery_root(attempt)
+
+    assert actual == raw_root
+    assert raw_root.is_dir()
+    assert not raw_root.is_symlink()
+    assert controller.ensure_raw_recovery_root(attempt) == raw_root
+
+
 def _execute_generated_remote_source(source: str) -> dict[str, object]:
     output = io.StringIO()
     with contextlib.redirect_stdout(output):
