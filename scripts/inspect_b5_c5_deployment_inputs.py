@@ -8,21 +8,10 @@ import json
 from pathlib import Path
 from typing import Mapping
 
-
-REQUIRED_KEYS = (
-    "classifier",
-    "r4_policy",
-    "h23_reference",
-    "qc_risk_policy",
-    "qc_component_calibrator",
-    "qc_feature_reference",
-    "qc_risk_selection",
-    "feature_schema",
-    "class_map",
-    "normalization",
-    "offline_reference_1360",
-)
-FORBIDDEN_TOKENS = ("c3", "c4", "r3ak16", "h8+c4")
+try:
+    from .iotj_b5_c5_bundle_contract import FORBIDDEN_TOKENS, REQUIRED_KEYS
+except ImportError:  # pragma: no cover - supports direct ``python scripts/...`` invocation.
+    from iotj_b5_c5_bundle_contract import FORBIDDEN_TOKENS, REQUIRED_KEYS
 
 
 def _sha256(path: Path) -> str:
@@ -42,6 +31,9 @@ def audit_input_paths(paths: Mapping[str, Path]) -> dict[str, object]:
         rendered = path.as_posix().lower()
         if any(token in key.lower() or token in rendered for token in FORBIDDEN_TOKENS):
             reasons.append(f"legacy_forbidden:{key}")
+            continue
+        if key not in REQUIRED_KEYS:
+            reasons.append(f"unknown_asset_key:{key}")
             continue
         if not path.is_file():
             reasons.append(f"missing_required:{key}")

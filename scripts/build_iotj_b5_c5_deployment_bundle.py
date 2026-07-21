@@ -9,9 +9,18 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-
-FORBIDDEN_TOKENS = ("c3", "c4", "r3ak16", "h8+c4", "p4")
-PARITY_REFERENCE_KEY = "offline_reference_1360"
+try:
+    from .iotj_b5_c5_bundle_contract import (
+        FORBIDDEN_TOKENS,
+        PARITY_REFERENCE_KEY,
+        REQUIRED_KEYS,
+    )
+except ImportError:  # pragma: no cover - supports direct ``python scripts/...`` invocation.
+    from iotj_b5_c5_bundle_contract import (
+        FORBIDDEN_TOKENS,
+        PARITY_REFERENCE_KEY,
+        REQUIRED_KEYS,
+    )
 
 
 def _sha256(path: Path) -> str:
@@ -26,11 +35,26 @@ def _legacy_reason(audit: dict[str, Any]) -> bool:
     reasons = [str(item).lower() for item in audit.get("reasons", [])]
     if any("legacy_forbidden" in item for item in reasons):
         return True
-    for item in audit.get("assets", {}).values():
+    for key, item in audit.get("assets", {}).items():
+        if any(token in str(key).lower() for token in FORBIDDEN_TOKENS):
+            return True
         rendered = str(item.get("path", "")).replace("\\", "/").lower()
         if any(token in rendered for token in FORBIDDEN_TOKENS):
             return True
     return False
+
+
+def _validate_asset_contract(assets: object) -> dict[str, Any]:
+    if not isinstance(assets, dict):
+        raise ValueError("input audit has no bound assets")
+    observed = set(assets)
+    missing = sorted(set(REQUIRED_KEYS) - observed)
+    if missing:
+        raise ValueError(f"missing required audited asset: {missing[0]}")
+    unexpected = sorted(observed - set(REQUIRED_KEYS))
+    if unexpected:
+        raise ValueError(f"unexpected audited asset: {unexpected[0]}")
+    return assets
 
 
 def build_bundle(input_audit: Path, output_dir: Path) -> dict[str, Any]:
@@ -41,14 +65,13 @@ def build_bundle(input_audit: Path, output_dir: Path) -> dict[str, Any]:
     immutable-layout candidate.
     """
     audit_path = Path(input_audit)
-    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    audit_bytes = audit_path.read_bytes()
+    audit = json.loads(audit_bytes.decode("utf-8"))
     if _legacy_reason(audit):
         raise ValueError("forbidden legacy input in audit")
     if audit.get("status") != "ready":
         raise ValueError("input audit must be ready before building bundle")
-    assets = audit.get("assets")
-    if not isinstance(assets, dict) or not assets:
-        raise ValueError("input audit has no bound assets")
+    assets = _validate_asset_contract(audit.get("assets"))
 
     output_dir = Path(output_dir)
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -88,6 +111,7 @@ def build_bundle(input_audit: Path, output_dir: Path) -> dict[str, Any]:
         "schema_version": "iotj.b5_c5_deployment_bundle.v1",
         "status": "ready",
         "input_audit": audit_path.as_posix(),
+        "input_audit_sha256": hashlib.sha256(audit_bytes).hexdigest(),
         "assets": packaged,
         "parity_reference": parity_reference,
         "forbidden": ["C3", "C4", "R3aK16", "H8+C4", "P4"],

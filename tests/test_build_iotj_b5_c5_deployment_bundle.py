@@ -6,24 +6,24 @@ import pytest
 
 
 def _ready_audit(tmp_path: Path) -> Path:
-    asset = tmp_path / "classifier.pth"
-    asset.write_bytes(b"b5")
-    reference = tmp_path / "offline_reference_1360.csv"
-    reference.write_text("sample_index,final_ppm\n0,25.0\n", encoding="utf-8")
+    from scripts.inspect_b5_c5_deployment_inputs import REQUIRED_KEYS
+
+    assets = {}
+    for key in REQUIRED_KEYS:
+        suffix = ".pth" if key == "classifier" else ".csv" if key == "offline_reference_1360" else ".json"
+        asset = tmp_path / f"{key}{suffix}"
+        asset.write_bytes(b"b5" if key == "classifier" else key.encode("utf-8"))
+        assets[key] = asset
     audit = {
         "status": "ready",
         "reasons": [],
         "assets": {
-            "classifier": {
+            key: {
                 "path": str(asset),
                 "bytes": asset.stat().st_size,
                 "sha256": hashlib.sha256(asset.read_bytes()).hexdigest(),
-            },
-            "offline_reference_1360": {
-                "path": str(reference),
-                "bytes": reference.stat().st_size,
-                "sha256": hashlib.sha256(reference.read_bytes()).hexdigest(),
-            },
+            }
+            for key, asset in assets.items()
         },
     }
     path = tmp_path / "input_audit.json"
