@@ -263,8 +263,12 @@ class RichResidualPolicy:
         }
         source_aug = self.artifact.get("source_aug_target_ridge_policy", {})
         self.source_aug_policy = dict(source_aug)
-        self.source_aug_enabled_clients = set(source_aug.get("switch_rule", {}).get("enabled_clients", []))
-        self.source_aug_class_id = int(source_aug.get("switch_rule", {}).get("class_id", CO_CLASS))
+        source_aug_switch = source_aug.get("switch_rule", {})
+        self.source_aug_enabled_clients = set(source_aug_switch.get("enabled_clients", []))
+        configured_class_ids = source_aug_switch.get("class_ids")
+        if configured_class_ids is None:
+            configured_class_ids = [source_aug_switch.get("class_id", CO_CLASS)]
+        self.source_aug_class_ids = {int(class_id) for class_id in configured_class_ids}
         source_heads = source_aug.get("source_heads", {})
         self.source_ridge_heads = {
             int(item.get("class_id")): dict(item)
@@ -442,7 +446,7 @@ class RichResidualPolicy:
         if str(client_id) not in self.source_aug_enabled_clients:
             return None
         route_class = int(result.pred_class)
-        if route_class != self.source_aug_class_id:
+        if route_class not in self.source_aug_class_ids:
             return None
         model = self.source_aug_models.get((str(client_id), route_class))
         if not model or model.get("enabled", True) is False:
