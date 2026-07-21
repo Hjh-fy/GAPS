@@ -11,6 +11,7 @@ predicted gas route. QC is not used.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Sequence
@@ -43,6 +44,7 @@ from run_source_lightweight_regression_head_ablation import (
     fit_select_refit_shared_mlp,
     parse_hidden_grid,
 )
+from export_hybrid_mlp_ridge_deployment_candidate import serialize_mlp_head
 
 
 SOURCE_PRED_KEYS = (
@@ -50,6 +52,80 @@ SOURCE_PRED_KEYS = (
     "H2_source_per_gas_mlp_ppm",
     "H3_source_shared_mlp_ppm",
 )
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def build_r4_runtime_policy_payload(
+    *,
+    source_heads: dict[str, Any],
+    target_models: dict[tuple[str, int], Any],
+    feature_names: Sequence[str],
+    classifier_sha256: str,
+) -> dict[str, Any]:
+    """Bind the exact fitted C5 R4 models to one B5 runtime policy."""
+    if len(classifier_sha256) != 64:
+        raise ValueError("classifier SHA-256 must contain 64 characters")
+    expected = {("C5", class_id) for class_id in sorted(CLASS_NAMES)}
+    if set(target_models) != expected:
+        raise ValueError("R4 runtime policy requires C5-only models for all four classes")
+    serialized_models = []
+    for class_id in sorted(CLASS_NAMES):
+        payload = target_models[("C5", class_id)].to_json()
+        payload.update(
+            {
+                "client": "C5",
+                "class_id": class_id,
+                "gas": CLASS_NAMES[class_id],
+                "enabled": True,
+                "selected_mode": "source_aug_target_ridge",
+            }
+        )
+        serialized_models.append(payload)
+    return {
+        "schema_version": "iotj.b5_c5_r4_policy.v1",
+        "direction": "C1_C2_to_C5",
+        "classifier_sha256": classifier_sha256,
+        "source_aug_target_ridge_policy": {
+            "schema": "source_aug_target_ridge.v2",
+            "switch_rule": {
+                "type": "pred_class_in",
+                "class_ids": [0, 1, 2, 3],
+                "enabled_clients": ["C5"],
+            },
+            "source_prediction_keys": list(SOURCE_PRED_KEYS),
+            "source_heads": source_heads,
+            "feature_names": list(feature_names),
+            "models": serialized_models,
+        },
+        "forbidden_runtime_dependencies": ["C3", "C4", "R3aK16", "H8+C4", "P4"],
+    }
+
+
+def serialize_r4_source_heads(
+    ridge_models: dict[int, Any],
+    mlp_models: dict[int, Any],
+    shared_model: Any,
+) -> dict[str, Any]:
+    """Serialize only the R4 source heads without importing the legacy H8 exporter."""
+    ridge = []
+    mlp = []
+    for class_id in sorted(CLASS_NAMES):
+        ridge_payload = ridge_models[class_id].to_json()
+        ridge_payload.update({"class_id": class_id, "gas": CLASS_NAMES[class_id]})
+        ridge.append(ridge_payload)
+        mlp_payload = serialize_mlp_head(mlp_models[class_id])
+        mlp_payload.update({"class_id": class_id, "gas": CLASS_NAMES[class_id]})
+        mlp.append(mlp_payload)
+    shared = serialize_mlp_head(shared_model)
+    shared.update({"gas": "shared"})
+    return {"ridge_per_gas": ridge, "mlp_per_gas": mlp, "shared_mlp": shared}
 
 
 def add_pred_features(rows: list[dict[str, Any]], pred_keys: list[str]) -> list[dict[str, Any]]:
@@ -339,7 +415,12 @@ def main() -> None:
     parser.add_argument("--disable-c4-rescue", action="store_true")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", default="results/source_augmented_target_ridge_20260625_lite")
+    parser.add_argument("--runtime-policy-output", type=Path)
+    parser.add_argument("--classifier-checkpoint", type=Path)
     args = parser.parse_args()
+
+    if bool(args.runtime_policy_output) != bool(args.classifier_checkpoint):
+        raise ValueError("runtime_policy_output and classifier_checkpoint must be provided together")
 
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -424,6 +505,18 @@ def main() -> None:
 
     target_rich = apply_client_models(target_test, rich_models, "target_ridge_rich_only")
     target_aug = apply_client_models(target_test_aug, aug_models, "target_ridge_plus_source_preds")
+    if args.runtime_policy_output:
+        policy = build_r4_runtime_policy_payload(
+            source_heads=serialize_r4_source_heads(ridge_models, mlp_models, shared_model),
+            target_models=aug_models,
+            feature_names=aug_feature_names,
+            classifier_sha256=_sha256(args.classifier_checkpoint),
+        )
+        args.runtime_policy_output.parent.mkdir(parents=True, exist_ok=True)
+        args.runtime_policy_output.write_text(
+            json.dumps(policy, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     validation_rich, validation_rich_audit = fit_target_ridge_holdout_predictions(
         target_cal_route,
         target_cal_route,
