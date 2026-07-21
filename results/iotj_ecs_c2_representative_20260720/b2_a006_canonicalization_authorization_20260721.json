@@ -1,0 +1,49 @@
+{
+  "schema_version": "iotj.recovered_attempt_canonicalization.v1",
+  "record_type": "append_only_authorization",
+  "recorded_at": "2026-07-21",
+  "authorization": {
+    "source": "direct user instruction in the Codex task",
+    "instruction": "B2 can be promoted to canonical",
+    "scope": "representative ECS + Raspberry Pi + ECS-C2 real-system evidence set only"
+  },
+  "run_id": "c12_to_c5__b2__s42",
+  "attempt_id": "c12_to_c5__b2__s42__a006",
+  "source_attempt_status": {
+    "path": "raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a006/attempt_status.json",
+    "immutable_state": "failed",
+    "immutable_reason": "process_failure",
+    "immutable_audit_sha256": null,
+    "preservation": "The source status file is not modified by this record."
+  },
+  "promotion": {
+    "derived_status": "canonicalized_recovery_authorized",
+    "evidence_use": "Canonical representative real-system B2 run, paired descriptively with B5-s42/a001 for system communication, timing, resource, and observer measurements.",
+    "not_authorized": [
+      "formal B2/B5 five-seed classification mean, sample standard deviation, paired difference, or significance claim",
+      "replacement of the immutable attempt status",
+      "claim that the recovered attempt was validator-canonical at controller termination"
+    ]
+  },
+  "verified_basis": {
+    "training_completed_rounds": 25,
+    "manual_validation_status": "valid",
+    "manual_validation_audit_sha256": "be0e1a1bd394e7e90f472842b0b026aa4eb6a84690486141739f2e31bb368893",
+    "fitins": 50,
+    "fitres": 50,
+    "c1_resource_coverage": 0.9727443609022557,
+    "c2_resource_coverage": 0.9746376811594203,
+    "remote_originals_preserved": true,
+    "key_remote_local_sha256_match": true,
+    "algorithm_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+    "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+    "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+    "protocol_manifest_sha256": "ba289bf87a7d4526f3e3a3639e6e04881c75aececc84bdd8fd918b89b054f57b"
+  },
+  "evidence_paths": [
+    "a006_manual_recovery_system_metrics_20260721.json",
+    "raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a006/manual_recovery_validation_corrected_20260721.json",
+    "raw/c12_to_c5__b2__s42/c12_to_c5__b2__s42__a006/remote_attempt_binding.json"
+  ],
+  "claim_boundary": "This authorization elevates B2 a006 only for the representative real-system evidence table. The historical B2 seed-42 accuracy remains screening evidence, and this record does not establish multi-seed algorithmic confirmation."
+}
