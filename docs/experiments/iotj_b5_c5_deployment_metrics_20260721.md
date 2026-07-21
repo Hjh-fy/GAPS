@@ -72,3 +72,25 @@
 - `results/iotj_b5_c5_deployment_p1_20260721/rebuilt_suite/B5canonical/high_coverage_qc/operational_summary.json`
 - `results/iotj_b5_c5_deployment_p1_20260721/rebuilt_assets_pending/r4_policy.json`
 - `results/iotj_b5_c5_deployment_p1_20260721/rebuilt_assets_pending/h23_reference.json`
+
+## 2026-07-21 bundle candidate update (parity still required)
+
+The candidate was produced from the explicit B5 canonical checkpoint, R4/H2.3
+assets and HC90 QC assets only.  Its input audit is `ready`, binds all eleven
+required roles and records the exact audit SHA-256 in the manifest.  The input
+preparation command also verified strict loading of the classifier against the
+frozen TCN configuration (22,765 parameters; 100 x 8 float32 window; four
+classes).  The source commit (`2ef7aea77b9dfabdd09da4f38742907a37c58c30`) is
+identical for `config.py`, `model.py` and `utils.py`.
+
+| Candidate quantity | Value | Boundary |
+|---|---:|---|
+| Runtime assets | 2,975,691 B (2.8378 MiB) | 10 runtime assets; includes schema/class map/normalization |
+| Complete candidate directory | 2,980,515 B (2.8424 MiB) | Runtime assets plus manifest |
+| External parity reference | 65,230 B | 1,360 HC90 rows; recorded by SHA-256 only, never copied under `assets/` |
+| Candidate location | `results/iotj_b5_c5_deployment_p1_20260721/bundle_candidate_v1/` | Not a final release until exact runtime parity passes |
+
+The next gate is to implement/run the B5-only runtime on all 1,360 C5 test
+windows.  It must reproduce `pred_class`, `selected_profile`, `qc_decision`
+exactly and `final_ppm` within `1e-6`; otherwise this candidate is blocked and
+no Pi/PC latency or resource metric may be reported as a final runtime result.
