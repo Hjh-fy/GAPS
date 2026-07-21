@@ -52,6 +52,10 @@ def _inputs(tmp_path: Path) -> dict[str, Path]:
     _write_json(h23, {"classifier_sha256": classifier_sha})
     qc_dir = tmp_path / "qc"
     qc_dir.mkdir()
+    _write_json(
+        qc_dir / "manifest.json",
+        {"pred_key": "target_ridge_plus_source_preds_ppm", "secondary_workpoint": "HC90"},
+    )
     for name in ["risk_policy.json", "component_calibrator.json", "feature_reference.json", "risk_selection.json"]:
         _write_json(qc_dir / name, {})
     source = tmp_path / "hc90.csv"
@@ -117,7 +121,7 @@ def test_prepare_rejects_non_hc90_parity_source(tmp_path: Path) -> None:
         )
 
 
-def test_prepare_rejects_parity_source_whose_final_ppm_is_not_r4(tmp_path: Path) -> None:
+def test_prepare_uses_r4_not_legacy_final_ppm_from_the_qc_merged_stream(tmp_path: Path) -> None:
     from scripts.prepare_iotj_b5_c5_bundle_inputs import prepare_bundle_inputs
 
     paths = _inputs(tmp_path)
@@ -128,10 +132,24 @@ def test_prepare_rejects_parity_source_whose_final_ppm_is_not_r4(tmp_path: Path)
         writer.writeheader()
         writer.writerows(rows)
 
-    with pytest.raises(ValueError, match="does not bind the B5 R4"):
+    prepare_bundle_inputs(
+        classifier=paths["classifier"], r4_policy=paths["r4"], h23_reference=paths["h23"],
+        qc_dir=paths["qc"], hc90_reference=paths["source"], output_dir=tmp_path / "prepared",
+        frozen_commit="a" * 40, source_archive_sha256="b" * 64,
+    )
+    output_rows = list(csv.DictReader((tmp_path / "prepared" / "offline_reference_1360.csv").open(encoding="utf-8", newline="")))
+    assert output_rows[0]["final_ppm"] == "12.5"
+
+
+def test_prepare_rejects_qc_manifest_not_bound_to_r4(tmp_path: Path) -> None:
+    from scripts.prepare_iotj_b5_c5_bundle_inputs import prepare_bundle_inputs
+
+    paths = _inputs(tmp_path)
+    _write_json(paths["qc"] / "manifest.json", {"pred_key": "baseline_final_ppm", "secondary_workpoint": "HC90"})
+
+    with pytest.raises(ValueError, match="does not bind HC90 decisions"):
         prepare_bundle_inputs(
             classifier=paths["classifier"], r4_policy=paths["r4"], h23_reference=paths["h23"],
             qc_dir=paths["qc"], hc90_reference=paths["source"], output_dir=tmp_path / "prepared",
             frozen_commit="a" * 40, source_archive_sha256="b" * 64,
         )
-    assert not (tmp_path / "prepared").exists()

@@ -72,9 +72,7 @@ def _validated_hc90_rows(source: Path) -> list[dict[str, str]]:
     """Read a valid R4-bound HC90 stream before any candidate output is created."""
     with Path(source).open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
-        required = {
-            "sample_index", "pred_class", "qc_decision", "final_ppm", "qc_workpoint", R4_FINAL_FIELD,
-        }
+        required = {"sample_index", "pred_class", "qc_decision", "qc_workpoint", R4_FINAL_FIELD}
         missing = sorted(required - set(reader.fieldnames or ()))
         if missing:
             raise ValueError(f"HC90 source missing fields: {missing}")
@@ -88,14 +86,11 @@ def _validated_hc90_rows(source: Path) -> list[dict[str, str]]:
         raise ValueError("parity source must be the HC90 workpoint")
     for row in rows:
         try:
-            offline_final = float(str(row["final_ppm"]))
             r4_final = float(str(row[R4_FINAL_FIELD]))
         except ValueError as error:
             raise ValueError("parity source contains non-numeric final ppm") from error
-        if not math.isfinite(offline_final) or not math.isfinite(r4_final):
+        if not math.isfinite(r4_final):
             raise ValueError("parity source contains non-finite final ppm")
-        if abs(offline_final - r4_final) > 1e-6:
-            raise ValueError("parity source final_ppm does not bind the B5 R4 final prediction")
     return rows
 
 
@@ -112,7 +107,7 @@ def write_parity_reference(source: Path, output: Path) -> None:
                     "pred_class": int(str(row["pred_class"])),
                     "selected_profile": SELECTED_PROFILE,
                     "qc_decision": str(row["qc_decision"]),
-                    "final_ppm": str(row["final_ppm"]),
+                    "final_ppm": str(row[R4_FINAL_FIELD]),
                 }
             )
 
@@ -155,6 +150,11 @@ def prepare_bundle_inputs(
     class_ids = r4_payload.get("source_aug_target_ridge_policy", {}).get("switch_rule", {}).get("class_ids")
     if sorted(class_ids or ()) != [0, 1, 2, 3]:
         raise ValueError("R4 policy must explicitly route all four gas classes")
+    qc_manifest = _read_json(qc_dir / "manifest.json")
+    if qc_manifest.get("pred_key") != R4_FINAL_FIELD:
+        raise ValueError("QC manifest does not bind HC90 decisions to the B5 R4 prediction")
+    if qc_manifest.get("secondary_workpoint") != "HC90":
+        raise ValueError("QC manifest does not declare HC90 as the secondary workpoint")
     _validated_hc90_rows(hc90_reference)
 
     _require_empty_or_new(output_dir)

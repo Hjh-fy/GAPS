@@ -88,7 +88,7 @@ identical for `config.py`, `model.py` and `utils.py`.
 | Runtime assets | 2,975,691 B (2.8378 MiB) | 10 runtime assets; includes schema/class map/normalization |
 | Complete candidate directory | 2,980,515 B (2.8424 MiB) | Runtime assets plus manifest |
 | External parity reference | 65,230 B | 1,360 HC90 rows; recorded by SHA-256 only, never copied under `assets/` |
-| Candidate location | `results/iotj_b5_c5_deployment_p1_20260721/bundle_candidate_v1/` | Not a final release until exact runtime parity passes |
+| Candidate location | `results/iotj_b5_c5_deployment_p1_20260721/bundle_candidate_v2/` | Not a final release until exact runtime parity passes |
 
 The next gate is to implement/run the B5-only runtime on all 1,360 C5 test
 windows.  It must reproduce `pred_class`, `selected_profile`, `qc_decision`
@@ -107,3 +107,9 @@ The candidate package is retained only as an input-hash/layout diagnostic; its
 parity status is **blocked**.  The input preparer now validates this equality
 before writing any output, so a mixed legacy final-prediction field cannot
 produce a partial candidate.
+
+The replacement `bundle_candidate_v2/` does not use that ambiguous CSV field:
+it requires the QC manifest to declare
+`pred_key=target_ridge_plus_source_preds_ppm` and writes the parity `final_ppm`
+from that R4 field.  Its input audit is `ready`; it remains a **candidate**
+until the independent runtime reproduces all 1,360 rows.
