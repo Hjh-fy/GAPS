@@ -340,3 +340,10 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 当前执行控制层 commit 为 `495c40ceea39db16c55b24efccf737c402d0364b`。它只修复 SSH transport failure 分类、600 s 恢复窗口和 tunnel keepalive；冻结算法仍是 `2ef7aea77b9dfabdd09da4f38742907a37c58c30`，source archive 仍是 `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`。
 - 当前有效运行是 `B2-s42/a006`，2026-07-21 01:05 Asia/Shanghai 启动；01:17 已完成 3 rounds 并进入 round 4。监控入口改为通用脚本：`monitor_confirmation_attempt.ps1 -RunId c12_to_c5__b2__s42 -AttemptId c12_to_c5__b2__s42__a006`。
 - 夜间 watcher 已启动。只有 a006 被 validator 接受且状态为 canonical，才会按相同 archive、数据、超参数与 `ecs_c2_pi_c1` 拓扑对 `B5-s42/a001` 做 preflight 后顺序启动；任何失败、缺失 audit SHA、既有 B5 attempt 目录或 controller 文件 SHA 变化均 fail closed。
+
+## 2026-07-21 a006 最终状态与手动证据回收
+
+- a006 完成 25/25 rounds 后，在本地 recovery 第一次 `scp` 前因 `attempt/raw` 父目录未创建而进入 `failed / process_failure`；夜间 watcher 按门控停止，B5 未启动。三端目前无残留训练/采样进程。
+- 三端证据已手动回收并与远端关键 SHA-256 核对一致。短路径 validator 结果为 valid：25 rounds、50 FitIns、50 FitRes、C1/C2 resource coverage 97.27%/97.46%，audit SHA `be0e1a1bd394e7e90f472842b0b026aa4eb6a84690486141739f2e31bb368893`。a006 的 failed 状态不可提升为 canonical。
+- failed-attempt 诊断指标：25-round application communication 16.7606 MiB；round wall mean 241.65 s；Pi/ECS-C2 train mean 42.09/76.61 s；server DA mean 164.15 s（67.93% wall）；Pi peak RSS 518.41 MiB、peak temperature 62.25 °C；Observer 开销约占 wall 合计 0.1007%。详见 `results/iotj_ecs_c2_representative_20260720/a006_manual_recovery_system_metrics_20260721.md`。
+- 下一阻塞项缩小为执行层最小修复：在 remote-only ECS-C2 recovery 前安全创建新的空 `attempt/raw`，并为 Windows 短路径验证增加回归覆盖；不得修改训练算法或直接启动 B5。

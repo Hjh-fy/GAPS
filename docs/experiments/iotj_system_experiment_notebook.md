@@ -474,3 +474,11 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 修复后测试：controller `155 passed, 1 skipped`，validator `38 passed, 1 skipped`，cloud-edge `6 passed`，并通过 `py_compile`。
 - 2026-07-21 01:05 Asia/Shanghai，三机 preflight 通过后启动 `B2-s42/a006`；冻结算法 commit、source archive、dataset 与 B2 config SHA-256 保持不变，Controller deadline 为 48 h。01:17 快照显示已完成 3 rounds 并进入 round 4，Pi/ECS-C2 events 与 1 Hz resource streams 持续增长。
 - 夜间只允许顺序执行 B2 与 B5。`overnight_b2_then_b5.ps1` 持有独占锁，只有 a006 最终为 `canonical / validator_accepted` 且存在 64 位 audit SHA-256 时才写入 B2→B5 gate、执行 B5 preflight 并启动 `B5-s42/a001`；否则立即停止，不分配 B5 attempt。
+
+## 2026-07-21：a006 完成训练但回收失败
+
+- a006 已真实完成 25/25 rounds，Pi/ECS-C2 均于 02:46:31 Asia/Shanghai 正常 disconnect；随后 Controller 第一次把 server raw evidence `scp` 到本地时，因 `attempt/raw` 父目录未显式创建而失败。状态保持 `failed / process_failure`，夜间 watcher 正确停止，B5 未启动。
+- 三端 raw evidence 已手动回收，远端原件保留；本地 ECS/Pi/ECS-C2 分别为 161/11/11 个文件、12,831,941/17,577,967/17,820,601 bytes。events、resource 与 round-25 checkpoint 的远端/本地 SHA-256 一致。
+- 使用保持正确 attempt basename 的短 junction 运行 validator，得到 `status=valid`、25 rounds、50 FitIns、50 FitRes、C1/C2 coverage `0.972744/0.974638`，audit SHA-256 `be0e1a1bd394e7e90f472842b0b026aa4eb6a84690486141739f2e31bb368893`。该验证只证明回收证据结构完整，不能改写既有 failed 状态。
+- 诊断系统指标：application messages 25 轮合计 16.7606 MiB；round wall mean/p50/p95 `241.65/228.06/269.62 s`；Pi C1/ECS C2 train mean `42.09/76.61 s`；server DA mean `164.15 s`，约占 mean wall 的 `67.93%`。Pi active RSS mean/peak `514.23/518.41 MiB`，温度 mean/peak `57.69/62.25 °C`，无 throttling；Observer 累计开销约 6.086 s，占 wall 合计约 `0.1007%`。
+- 轻量诊断产物：`results/iotj_ecs_c2_representative_20260720/a006_manual_recovery_system_metrics_20260721.json` 与同名 `.md`。在 recovery parent creation 的最小测试和修复完成前不得启动 B5。
