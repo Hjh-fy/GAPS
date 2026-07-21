@@ -130,7 +130,9 @@ def expected_outputs(output_root: Path) -> tuple[Path, ...]:
     return (
         output_root / "inputs" / "manifest.json",
         output_root / "h23_plus" / "manifest.json",
+        output_root / "h23_plus" / "h23_reference.json",
         output_root / "h8_no_rescue" / "manifest.json",
+        output_root / "h8_no_rescue" / "r4_policy.json",
         output_root / "high_coverage_qc" / "manifest.json",
         output_root / "high_coverage_qc" / "operational_summary.json",
         output_root / "r0_r7" / "r0_r7_summary.csv",
