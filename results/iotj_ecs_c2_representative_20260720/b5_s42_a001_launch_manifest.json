@@ -3,8 +3,8 @@
   "run_id": "c12_to_c5__b5__s42",
   "expected_attempt_id": "c12_to_c5__b5__s42__a001",
   "algorithm_confirmation_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
-  "controller_commit": "495c40ceea39db16c55b24efccf737c402d0364b",
-  "controller_file_sha256": "46efea0bd55a616101911100d2e90d35bd9704ffdc3979206d27eaf089014ee3",
+  "controller_commit": "70ae04420e2c67383e5b6fdd98dcc4b47b1fd196",
+  "controller_file_sha256": "68f6eeffbc7f671b27f4dce2cc2353d54845e1de4d826f3b340ab8002b4ea363",
   "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
   "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
   "algorithm_config_sha256": "bd886f824519c991c04f3d31a174ac31bb89d34ac5fc6f5f0234eec1e81213aa",
@@ -17,5 +17,5 @@
   "batch_size": 32,
   "run_timeout_seconds": 172800,
   "transport_grace_seconds": 600,
-  "start_gate": "B2-s42/a006 canonical with validator audit SHA-256"
+  "start_gate": "three-host B5 preflight passes; no residual Flower/resource processes; B2-s42/a006 remains failed diagnostic evidence"
 }

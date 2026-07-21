@@ -347,3 +347,11 @@ python -m scripts.freeze_iotj_confirmation_protocol --confirmation-commit $commi
 - 三端证据已手动回收并与远端关键 SHA-256 核对一致。短路径 validator 结果为 valid：25 rounds、50 FitIns、50 FitRes、C1/C2 resource coverage 97.27%/97.46%，audit SHA `be0e1a1bd394e7e90f472842b0b026aa4eb6a84690486141739f2e31bb368893`。a006 的 failed 状态不可提升为 canonical。
 - failed-attempt 诊断指标：25-round application communication 16.7606 MiB；round wall mean 241.65 s；Pi/ECS-C2 train mean 42.09/76.61 s；server DA mean 164.15 s（67.93% wall）；Pi peak RSS 518.41 MiB、peak temperature 62.25 °C；Observer 开销约占 wall 合计 0.1007%。详见 `results/iotj_ecs_c2_representative_20260720/a006_manual_recovery_system_metrics_20260721.md`。
 - 下一阻塞项缩小为执行层最小修复：在 remote-only ECS-C2 recovery 前安全创建新的空 `attempt/raw`，并为 Windows 短路径验证增加回归覆盖；不得修改训练算法或直接启动 B5。
+
+## 2026-07-21 最新执行状态：B5-s42 已运行
+
+- 执行层 recovery-parent 最小修复已提交为 `70ae04420e2c67383e5b6fdd98dcc4b47b1fd196`；冻结算法/归档未变，仍为 `2ef7aea77b9dfabdd09da4f38742907a37c58c30` / `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`。
+- B5 三机 preflight 已通过；`c12_to_c5__b5__s42__a001` 于 2026-07-21 11:29 Asia/Shanghai 启动。11:44 已完成 3 rounds 并进入 round 4，Pi/ECS-C2 资源 sidecar 正常增长，Controller 48 h timeout 生效。
+- 监控：`powershell -ExecutionPolicy Bypass -File results/iotj_ecs_c2_representative_20260720/monitor_confirmation_attempt.ps1 -RunId c12_to_c5__b5__s42 -AttemptId c12_to_c5__b5__s42__a001 -Once`。
+- B2 a006 保持 immutable `failed/process_failure`；其 25 轮训练与三端证据虽已完整回收且结构验证通过，但只作为 recovered diagnostic，不进入 canonical/statistical result。
+- 导师汇报整合表：`results/iotj_advisor_metrics_20260721/iotj_advisor_system_algorithm_metrics_20260721_v2.xlsx`。其中 historical CPU runtime 仅作旧协议量级参考；正式 current C5 bundle、1360-row parity、Pi/PC p50/p95/p99 inference 与 runtime RSS 仍待 P1 完成。

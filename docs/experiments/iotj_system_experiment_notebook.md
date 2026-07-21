@@ -482,3 +482,12 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 使用保持正确 attempt basename 的短 junction 运行 validator，得到 `status=valid`、25 rounds、50 FitIns、50 FitRes、C1/C2 coverage `0.972744/0.974638`，audit SHA-256 `be0e1a1bd394e7e90f472842b0b026aa4eb6a84690486141739f2e31bb368893`。该验证只证明回收证据结构完整，不能改写既有 failed 状态。
 - 诊断系统指标：application messages 25 轮合计 16.7606 MiB；round wall mean/p50/p95 `241.65/228.06/269.62 s`；Pi C1/ECS C2 train mean `42.09/76.61 s`；server DA mean `164.15 s`，约占 mean wall 的 `67.93%`。Pi active RSS mean/peak `514.23/518.41 MiB`，温度 mean/peak `57.69/62.25 °C`，无 throttling；Observer 累计开销约 6.086 s，占 wall 合计约 `0.1007%`。
 - 轻量诊断产物：`results/iotj_ecs_c2_representative_20260720/a006_manual_recovery_system_metrics_20260721.json` 与同名 `.md`。在 recovery parent creation 的最小测试和修复完成前不得启动 B5。
+
+## 2026-07-21：B5-s42 代表性真实系统运行与导师汇报表
+
+- remote-only recovery 的父目录缺失问题已按测试优先完成最小修复：新增 RED/green 回归测试，Controller 在 scp 前安全创建并校验 `attempt/raw`。执行层提交为 `70ae04420e2c67383e5b6fdd98dcc4b47b1fd196`；冻结算法仍为 `2ef7aea77b9dfabdd09da4f38742907a37c58c30`，source archive SHA-256 仍为 `52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68`。
+- 验证结果：Controller `156 passed, 1 skipped`，validator `38 passed, 1 skipped`，cloud-edge `6 passed`；三机 B5 preflight 于 2026-07-21 11:27 Asia/Shanghai 通过。
+- `B5-s42/a001` 于 2026-07-21 11:29 启动，attempt 路径为 `results/iotj_ecs_c2_representative_20260720/raw/c12_to_c5__b5__s42/c12_to_c5__b5__s42__a001/`。11:44 的只读监控显示已完成 3 rounds、进入 round 4，两个客户端均无 FitRes failure，Pi/ECS-C2 resource sidecar 持续增长。Controller 超时上限为 172800 s（48 h）。
+- 通用监控命令：`powershell -ExecutionPolicy Bypass -File results/iotj_ecs_c2_representative_20260720/monitor_confirmation_attempt.ps1 -RunId c12_to_c5__b5__s42 -AttemptId c12_to_c5__b5__s42__a001 -Once`。
+- 导师汇报工作簿新增于 `results/iotj_advisor_metrics_20260721/iotj_advisor_system_algorithm_metrics_20260721_v2.xlsx`，整合 B2 recovered diagnostic 系统指标、historical seed-42 分类、formal C5 regression/QC、当前 checkpoint 量级、正式部署缺口和 legacy CPU benchmark。工作簿结构/关键区域检查通过，公式错误搜索为 0；artifact-tool 与 Excel COM 在本机渲染阶段均失败，因此不得声称已完成最终视觉验收。
+- 历史 H2.3/H8/H8+C4 CPU benchmark 仅用于量级参照，不是当前 C5 正式 Pi/PC 结果；其中 legacy H8+C4 不得重新进入主线。当前 B2 serialized application message 已是实际 Flower 应用层消息测量，但仍不是 transport/wire bytes。
