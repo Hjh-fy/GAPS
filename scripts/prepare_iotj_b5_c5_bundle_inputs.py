@@ -11,6 +11,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,7 @@ CONCENTRATION_RANGES = {
 PARITY_FIELDS = ("sample_index", "pred_class", "selected_profile", "qc_decision", "final_ppm")
 EXPECTED_PARITY_ROWS = 1360
 SELECTED_PROFILE = "b5_c5_r4_h23_hc90"
+R4_FINAL_FIELD = "target_ridge_plus_source_preds_ppm"
 
 
 def _sha256(path: Path) -> str:
@@ -66,11 +68,13 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def write_parity_reference(source: Path, output: Path) -> None:
-    """Reduce the frozen HC90 offline stream to the five runtime parity fields."""
+def _validated_hc90_rows(source: Path) -> list[dict[str, str]]:
+    """Read a valid R4-bound HC90 stream before any candidate output is created."""
     with Path(source).open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
-        required = {"sample_index", "pred_class", "qc_decision", "final_ppm", "qc_workpoint"}
+        required = {
+            "sample_index", "pred_class", "qc_decision", "final_ppm", "qc_workpoint", R4_FINAL_FIELD,
+        }
         missing = sorted(required - set(reader.fieldnames or ()))
         if missing:
             raise ValueError(f"HC90 source missing fields: {missing}")
@@ -82,6 +86,22 @@ def write_parity_reference(source: Path, output: Path) -> None:
         raise ValueError("HC90 source has duplicate sample_index")
     if any(str(row["qc_workpoint"]) != "HC90" for row in rows):
         raise ValueError("parity source must be the HC90 workpoint")
+    for row in rows:
+        try:
+            offline_final = float(str(row["final_ppm"]))
+            r4_final = float(str(row[R4_FINAL_FIELD]))
+        except ValueError as error:
+            raise ValueError("parity source contains non-numeric final ppm") from error
+        if not math.isfinite(offline_final) or not math.isfinite(r4_final):
+            raise ValueError("parity source contains non-finite final ppm")
+        if abs(offline_final - r4_final) > 1e-6:
+            raise ValueError("parity source final_ppm does not bind the B5 R4 final prediction")
+    return rows
+
+
+def write_parity_reference(source: Path, output: Path) -> None:
+    """Reduce the validated frozen HC90 stream to the five runtime parity fields."""
+    rows = _validated_hc90_rows(source)
     with Path(output).open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=PARITY_FIELDS)
         writer.writeheader()
@@ -135,6 +155,7 @@ def prepare_bundle_inputs(
     class_ids = r4_payload.get("source_aug_target_ridge_policy", {}).get("switch_rule", {}).get("class_ids")
     if sorted(class_ids or ()) != [0, 1, 2, 3]:
         raise ValueError("R4 policy must explicitly route all four gas classes")
+    _validated_hc90_rows(hc90_reference)
 
     _require_empty_or_new(output_dir)
     feature_schema = output_dir / "feature_schema.json"

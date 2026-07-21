@@ -14,7 +14,10 @@ def _source_reference(path: Path, *, workpoint: str = "HC90") -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["sample_index", "pred_class", "qc_decision", "final_ppm", "qc_workpoint"],
+            fieldnames=[
+                "sample_index", "pred_class", "qc_decision", "final_ppm", "qc_workpoint",
+                "target_ridge_plus_source_preds_ppm",
+            ],
         )
         writer.writeheader()
         for index in range(1360):
@@ -25,6 +28,7 @@ def _source_reference(path: Path, *, workpoint: str = "HC90") -> None:
                     "qc_decision": "accept",
                     "final_ppm": "12.5",
                     "qc_workpoint": workpoint,
+                    "target_ridge_plus_source_preds_ppm": "12.5",
                 }
             )
 
@@ -111,3 +115,23 @@ def test_prepare_rejects_non_hc90_parity_source(tmp_path: Path) -> None:
             qc_dir=paths["qc"], hc90_reference=paths["source"], output_dir=tmp_path / "prepared",
             frozen_commit="a" * 40, source_archive_sha256="b" * 64,
         )
+
+
+def test_prepare_rejects_parity_source_whose_final_ppm_is_not_r4(tmp_path: Path) -> None:
+    from scripts.prepare_iotj_b5_c5_bundle_inputs import prepare_bundle_inputs
+
+    paths = _inputs(tmp_path)
+    rows = list(csv.DictReader(paths["source"].open(encoding="utf-8", newline="")))
+    rows[0]["final_ppm"] = "77.0"
+    with paths["source"].open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+
+    with pytest.raises(ValueError, match="does not bind the B5 R4"):
+        prepare_bundle_inputs(
+            classifier=paths["classifier"], r4_policy=paths["r4"], h23_reference=paths["h23"],
+            qc_dir=paths["qc"], hc90_reference=paths["source"], output_dir=tmp_path / "prepared",
+            frozen_commit="a" * 40, source_archive_sha256="b" * 64,
+        )
+    assert not (tmp_path / "prepared").exists()

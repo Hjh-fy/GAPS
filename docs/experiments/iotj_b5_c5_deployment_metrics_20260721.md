@@ -94,3 +94,16 @@ The next gate is to implement/run the B5-only runtime on all 1,360 C5 test
 windows.  It must reproduce `pred_class`, `selected_profile`, `qc_decision`
 exactly and `final_ppm` within `1e-6`; otherwise this candidate is blocked and
 no Pi/PC latency or resource metric may be reported as a final runtime result.
+
+### Parity source quarantine
+
+The first candidate external HC90 stream was quarantined before runtime
+benchmarking.  Its `final_ppm` field is not equal to the same-row
+`target_ridge_plus_source_preds_ppm` R4 value (for example, the first row is
+about 77.104 ppm versus 111.197 ppm).  Across all 1,360 rows, 1,322 differ by
+more than `1e-6` (mean absolute difference 40.205 ppm; maximum 225 ppm).  It
+must therefore not be represented as the final B5 R4/H8 prediction stream.
+The candidate package is retained only as an input-hash/layout diagnostic; its
+parity status is **blocked**.  The input preparer now validates this equality
+before writing any output, so a mixed legacy final-prediction field cannot
+produce a partial candidate.
