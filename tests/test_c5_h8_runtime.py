@@ -56,3 +56,13 @@ def test_runtime_contract_strict_loads_frozen_b5_classifier() -> None:
     assert logits.shape == (1, 4)
     assert predicted.shape == (1,)
     assert int(predicted[0]) in (0, 1, 2, 3)
+
+
+def test_fixed_h8_route_uses_predicted_class_for_all_heads() -> None:
+    from gaps_deploy.c5_h8_runtime import FixedH8Policy
+
+    ridge = {"feature_names": ["x"], "mean": [0], "scale": [1], "coef": [0, 1], "clip_min": -99, "clip_max": 99}
+    mlp = {"feature_names": ["x"], "mean": [0], "scale": [1], "coefs": [[[1]]], "intercepts": [[0]], "activation": "relu", "out_activation": "identity", "clip_min": -99, "clip_max": 99}
+    policy = FixedH8Policy.from_json({"source_heads": {"ridge_per_gas": [{**ridge, "class_id": i} for i in range(4)], "mlp_per_gas": [{**mlp, "class_id": i} for i in range(4)], "shared_mlp": {**mlp, "gas": "shared"}}, "models": [{**ridge, "class_id": i, "client": "C5"} for i in range(4)]})
+
+    assert policy.predict({"x": 2.0}, predicted_class=3) == pytest.approx(2.0)

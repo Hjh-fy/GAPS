@@ -136,6 +136,40 @@ class SerializedMLP:
         return float(np.clip(result, self.clip_min, self.clip_max))
 
 
+@dataclass(frozen=True)
+class FixedH8Policy:
+    """Frozen R4/H8 source-head augmentation and C5 predicted-class Ridge route."""
+
+    source_ridge: Mapping[int, SerializedRidge]
+    source_mlp: Mapping[int, SerializedMLP]
+    shared_mlp: SerializedMLP
+    target_ridge: Mapping[int, SerializedRidge]
+
+    @classmethod
+    def from_json(cls, payload: Mapping[str, Any]) -> "FixedH8Policy":
+        source = payload.get("source_heads")
+        models = payload.get("models")
+        if not isinstance(source, Mapping) or not isinstance(models, list):
+            raise C5H8RuntimeError("fixed H8 policy is malformed")
+        def indexed(items: object, factory: Any) -> dict[int, Any]:
+            if not isinstance(items, list): raise C5H8RuntimeError("fixed H8 head list is malformed")
+            output = {int(item["class_id"]): factory.from_json(item) for item in items if isinstance(item, Mapping)}
+            if set(output) != {0, 1, 2, 3}: raise C5H8RuntimeError("fixed H8 policy requires four class heads")
+            return output
+        shared = source.get("shared_mlp")
+        if not isinstance(shared, Mapping): raise C5H8RuntimeError("fixed H8 policy has no shared MLP")
+        return cls(indexed(source.get("ridge_per_gas"), SerializedRidge), indexed(source.get("mlp_per_gas"), SerializedMLP), SerializedMLP.from_json(shared), indexed(models, SerializedRidge))
+
+    def predict(self, features: Mapping[str, object], predicted_class: int) -> float:
+        if predicted_class not in self.target_ridge:
+            raise C5H8RuntimeError("fixed H8 predicted class is outside 0..3")
+        values = dict(features); values["route_class"] = predicted_class
+        values["srcpred_H1_source_ridge_ppm"] = self.source_ridge[predicted_class].predict(values)
+        values["srcpred_H2_source_per_gas_mlp_ppm"] = self.source_mlp[predicted_class].predict(values)
+        values["srcpred_H3_source_shared_mlp_ppm"] = self.shared_mlp.predict(values)
+        return self.target_ridge[predicted_class].predict(values)
+
+
 class C5H8Runtime:
     """Strict B5 classifier loader for the versioned C5/H8 runtime contract."""
 
