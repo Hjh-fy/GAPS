@@ -1,0 +1,48 @@
+{
+  "bundle_manifest": {
+    "bytes": 4617,
+    "path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json",
+    "sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5"
+  },
+  "classifier_model": {
+    "architecture": "FedGasBaseModel",
+    "encoder_type": "tcn",
+    "feat_dim": 64,
+    "num_classes": 4,
+    "num_sensors": 8,
+    "tcn_norm": "instance",
+    "use_cls_proj": true
+  },
+  "inputs": {
+    "dtype": "float32",
+    "features": {
+      "bytes": 4352128,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_features.npy",
+      "sha256": "4204a06d15e6640c225b64a9f9a19b71a7bff1b5bb3e09de1b5f58280b39d240"
+    },
+    "metadata": {
+      "bytes": 1022897,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_experiment_info.json",
+      "sha256": "9c0c5d1d438ce1d766762bcdcdd44f4921d1d4821943d959ef7e7eb878673c60"
+    },
+    "row_count": 1360,
+    "window_shape": [
+      100,
+      8
+    ]
+  },
+  "references": {
+    "HC90": {
+      "bytes": 11942586,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc90_records.csv",
+      "sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+    },
+    "HC95": {
+      "bytes": 11942586,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc95_records.csv",
+      "sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860"
+    }
+  },
+  "schema_version": "iotj.c5_h8_runtime_contract.v1",
+  "status": "ready"
+}

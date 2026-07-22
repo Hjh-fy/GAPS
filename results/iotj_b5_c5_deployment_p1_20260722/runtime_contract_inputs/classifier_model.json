@@ -1,0 +1,9 @@
+{
+  "architecture": "FedGasBaseModel",
+  "encoder_type": "tcn",
+  "feat_dim": 64,
+  "num_classes": 4,
+  "num_sensors": 8,
+  "tcn_norm": "instance",
+  "use_cls_proj": true
+}
