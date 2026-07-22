@@ -229,15 +229,130 @@ class H23Policy:
         return {"h23_anchor_ppm": anchor, "h23_weak_ridge_ppm": weak_ridge, "h23_plus_ppm": blended}
 
 
+RISK_COMPONENTS = (
+    "raw_risk_confidence",
+    "raw_risk_prototype",
+    "raw_risk_support",
+    "raw_risk_expert_disagreement",
+    "raw_risk_source_spread",
+)
+CLASS_RANGES = {0: 112.5, 1: 225.0, 2: 112.5, 3: 225.0}
+
+
+@dataclass(frozen=True)
+class DeploymentRiskPolicy:
+    """Frozen deployment-visible component calibration and HC decision policy."""
+
+    feature_reference: Mapping[str, Any]
+    distributions: Mapping[str, np.ndarray]
+    risk_policy: Mapping[str, Any]
+
+    @classmethod
+    def from_json(cls, feature_reference: Mapping[str, Any], calibrator: Mapping[str, Any], risk_policy: Mapping[str, Any]) -> "DeploymentRiskPolicy":
+        names = tuple(feature_reference.get("feature_names", ()))
+        if names != tuple(f"cls_feat_{index:03d}" for index in range(64)):
+            raise C5H8RuntimeError("QC feature reference schema differs")
+        raw_distributions = calibrator.get("component_distributions")
+        if not isinstance(raw_distributions, Mapping) or set(raw_distributions) != set(RISK_COMPONENTS):
+            raise C5H8RuntimeError("QC component calibrator schema differs")
+        distributions: dict[str, np.ndarray] = {}
+        for key in RISK_COMPONENTS:
+            values = _finite_vector(raw_distributions[key], key)
+            if np.any(values[1:] < values[:-1]):
+                raise C5H8RuntimeError(f"QC calibration distribution is not sorted: {key}")
+            distributions[key] = values
+        if risk_policy.get("score_key") != "deployment_risk_full":
+            raise C5H8RuntimeError("QC risk policy score key differs")
+        return cls(feature_reference, distributions, risk_policy)
+
+    def _reference_cell(self, route_class: int, phase: int) -> Mapping[str, Any]:
+        cell = (
+            self.feature_reference.get("cells", {}).get(f"{route_class}:{phase}")
+            or self.feature_reference.get("classes", {}).get(str(route_class))
+            or self.feature_reference.get("global")
+        )
+        if not isinstance(cell, Mapping):
+            raise C5H8RuntimeError("QC feature reference cell is missing")
+        return cell
+
+    def score(self, row: Mapping[str, Any]) -> dict[str, float]:
+        try:
+            route_class = int(row["route_class"])
+            phase = int(row["phase"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise C5H8RuntimeError("QC row route class or phase is invalid") from error
+        if route_class not in CLASS_RANGES or phase not in (0, 1, 2):
+            raise C5H8RuntimeError("QC row route class or phase is outside the frozen schema")
+        names = tuple(self.feature_reference["feature_names"])
+        features = _feature_vector(row, names)
+        cell = self._reference_cell(route_class, phase)
+        mean = _finite_vector(cell.get("mean"), "QC feature mean")
+        scale = _finite_vector(cell.get("scale"), "QC feature scale")
+        support = np.asarray(cell.get("support"), dtype=np.float64)
+        if mean.shape != features.shape or scale.shape != features.shape or support.ndim != 2 or support.shape[0] == 0 or support.shape[1:] != features.shape or not np.isfinite(support).all():
+            raise C5H8RuntimeError("QC feature reference dimensions differ")
+        scale = np.maximum(scale, 1e-6)
+        prototype = float(np.sqrt(np.mean(((features - mean) / scale) ** 2)))
+        support_distance = float(np.min(np.sqrt(np.mean(((support - features) / scale) ** 2, axis=1))))
+        required = (
+            "deployment_risk_classifier_entropy", "deployment_risk_margin", "h23_plus_ppm",
+            "target_ridge_plus_source_preds_ppm", "H1_source_ridge_ppm",
+            "H2_source_per_gas_mlp_ppm", "H3_source_shared_mlp_ppm",
+        )
+        values = _feature_vector(row, required)
+        entropy, margin, h23, h8, h1, h2, h3 = values
+        route_range = CLASS_RANGES[route_class]
+        raw = {
+            "raw_risk_confidence": float(max(entropy, margin)),
+            "raw_risk_prototype": prototype,
+            "raw_risk_support": support_distance,
+            "raw_risk_expert_disagreement": float(abs(h23 - h8) / route_range),
+            "raw_risk_source_spread": float(np.std(np.asarray((h1, h2, h3), dtype=np.float64)) / route_range),
+        }
+        percentiles = {
+            key: float(np.searchsorted(self.distributions[key], raw[key], side="right") / len(self.distributions[key]))
+            for key in RISK_COMPONENTS
+        }
+        confidence = percentiles["raw_risk_confidence"]
+        feature = 0.5 * (percentiles["raw_risk_prototype"] + percentiles["raw_risk_support"])
+        disagreement = 0.5 * (percentiles["raw_risk_expert_disagreement"] + percentiles["raw_risk_source_spread"])
+        return {
+            **raw,
+            "deployment_risk_confidence": confidence,
+            "deployment_risk_feature": feature,
+            "deployment_risk_disagreement": disagreement,
+            "deployment_risk_full": (confidence + feature + disagreement) / 3.0,
+        }
+
+    def decide(self, risk: object, workpoint: str) -> str:
+        settings = self.risk_policy.get("workpoints", {}).get(workpoint)
+        if not isinstance(settings, Mapping):
+            raise C5H8RuntimeError(f"QC workpoint is not frozen: {workpoint}")
+        try:
+            value = float(risk)
+            accept = float(settings["accept_threshold"])
+            reject = float(settings["reject_threshold"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise C5H8RuntimeError("QC score or workpoint thresholds are invalid") from error
+        if not math.isfinite(value):
+            return "reject"
+        if value <= accept:
+            return "accept"
+        if value > reject:
+            return "reject"
+        return "review"
+
+
 class C5H8Runtime:
     """Strict B5 classifier loader for the versioned C5/H8 runtime contract."""
 
-    def __init__(self, model: FedGasBaseModel, device: str = "cpu", *, bundle: C5H8Bundle | None = None, h8_policy: FixedH8Policy | None = None, h23_policy: H23Policy | None = None) -> None:
+    def __init__(self, model: FedGasBaseModel, device: str = "cpu", *, bundle: C5H8Bundle | None = None, h8_policy: FixedH8Policy | None = None, h23_policy: H23Policy | None = None, risk_policy: DeploymentRiskPolicy | None = None) -> None:
         self.device = torch.device(device)
         self.model = model.to(self.device).eval()
         self.bundle = bundle
         self.h8_policy = h8_policy
         self.h23_policy = h23_policy
+        self.risk_policy = risk_policy
 
     @classmethod
     def from_runtime_contract(cls, contract_path: Path, device: str = "cpu") -> "C5H8Runtime":
@@ -268,6 +383,8 @@ class C5H8Runtime:
         load_state_dict_strict(model, state, checkpoint)
         r4_payload = json.loads(bundle.asset_paths["r4_policy"].read_text(encoding="utf-8"))
         h23_payload = json.loads(bundle.asset_paths["h23_reference"].read_text(encoding="utf-8"))
+        feature_reference = json.loads(bundle.asset_paths["qc_feature_reference"].read_text(encoding="utf-8"))
+        calibrator = json.loads(bundle.asset_paths["qc_component_calibrator"].read_text(encoding="utf-8"))
         classifier_hash = classifier.get("sha256")
         if r4_payload.get("classifier_sha256") != classifier_hash or h23_payload.get("classifier_sha256") != classifier_hash:
             raise C5H8RuntimeError("expert policy classifier hash differs")
@@ -277,6 +394,7 @@ class C5H8Runtime:
             bundle=bundle,
             h8_policy=FixedH8Policy.from_json(r4_payload["source_aug_target_ridge_policy"]),
             h23_policy=H23Policy.from_json(h23_payload["h23_reference_policy"]),
+            risk_policy=DeploymentRiskPolicy.from_json(feature_reference, calibrator, bundle.risk_policy),
         )
 
     def extract_backbone(self, windows: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
@@ -341,3 +459,25 @@ class C5H8Runtime:
             row.update({f"cls_feat_{j:03d}": float(value) for j, value in enumerate(cls_features[index])})
             rows.append(row)
         return rows
+
+    def predict_batch(self, windows: np.ndarray, metadata: list[Mapping[str, Any]], phases: np.ndarray, *, workpoint: str | None = None) -> list[dict[str, Any]]:
+        if self.bundle is None or self.risk_policy is None:
+            raise C5H8RuntimeError("runtime QC assets are not loaded")
+        selected = self.bundle.select_workpoint(workpoint)
+        output: list[dict[str, Any]] = []
+        for row in self.infer_experts(windows, metadata, phases):
+            item = dict(row)
+            item.update(self.risk_policy.score(item))
+            decision = self.risk_policy.decide(item["deployment_risk_full"], selected)
+            ppm = item["target_ridge_plus_source_preds_ppm"]
+            item.update({
+                "h8_ppm": ppm,
+                "final_ppm": ppm,
+                "selected_profile": f"b5_c5_r4_h23_{selected.lower()}",
+                "qc_workpoint": selected,
+                "qc_score_key": "deployment_risk_full",
+                "qc_decision": decision,
+                "auto_output_ppm": ppm if decision == "accept" else "",
+            })
+            output.append(item)
+        return output

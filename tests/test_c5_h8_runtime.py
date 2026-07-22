@@ -101,6 +101,32 @@ def test_h23_policy_uses_predicted_class_and_frozen_blend() -> None:
     }
 
 
+def test_deployment_risk_policy_scores_and_decides_fail_closed() -> None:
+    from gaps_deploy.c5_h8_runtime import C5H8RuntimeError, DeploymentRiskPolicy, RISK_COMPONENTS
+
+    names = [f"cls_feat_{index:03d}" for index in range(64)]
+    cell = {"mean": [0.0] * 64, "scale": [1.0] * 64, "support": [[0.0] * 64]}
+    policy = DeploymentRiskPolicy.from_json(
+        {"feature_names": names, "cells": {"0:2": cell}, "classes": {}, "global": cell},
+        {"component_distributions": {key: [0.0, 1.0] for key in RISK_COMPONENTS}},
+        {"score_key": "deployment_risk_full", "workpoints": {"HC95": {"accept_threshold": 0.6, "reject_threshold": 0.8}}},
+    )
+    row = {
+        **{name: 0.0 for name in names}, "route_class": 0, "phase": 2,
+        "deployment_risk_classifier_entropy": 0.1, "deployment_risk_margin": 0.2,
+        "h23_plus_ppm": 50.0, "target_ridge_plus_source_preds_ppm": 50.0,
+        "H1_source_ridge_ppm": 50.0, "H2_source_per_gas_mlp_ppm": 50.0,
+        "H3_source_shared_mlp_ppm": 50.0,
+    }
+
+    scored = policy.score(row)
+    assert scored["deployment_risk_full"] == pytest.approx(0.5)
+    assert policy.decide(scored["deployment_risk_full"], "HC95") == "accept"
+    assert policy.decide(float("nan"), "HC95") == "reject"
+    with pytest.raises(C5H8RuntimeError, match="missing"):
+        policy.score({key: value for key, value in row.items() if key != "cls_feat_000"})
+
+
 def test_first_formal_row_replays_b5_h23_and_r4() -> None:
     from gaps_deploy.c5_h8_runtime import C5H8Runtime
 
@@ -113,10 +139,13 @@ def test_first_formal_row_replays_b5_h23_and_r4() -> None:
     with Path(contract["references"]["HC95"]["path"]).open(encoding="utf-8", newline="") as handle:
         reference = next(csv.DictReader(handle))
 
-    row = C5H8Runtime.from_runtime_contract(contract_path).infer_experts(windows[:1], metadata[:1], phases[:1])[0]
+    row = C5H8Runtime.from_runtime_contract(contract_path).predict_batch(windows[:1], metadata[:1], phases[:1], workpoint="HC95")[0]
 
     assert row["pred_class"] == int(reference["pred_class"])
     assert row["h23_plus_ppm"] == pytest.approx(float(reference["h23_plus_ppm"]), abs=2e-3)
     assert row["target_ridge_plus_source_preds_ppm"] == pytest.approx(
         float(reference["target_ridge_plus_source_preds_ppm"]), abs=2e-3
     )
+    assert row["deployment_risk_full"] == pytest.approx(float(reference["deployment_risk_full"]), abs=1e-12)
+    assert row["qc_decision"] == reference["qc_decision"]
+    assert row["auto_output_ppm"] == row["h8_ppm"]
