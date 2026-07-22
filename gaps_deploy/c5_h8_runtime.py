@@ -3,14 +3,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import json
 import math
+from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
+import torch
+
+from model import FedGasBaseModel
+
+from .package_contract import load_checkpoint_state, load_state_dict_strict
 
 
 class C5H8RuntimeError(ValueError):
     """Raised when a frozen C5/H8 runtime component cannot be evaluated safely."""
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _finite_vector(value: object, label: str) -> np.ndarray:
@@ -118,3 +134,55 @@ class SerializedMLP:
         if not math.isfinite(result):
             raise C5H8RuntimeError("serialized MLP produced a non-finite prediction")
         return float(np.clip(result, self.clip_min, self.clip_max))
+
+
+class C5H8Runtime:
+    """Strict B5 classifier loader for the versioned C5/H8 runtime contract."""
+
+    def __init__(self, model: FedGasBaseModel, device: str = "cpu") -> None:
+        self.device = torch.device(device)
+        self.model = model.to(self.device).eval()
+
+    @classmethod
+    def from_runtime_contract(cls, contract_path: Path, device: str = "cpu") -> "C5H8Runtime":
+        path = Path(contract_path)
+        try:
+            contract = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise C5H8RuntimeError(f"invalid runtime contract: {path}") from error
+        if contract.get("schema_version") != "iotj.c5_h8_runtime_contract.v1" or contract.get("status") != "ready":
+            raise C5H8RuntimeError("runtime contract is not ready")
+        manifest = contract.get("bundle_manifest", {})
+        if not isinstance(manifest, dict) or not isinstance(manifest.get("path"), str):
+            raise C5H8RuntimeError("runtime contract has no bundle manifest")
+        manifest_path = Path(manifest["path"])
+        if _sha256(manifest_path) != manifest.get("sha256"):
+            raise C5H8RuntimeError("bundle manifest hash differs from runtime contract")
+        bundle = json.loads(manifest_path.read_text(encoding="utf-8"))
+        classifier = bundle.get("assets", {}).get("classifier", {})
+        checkpoint = manifest_path.parent / str(classifier.get("bundle_path", ""))
+        if not checkpoint.is_file() or _sha256(checkpoint) != classifier.get("sha256"):
+            raise C5H8RuntimeError("classifier asset hash differs from bundle manifest")
+        config = dict(contract.get("classifier_model", {}))
+        if config.pop("architecture", None) != "FedGasBaseModel":
+            raise C5H8RuntimeError("runtime contract classifier architecture differs")
+        try:
+            model = FedGasBaseModel(**config)
+        except TypeError as error:
+            raise C5H8RuntimeError("runtime contract classifier configuration is invalid") from error
+        _, state = load_checkpoint_state(checkpoint)
+        load_state_dict_strict(model, state, checkpoint)
+        return cls(model, device=device)
+
+    def classify(self, windows: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        values = np.asarray(windows, dtype=np.float32)
+        if values.ndim == 2:
+            values = values[np.newaxis, ...]
+        if values.ndim != 3 or values.shape[1:] != (100, 8) or not np.all(np.isfinite(values)):
+            raise C5H8RuntimeError("classifier windows must be finite (N,100,8) float32")
+        with torch.no_grad():
+            logits, _cls_feat, _reg_feat = self.model(torch.from_numpy(values).to(self.device))
+        output = logits.detach().cpu().numpy()
+        if output.shape != (len(values), 4) or not np.all(np.isfinite(output)):
+            raise C5H8RuntimeError("classifier produced invalid logits")
+        return output, np.argmax(output, axis=1).astype(np.int64)
