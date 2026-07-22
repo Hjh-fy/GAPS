@@ -346,13 +346,15 @@ class DeploymentRiskPolicy:
 class C5H8Runtime:
     """Strict B5 classifier loader for the versioned C5/H8 runtime contract."""
 
-    def __init__(self, model: FedGasBaseModel, device: str = "cpu", *, bundle: C5H8Bundle | None = None, h8_policy: FixedH8Policy | None = None, h23_policy: H23Policy | None = None, risk_policy: DeploymentRiskPolicy | None = None) -> None:
+    def __init__(self, model: FedGasBaseModel, device: str = "cpu", *, bundle: C5H8Bundle | None = None, h8_policy: FixedH8Policy | None = None, h23_policy: H23Policy | None = None, risk_policy: DeploymentRiskPolicy | None = None, contract_path: Path | None = None, contract: Mapping[str, Any] | None = None) -> None:
         self.device = torch.device(device)
         self.model = model.to(self.device).eval()
         self.bundle = bundle
         self.h8_policy = h8_policy
         self.h23_policy = h23_policy
         self.risk_policy = risk_policy
+        self.contract_path = contract_path
+        self.contract = contract
 
     @classmethod
     def from_runtime_contract(cls, contract_path: Path, device: str = "cpu") -> "C5H8Runtime":
@@ -395,7 +397,55 @@ class C5H8Runtime:
             h8_policy=FixedH8Policy.from_json(r4_payload["source_aug_target_ridge_policy"]),
             h23_policy=H23Policy.from_json(h23_payload["h23_reference_policy"]),
             risk_policy=DeploymentRiskPolicy.from_json(feature_reference, calibrator, bundle.risk_policy),
+            contract_path=path.resolve(),
+            contract=contract,
         )
+
+    def _bound_contract_file(self, descriptor: object, label: str) -> Path:
+        if not isinstance(descriptor, Mapping) or not isinstance(descriptor.get("path"), str):
+            raise C5H8RuntimeError(f"runtime contract has no {label}")
+        path = Path(descriptor["path"])
+        if not path.is_file() or _sha256(path) != descriptor.get("sha256"):
+            raise C5H8RuntimeError(f"runtime contract {label} hash differs")
+        try:
+            expected_bytes = int(descriptor["bytes"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise C5H8RuntimeError(f"runtime contract {label} size is invalid") from error
+        if path.stat().st_size != expected_bytes:
+            raise C5H8RuntimeError(f"runtime contract {label} size differs")
+        return path
+
+    def load_contract_inputs(self) -> tuple[np.ndarray, list[Mapping[str, Any]], np.ndarray]:
+        if self.contract is None:
+            raise C5H8RuntimeError("runtime input contract is not loaded")
+        inputs = self.contract.get("inputs")
+        if not isinstance(inputs, Mapping) or inputs.get("row_count") != 1360 or inputs.get("window_shape") != [100, 8] or inputs.get("runtime_dtype") != "float32":
+            raise C5H8RuntimeError("runtime input contract schema differs")
+        features_path = self._bound_contract_file(inputs.get("features"), "features")
+        metadata_path = self._bound_contract_file(inputs.get("metadata"), "metadata")
+        phases_path = self._bound_contract_file(inputs.get("phase_labels"), "phase labels")
+        features = np.load(features_path, mmap_mode="r")
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise C5H8RuntimeError("runtime metadata is invalid") from error
+        phases = np.load(phases_path, mmap_mode="r")
+        if features.shape != (1360, 100, 8) or str(features.dtype) != inputs.get("source_dtype"):
+            raise C5H8RuntimeError("runtime feature array differs from input contract")
+        if not isinstance(metadata, list) or len(metadata) != 1360 or phases.shape != (1360,):
+            raise C5H8RuntimeError("runtime input rows are not exactly 1360")
+        return features, metadata, phases
+
+    def contract_reference(self, workpoint: str) -> Path:
+        if self.contract is None:
+            raise C5H8RuntimeError("runtime reference contract is not loaded")
+        if self.bundle is None:
+            raise C5H8RuntimeError("runtime bundle is not loaded")
+        selected = self.bundle.select_workpoint(workpoint)
+        references = self.contract.get("references")
+        if not isinstance(references, Mapping):
+            raise C5H8RuntimeError("runtime references contract is missing")
+        return self._bound_contract_file(references.get(selected), f"{selected} reference")
 
     def extract_backbone(self, windows: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         values = np.asarray(windows, dtype=np.float32)
