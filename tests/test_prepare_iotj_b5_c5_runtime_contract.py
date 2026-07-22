@@ -61,3 +61,15 @@ def test_prepare_contract_refuses_to_overwrite_or_bind_wrong_shape(tmp_path: Pat
     ref.write_text("sample_index\n", encoding="utf-8")
     with pytest.raises(ValueError, match="1360"):
         prepare_runtime_contract(bundle_dir=bundle, classifier_model={}, input_features=features, input_metadata=metadata, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")
+
+
+def test_prepare_contract_accepts_float64_source_with_explicit_float32_runtime_cast(tmp_path: Path) -> None:
+    from scripts.prepare_iotj_b5_c5_runtime_contract import prepare_runtime_contract
+    bundle = _write_bundle(tmp_path / "bundle")
+    features = tmp_path / "features.npy"; np.save(features, np.zeros((1360, 100, 8), dtype=np.float64))
+    metadata = tmp_path / "meta.json"; metadata.write_text(json.dumps([{} for _ in range(1360)]), encoding="utf-8")
+    ref = tmp_path / "ref.csv"; ref.write_text("sample_index\n", encoding="utf-8")
+    output = prepare_runtime_contract(bundle_dir=bundle, classifier_model={"x": 1}, input_features=features, input_metadata=metadata, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")
+    payload = json.loads((output / "runtime_contract.json").read_text(encoding="utf-8"))
+    assert payload["inputs"]["source_dtype"] == "float64"
+    assert payload["inputs"]["runtime_dtype"] == "float32"

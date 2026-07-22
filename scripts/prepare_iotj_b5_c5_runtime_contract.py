@@ -31,14 +31,15 @@ def _bound_file(path: Path, label: str) -> dict[str, Any]:
     return {"path": path.as_posix(), "bytes": path.stat().st_size, "sha256": _sha256(path)}
 
 
-def _verify_features(path: Path) -> None:
+def _verify_features(path: Path) -> str:
     array = np.load(path, mmap_mode="r")
     if tuple(array.shape) != (EXPECTED_ROWS, *EXPECTED_WINDOW_SHAPE):
         raise ValueError(f"runtime features must have shape {(EXPECTED_ROWS, *EXPECTED_WINDOW_SHAPE)}; got {tuple(array.shape)}")
-    if array.dtype != np.float32:
-        raise ValueError(f"runtime features must be float32; got {array.dtype}")
+    if array.dtype not in (np.dtype("float32"), np.dtype("float64")):
+        raise ValueError(f"runtime features must be float32 or float64; got {array.dtype}")
     if not np.isfinite(array).all():
         raise ValueError("runtime features contain non-finite values")
+    return str(array.dtype)
 
 
 def _verify_metadata(path: Path) -> None:
@@ -65,7 +66,7 @@ def prepare_runtime_contract(
     manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
     if manifest_payload.get("schema_version") != "iotj.b5_c5_deployment_bundle.v1" or manifest_payload.get("status") != "ready":
         raise ValueError("bundle manifest is not a ready B5/C5 deployment bundle")
-    _verify_features(Path(input_features))
+    source_dtype = _verify_features(Path(input_features))
     _verify_metadata(Path(input_metadata))
     if not isinstance(classifier_model, Mapping) or not classifier_model:
         raise ValueError("classifier model contract must be a non-empty object")
@@ -83,7 +84,8 @@ def prepare_runtime_contract(
             "metadata": _bound_file(Path(input_metadata), "runtime metadata"),
             "row_count": EXPECTED_ROWS,
             "window_shape": list(EXPECTED_WINDOW_SHAPE),
-            "dtype": "float32",
+            "source_dtype": source_dtype,
+            "runtime_dtype": "float32",
         },
         "references": {
             "HC95": _bound_file(Path(hc95_reference), "HC95 reference"),
