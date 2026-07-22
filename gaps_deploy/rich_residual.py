@@ -190,6 +190,14 @@ def _target_ridge_features(window: np.ndarray, meta: Mapping[str, Any] | None = 
     return values
 
 
+def target_ridge_features(window: np.ndarray, meta: Mapping[str, Any] | None = None) -> dict[str, float]:
+    """Public, validated entry point for the frozen rich C5 feature schema."""
+    values = np.asarray(window)
+    if values.shape != (100, 8) or not np.isfinite(values).all():
+        raise ValueError("target Ridge window must be finite with shape (100,8)")
+    return _target_ridge_features(values, meta)
+
+
 def _base_features(
     window: np.ndarray,
     result: DeployResult,
