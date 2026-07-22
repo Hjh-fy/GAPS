@@ -29,6 +29,8 @@ def test_prepare_contract_binds_model_inputs_and_both_hc_references(tmp_path: Pa
     np.save(features, np.zeros((1360, 100, 8), dtype=np.float32))
     metadata = tmp_path / "test_experiment_info.json"
     metadata.write_text(json.dumps([{"row": index} for index in range(1360)]), encoding="utf-8")
+    phases = tmp_path / "test_phase_labels.npy"
+    np.save(phases, np.full(1360, 2, dtype=np.int64))
     hc95, hc90 = tmp_path / "hc95.csv", tmp_path / "hc90.csv"
     hc95.write_text("sample_index\n" + "\n".join(map(str, range(1360))) + "\n", encoding="utf-8")
     hc90.write_bytes(hc95.read_bytes())
@@ -38,6 +40,7 @@ def test_prepare_contract_binds_model_inputs_and_both_hc_references(tmp_path: Pa
         classifier_model={"architecture": "FedGasBaseModel", "encoder_type": "tcn", "num_classes": 4, "num_sensors": 8, "feat_dim": 64, "tcn_norm": "instance", "use_cls_proj": False},
         input_features=features,
         input_metadata=metadata,
+        input_phase_labels=phases,
         hc95_reference=hc95,
         hc90_reference=hc90,
         output_dir=tmp_path / "contract",
@@ -46,6 +49,7 @@ def test_prepare_contract_binds_model_inputs_and_both_hc_references(tmp_path: Pa
     payload = json.loads((output / "runtime_contract.json").read_text(encoding="utf-8"))
     assert payload["schema_version"] == "iotj.c5_h8_runtime_contract.v1"
     assert payload["inputs"]["features"]["sha256"] == _sha256(features)
+    assert payload["inputs"]["phase_labels"]["sha256"] == _sha256(phases)
     assert set(payload["references"]) == {"HC95", "HC90"}
 
 
@@ -57,10 +61,12 @@ def test_prepare_contract_refuses_to_overwrite_or_bind_wrong_shape(tmp_path: Pat
     np.save(features, np.zeros((2, 100, 8), dtype=np.float32))
     metadata = tmp_path / "meta.json"
     metadata.write_text("[]", encoding="utf-8")
+    phases = tmp_path / "phases.npy"
+    np.save(phases, np.zeros(1360, dtype=np.int64))
     ref = tmp_path / "ref.csv"
     ref.write_text("sample_index\n", encoding="utf-8")
     with pytest.raises(ValueError, match="1360"):
-        prepare_runtime_contract(bundle_dir=bundle, classifier_model={}, input_features=features, input_metadata=metadata, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")
+        prepare_runtime_contract(bundle_dir=bundle, classifier_model={}, input_features=features, input_metadata=metadata, input_phase_labels=phases, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")
 
 
 def test_prepare_contract_accepts_float64_source_with_explicit_float32_runtime_cast(tmp_path: Path) -> None:
@@ -68,8 +74,21 @@ def test_prepare_contract_accepts_float64_source_with_explicit_float32_runtime_c
     bundle = _write_bundle(tmp_path / "bundle")
     features = tmp_path / "features.npy"; np.save(features, np.zeros((1360, 100, 8), dtype=np.float64))
     metadata = tmp_path / "meta.json"; metadata.write_text(json.dumps([{} for _ in range(1360)]), encoding="utf-8")
+    phases = tmp_path / "phases.npy"; np.save(phases, np.full(1360, 2, dtype=np.int64))
     ref = tmp_path / "ref.csv"; ref.write_text("sample_index\n", encoding="utf-8")
-    output = prepare_runtime_contract(bundle_dir=bundle, classifier_model={"x": 1}, input_features=features, input_metadata=metadata, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")
+    output = prepare_runtime_contract(bundle_dir=bundle, classifier_model={"x": 1}, input_features=features, input_metadata=metadata, input_phase_labels=phases, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")
     payload = json.loads((output / "runtime_contract.json").read_text(encoding="utf-8"))
     assert payload["inputs"]["source_dtype"] == "float64"
     assert payload["inputs"]["runtime_dtype"] == "float32"
+
+
+def test_prepare_contract_rejects_invalid_phase_labels(tmp_path: Path) -> None:
+    from scripts.prepare_iotj_b5_c5_runtime_contract import prepare_runtime_contract
+
+    bundle = _write_bundle(tmp_path / "bundle")
+    features = tmp_path / "features.npy"; np.save(features, np.zeros((1360, 100, 8), dtype=np.float32))
+    metadata = tmp_path / "meta.json"; metadata.write_text(json.dumps([{} for _ in range(1360)]), encoding="utf-8")
+    phases = tmp_path / "phases.npy"; np.save(phases, np.full(1360, -1, dtype=np.int64))
+    ref = tmp_path / "ref.csv"; ref.write_text("sample_index\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="0..2"):
+        prepare_runtime_contract(bundle_dir=bundle, classifier_model={"x": 1}, input_features=features, input_metadata=metadata, input_phase_labels=phases, hc95_reference=ref, hc90_reference=ref, output_dir=tmp_path / "out")

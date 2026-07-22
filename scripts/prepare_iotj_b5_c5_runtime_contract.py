@@ -48,12 +48,23 @@ def _verify_metadata(path: Path) -> None:
         raise ValueError(f"runtime metadata must contain exactly {EXPECTED_ROWS} rows")
 
 
+def _verify_phase_labels(path: Path) -> None:
+    values = np.load(path, mmap_mode="r")
+    if tuple(values.shape) != (EXPECTED_ROWS,):
+        raise ValueError(f"runtime phase labels must have shape {(EXPECTED_ROWS,)}; got {tuple(values.shape)}")
+    if not np.issubdtype(values.dtype, np.integer):
+        raise ValueError(f"runtime phase labels must be integers; got {values.dtype}")
+    if not np.isin(values, (0, 1, 2)).all():
+        raise ValueError("runtime phase labels must be within 0..2")
+
+
 def prepare_runtime_contract(
     *,
     bundle_dir: Path,
     classifier_model: Mapping[str, Any],
     input_features: Path,
     input_metadata: Path,
+    input_phase_labels: Path,
     hc95_reference: Path,
     hc90_reference: Path,
     output_dir: Path,
@@ -68,6 +79,7 @@ def prepare_runtime_contract(
         raise ValueError("bundle manifest is not a ready B5/C5 deployment bundle")
     source_dtype = _verify_features(Path(input_features))
     _verify_metadata(Path(input_metadata))
+    _verify_phase_labels(Path(input_phase_labels))
     if not isinstance(classifier_model, Mapping) or not classifier_model:
         raise ValueError("classifier model contract must be a non-empty object")
     output_dir = Path(output_dir).resolve()
@@ -82,6 +94,7 @@ def prepare_runtime_contract(
         "inputs": {
             "features": _bound_file(Path(input_features), "runtime features"),
             "metadata": _bound_file(Path(input_metadata), "runtime metadata"),
+            "phase_labels": _bound_file(Path(input_phase_labels), "runtime phase labels"),
             "row_count": EXPECTED_ROWS,
             "window_shape": list(EXPECTED_WINDOW_SHAPE),
             "source_dtype": source_dtype,
@@ -104,6 +117,7 @@ def main() -> None:
     parser.add_argument("--classifier-model", type=Path, required=True)
     parser.add_argument("--input-features", type=Path, required=True)
     parser.add_argument("--input-metadata", type=Path, required=True)
+    parser.add_argument("--input-phase-labels", type=Path, required=True)
     parser.add_argument("--hc95-reference", type=Path, required=True)
     parser.add_argument("--hc90-reference", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -114,6 +128,7 @@ def main() -> None:
         classifier_model=model,
         input_features=args.input_features,
         input_metadata=args.input_metadata,
+        input_phase_labels=args.input_phase_labels,
         hc95_reference=args.hc95_reference,
         hc90_reference=args.hc90_reference,
         output_dir=args.output_dir,
