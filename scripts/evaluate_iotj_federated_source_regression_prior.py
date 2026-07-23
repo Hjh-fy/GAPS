@@ -15,6 +15,7 @@ import json
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -39,11 +40,13 @@ from gaps_flower.regression_task import (
     make_regression_config,
     train_regression_local,
 )
+from gaps_deploy.c5_h8_runtime import C5H8Runtime
 from run_regression_head_ablation import (
     CLASS_NAMES,
     apply_client_models,
     build_oracle_rows,
     deterministic_train_val,
+    fit_ridge,
     fit_select_refit,
     read_csv,
 )
@@ -75,6 +78,8 @@ FORMAL_OUTPUT_FILES = (
     "regression_variant_summary.csv",
     "per_gas_summary.csv",
     "comparison_vs_pooled_h8.csv",
+    "decision_gate.json",
+    "source_prediction_mechanism.json",
     "README.md",
 )
 FROZEN_EVIDENCE = (
@@ -142,6 +147,36 @@ def write_csv(path: Path, rows: Sequence[Mapping[str, Any]], fields: Sequence[st
         writer = csv.DictWriter(handle, fieldnames=list(fields), extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def training_strength(source_rounds: int, source_steps: int) -> dict[str, Any]:
+    if source_rounds <= 0 or source_steps <= 0:
+        raise ValueError("source_rounds and source_steps must both be positive")
+    base_steps, extra_steps = divmod(source_steps, source_rounds)
+    allocation = [
+        base_steps + int(round_index <= extra_steps)
+        for round_index in range(1, source_rounds + 1)
+    ]
+    if any(step <= 0 for step in allocation):
+        raise ValueError(
+            "Every source round must execute at least one optimizer step per client"
+        )
+    return {
+        "source_steps_semantics": "total_optimizer_steps_per_client_distributed_across_rounds",
+        "requested_source_rounds": int(source_rounds),
+        "requested_source_steps_per_client_total": int(source_steps),
+        "round_step_allocation_per_client": allocation,
+        "actual_optimizer_steps_by_client": {
+            "C1": int(sum(allocation)),
+            "C2": int(sum(allocation)),
+        },
+        "actual_optimizer_steps_all_clients": int(2 * sum(allocation)),
+        "fedavg_execution_count": int(source_rounds),
+    }
 
 
 def require_new_empty_output(path: Path) -> None:
@@ -359,14 +394,15 @@ def traced_federated_train(
 
 
 def predict_source_models(
-    classifier: torch.nn.Module,
+    classifier: Any,
     models: Mapping[str, torch.nn.Module],
     dataset: Any,
     device: torch.device,
     batch_size: int,
 ) -> list[dict[str, Any]]:
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
-    classifier.eval()
+    if isinstance(classifier, torch.nn.Module):
+        classifier.eval()
     for model in models.values():
         model.eval()
     records: list[dict[str, Any]] = []
@@ -374,8 +410,16 @@ def predict_source_models(
         for x, true_cls, y_reg, phase, client_ids, row_ids in loader:
             x = x.to(device)
             phase = phase.to(device).long()
-            logits, _, _ = classifier(x)
-            route = logits.argmax(dim=1)
+            if hasattr(classifier, "classify"):
+                _logits, predicted = classifier.classify(
+                    x.detach().cpu().numpy()
+                )
+                route = torch.from_numpy(
+                    np.asarray(predicted, dtype=np.int64)
+                ).to(device)
+            else:
+                logits, _, _ = classifier(x)
+                route = logits.argmax(dim=1)
             columns: dict[str, np.ndarray] = {}
             for name, model in models.items():
                 _, _, reg_feat = model(x)
@@ -444,20 +488,30 @@ def add_variant_features(
     return result, schema
 
 
-def fit_target_variant(
+def fit_target_variant_calibration(
     calibration_rows: Sequence[dict[str, Any]],
-    test_rows: Sequence[dict[str, Any]],
     variant: str,
     val_ratio: float,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], int, int]:
+) -> tuple[
+    dict[tuple[str, int], Any],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    int,
+    list[str],
+]:
+    """Select on calibration-validation, then refit on full calibration.
+
+    This function deliberately has no test-row argument.  The returned refit
+    models may be applied to test only after ``decision_gate.json`` has been
+    persisted.
+    """
     calibration, schema = add_variant_features(calibration_rows, variant)
-    test, test_schema = add_variant_features(test_rows, variant)
-    if schema != test_schema:
-        raise RuntimeError(f"{variant} calibration/test feature schema mismatch")
-    models: dict[tuple[str, int], Any] = {}
+    refit_models: dict[tuple[str, int], Any] = {}
+    selection_models: dict[tuple[str, int], Any] = {}
     selection: list[dict[str, Any]] = []
     fit_row_ids: set[int] = set()
     validation_row_ids: set[int] = set()
+    validation_rows: list[dict[str, Any]] = []
     for class_id in sorted(CLASS_NAMES):
         class_rows = [
             row for row in calibration if int(row["true_class"]) == class_id
@@ -470,8 +524,17 @@ def fit_target_variant(
             raise RuntimeError("Calibration fit/validation overlap")
         fit_row_ids.update(int(row["sample_index"]) for row in fit_rows)
         validation_row_ids.update(int(row["sample_index"]) for row in val_rows)
-        model, audit = fit_select_refit(fit_rows, val_rows, schema, RIDGE_ALPHAS)
-        models[("C5", class_id)] = model
+        _refit_model, audit = fit_select_refit(
+            fit_rows, val_rows, schema, RIDGE_ALPHAS
+        )
+        best_alpha = float(audit["best_alpha"])
+        selection_models[("C5", class_id)] = fit_ridge(
+            fit_rows, schema, best_alpha
+        )
+        refit_models[("C5", class_id)] = fit_ridge(
+            class_rows, schema, best_alpha
+        )
+        validation_rows.extend(val_rows)
         selection.append(
             {
                 "variant": variant,
@@ -481,17 +544,47 @@ def fit_target_variant(
                 "selection_split": MODEL_SELECTION_SPLIT,
                 "fit_n": len(fit_rows),
                 "validation_n": len(val_rows),
-                "best_alpha": audit["best_alpha"],
+                "best_alpha": best_alpha,
                 "validation_RMSE": audit["best_val_RMSE"],
                 "feature_dimension": len(schema),
             }
         )
-    predicted = apply_client_models(list(test), models, variant)
-    for row in predicted:
+    if fit_row_ids.intersection(validation_row_ids):
+        raise RuntimeError("Calibration fit/validation row identity overlap")
+    if len(validation_rows) != len(validation_row_ids):
+        raise RuntimeError("Calibration-validation row IDs are not unique")
+    predicted_validation = apply_client_models(
+        validation_rows, selection_models, variant
+    )
+    for row in predicted_validation:
         row[f"{variant}_ppm"] = float(row[f"{variant}_ppm"])
     # RidgeHead.coef already includes the intercept as its first element.
-    parameter_count = sum(len(model.coef) for model in models.values())
-    return predicted, selection, parameter_count, len(schema)
+    parameter_count = sum(len(model.coef) for model in refit_models.values())
+    return (
+        refit_models,
+        predicted_validation,
+        selection,
+        parameter_count,
+        schema,
+    )
+
+
+def apply_target_variant_test(
+    models: Mapping[tuple[str, int], Any],
+    test_rows: Sequence[dict[str, Any]],
+    variant: str,
+    expected_schema: Sequence[str],
+) -> list[dict[str, Any]]:
+    test, test_schema = add_variant_features(test_rows, variant)
+    if list(expected_schema) != test_schema:
+        raise RuntimeError(f"{variant} calibration/test feature schema mismatch")
+    predicted = apply_client_models(list(test), dict(models), variant)
+    values = np.asarray(
+        [float(row[f"{variant}_ppm"]) for row in predicted], dtype=np.float64
+    )
+    if not np.isfinite(values).all():
+        raise RuntimeError(f"{variant} emitted non-finite C5 test predictions")
+    return predicted
 
 
 def metric_rows(
@@ -545,6 +638,207 @@ def metric_rows(
     return overall, per_gas
 
 
+def normalize_rs0_validation_rows(
+    path: str | Path,
+    expected_row_ids: set[int],
+    observed_rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = read_csv(path)
+    if len(rows) != len(expected_row_ids):
+        raise RuntimeError(
+            f"RS0 calibration-validation row count mismatch: "
+            f"{len(rows)} != {len(expected_row_ids)}"
+        )
+    by_index: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        index = int(row["sample_index"])
+        if index in by_index:
+            raise RuntimeError(f"Duplicate RS0 calibration-validation row: {index}")
+        item = dict(row)
+        item["selection_split"] = MODEL_SELECTION_SPLIT
+        item["RS0_pooled_source_ppm"] = float(
+            item["target_ridge_plus_source_preds_ppm"]
+        )
+        by_index[index] = item
+    if set(by_index) != expected_row_ids:
+        missing = sorted(expected_row_ids - set(by_index))
+        extra = sorted(set(by_index) - expected_row_ids)
+        raise RuntimeError(
+            f"RS0 calibration-validation identity mismatch: "
+            f"missing={missing}, extra={extra}"
+        )
+    normalized = [by_index[index] for index in sorted(by_index)]
+    assert_selection_rows(normalized)
+    observed_by_index = {
+        int(row["sample_index"]): row for row in observed_rows
+    }
+    mismatches = [
+        index
+        for index, reference in by_index.items()
+        if int(reference["pred_class"])
+        != int(observed_by_index[index]["pred_class"])
+    ]
+    if mismatches:
+        raise RuntimeError(
+            "Canonical B5 calibration-validation route differs from frozen "
+            f"RS0 reference at {len(mismatches)} rows"
+        )
+    return normalized
+
+
+def freeze_decision_gate(
+    validation_metrics: Mapping[str, Mapping[str, Any]],
+    validation_per_gas: Mapping[str, Sequence[Mapping[str, Any]]],
+    *,
+    formal_commit: str,
+) -> dict[str, Any]:
+    required = set(VARIANT_FEATURES)
+    if set(validation_metrics) != required:
+        raise ValueError(
+            f"Decision gate requires exactly RS0--RS4 metrics: "
+            f"{sorted(set(validation_metrics))}"
+        )
+    rmse = {
+        variant: float(validation_metrics[variant]["ALL_RMSE"])
+        for variant in sorted(required)
+    }
+    if not all(np.isfinite(value) and value >= 0 for value in rmse.values()):
+        raise ValueError(f"Invalid calibration-validation RMSE values: {rmse}")
+    rs0 = rmse["RS0_pooled_source"]
+    if rs0 <= 0:
+        raise ValueError("RS0 calibration-validation RMSE must be positive")
+    delta = 100.0 * (rmse["RS3_local_plus_fedavg"] / rs0 - 1.0)
+    threshold_tolerance = 1e-12
+    local_value = rmse["RS1_local_experts"] < rmse["RS4_rich_only"]
+    fedavg_value = rmse["RS2_fedavg_prior"] < rmse["RS4_rich_only"]
+    if delta < 0:
+        selected_candidate = "RS3_local_plus_fedavg"
+        selection_status = "candidate"
+        selection_reason = "RS3 calibration-validation RMSE is better than RS0"
+    elif delta <= 5.0 + threshold_tolerance:
+        selected_candidate = "RS3_local_plus_fedavg"
+        selection_status = "paper_preferred_candidate"
+        selection_reason = (
+            "RS3 calibration-validation degradation versus RS0 is at most 5%"
+        )
+    elif delta <= 10.0 + threshold_tolerance:
+        selected_candidate = None
+        selection_status = "inconclusive"
+        selection_reason = (
+            "RS3 calibration-validation degradation versus RS0 is between 5% and 10%"
+        )
+    else:
+        selected_candidate = "RS0_pooled_source"
+        selection_status = "no_promotion"
+        selection_reason = (
+            "RS3 calibration-validation degradation versus RS0 exceeds 10%"
+        )
+    per_gas = {
+        variant: {
+            str(row["gas"]): float(row["RMSE"])
+            for row in validation_per_gas[variant]
+        }
+        for variant in sorted(required)
+    }
+    source_value_gases = [
+        gas
+        for gas in sorted(per_gas["RS4_rich_only"])
+        if min(
+            per_gas["RS1_local_experts"][gas],
+            per_gas["RS2_fedavg_prior"][gas],
+        )
+        < per_gas["RS4_rich_only"][gas]
+    ]
+    single_gas_dependency = len(source_value_gases) == 1
+    if (
+        5.0 + threshold_tolerance
+        < delta
+        <= 10.0 + threshold_tolerance
+    ) or (
+        delta <= 5.0 + threshold_tolerance and single_gas_dependency
+    ):
+        recommendation = "INCONCLUSIVE"
+    elif delta <= 5.0 + threshold_tolerance and (local_value or fedavg_value):
+        recommendation = "PROMOTE_FOR_CONFIRMATION"
+    else:
+        recommendation = "STOP_FEDERATED_REGRESSION"
+    return {
+        "schema_version": "iotj.federated_source_regression_decision_gate.v1",
+        "formal_run_commit": formal_commit,
+        "selection_frozen_at": utc_now(),
+        "selection_scope": "C5_calibration_validation_only",
+        "selection_metric": "ALL_RMSE_ppm_lower_is_better",
+        "calibration_validation_rmse": rmse,
+        "calibration_validation_per_gas_rmse": per_gas,
+        "RS0_calibration_val_RMSE": rmse["RS0_pooled_source"],
+        "RS1_calibration_val_RMSE": rmse["RS1_local_experts"],
+        "RS2_calibration_val_RMSE": rmse["RS2_fedavg_prior"],
+        "RS3_calibration_val_RMSE": rmse["RS3_local_plus_fedavg"],
+        "RS4_calibration_val_RMSE": rmse["RS4_rich_only"],
+        "RS3_relative_delta_vs_RS0_percent": delta,
+        "RS1_better_than_RS4": local_value,
+        "RS2_better_than_RS4": fedavg_value,
+        "source_prior_value_gases_vs_RS4": source_value_gases,
+        "single_gas_dependency_on_calibration_validation": single_gas_dependency,
+        "selected_candidate": selected_candidate,
+        "selection_status": selection_status,
+        "selection_reason": selection_reason,
+        "next_stage_recommendation": recommendation,
+        "test_opened_after_selection": False,
+        "final_test_evaluation_timestamp": None,
+        "test_metrics_used_for_selection": False,
+    }
+
+
+def source_prediction_mechanism(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    scope: str,
+) -> dict[str, Any]:
+    names = ("pred_C1", "pred_C2", "pred_FedAvg")
+    values = np.asarray(
+        [[float(row[name]) for name in names] for row in rows],
+        dtype=np.float64,
+    )
+    if values.ndim != 2 or values.shape[1] != 3 or not np.isfinite(values).all():
+        raise ValueError(f"Invalid source prediction matrix for {scope}")
+    correlation = np.corrcoef(values, rowvar=False)
+    if not np.isfinite(correlation).all():
+        raise ValueError(f"Non-finite source prediction correlation for {scope}")
+    pairs: dict[str, Any] = {}
+    for left in range(len(names)):
+        for right in range(left + 1, len(names)):
+            diff = values[:, left] - values[:, right]
+            pairs[f"{names[left]}__{names[right]}"] = {
+                "pearson_correlation": float(correlation[left, right]),
+                "mean_absolute_disagreement_ppm": float(np.mean(np.abs(diff))),
+                "rms_disagreement_ppm": float(np.sqrt(np.mean(diff ** 2))),
+                "p95_absolute_disagreement_ppm": float(
+                    np.percentile(np.abs(diff), 95)
+                ),
+                "max_absolute_disagreement_ppm": float(np.max(np.abs(diff))),
+            }
+    spread = np.ptp(values, axis=1)
+    return {
+        "scope": scope,
+        "N": int(values.shape[0]),
+        "pairs": pairs,
+        "three_model_spread_ppm": {
+            "mean": float(np.mean(spread)),
+            "p95": float(np.percentile(spread, 95)),
+            "max": float(np.max(spread)),
+        },
+    }
+
+
+def route_accuracy(rows: Sequence[Mapping[str, Any]]) -> float:
+    if not rows:
+        raise ValueError("Route accuracy requires non-empty rows")
+    return float(np.mean([
+        int(row["pred_class"]) == int(row["true_class"]) for row in rows
+    ]))
+
+
 def protocol_payload(
     root: Path,
     protocol: Protocol,
@@ -562,6 +856,9 @@ def protocol_payload(
             )
     return {
         **asdict(protocol),
+        "actual_training_strength": training_strength(
+            protocol.source_rounds, protocol.source_steps_per_client
+        ),
         "git_commit": git_commit(),
         "dataset_path": str(data_root.resolve()),
         "classifier_checkpoint": str(classifier.resolve()),
@@ -605,6 +902,9 @@ def run_contract_check(args: argparse.Namespace) -> dict[str, Any]:
     model_contract = validate_state_contract(model)
     copies = {cid: copy.deepcopy(model) for cid in SOURCE_CLIENTS}
     init_hash = assert_identical_initialization(model, copies)
+    canonical_classifier = C5H8Runtime.from_runtime_contract(
+        Path(args.runtime_contract), device=args.device
+    )
     result = {
         "status": "contract_verified",
         "b5_contract": b5,
@@ -613,6 +913,11 @@ def run_contract_check(args: argparse.Namespace) -> dict[str, Any]:
             "config": regression_config_snapshot(config),
         },
         "initial_regression_sha256": init_hash,
+        "canonical_classifier_route": {
+            "runtime_contract": str(Path(args.runtime_contract).resolve()),
+            "runtime_contract_sha256": sha256_file(args.runtime_contract),
+            "model_class": type(canonical_classifier.model).__name__,
+        },
         "feature_schemas": {
             name: list(feature_schema(("rich_feature_placeholder",), name))
             for name in ("RS1_local_experts", "RS2_fedavg_prior", "RS3_local_plus_fedavg")
@@ -703,35 +1008,131 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
         },
         global_path,
     )
-    datasets = {
-        split: load_split_arrays(data_root, [TARGET_CLIENT], split)
-        for split in ("calibration", "test")
-    }
-    classifier_model = copy.deepcopy(global_model).to(device)
+    canonical_classifier = C5H8Runtime.from_runtime_contract(
+        Path(args.runtime_contract), device=args.device
+    )
     prediction_models = {
         "pred_C1": local_models[1],
         "pred_C2": local_models[2],
         "pred_FedAvg": global_model,
     }
-    neural = {
-        split: predict_source_models(
-            classifier_model, prediction_models, dataset, device, args.batch_size
+
+    # Phase 1: calibration-only fit/selection.  No C5 test file is loaded
+    # before decision_gate.json is persisted.
+    calibration_dataset = load_split_arrays(
+        data_root, [TARGET_CLIENT], "calibration"
+    )
+    calibration_neural = predict_source_models(
+        canonical_classifier,
+        prediction_models,
+        calibration_dataset,
+        device,
+        args.batch_size,
+    )
+    calibration_rows = attach_neural_predictions(
+        build_oracle_rows(data_root, ["C5"], "calibration"),
+        calibration_neural,
+        "calibration",
+    )
+    if len(calibration_rows) != 320:
+        raise RuntimeError(
+            f"Frozen C5 calibration count mismatch: {len(calibration_rows)} != 320"
         )
-        for split, dataset in datasets.items()
-    }
-    feature_rows = {
-        split: attach_neural_predictions(
-            build_oracle_rows(data_root, ["C5"], split), neural[split], split
-        )
-        for split in ("calibration", "test")
-    }
-    expected_counts = {"calibration": 320, "test": 1360}
-    for split, expected in expected_counts.items():
-        if len(feature_rows[split]) != expected:
-            raise RuntimeError(
-                f"Frozen C5 {split} count mismatch: {len(feature_rows[split])} != {expected}"
-            )
     selection_rows: list[dict[str, Any]] = []
+    refit_models: dict[str, dict[tuple[str, int], Any]] = {}
+    variant_schemas: dict[str, list[str]] = {}
+    target_parameter_counts: dict[str, int] = {}
+    validation_metrics: dict[str, dict[str, Any]] = {}
+    validation_per_gas: dict[str, list[dict[str, Any]]] = {}
+    validation_row_ids: set[int] | None = None
+    validation_prediction_rows: dict[str, list[dict[str, Any]]] = {}
+    for variant in (
+        "RS4_rich_only",
+        "RS1_local_experts",
+        "RS2_fedavg_prior",
+        "RS3_local_plus_fedavg",
+    ):
+        (
+            models,
+            validation_predicted,
+            selected,
+            target_params,
+            schema,
+        ) = fit_target_variant_calibration(
+            calibration_rows,
+            variant,
+            protocol.target_validation_ratio,
+        )
+        current_ids = {
+            int(row["sample_index"]) for row in validation_predicted
+        }
+        if validation_row_ids is None:
+            validation_row_ids = current_ids
+        elif current_ids != validation_row_ids:
+            raise RuntimeError(
+                f"{variant} calibration-validation row identity drift"
+            )
+        selection_rows.extend(selected)
+        refit_models[variant] = models
+        variant_schemas[variant] = schema
+        target_parameter_counts[variant] = target_params
+        validation_prediction_rows[variant] = validation_predicted
+        overall, gas_rows = metric_rows(validation_predicted, variant)
+        validation_metrics[variant] = overall
+        validation_per_gas[variant] = gas_rows
+    if validation_row_ids is None or len(validation_row_ids) != 80:
+        raise RuntimeError(
+            f"Expected 80 calibration-validation rows, got "
+            f"{0 if validation_row_ids is None else len(validation_row_ids)}"
+        )
+    rs0_validation = normalize_rs0_validation_rows(
+        args.pooled_rs0_validation_predictions,
+        validation_row_ids,
+        calibration_rows,
+    )
+    rs0_validation_overall, rs0_validation_gas = metric_rows(
+        rs0_validation, "RS0_pooled_source"
+    )
+    validation_metrics["RS0_pooled_source"] = rs0_validation_overall
+    validation_per_gas["RS0_pooled_source"] = rs0_validation_gas
+    validation_prediction_rows["RS0_pooled_source"] = rs0_validation
+
+    formal_commit = git_commit()
+    decision_gate = freeze_decision_gate(
+        validation_metrics,
+        validation_per_gas,
+        formal_commit=formal_commit,
+    )
+    decision_gate["canonical_B5_calibration_validation_route_parity"] = {
+        "mismatch_count": 0,
+        "N": len(rs0_validation),
+        "route_accuracy": route_accuracy(rs0_validation),
+    }
+    decision_gate_path = output / "decision_gate.json"
+    write_json(decision_gate_path, decision_gate)
+    if json.loads(decision_gate_path.read_text(encoding="utf-8"))[
+        "test_opened_after_selection"
+    ] is not False:
+        raise RuntimeError("Decision gate was not frozen before C5 test opening")
+
+    # Phase 2: one-time test generalization evaluation after selection freeze.
+    test_dataset = load_split_arrays(data_root, [TARGET_CLIENT], "test")
+    test_neural = predict_source_models(
+        canonical_classifier,
+        prediction_models,
+        test_dataset,
+        device,
+        args.batch_size,
+    )
+    test_rows = attach_neural_predictions(
+        build_oracle_rows(data_root, ["C5"], "test"),
+        test_neural,
+        "test",
+    )
+    if len(test_rows) != 1360:
+        raise RuntimeError(
+            f"Frozen C5 test count mismatch: {len(test_rows)} != 1360"
+        )
     summary_rows: list[dict[str, Any]] = []
     per_gas_rows: list[dict[str, Any]] = []
     prediction_rows: dict[int, dict[str, Any]] = {
@@ -747,7 +1148,7 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
             "pred_C2": float(row["pred_C2"]),
             "pred_FedAvg": float(row["pred_FedAvg"]),
         }
-        for row in feature_rows["test"]
+        for row in test_rows
     }
     for variant in (
         "RS4_rich_only",
@@ -755,13 +1156,12 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
         "RS2_fedavg_prior",
         "RS3_local_plus_fedavg",
     ):
-        predicted, selected, target_params, feature_dim = fit_target_variant(
-            feature_rows["calibration"],
-            feature_rows["test"],
+        predicted = apply_target_variant_test(
+            refit_models[variant],
+            test_rows,
             variant,
-            protocol.target_validation_ratio,
+            variant_schemas[variant],
         )
-        selection_rows.extend(selected)
         for row in predicted:
             prediction_rows[int(row["sample_index"])][f"{variant}_ppm"] = float(
                 row[f"{variant}_ppm"]
@@ -790,8 +1190,8 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
                     }[variant]
                 ),
                 "pooled_raw_source_required": False,
-                "target_calibration_parameter_count": target_params,
-                "inference_feature_dimension": feature_dim,
+                "target_calibration_parameter_count": target_parameter_counts[variant],
+                "inference_feature_dimension": len(variant_schemas[variant]),
             }
         )
         summary_rows.append(overall)
@@ -814,6 +1214,11 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
                 f"{index}: experiment=({output_row['true_class']},"
                 f"{output_row['true_ppm']}), reference="
                 f"({reference['true_class']},{reference['true_ppm']})"
+            )
+        if int(reference["pred_class"]) != int(output_row["pred_class"]):
+            raise RuntimeError(
+                "Canonical B5 test route differs from frozen RS0 reference at "
+                f"sample_index {index}"
             )
         value = float(reference["target_ridge_plus_source_preds_ppm"])
         output_row["RS0_pooled_source_ppm"] = value
@@ -843,16 +1248,34 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
                 "ALL_RMSE": row["ALL_RMSE"],
                 "RS0_ALL_RMSE": rs0_rmse,
                 "delta_vs_RS0_percent": delta,
-                "advancement_rule": (
-                    "final_candidate" if row["variant"] == "RS3_local_plus_fedavg" and delta < 0
-                    else "paper_preferred_pending_multiseed"
-                    if row["variant"] == "RS3_local_plus_fedavg" and delta <= 5
-                    else "cannot_replace_RS0"
-                    if row["variant"] == "RS3_local_plus_fedavg" and delta > 10
-                    else "diagnostic"
-                ),
+                "test_role": "generalization_evaluation_only",
+                "selection_source": "pre_frozen_calibration_decision_gate",
+                "preselected_candidate": decision_gate["selected_candidate"],
+                "test_metrics_used_for_selection": False,
             }
         )
+    decision_gate["test_opened_after_selection"] = True
+    decision_gate["final_test_evaluation_timestamp"] = utc_now()
+    decision_gate["generalization_test_rmse"] = {
+        row["variant"]: float(row["ALL_RMSE"]) for row in summary_rows
+    }
+    decision_gate["canonical_B5_test_route_parity"] = {
+        "mismatch_count": 0,
+        "N": len(test_rows),
+        "route_accuracy": route_accuracy(test_rows),
+    }
+    write_json(decision_gate_path, decision_gate)
+    mechanism = {
+        "schema_version": "iotj.federated_source_prediction_mechanism.v1",
+        "selection_use": False,
+        "calibration_full": source_prediction_mechanism(
+            calibration_rows, scope="C5_calibration_full"
+        ),
+        "test": source_prediction_mechanism(
+            test_rows, scope="C5_test_generalization_only"
+        ),
+    }
+    write_json(output / "source_prediction_mechanism.json", mechanism)
     frozen_after = frozen_evidence_hashes(root)
     if frozen_after != frozen_before:
         raise RuntimeError("Frozen runtime v4/parity evidence changed during experiment")
@@ -868,6 +1291,40 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
     )
     manifest["run_status"] = run_status
     manifest["advancement_eligible"] = run_status == "formal"
+    manifest["canonical_classifier_route"] = {
+        "loader": "gaps_deploy.c5_h8_runtime.C5H8Runtime.from_runtime_contract",
+        "runtime_contract": str(Path(args.runtime_contract).resolve()),
+        "runtime_contract_sha256": sha256_file(args.runtime_contract),
+        "model_class": type(canonical_classifier.model).__name__,
+        "route_source": "argmax_frozen_B5_runtime_logits",
+    }
+    expected_strength = training_strength(
+        protocol.source_rounds, protocol.source_steps_per_client
+    )
+    trace_allocation = [int(row["steps_per_client"]) for row in trace]
+    if (
+        trace_allocation != expected_strength["round_step_allocation_per_client"]
+        or len(trace) != expected_strength["fedavg_execution_count"]
+    ):
+        raise RuntimeError(
+            "Observed optimizer-step/FedAvg trace does not match frozen protocol"
+        )
+    manifest["actual_training_strength"].update(
+        {
+            "trace_verified": True,
+            "observed_round_step_allocation_per_client": trace_allocation,
+            "observed_fedavg_execution_count": len(trace),
+        }
+    )
+    manifest["decision_gate"] = {
+        "path": str(decision_gate_path),
+        "sha256": sha256_file(decision_gate_path),
+        "selected_candidate": decision_gate["selected_candidate"],
+        "next_stage_recommendation": decision_gate["next_stage_recommendation"],
+        "test_opened_after_selection": decision_gate[
+            "test_opened_after_selection"
+        ],
+    }
     manifest["frozen_evidence_sha256_after"] = frozen_after
     write_json(output / "protocol_manifest.json", manifest)
     write_json(
@@ -880,6 +1337,8 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
             "aggregation_scope": state_contract,
             "classifier_backbone_frozen": True,
             "test_used_for_fit_select_or_refit": False,
+            "test_opened_after_calibration_selection_freeze": True,
+            "actual_training_strength": manifest["actual_training_strength"],
             "aggregation_trace": trace,
         },
     )
@@ -933,7 +1392,8 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
         comparison,
         (
             "variant", "ALL_RMSE", "RS0_ALL_RMSE",
-            "delta_vs_RS0_percent", "advancement_rule",
+            "delta_vs_RS0_percent", "test_role", "selection_source",
+            "preselected_candidate", "test_metrics_used_for_selection",
         ),
     )
     (output / "README.md").write_text(
@@ -941,7 +1401,9 @@ def run_formal(args: argparse.Namespace, *, run_status: str = "formal") -> None:
         f"Status: {run_status} RS0–RS4 experiment output. "
         "QC and runtime are out of scope.\n\n"
         "Selection uses C5 calibration-validation only. C5 test is evaluated once "
-        "after all choices are frozen. RS0 is the immutable pooled-source R4 reference."
+        "after decision_gate.json is persisted. Test metrics are generalization-only "
+        "and cannot change the selected candidate. RS0 is the immutable pooled-source "
+        "R4 reference."
         + (
             "\n"
             if run_status == "formal"
@@ -967,10 +1429,24 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--runtime-contract",
+        default=(
+            "results/iotj_b5_c5_deployment_p1_20260722/"
+            "c5_h8_runtime_contract_b5_v4/runtime_contract.json"
+        ),
+    )
+    parser.add_argument(
         "--pooled-rs0-predictions",
         default=(
             "results/iotj_b5_c5_deployment_p1_20260722/h8_no_rescue/"
             "target_predictions_plus_source_preds.csv"
+        ),
+    )
+    parser.add_argument(
+        "--pooled-rs0-validation-predictions",
+        default=(
+            "results/iotj_b5_c5_deployment_p1_20260722/h8_no_rescue/"
+            "target_validation_plus_source_preds.csv"
         ),
     )
     parser.add_argument(

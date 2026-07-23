@@ -1,16 +1,21 @@
 from pathlib import Path
+import inspect
 
 import pytest
 import torch
 
 from scripts.evaluate_iotj_federated_source_regression_prior import (
     MODEL_SELECTION_SPLIT,
+    FORMAL_OUTPUT_FILES,
     assert_identical_initialization,
     assert_selection_rows,
     feature_schema,
+    fit_target_variant_calibration,
+    freeze_decision_gate,
     require_new_empty_output,
     selection_sha256,
     state_sha256,
+    training_strength,
     validate_state_contract,
 )
 from gaps_flower.regression_task import fedavg_regression_states
@@ -36,6 +41,21 @@ def test_rs_feature_schemas_are_exact_and_versioned() -> None:
         "rich_a", "rich_b", "srcpred_pred_C1", "srcpred_pred_C2",
         "srcpred_pred_FedAvg",
     )
+    assert "decision_gate.json" in FORMAL_OUTPUT_FILES
+
+
+def test_source_steps_are_total_per_client_not_per_round() -> None:
+    strength = training_strength(3, 100)
+    assert strength["round_step_allocation_per_client"] == [34, 33, 33]
+    assert strength["actual_optimizer_steps_by_client"] == {"C1": 100, "C2": 100}
+    assert strength["actual_optimizer_steps_all_clients"] == 200
+    assert strength["fedavg_execution_count"] == 3
+
+
+def test_calibration_fitter_has_no_test_input() -> None:
+    assert "test_rows" not in inspect.signature(
+        fit_target_variant_calibration
+    ).parameters
 
 
 def test_selection_rejects_test_rows() -> None:
@@ -52,6 +72,53 @@ def test_test_labels_cannot_change_selection_signature() -> None:
     }]
     changed = [{**base[0], "test_label": 999999.0}]
     assert selection_sha256(base) == selection_sha256(changed)
+
+
+def _gate_inputs(rs3_rmse: float):
+    metrics = {
+        "RS0_pooled_source": {"ALL_RMSE": 100.0},
+        "RS1_local_experts": {"ALL_RMSE": 85.0},
+        "RS2_fedavg_prior": {"ALL_RMSE": 90.0},
+        "RS3_local_plus_fedavg": {"ALL_RMSE": rs3_rmse},
+        "RS4_rich_only": {"ALL_RMSE": 110.0},
+    }
+    per_gas = {
+        variant: [
+            {"gas": gas, "RMSE": float(metrics[variant]["ALL_RMSE"])}
+            for gas in ("Ethanol", "CO", "Ethylene", "Methane")
+        ]
+        for variant in metrics
+    }
+    return metrics, per_gas
+
+
+@pytest.mark.parametrize(
+    ("rs3_rmse", "status", "candidate", "recommendation"),
+    [
+        (99.0, "candidate", "RS3_local_plus_fedavg", "PROMOTE_FOR_CONFIRMATION"),
+        (
+            105.0,
+            "paper_preferred_candidate",
+            "RS3_local_plus_fedavg",
+            "PROMOTE_FOR_CONFIRMATION",
+        ),
+        (107.0, "inconclusive", None, "INCONCLUSIVE"),
+        (111.0, "no_promotion", "RS0_pooled_source", "STOP_FEDERATED_REGRESSION"),
+    ],
+)
+def test_decision_gate_uses_calibration_thresholds_only(
+    rs3_rmse, status, candidate, recommendation
+) -> None:
+    metrics, per_gas = _gate_inputs(rs3_rmse)
+    gate = freeze_decision_gate(
+        metrics, per_gas, formal_commit="a" * 40
+    )
+    assert gate["selection_status"] == status
+    assert gate["selected_candidate"] == candidate
+    assert gate["next_stage_recommendation"] == recommendation
+    assert gate["test_opened_after_selection"] is False
+    assert gate["final_test_evaluation_timestamp"] is None
+    assert gate["test_metrics_used_for_selection"] is False
 
 
 def test_regression_aggregation_scope_excludes_backbone() -> None:
