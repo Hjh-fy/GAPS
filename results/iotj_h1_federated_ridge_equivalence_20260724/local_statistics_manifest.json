@@ -1,0 +1,160 @@
+{
+  "schema_version": "iotj.h1_federated_ridge_equivalence.v1",
+  "records": [
+    {
+      "client_id": "C1",
+      "gas_id": 0,
+      "gas": "Ethanol",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "ed634c7bf738c9164c25db49e0922294f9d1e518d908103de46dde39a820fc8f",
+      "normal_equations_sha256": "5a47c501434ca152cfbd1dd140fd75464b781a20a63d1cd90ed139d80bfbc039",
+      "row_provenance_sha256": "d5d370738b8375b9f398862e195d44d5afe3e2d1ca1b040a2eb726e3e8a42577",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C2",
+      "gas_id": 0,
+      "gas": "Ethanol",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "d6eb26f9c0b90d44dab1b513410e3075d578f08bb2e97c665962430b293ad4f8",
+      "normal_equations_sha256": "0ccc1202278db510f0408d91cfed6ca09a73d129e6521950df13b2cb47946928",
+      "row_provenance_sha256": "6c63a668b2afe0679f92a2cb3df58af5464c6b3cd89e014d33b6520755b5cfd0",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C1",
+      "gas_id": 1,
+      "gas": "CO",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "5bb89b7a9bf746013131a6d057ba58b2a40d41a932757acc4b57f1554010e754",
+      "normal_equations_sha256": "fca8c36f233a3de5c3aa62a35a4999e0ca20b93086f2d0476a0b07a789b2aaa4",
+      "row_provenance_sha256": "88008cd3ab6e8a4688cd8811dc81e0a8b2cbd365b0510fef7d52ad35d008ed40",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C2",
+      "gas_id": 1,
+      "gas": "CO",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "a0f0740b0522a0d82f823e0283109d3ae1f40e933484256838aa859c4acc1ff7",
+      "normal_equations_sha256": "ef85a42691063ad1dc1049dfddd6d05208c5f095cda90f34b3195c54e44eb1ab",
+      "row_provenance_sha256": "932de2622de3fdc6b23a19ad38a705827444e4fbabd8a50e965dbf9e86c67b9a",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C1",
+      "gas_id": 2,
+      "gas": "Ethylene",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "65d81349c7f26021ec5c19bff648b83405a512634c8e28ead004ae1e960f7f97",
+      "normal_equations_sha256": "466b210af921de72e4462b0a3f33b30adbddf78062eba3bd8592b17821d92dff",
+      "row_provenance_sha256": "c20984ec0fb3cd0c38e89701ca64f7f0c2b06c546340ab40f9c0080e174141fa",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C2",
+      "gas_id": 2,
+      "gas": "Ethylene",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "b061b6631578656a709dc2263056c648e4a1c950eb1d9c391b570fca38ab5e1b",
+      "normal_equations_sha256": "62eafa7b526aa4c64d960655ad3f9e9722fbdec0f72916c917d6504b8fa8b0b8",
+      "row_provenance_sha256": "ba1eb2eb92abc375009ecaaad7268ddeb86232efe9405c3f0010933da9cdb0b9",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C1",
+      "gas_id": 3,
+      "gas": "Methane",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "28d0c5687d884a0a0de032ae39beee2d09751070b9d338bab771e2cd06bb1fd4",
+      "normal_equations_sha256": "bac98525bb02ce27c6d4480125d53ada5666e381ea9d1863af633ef537e5afef",
+      "row_provenance_sha256": "22a5273c46bcd95cc30cb3843a7ea8e873728985876afacc1822cc0644b56ce0",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    },
+    {
+      "client_id": "C2",
+      "gas_id": 3,
+      "gas": "Methane",
+      "phase": "source_train_plus_calibration_refit",
+      "n": 670,
+      "feature_moments_sha256": "d704dd513eacd95b2381bb3f7931fb4aabecde1ededb7a696a4ac6bc16c4c9fb",
+      "normal_equations_sha256": "71a4debd4d3a660bfb4dd916dc639a45826025085b2cb40f3b201004cac19e9e",
+      "row_provenance_sha256": "993fae3124d48777d501d27ddca5026e43345d8f38015aba3c0f535c4fb0b222",
+      "server_received": [
+        "n",
+        "sum_x",
+        "sum_x2",
+        "A",
+        "b",
+        "y_min",
+        "y_max"
+      ]
+    }
+  ],
+  "raw_rows_transmitted_to_server": false,
+  "raw_X_y_transmitted_to_server": false,
+  "independent_client_provenance": true
+}
