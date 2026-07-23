@@ -10,12 +10,12 @@
 | Current branch | `codex/iotj-confirmation-observability` |
 | Audited code / evidence baseline | code `5ff301c`; evidence `b7598c7` |
 | Current worktree | `D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability` |
-| Current task | B5/C5 runtime parity closure complete; no active runtime implementation gap |
+| Current task | source-regression topology audit/protocol/smoke complete; formal RS0–RS4 not run |
 | Mainline | C1/C2 -> C5, B5 classifier + canonical R4; no C3/C4/H8+C4/P4/R3aK16 runtime |
 | Best reusable classifier | B5 round-25 adapted checkpoint, listed below |
 | Running experiment | NONE (Pi classifier->R4 sweep completed) |
 | Current result root | `results/iotj_b5_c5_deployment_p1_20260722/` |
-| Immediate next step | none for runtime parity; do not retrain. A full-chain Pi latency run is a separate future measurement only if explicitly requested |
+| Immediate next step | review the 20260723 source-regression audit commit; run formal RS0–RS4 only after explicit authorization |
 
 ## 1. Changes Since `a920ecd`
 
@@ -95,6 +95,7 @@ C1/C2 data + Flower classification
 | B2/B5 five-seed confirmation | TODO | YES after confirmation freeze | formal algorithm statistics |
 | HC95 runtime 1360 parity | DONE | NO | primary deployment workpoint; `equivalent` |
 | HC90 runtime 1360 parity | DONE | NO | stricter secondary workpoint; `equivalent` |
+| source-regression RS0–RS4 protocol | FROZEN / SMOKE VERIFIED | formal run requires authorization | no runtime/QC change; smoke is not performance evidence |
 
 ## 6. Running / monitoring
 
@@ -111,11 +112,12 @@ No local, ECS, Pi, PowerShell, tmux, screen, or Python training task is currentl
 ## 8. Minimal reading order
 
 1. this file;
-2. `docs/experiments/iotj_c5_h8_runtime_parity_closure_20260723.zh.md`;
-3. `results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json`;
-4. `results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json`;
-5. both `c5_h8_runtime_parity_hc95_v1/parity_report.json` and `c5_h8_runtime_parity_hc90_v1/parity_report.json`;
-6. `docs/experiments/iotj_system_experiment_notebook.md`.
+2. `docs/experiments/iotj_source_regression_topology_audit_20260723.zh.md`;
+3. `docs/experiments/iotj_c5_h8_runtime_parity_closure_20260723.zh.md`;
+4. `results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json`;
+5. `results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json`;
+6. both `c5_h8_runtime_parity_hc95_v1/parity_report.json` and `c5_h8_runtime_parity_hc90_v1/parity_report.json`;
+7. `docs/experiments/iotj_system_experiment_notebook.md`.
 
 ## 9. Resume commands
 

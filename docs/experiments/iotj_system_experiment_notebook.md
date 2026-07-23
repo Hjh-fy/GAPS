@@ -492,3 +492,14 @@ git diff a920ecdbdbea250220343d63926cb370178cdc5e -- config.py client.py model.p
 - 通用监控命令：`powershell -ExecutionPolicy Bypass -File results/iotj_ecs_c2_representative_20260720/monitor_confirmation_attempt.ps1 -RunId c12_to_c5__b5__s42 -AttemptId c12_to_c5__b5__s42__a001 -Once`。
 - 导师汇报工作簿新增于 `results/iotj_advisor_metrics_20260721/iotj_advisor_system_algorithm_metrics_20260721_v2.xlsx`，整合 B2 recovered diagnostic 系统指标、historical seed-42 分类、formal C5 regression/QC、当前 checkpoint 量级、正式部署缺口和 legacy CPU benchmark。工作簿结构/关键区域检查通过，公式错误搜索为 0；artifact-tool 与 Excel COM 在本机渲染阶段均失败，因此不得声称已完成最终视觉验收。
 - 历史 H2.3/H8/H8+C4 CPU benchmark 仅用于量级参照，不是当前 C5 正式 Pi/PC 结果；其中 legacy H8+C4 不得重新进入主线。当前 B2 serialized application message 已是实际 Flower 应用层消息测量，但仍不是 transport/wire bytes。
+
+## 2026-07-23：source regression federation topology audit 与 RS0–RS4 协议冻结
+
+- 现有 H1 source Ridge、H2 per-gas MLP、H3 shared MLP 已确认均在单进程中合并 C1+C2 source train/calibration rows；它们属于 centrally pooled multi-source regression，不属于 source-data-isolated federation。
+- `gaps_flower/regression_task.py` 的 local-training + sample-count weighted regression-only FedAvg 数学链路可执行；`regression_client.py`/`regression_server.py` 也可通过 checkpoint 文件分别训练/聚合。但它尚未接入标准 Flower `client_app.py/server_app.py` transport，论文不得写成已验证的在线 Flower regression chain。
+- 冻结 RS4 rich-only、RS0 pooled-source、RS1 C1/C2 local experts、RS2 FedAvg prior、RS3 local+FedAvg 五组公平矩阵。RS1–RS3 共用同一次 C1/C2 local training/FedAvg；C5 只用 calibration fit/validation 选择并在 full calibration refit，test 只在冻结后评估一次；第一阶段不接 QC、不改 runtime。
+- 新增 `scripts/evaluate_iotj_federated_source_regression_prior.py`。默认只做 strict contract check；`--smoke-run` 固定为 1 round × 1 step 且输出标记 `smoke_only/advancement_eligible=false`；`--formal-run` 要求新空目录并输出完整 manifest、local/global model manifests、selection、predictions 与 summaries。
+- 合同检查结果：B5 SHA256 `9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c`；80 个 classifier tensors；missing 恰好为 109 个 regression-only tensors；aggregation 109/109 parameter tensors、411,850 parameters；C1/C2 initial regression SHA 相同。
+- 使用正确正式数据根 `client_data_c1234src_c5tgt_...` 完成 1×1 CPU smoke：C1/C2 train 各 2,360 rows，C5 calibration/test 为 320/1,360；local C1、local C2、FedAvg 对相同 C5 windows 全部输出 finite ppm；全部十个预声明输出文件可生成。Smoke 性能数值不进入 evidence 或晋级判断。
+- 25 个 source-regression 相关测试通过。runtime v4、row map、HC95/HC90 parity report/runtime rows 六个冻结 SHA 在 smoke 前后完全一致。
+- 完整审计、P1 风险、计算成本和正式命令见 `docs/experiments/iotj_source_regression_topology_audit_20260723.zh.md`；registry 为 `docs/experiments/iotj_federated_source_regression_prior_registry_20260723.csv`。
