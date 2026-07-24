@@ -1,0 +1,59 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "experiment_id": "IOTJ-B5-C5-FEDH1-RUNTIME-V5-CANDIDATE-20260724",
+  "status": "v0_lineage_frozen",
+  "decision_commit": "31ce3fbd7005f0088a96d8f12946599e40cf4b71",
+  "classifier": {
+    "method": "B5",
+    "seed": 42,
+    "checkpoint_sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+    "seed_selected_from_multiseed_results": false,
+    "ensemble": false
+  },
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "target_client": "C5",
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "split": {
+    "C1_train": 2360,
+    "C1_calibration": 320,
+    "C2_train": 2360,
+    "C2_calibration": 320,
+    "C5_calibration": 320,
+    "C5_calibration_fit": 240,
+    "C5_calibration_validation": 80,
+    "C5_test": 1360
+  },
+  "h1": {
+    "feature_dimension": 104,
+    "per_gas_independent": true,
+    "explicit_intercept": true,
+    "intercept_regularized": false,
+    "alpha_grid": [
+      0.0,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "coefficient_averaging_forbidden": true,
+    "server_raw_rows_forbidden": true,
+    "server_raw_X_forbidden": true,
+    "server_raw_y_forbidden": true,
+    "server_sample_predictions_forbidden": true,
+    "server_sample_labels_forbidden": true
+  },
+  "target_regression": {
+    "input_dimension": 105,
+    "features": "104D rich + 1D federated H1",
+    "head": "C5 per-gas Ridge",
+    "test_used_for_fit_select_or_refit": false
+  },
+  "runtime_v4_read_only": true,
+  "qc_enabled_before_dependency_audit": false,
+  "evidence_boundary": "source raw samples remain local and only aggregated sufficient statistics are used to reconstruct the global source Ridge reference"
+}
