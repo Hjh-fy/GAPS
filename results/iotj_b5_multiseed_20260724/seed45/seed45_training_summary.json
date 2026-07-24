@@ -1,0 +1,93 @@
+{
+  "attempt_id": "c12_to_c5__b5__s45__a001",
+  "attempt_wall_seconds": 6120.596577,
+  "checkpoint_sha256": "b7c5d398beb5c8734fe2650b04d479a46f4e17bc0ac7c86eab266e2686581e8f",
+  "classification_metrics": {
+    "N": 1360,
+    "accuracy": 0.9919117647058824,
+    "confusion_matrix": [
+      [
+        335,
+        5,
+        0,
+        0
+      ],
+      [
+        0,
+        340,
+        0,
+        0
+      ],
+      [
+        2,
+        4,
+        334,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        340
+      ]
+    ],
+    "ece": 0.007930643199121208,
+    "macro_f1": 0.9919239448596794,
+    "mean_confidence": 0.9998424079050036,
+    "nll": 0.08280200564245015,
+    "per_class_f1": {
+      "0": 0.9896602658788775,
+      "1": 0.9869375907111756,
+      "2": 0.9910979228486646,
+      "3": 1.0
+    },
+    "per_class_precision": {
+      "0": 0.9940652818991098,
+      "1": 0.9742120343839542,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_recall": {
+      "0": 0.9852941176470589,
+      "1": 1.0,
+      "2": 0.9823529411764705,
+      "3": 1.0
+    }
+  },
+  "da_total_steps": 2500,
+  "fitins": 50,
+  "fitres": 50,
+  "latest_adapted_checkpoint_sha256": "769657a90b230182e4107ddad145c53fcef11148744b8b35c9c81805305996e4",
+  "round25_normal_checkpoint_sha256": "a43f272acd6bcfe1b1464447ddfa0b2a266563cecaff227dd3d25c352004eaa6",
+  "rounds": 25,
+  "run_id": "c12_to_c5__b5__s45",
+  "schema_version": "iotj.b5_seed_training_summary.v1",
+  "seed": 45,
+  "status": "canonical",
+  "timing": {
+    "c1_fit_seconds": {
+      "max": 42.138917375,
+      "mean": 41.3480537714,
+      "min": 32.538470972,
+      "sample_std": 1.8467310231048313
+    },
+    "c2_fit_seconds": {
+      "max": 78.794236045,
+      "mean": 73.23297573216,
+      "min": 58.642031101,
+      "sample_std": 3.368210179503062
+    },
+    "fit_round_wall_seconds": {
+      "max": 242.600362557,
+      "mean": 238.11512328192,
+      "min": 235.71757306,
+      "sample_std": 1.8682437174699322
+    },
+    "server_da_seconds": {
+      "max": 167.380959031,
+      "mean": 163.90774373248,
+      "min": 162.14940324,
+      "sample_std": 1.437599448227897
+    }
+  }
+}

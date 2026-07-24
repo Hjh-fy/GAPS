@@ -1,0 +1,45 @@
+{
+  "schema_version": "iotj.b5_seed_preflight.v1",
+  "run_id": "c12_to_c5__b5__s45",
+  "seed": 45,
+  "timestamp": "2026-07-24T17:10:00+08:00",
+  "control_head": "e116f263de2cc4449af1bc65ff8e2bdb71e83311",
+  "origin_head": "e116f263de2cc4449af1bc65ff8e2bdb71e83311",
+  "training_code_revision": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "checks": {
+    "previous_seed_postflight": "seed44_PASS",
+    "three_host_controller_preflight": "pass",
+    "residual_training_processes": "none",
+    "content_addressed_source_deployment": "pass",
+    "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+    "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+    "c1_scope": "C1 only",
+    "c2_scope": "C2 only",
+    "server_source_raw_training_used": false,
+    "server_strict_calibration_split": true,
+    "seed45_output_absent_before_preflight": true,
+    "seed46_output_absent": true,
+    "runtime_v4_hc95_hc90_frozen_files": "unchanged"
+  },
+  "command_manifest": {
+    "path": "results/c2e_commands/c12_to_c5__b5__s45/command_manifest.json",
+    "sha256": "bdf588cf217642d6c46e429dd0d9fd62940929422f513ebdd240594510f90343",
+    "algorithm_config_sha256": "2a29b56645cd84be04cd8befa706a761f7955c4e75f0974a6b6341063942e503"
+  },
+  "controller_result": {
+    "queue": [
+      "c12_to_c5__b5__s45"
+    ],
+    "status": "preflighted"
+  },
+  "runtime_v4_frozen_six": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  },
+  "decision": "PASS",
+  "formal_training_authorized": true
+}

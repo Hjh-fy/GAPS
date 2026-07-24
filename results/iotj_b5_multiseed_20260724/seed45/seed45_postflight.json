@@ -1,0 +1,23 @@
+{
+  "attempt_id": "c12_to_c5__b5__s45__a001",
+  "checks": {
+    "c1_c2_every_round": true,
+    "canonical_validator_accepted": true,
+    "checkpoint_strict_load": true,
+    "classification_rows_1360": true,
+    "da_2500_steps": true,
+    "finite_json_evidence": true,
+    "fitins_fitres_50": true,
+    "round25_adapted_checkpoint": true,
+    "rounds_25": true,
+    "runtime_frozen": true,
+    "seed_correct": true,
+    "zero_fit_eval_failures": true
+  },
+  "evidence_boundary": "classification stability only",
+  "next_seed_authorized": true,
+  "run_id": "c12_to_c5__b5__s45",
+  "schema_version": "iotj.b5_seed_postflight.v1",
+  "seed": 45,
+  "verdict": "PASS"
+}

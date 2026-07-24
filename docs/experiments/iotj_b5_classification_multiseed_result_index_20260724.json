@@ -1,0 +1,40 @@
+{
+  "artifacts": [
+    {
+      "bytes": 1525,
+      "path": "results\\iotj_b5_multiseed_20260724\\per_seed_b5_classification_metrics.csv",
+      "sha256": "aef1a8c10936693d7444ab14fd727cf473296d5d859236be7b3f323ae0193e51"
+    },
+    {
+      "bytes": 535,
+      "path": "results\\iotj_b5_multiseed_20260724\\b5_classification_multiseed_summary.csv",
+      "sha256": "11adaa5202268a206ac01f49fe8ca515716d2e80b9cfc88c5877f3ef6ef925c8"
+    },
+    {
+      "bytes": 1476,
+      "path": "results\\iotj_b5_multiseed_20260724\\b5_confusion_matrix_summary.csv",
+      "sha256": "abdc66dde3bc8855574eba667b92c5da221779e6f2ca84c8c291c03d572f9d92"
+    },
+    {
+      "bytes": 1636,
+      "path": "results\\iotj_b5_multiseed_20260724\\b5_multiseed_completion_manifest.json",
+      "sha256": "2bc9cbb5a1516db3cf0f62201c767ee7e3d288ddd0fba60c61d8cc05dc1609d0"
+    },
+    {
+      "bytes": 1533,
+      "path": "docs\\experiments\\iotj_b5_classification_multiseed_result_20260724.zh.md",
+      "sha256": "93ea3016c9a94a099a9a2308bc61924d0df054503c169ba6239df0b8934cd610"
+    }
+  ],
+  "checkpoint_bodies_committed_to_git": false,
+  "evidence_boundary": "B5 classification five-seed stability only; no regression, QC, runtime v5, Pi benchmark, or low-calibration conclusion.",
+  "schema_version": "iotj.b5_classification_multiseed_result_index.v1",
+  "seed_set": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "status": "complete"
+}
