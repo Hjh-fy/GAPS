@@ -1,0 +1,41 @@
+{
+  "schema_version": "iotj.b5_seed_code_hashes.v1",
+  "run_id": "c12_to_c5__b5__s43",
+  "m0_control_commit": "d3ac8b90c87d50a7a0be1fd985d883db15456703",
+  "training_code_revision": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "regular_members_sha256": "961d24f1042ec3a3bb77f5609483f5d67cf4697aa3444e42cd2e130f028b5727",
+  "command_manifest": {
+    "path": "results/c2e_commands/c12_to_c5__b5__s43/command_manifest.json",
+    "file_sha256": "0aaf7d33ff69920049efc5afcf8adb1a2021a381e771aa4467c4f8dff8429ddd",
+    "algorithm_config_sha256": "2fa3045a7bbe40672289c34e3738f128465e764228fa7fb8957c1d85d63870fe"
+  },
+  "runtime_v4_frozen_six": {
+    "bundle_manifest": {
+      "path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json",
+      "sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5"
+    },
+    "c5_test_features": {
+      "path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_features.npy",
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82"
+    },
+    "c5_test_metadata": {
+      "path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_experiment_info.json",
+      "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf"
+    },
+    "c5_test_phase_labels": {
+      "path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_phase_labels.npy",
+      "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5"
+    },
+    "hc95_reference": {
+      "path": "results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc95_records.csv",
+      "sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860"
+    },
+    "hc90_reference": {
+      "path": "results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc90_records.csv",
+      "sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+    }
+  },
+  "remote_controller_hash_validation": "PASS",
+  "verdict": "PASS"
+}

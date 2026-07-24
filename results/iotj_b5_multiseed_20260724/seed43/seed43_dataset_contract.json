@@ -1,0 +1,79 @@
+{
+  "schema_version": "iotj.b5_seed_dataset_contract.v1",
+  "dataset_path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "split_seed": 42,
+  "roles": {
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "target_client": "C5"
+  },
+  "sample_counts": {
+    "C1": {
+      "train": 2360,
+      "calibration": 320,
+      "test": 680
+    },
+    "C2": {
+      "train": 2360,
+      "calibration": 320,
+      "test": 680
+    },
+    "C5": {
+      "calibration": 320,
+      "test": 1360
+    }
+  },
+  "array_contract": {
+    "features": {
+      "shape_suffix": [
+        100,
+        8
+      ],
+      "dtype": "float64"
+    },
+    "classification_labels": {
+      "shape_suffix": [],
+      "dtype": "int32"
+    },
+    "regression_labels": {
+      "shape_suffix": [
+        4
+      ],
+      "dtype": "float32"
+    }
+  },
+  "key_hashes": {
+    "C1_calibration_phase_labels": "7f02c1db8c5ff9a8960b3786b08361bb2efe969f25ab7d6a0106734395c6251e",
+    "C2_server_calibration_phase_labels": "598aba3b17d4ad454ede421c98d6466c4aeb14ff96334c8715b0609d08d17edc",
+    "C5_calibration_phase_labels": "fc459637354518e2d4eeb26b89648b2735797555e88bdd7bacc482179c7608fd",
+    "C5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "C5_test_experiment_info": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf"
+  },
+  "host_scopes": {
+    "server_da": {
+      "manifest_scope": "C1+C2+C5 frozen files",
+      "source_raw_training_used": false,
+      "source_calibration_rows_used": 640,
+      "target_calibration_rows_used": 320,
+      "target_test_rows_used_for_training_or_selection": 0,
+      "strict_calibration_split": true
+    },
+    "C1": {
+      "manifest_scope": "full frozen manifest",
+      "training_rows": 2360,
+      "explicit_train_phase_labels": true
+    },
+    "C2": {
+      "manifest_scope": "frozen C2 nine-file subset",
+      "training_rows": 2360,
+      "explicit_train_phase_labels": false,
+      "loader_phase_value": -1,
+      "seed42_equivalence_evidence": "results/iotj_ecs_c2_representative_20260720/raw/c12_to_c5__b5__s42/c12_to_c5__b5__s42__a001/raw/ecs/training/client_stats_round_001.json"
+    }
+  },
+  "controller_manifest_hash_check": "PASS",
+  "verdict": "PASS"
+}

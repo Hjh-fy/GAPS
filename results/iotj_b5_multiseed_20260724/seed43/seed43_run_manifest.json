@@ -1,0 +1,31 @@
+{
+  "algorithm_config_sha256": "2fa3045a7bbe40672289c34e3738f128465e764228fa7fb8957c1d85d63870fe",
+  "attempt_audit_sha256": "41c30d0bf4e494cd08e560b7e2d87fd8eb711a96062edfa4721aa89dc6d6168e",
+  "attempt_id": "c12_to_c5__b5__s43__a001",
+  "batch_size": 32,
+  "checkpoint_path": "results\\iotj_b5_multiseed_20260724\\seed43\\raw\\c12_to_c5__b5__s43\\c12_to_c5__b5__s43__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+  "checkpoint_sha256": "4a2174e85f069fa04a02bbbf8e0467dc42f8d25d015b58eadc57fe4a98784ab6",
+  "classification_metrics_path": "results\\iotj_b5_multiseed_20260724\\seed43\\classification_evaluation\\seed43_classification_metrics.json",
+  "classification_predictions_path": "results\\iotj_b5_multiseed_20260724\\seed43\\classification_evaluation\\seed43_test_predictions.csv",
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "evidence_status": "audited_single_seed_component",
+  "experiment_id": "MS-B5-SEED43-FORMAL",
+  "local_epochs": 5,
+  "m0_control_commit": "d3ac8b90c87d50a7a0be1fd985d883db15456703",
+  "regression_executed": false,
+  "rounds": 25,
+  "run_id": "c12_to_c5__b5__s43",
+  "runtime_or_qc_modified": false,
+  "schema_version": "iotj.b5_seed_run_manifest.v1",
+  "seed": 43,
+  "server_da_steps_per_round": 100,
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "status": "completed",
+  "target_client": "C5",
+  "test_scope": "generalization_evaluation_only",
+  "training_code_revision": "2ef7aea77b9dfabdd09da4f38742907a37c58c30"
+}

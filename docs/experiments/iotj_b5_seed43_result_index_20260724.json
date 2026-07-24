@@ -1,0 +1,105 @@
+{
+  "schema_version": "iotj.b5.seed_result_index.v1",
+  "experiment_id": "iotj_b5_multiseed_20260724",
+  "seed": 43,
+  "run_id": "c12_to_c5__b5__s43",
+  "attempt_id": "c12_to_c5__b5__s43__a001",
+  "status": "canonical",
+  "validator_status": "accepted",
+  "m0_control_commit": "d3ac8b90c87d50a7a0be1fd985d883db15456703",
+  "training_source_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "attempt_audit_sha256": "41c30d0bf4e494cd08e560b7e2d87fd8eb711a96062edfa4721aa89dc6d6168e",
+  "formal_checkpoint": {
+    "path": "results/iotj_b5_multiseed_20260724/seed43/raw/c12_to_c5__b5__s43/c12_to_c5__b5__s43__a001/raw/ecs/training/server_round_025_adapted.pth",
+    "sha256": "4a2174e85f069fa04a02bbbf8e0467dc42f8d25d015b58eadc57fe4a98784ab6",
+    "tracked_in_git": false
+  },
+  "latest_adapted_checkpoint": {
+    "path": "results/iotj_b5_multiseed_20260724/seed43/raw/c12_to_c5__b5__s43/c12_to_c5__b5__s43__a001/raw/ecs/training/server_latest_adapted.pth",
+    "sha256": "8483f70cbf50bddcfce61440de89880deaa410745bda2c19197393f433b37f42",
+    "tracked_in_git": false
+  },
+  "classification_evaluation": {
+    "split": "C5 frozen test",
+    "rows": 1360,
+    "accuracy": 0.9860294117647059,
+    "macro_f1": 0.9860150907346623,
+    "nll": 0.12563693393006087,
+    "ece": 0.013375687862143694,
+    "used_for_fit_or_selection": false
+  },
+  "indexed_artifacts": [
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_preflight.json",
+      "bytes": 1812,
+      "sha256": "7b8c31da123274d2d3c6226cdb65ef33351796a946987a109ddbef5829c75be9"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_host_inventory.json",
+      "bytes": 2171,
+      "sha256": "7e1085d0a5bf4befea602e8d43b4d0193f67284edd844091d5e691c49448eb31"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_code_hashes.json",
+      "bytes": 2154,
+      "sha256": "16c0c00f8d5b7cc0082554f45a747867df575498c0bbb18d04af6c02fd07b847"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_dataset_contract.json",
+      "bytes": 2360,
+      "sha256": "f05d89b5a161f56f55f590f9f2c6548e3ccb1a8bbb01b912670a86108627d487"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_run_manifest.json",
+      "bytes": 1645,
+      "sha256": "16e2ba556df1e3e81f045f2715492336f4a50e58318450dae8ffd0d44d8b15c2"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_training_trace.csv",
+      "bytes": 4022,
+      "sha256": "50e4646d9daa6658eaa9d7b201067a0ef8baf4865fdca7e658136d62a4813d58"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_training_summary.json",
+      "bytes": 3805,
+      "sha256": "c4e0007ee77af9c59efd399a66dea84f6b144a98084fb9ad1a292ea80059b5e9"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_artifact_sha256.json",
+      "bytes": 3943,
+      "sha256": "a6c53715c08382f6dbabf16786c601b327ea0077a6cfcd32636876bb14972d1d"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_postflight.json",
+      "bytes": 2601,
+      "sha256": "0092a5132696f2fcf525956fdb66a3540942788935e8334fe5e80c5cade2c077"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/classification_evaluation/seed43_classification_metrics.json",
+      "bytes": 1423,
+      "sha256": "bedb4eff7707384f63add0d8448aad3759603404ee2a2b340e41fa199ded4e02"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/classification_evaluation/seed43_test_predictions.csv",
+      "bytes": 375760,
+      "sha256": "955593e7b8b9b748a0357a5f19de2b47c4a2f808f39c1898ed48b2da8abd552c"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/seed43/seed43_completion_report.zh.md",
+      "bytes": 6427,
+      "sha256": "21a21a938222bc3a2097333d66baa5a1f2a6196bf58e1ac7957393514393324e"
+    },
+    {
+      "path": "docs/experiments/iotj_b5_seed43_canary_20260724.zh.md",
+      "bytes": 1684,
+      "sha256": "2befcc1cbfc57d786b2fb5c48b0044a0e5241640b9e5f14c425798bf327c8d46"
+    }
+  ],
+  "large_artifact_policy": {
+    "raw_training_logs_retained_locally": true,
+    "checkpoint_bodies_retained_locally": true,
+    "large_artifacts_committed_to_git": false,
+    "integrity_preserved_by_sha256": true
+  },
+  "evidence_boundary": "This index records one canonical B5 seed43 classification run. It does not establish multi-seed stability, regression selection, runtime v5, QC, Pi benchmark, or low-calibration conclusions."
+}

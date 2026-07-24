@@ -1,0 +1,55 @@
+{
+  "all_checks_passed": true,
+  "attempt_id": "c12_to_c5__b5__s43__a001",
+  "checks": {
+    "C1_C2_every_round": true,
+    "canonical_validator_accepted": true,
+    "checkpoint_adaptive": true,
+    "checkpoint_round_25": true,
+    "classification_rows_1360_unique": true,
+    "da_100_each_round": true,
+    "final_and_round25_adapted_checkpoint": true,
+    "no_nonfinite_json_numeric_values": true,
+    "no_silent_round_skip": true,
+    "rounds_25": true,
+    "runtime_v4_hc95_hc90_hashes_unchanged": true,
+    "seed_and_run_identity_43": true,
+    "test_not_used_for_fit_select_stop": true
+  },
+  "frozen_file_checks": {
+    "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_experiment_info.json": {
+      "actual": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+      "expected": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+      "match": true
+    },
+    "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_features.npy": {
+      "actual": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+      "expected": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+      "match": true
+    },
+    "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_phase_labels.npy": {
+      "actual": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+      "expected": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+      "match": true
+    },
+    "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json": {
+      "actual": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+      "expected": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+      "match": true
+    },
+    "results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc90_records.csv": {
+      "actual": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+      "expected": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+      "match": true
+    },
+    "results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc95_records.csv": {
+      "actual": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+      "expected": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+      "match": true
+    }
+  },
+  "next_seed_started": false,
+  "run_id": "c12_to_c5__b5__s43",
+  "schema_version": "iotj.b5_seed_postflight.v1",
+  "verdict": "PASS"
+}
