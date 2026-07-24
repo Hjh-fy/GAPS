@@ -1,0 +1,17 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.result_index.v1",
+  "status": "RUNTIME_V5_REGRESSION_READY_QC_PENDING",
+  "result_root": "results/iotj_b5_c5_runtime_v5_candidate_20260724",
+  "assets": {
+    "global_h1_model": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4",
+    "target_ridge_models": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de",
+    "runtime_contract_v5": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+    "bundle_manifest": "f239c3b4929d1748574ec4d2fe4f61e09030087c2104b8c726046b5a39bffb1e",
+    "calibration_parity_report": "11c1df75f854b1da7f69af50d62a6da119ea87fd62b8e59b7767527e52500722",
+    "test_parity_report": "bf010e182367bf5e327747aa1c38740ae90271a1727c8b60ad5e19d6d41aad84",
+    "qc_dependency_manifest": "2afe62d9a90e278a5155b205cfbdbb594c0c9958c370fea207832a04e47d69f7",
+    "promotion_decision": "c06907d2c9727811aad07e30534aaab9272efc5dacbb3ffc19277e2fa59cd0fd"
+  },
+  "large_assets_committed_to_git": false,
+  "evidence_boundary": "source raw samples remain local and only aggregated sufficient statistics are used to reconstruct the global source Ridge reference"
+}

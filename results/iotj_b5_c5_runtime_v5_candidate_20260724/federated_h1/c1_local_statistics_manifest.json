@@ -1,0 +1,41 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "record_type": "client_local_statistics_manifest",
+  "client_id": 1,
+  "host": "gaps-pi",
+  "allowed_dataset_directory": "/home/gaps/GAPS/iotj_v5_h1_f55a874/input/data/client_1",
+  "other_source_client_opened": false,
+  "dataset_asset_sha256": {
+    "train_features.npy": "97929e1481b96918fb259e2bac6e1102727a3821f0049b056f184ce26c751da2",
+    "train_classification_labels.npy": "ba7f93d58d3e4173b411e1338a5d2430a31651520fe8ae18ef85075f23a01ad0",
+    "train_regression_labels.npy": "aad18c0fddfda76b10ee8dafed169e810dc86fd3e4f7d2dba86d688be0331b84",
+    "train_phase_labels.npy": "f2a8f7b8ac503785a8830fdc1e1a2504c26916956d8e72a7272bff6e6fe9ec9d",
+    "train_experiment_info.json": "f1e82cf5d500716e2f383b5a1262892bcb014d66f06258842fe74407e95ae680",
+    "calibration_features.npy": "59e78e667a86bf98724bd416e87c9518fb433515578b2b05173352b5911e3ae4",
+    "calibration_classification_labels.npy": "36134282f09d683eae6134b18bd5d4b40845c872024ff047186a10822a6c0d83",
+    "calibration_regression_labels.npy": "e4a835341a4c86714ae3ce58f9603c1961eaac41db331ab40f6027fbe9f885e9",
+    "calibration_phase_labels.npy": "7f02c1db8c5ff9a8960b3786b08361bb2efe969f25ab7d6a0106734395c6251e",
+    "calibration_experiment_info.json": "5b8d87a31c07c7358bc3e2a49012f9c5b186e5c5eec11d5624c5557c93f3b41c"
+  },
+  "artifacts": {
+    "c1_moments.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c1_moments.json",
+      "bytes": 47961,
+      "sha256": "d9a2caa8d4fd2d49bb7efcdc504f43039f1c80740a425646ab0ffcbeffe83825"
+    },
+    "c1_equations.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c1_equations.json",
+      "bytes": 3474182,
+      "sha256": "4ca011e5b90cf3f158ca8d12c96884fc7b1676ef359b85c05a9318d7af005a10"
+    },
+    "c1_scores.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c1_scores.json",
+      "bytes": 9697,
+      "sha256": "bb40ed5c7ad6094bf24b422fc5f6bf2c37f0b5e06a466b3262f390ad067f8e08"
+    }
+  },
+  "raw_rows_transmitted": false,
+  "raw_X_y_transmitted": false,
+  "sample_predictions_transmitted": false,
+  "sample_labels_transmitted": false
+}

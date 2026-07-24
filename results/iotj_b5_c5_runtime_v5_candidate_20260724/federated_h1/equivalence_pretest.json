@@ -1,0 +1,40 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "alpha_equal_4_of_4": true,
+  "calibration_prediction_rows": [
+    {
+      "split": "C5_calibration_320",
+      "gas_id": 0,
+      "gas": "Ethanol",
+      "N": 80,
+      "max_abs_difference_ppm": 0.0,
+      "prediction_difference_RMSE_ppm": 0.0
+    },
+    {
+      "split": "C5_calibration_320",
+      "gas_id": 1,
+      "gas": "CO",
+      "N": 81,
+      "max_abs_difference_ppm": 1.178068487206474e-08,
+      "prediction_difference_RMSE_ppm": 3.4175691664974415e-09
+    },
+    {
+      "split": "C5_calibration_320",
+      "gas_id": 2,
+      "gas": "Ethylene",
+      "N": 79,
+      "max_abs_difference_ppm": 0.0,
+      "prediction_difference_RMSE_ppm": 0.0
+    },
+    {
+      "split": "C5_calibration_320",
+      "gas_id": 3,
+      "gas": "Methane",
+      "N": 80,
+      "max_abs_difference_ppm": 2.4260998543468304e-08,
+      "prediction_difference_RMSE_ppm": 5.628586606318411e-09
+    }
+  ],
+  "max_C5_calibration_H1_prediction_abs_difference_ppm": 2.4260998543468304e-08,
+  "test_opened": false
+}

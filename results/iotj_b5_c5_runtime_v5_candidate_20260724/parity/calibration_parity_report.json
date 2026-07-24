@@ -1,0 +1,22 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "candidate_identity": {
+    "runtime_contract_sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+    "bundle_manifest_sha256": "f239c3b4929d1748574ec4d2fe4f61e09030087c2104b8c726046b5a39bffb1e",
+    "assets": {
+      "classifier": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+      "federated_h1": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4",
+      "target_ridge": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de"
+    },
+    "calibration_lock_sha256": "4edf75222e41d8bf43097625a076964e9338493478edc76c9a04a08794d5affe"
+  },
+  "status": "PASS",
+  "N": 320,
+  "row_key_mismatch_count": 0,
+  "route_mismatch_count": 0,
+  "rich_feature_max_abs_difference": 0.0,
+  "source_h1_max_abs_difference_ppm": 8.242295734817162e-13,
+  "prediction_max_abs_difference_ppm": 8.242295734817162e-13,
+  "missing_or_nonfinite_output_count": 0,
+  "evaluated_at": "2026-07-24T17:11:58.041822+00:00"
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "record_type": "calibration_lock",
+  "created_at": "2026-07-24T16:58:22.767305+00:00",
+  "bound_assets": {
+    "audited_h1": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_h1_federated_ridge_equivalence_20260724\\federated_h1_manifest.json",
+      "bytes": 47244,
+      "sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc"
+    },
+    "audited_target_ridge": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\target_ridge\\audited_reference_target_ridge_105d_manifest.json",
+      "bytes": 46120,
+      "sha256": "59bc0b608a9cd55bffce42328411a63f48e8eab88a0b6d0c3e0a2ae28031237e"
+    },
+    "classifier": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_ecs_c2_representative_20260720\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "bytes": 184201,
+      "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c"
+    },
+    "federated_h1": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\global_h1_model.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+    },
+    "target_ridge": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\target_ridge\\target_ridge_105d_manifest.json",
+      "bytes": 46151,
+      "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de"
+    }
+  },
+  "selection": {
+    "variant": "FEDH1_REAL",
+    "N": 80,
+    "calibration_validation_RMSE": 15.394324043028764,
+    "model_parameter_count": 424,
+    "target_input_dimension": 105
+  },
+  "test_opened": false,
+  "test_used_for_fit_select_or_refit": false
+}

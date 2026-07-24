@@ -1,0 +1,22 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "calibration_selection_lock_sha256": "4edf75222e41d8bf43097625a076964e9338493478edc76c9a04a08794d5affe",
+  "target_ridge_models_sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de",
+  "calibration_validation_RMSE": 15.394324043028764,
+  "test_metrics": {
+    "variant": "FEDH1_REAL",
+    "N": "1360",
+    "S_ALL_RMSE": "25.648978143107897",
+    "S_ALL_MAE": "9.383747858265698",
+    "S_ALL_NRMSE": "0.2042947562021583",
+    "S_CC_N": "1333",
+    "S_CC_RMSE": "11.341598573018034",
+    "CO_RMSE": "22.664999760706348",
+    "CO_high_200_250_N": "102",
+    "CO_high_200_250_RMSE": "35.02121278429173",
+    "model_parameter_count": "424",
+    "target_input_dimension": "105"
+  },
+  "test_opened_after_calibration_lock": true,
+  "test_used_for_fit_select_or_refit": false
+}

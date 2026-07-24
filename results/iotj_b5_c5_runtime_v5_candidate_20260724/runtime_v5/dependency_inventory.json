@@ -1,0 +1,25 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "required_runtime_assets": [
+    "classifier",
+    "federated_h1",
+    "target_ridge"
+  ],
+  "source_regression_heads": [
+    "H1"
+  ],
+  "target_input_dimension": 105,
+  "forbidden_runtime_dependencies_present": false,
+  "forbidden": [
+    "H2",
+    "H3",
+    "R3aK16",
+    "C3",
+    "C4",
+    "H8+C4",
+    "P4",
+    "test_labels"
+  ],
+  "qc_enabled": false,
+  "legacy_fallback": false
+}

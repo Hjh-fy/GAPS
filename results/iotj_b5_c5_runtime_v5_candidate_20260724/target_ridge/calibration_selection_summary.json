@@ -1,0 +1,18 @@
+{
+  "real_topology": {
+    "variant": "FEDH1_REAL",
+    "N": 80,
+    "calibration_validation_RMSE": 15.394324043028764,
+    "model_parameter_count": 424,
+    "target_input_dimension": 105
+  },
+  "audited_reference": {
+    "variant": "FEDH1_AUDITED",
+    "N": 80,
+    "calibration_validation_RMSE": 15.394324043100431,
+    "model_parameter_count": 424,
+    "target_input_dimension": 105
+  },
+  "test_opened": false,
+  "test_used_for_fit_select_or_refit": false
+}

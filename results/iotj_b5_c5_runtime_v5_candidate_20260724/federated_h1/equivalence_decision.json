@@ -1,0 +1,43 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "decision": "PRACTICAL_EQUIVALENCE",
+  "alpha_equal_4_of_4": true,
+  "max_C5_H1_prediction_abs_difference_ppm": 6.253219453355996e-08,
+  "Ridge_H1_S_ALL_RMSE_abs_difference": 9.445955129194772e-11,
+  "Ridge_H1_S_CC_RMSE_abs_difference": 6.703970711896545e-12,
+  "real_topology_metrics": {
+    "variant": "FEDH1_REAL",
+    "N": 1360,
+    "S_ALL_RMSE": 25.648978143107897,
+    "S_ALL_MAE": 9.383747858265698,
+    "S_ALL_NRMSE": 0.2042947562021583,
+    "S_CC_N": 1333,
+    "S_CC_RMSE": 11.341598573018034,
+    "CO_RMSE": 22.664999760706348,
+    "CO_high_200_250_N": 102,
+    "CO_high_200_250_RMSE": 35.02121278429173,
+    "model_parameter_count": 424,
+    "target_input_dimension": 105
+  },
+  "audited_reference_metrics": {
+    "variant": "FEDH1_AUDITED",
+    "N": 1360,
+    "S_ALL_RMSE": 25.648978143013437,
+    "S_ALL_MAE": 9.383747858255882,
+    "S_ALL_NRMSE": 0.20429475620109427,
+    "S_CC_N": 1333,
+    "S_CC_RMSE": 11.341598573024738,
+    "CO_RMSE": 22.66499976077883,
+    "CO_high_200_250_N": 102,
+    "CO_high_200_250_RMSE": 35.02121278446263,
+    "model_parameter_count": 424,
+    "target_input_dimension": 105
+  },
+  "calibration_lock_sha256": "4edf75222e41d8bf43097625a076964e9338493478edc76c9a04a08794d5affe",
+  "target_model_manifest_sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de",
+  "federated_h1_sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4",
+  "classifier_sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+  "test_opened_after_calibration_lock": true,
+  "test_used_for_fit_select_or_refit": false,
+  "test_evaluation_timestamp": "2026-07-24T16:59:18.027145+00:00"
+}
