@@ -1,0 +1,32 @@
+{
+  "schema_version": "iotj.b5_regression_multiseed_result_index.v1",
+  "status": "formal_complete",
+  "formal_run_commit": "99cd23e8b4a5f2f103170f1d8a110d6d85febd5e",
+  "seed_set": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "result_root": "results/iotj_b5_regression_multiseed_20260724",
+  "protocol_manifest": "results/iotj_b5_regression_multiseed_20260724/protocol_manifest.json",
+  "calibration_selection_lock": "results/iotj_b5_regression_multiseed_20260724/calibration_selection_lock.json",
+  "classifier_route_manifest": "results/iotj_b5_regression_multiseed_20260724/classifier_route_manifest.json",
+  "source_head_manifest": "results/iotj_b5_regression_multiseed_20260724/source_head_manifest.json",
+  "per_seed_metrics": "results/iotj_b5_regression_multiseed_20260724/per_seed_regression_metrics.csv",
+  "multiseed_summary": "results/iotj_b5_regression_multiseed_20260724/regression_multiseed_summary.csv",
+  "paired_result": "results/iotj_b5_regression_multiseed_20260724/paired_rg1_vs_rg2.csv",
+  "common_correct_summary": "results/iotj_b5_regression_multiseed_20260724/common_correct_summary.csv",
+  "per_gas_summary": "results/iotj_b5_regression_multiseed_20260724/per_gas_multiseed_summary.csv",
+  "decision": "results/iotj_b5_regression_multiseed_20260724/final_regression_decision.json",
+  "sha256_index": "results/iotj_b5_regression_multiseed_20260724/sha256_index.json",
+  "report": "docs/experiments/iotj_b5_regression_multiseed_result_20260724.zh.md",
+  "seed42_lineage_reconciliation": "docs/experiments/iotj_b5_seed42_metric_lineage_reconciliation_20260724.zh.md",
+  "final_selection": "SELECT_B5_FEDERATED_H1",
+  "runtime_recommendation": "BUILD_RUNTIME_V5_CANDIDATE",
+  "runtime_v5_created": false,
+  "runtime_v4_modified": false,
+  "qc_modified": false,
+  "next_stage_started": false
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": "iotj.b5_regression_final_gate.v1",
+  "decision": "SELECT_B5_FEDERATED_H1",
+  "runtime_recommendation": "BUILD_RUNTIME_V5_CANDIDATE",
+  "checks": {
+    "primary_S_CC_relative_le_1pct": true,
+    "S_ALL_absolute_delta_le_0_5ppm": true,
+    "CO_relative_worsening_le_5pct": true,
+    "CO_high_relative_worsening_le_5pct": true,
+    "no_gas_gt_10pct_worse_in_at_least_3_seeds": true,
+    "COMMON_CORRECT_relative_worsening_le_1pct": true
+  },
+  "observed": {
+    "primary_S_CC_relative_delta": 0.009816370479029746,
+    "S_ALL_absolute_delta_ppm": -0.09014816978084994,
+    "CO_relative_delta": 0.0015295962324659202,
+    "CO_high_relative_delta": -6.409264091415272e-05,
+    "COMMON_CORRECT_relative_delta": 0.009917581705937043,
+    "gas_gt_10pct_worse_seed_counts": {
+      "Ethanol": 0,
+      "CO": 0,
+      "Ethylene": 0,
+      "Methane": 0
+    },
+    "paired_descriptive_t95_CI": [
+      0.033959038148485415,
+      0.1922251793591641
+    ],
+    "paired_directions_inconsistent": false
+  },
+  "test_used_for_selection": false,
+  "runtime_modified": false,
+  "qc_modified": false
+}
