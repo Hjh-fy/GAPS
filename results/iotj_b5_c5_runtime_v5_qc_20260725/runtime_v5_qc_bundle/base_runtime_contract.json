@@ -1,0 +1,57 @@
+{
+  "schema_version": "iotj.c5_federated_source_ridge_runtime_contract.v1",
+  "status": "ready",
+  "bundle_manifest": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\bundle_manifest.json",
+    "bytes": 2442,
+    "sha256": "f239c3b4929d1748574ec4d2fe4f61e09030087c2104b8c726046b5a39bffb1e"
+  },
+  "classifier_model": {
+    "architecture": "FedGasBaseModel",
+    "num_sensors": 8,
+    "num_classes": 4,
+    "feat_dim": 64,
+    "encoder_type": "tcn",
+    "tcn_norm": "instance",
+    "use_cls_proj": true
+  },
+  "inputs": {
+    "features": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_features.npy",
+      "bytes": 8704128,
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82"
+    },
+    "metadata": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_experiment_info.json",
+      "bytes": 535350,
+      "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf"
+    },
+    "phase_labels": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_phase_labels.npy",
+      "bytes": 11008,
+      "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5"
+    },
+    "row_count": 1360,
+    "window_shape": [
+      100,
+      8
+    ],
+    "source_dtype": "float64",
+    "runtime_dtype": "float32"
+  },
+  "outputs": [
+    "sample_index",
+    "pred_class",
+    "source_h1_ppm",
+    "prediction_ppm",
+    "max_probability",
+    "qc_status",
+    "auto_output_ppm"
+  ],
+  "qc_status": "disabled_pending_dependency_audit",
+  "offline_reference": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\target_ridge\\offline_reference_1360.csv",
+    "bytes": 58967,
+    "sha256": "7f2186d137b9cef1bb11d9c82dc41cb14558cdcfc8118cf21e6f7873ede75208"
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_closure.v1",
+  "automatic_v4_load": true,
+  "records": [
+    {
+      "workpoint": "HC95",
+      "v5": {
+        "workpoint": "HC95",
+        "N": 1360,
+        "accept_N": 1275,
+        "review_N": 41,
+        "reject_N": 44,
+        "accepted_yield": 0.9375,
+        "full_RMSE": 25.648978143107897,
+        "accepted_RMSE": 13.917781222824548,
+        "accepted_MAE": 6.9283011351622985,
+        "accepted_NRMSE": 0.09324136422684322,
+        "review_RMSE": 53.62430516642802,
+        "reject_RMSE": 109.73435793049715,
+        "misclassified_N": 27,
+        "misclassified_accept_N": 6,
+        "misclassified_review_N": 5,
+        "misclassified_reject_N": 16,
+        "CO_high_N": 102,
+        "CO_high_accepted_yield": 0.7843137254901961,
+        "CO_high_accepted_RMSE": 30.452160678974668
+      },
+      "v4": {
+        "workpoint": "HC95",
+        "N": 1360,
+        "accept_N": 1323,
+        "review_N": 33,
+        "reject_N": 4,
+        "accepted_yield": 0.9727941176470588,
+        "full_RMSE": 26.024985712137795,
+        "accepted_RMSE": 18.851983467698698,
+        "accepted_MAE": 7.899601924035707,
+        "accepted_NRMSE": 0.14203366692590358,
+        "review_RMSE": 116.34876028273818,
+        "reject_RMSE": 32.46195323593468,
+        "misclassified_N": 27,
+        "misclassified_accept_N": 12,
+        "misclassified_review_N": 12,
+        "misclassified_reject_N": 3,
+        "CO_high_N": 102,
+        "CO_high_accepted_yield": 0.9705882352941176,
+        "CO_high_accepted_RMSE": 28.803920813263716
+      },
+      "guard": {
+        "accepted_RMSE_guard_pass": true,
+        "accepted_yield_guard_pass": false,
+        "per_gas_guards": [
+          {
+            "gas": "Ethanol",
+            "yield_drop_vs_v4": 0.008823529411764786,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          },
+          {
+            "gas": "CO",
+            "yield_drop_vs_v4": 0.10882352941176476,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          },
+          {
+            "gas": "Ethylene",
+            "yield_drop_vs_v4": 0.020588235294117685,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          },
+          {
+            "gas": "Methane",
+            "yield_drop_vs_v4": 0.002941176470588225,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          }
+        ],
+        "all_pass": false
+      }
+    },
+    {
+      "workpoint": "HC90",
+      "v5": {
+        "workpoint": "HC90",
+        "N": 1360,
+        "accept_N": 1183,
+        "review_N": 113,
+        "reject_N": 64,
+        "accepted_yield": 0.8698529411764706,
+        "full_RMSE": 25.648978143107897,
+        "accepted_RMSE": 12.77231477889627,
+        "accepted_MAE": 6.422161180104646,
+        "accepted_NRMSE": 0.08178508053321706,
+        "review_RMSE": 31.640381260067198,
+        "reject_RMSE": 95.89970933927502,
+        "misclassified_N": 27,
+        "misclassified_accept_N": 3,
+        "misclassified_review_N": 5,
+        "misclassified_reject_N": 19,
+        "CO_high_N": 102,
+        "CO_high_accepted_yield": 0.39215686274509803,
+        "CO_high_accepted_RMSE": 40.0013738095144
+      },
+      "v4": {
+        "workpoint": "HC90",
+        "N": 1360,
+        "accept_N": 1235,
+        "review_N": 107,
+        "reject_N": 18,
+        "accepted_yield": 0.9080882352941176,
+        "full_RMSE": 26.024985712137795,
+        "accepted_RMSE": 15.832750781551345,
+        "accepted_MAE": 6.975634057882549,
+        "accepted_NRMSE": 0.11045981802135806,
+        "review_RMSE": 70.64313782681783,
+        "reject_RMSE": 65.64403978036289,
+        "misclassified_N": 27,
+        "misclassified_accept_N": 5,
+        "misclassified_review_N": 15,
+        "misclassified_reject_N": 7,
+        "CO_high_N": 102,
+        "CO_high_accepted_yield": 0.803921568627451,
+        "CO_high_accepted_RMSE": 30.72665040785015
+      },
+      "guard": {
+        "accepted_RMSE_guard_pass": true,
+        "accepted_yield_guard_pass": false,
+        "per_gas_guards": [
+          {
+            "gas": "Ethanol",
+            "yield_drop_vs_v4": -0.002941176470588225,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          },
+          {
+            "gas": "CO",
+            "yield_drop_vs_v4": 0.2058823529411764,
+            "v5_has_RMSE_benefit": false,
+            "pass": false
+          },
+          {
+            "gas": "Ethylene",
+            "yield_drop_vs_v4": -0.050000000000000044,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          },
+          {
+            "gas": "Methane",
+            "yield_drop_vs_v4": 0.0,
+            "v5_has_RMSE_benefit": true,
+            "pass": true
+          }
+        ],
+        "all_pass": false
+      }
+    }
+  ],
+  "all_v4_promotion_guards_pass": false,
+  "highest_decile_RMSE_gt_lowest": true,
+  "reject_RMSE_gt_accepted_both": true
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_closure.v1",
+  "status": "SELECTED_AND_LOCKABLE",
+  "selected_candidate": "QC2",
+  "selection_reason": "QC2 is the simplest passing candidate",
+  "test_may_open": true,
+  "selection_rule": {
+    "simplest_passing": true,
+    "material_improvement_ppm": 0.25,
+    "max_yield_decline": 0.01,
+    "QC3_without_material_QC2_gain_selects_QC2": true
+  },
+  "test_opened": false
+}

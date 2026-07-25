@@ -1,0 +1,19 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_closure.v1",
+  "candidates": {
+    "QC1": "mean(ECDF(entropy), ECDF(inverse_margin))",
+    "QC2": "mean(confidence_group, mean(ECDF(prototype_distance), ECDF(support_distance)))",
+    "QC3": "mean(confidence_group, distance_group, ECDF(abs(target_Ridge-H1)/per_predicted_gas_MAD_scale))"
+  },
+  "component_internal_mean_then_group_mean": true,
+  "ecdf_side": "right",
+  "epsilon": 1e-08,
+  "forbidden": [
+    "H2",
+    "H3",
+    "H2.3",
+    "all_prior",
+    "v4 risk values",
+    "test labels or residuals"
+  ]
+}

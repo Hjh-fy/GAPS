@@ -1,0 +1,24 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_closure.v1",
+  "status": "PASS",
+  "N": 1360,
+  "workpoints": [
+    "HC95",
+    "HC90"
+  ],
+  "class_mismatch": 0,
+  "prediction_max": 0.0,
+  "raw_max": 0.0,
+  "normalized_max": 0.0,
+  "risk_max": 0.0,
+  "decision_mismatch": 0,
+  "auto_mismatch": 0,
+  "row_key_mismatch": 0,
+  "missing_nonfinite": 0,
+  "tolerances": {
+    "prediction_ppm": 1e-06,
+    "raw_risk": 1e-10,
+    "normalized_risk": 1e-10,
+    "deployment_risk": 1e-10
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_bundle.v1",
+  "status": "locked",
+  "build_commit": "7c15b9848e17529c7873dde3bd7fc6428f3b45a6",
+  "assets": {
+    "base_runtime_contract": {
+      "bundle_path": "base_runtime_contract.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482"
+    },
+    "qc_policy": {
+      "bundle_path": "qc_policy.json",
+      "bytes": 772571,
+      "sha256": "9878028e97ae9b616194b2d01a557896c1805d1bebb57b6500f90ea16a0c1b8e"
+    }
+  },
+  "dependency_contract": {
+    "allowed": [
+      "base_runtime_contract",
+      "qc_policy"
+    ],
+    "forbidden": [
+      "H2",
+      "H3",
+      "H2.3",
+      "all_prior",
+      "legacy_rescue",
+      "runtime_v4_risk"
+    ],
+    "legacy_fallback": false
+  }
+}

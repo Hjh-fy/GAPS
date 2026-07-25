@@ -1,0 +1,36 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_selection_lock.v1",
+  "status": "locked_before_test",
+  "build_commit": "c96ae1accf1705365752ce42fe102aeca012129c",
+  "selected_candidate": "QC2",
+  "selection_reason": "QC2 is the simplest passing candidate",
+  "qc_policy": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_qc_20260725\\runtime_v5_qc_policy.json",
+    "bytes": 772571,
+    "sha256": "9878028e97ae9b616194b2d01a557896c1805d1bebb57b6500f90ea16a0c1b8e"
+  },
+  "bound_assets": {
+    "base_runtime_contract": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\runtime_contract_v5.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482"
+    },
+    "candidate_selection": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_qc_20260725\\qc_candidate_selection.json",
+      "bytes": 430,
+      "sha256": "6ec10da076674752dad6358e0c1cfc8a7994de39fc59e65c08d9005e2766017f"
+    },
+    "fold_manifest": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_qc_20260725\\qc_calibration_fold_manifest.json",
+      "bytes": 74700,
+      "sha256": "b7c32b3729df7e50b43a0638f92698de6d50c088edbd24d7c3e2f20eb25d96a3"
+    },
+    "qc_policy": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_qc_20260725\\runtime_v5_qc_policy.json",
+      "bytes": 772571,
+      "sha256": "9878028e97ae9b616194b2d01a557896c1805d1bebb57b6500f90ea16a0c1b8e"
+    }
+  },
+  "test_opened_after_lock": false,
+  "test_used_for_fit_select_refit_or_thresholds": false
+}
