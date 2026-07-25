@@ -1000,11 +1000,11 @@ def _plots(
         fig.savefig(output / f"low_calibration_per_gas.{suffix}", dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     (output / "low_calibration_captions.en.md").write_text(
-        "The frozen B5 + Federated-H1 + C5 Ridge method is evaluated at group-complete nested calibration budgets. Error bars show sample standard deviation across five deterministic subset replicates for 160/80/40; 320 is a single frozen reference. Lines connect only observed budgets and are not fitted curves.\n",
+        "The frozen B5 + Federated-H1 + C5 Ridge method is evaluated at group-complete nested calibration budgets. Error bars show sample standard deviation across five deterministic subset replicates for 160/80/40; 320 is a single frozen reference. Lines connect only observed budgets and are not fitted curves. Calibration time is not expected to be monotonic because 160/80/40 use group-aware five-fold alpha selection while the frozen 320 reference retains its 240/80 holdout protocol.\n",
         encoding="utf-8",
     )
     (output / "low_calibration_captions.zh.md").write_text(
-        "固定 B5 + Federated-H1 + C5 Ridge 方法在按 filename 整组保留的嵌套校准预算下进行敏感性分析。160/80/40 的误差条为 5 个确定性 subset replicate 的样本标准差，320 为单次冻结参考。连线仅连接已观测预算点，不是拟合曲线。\n",
+        "固定 B5 + Federated-H1 + C5 Ridge 方法在按 filename 整组保留的嵌套校准预算下进行敏感性分析。160/80/40 的误差条为 5 个确定性 subset replicate 的样本标准差，320 为单次冻结参考。连线仅连接已观测预算点，不是拟合曲线。校准耗时不要求随行数单调变化，因为 160/80/40 使用 group-aware 5-fold alpha selection，而冻结的 320 reference 保持原 240/80 holdout 协议。\n",
         encoding="utf-8",
     )
 
@@ -1012,7 +1012,7 @@ def _plots(
 def finalize(args: argparse.Namespace) -> None:
     output = Path(args.output_dir)
     state = json.loads((output / "stage_state.json").read_text(encoding="utf-8"))
-    if state.get("stage") != "TEST_EVALUATED" or state.get("test_opened") is not True:
+    if state.get("stage") not in {"TEST_EVALUATED", "COMPLETE"} or state.get("test_opened") is not True:
         raise RuntimeError("finalization requires completed one-shot test evaluation")
     evaluation = json.loads((output / "test_evaluation_manifest.json").read_text(encoding="utf-8"))
     if sha256_file(output / "calibration_lock.json") != evaluation["calibration_lock_sha256"]:
@@ -1225,8 +1225,17 @@ def finalize(args: argparse.Namespace) -> None:
     )
 
     report_rows = "\n".join(
-        f"| {int(row['nominal_budget'])} | {row['actual_rows_min']:.0f}–{row['actual_rows_max']:.0f} | {_fmt_mean_std(row['S_CC_RMSE_mean'], row['S_CC_RMSE_sample_std'])} | {_fmt_mean_std(row['S_ALL_RMSE_mean'], row['S_ALL_RMSE_sample_std'])} |"
+        f"| {int(row['nominal_budget'])} | {row['actual_rows_min']:.0f}–{row['actual_rows_max']:.0f} | {_fmt_mean_std(row['S_CC_RMSE_mean'], row['S_CC_RMSE_sample_std'])} | {_fmt_mean_std(row['S_ALL_RMSE_mean'], row['S_ALL_RMSE_sample_std'])} | {_fmt_mean_std(row['CO_RMSE_mean'], row['CO_RMSE_sample_std'])} | {_fmt_mean_std(row['CO_high_200_250_RMSE_mean'], row['CO_high_200_250_RMSE_sample_std'])} |"
         for row in summary_rows
+    )
+    gas_report_rows = "\n".join(
+        f"| {int(row['nominal_budget'])} | {row['gas']} | {_fmt_mean_std(row['RMSE_mean'], row['RMSE_sample_std'])} |"
+        for row in gas_summary
+    )
+    timing_report_rows = "\n".join(
+        f"| {int(row['nominal_budget'])} | {float(row['p50_seconds']):.4f} | {float(row['p95_seconds']):.4f} | {int(row['N_timing_repeats'])} |"
+        for row in timing_summary
+        if row["stage"] == "total_calibration_seconds"
     )
     report = f"""# GAPS IoT-J low-calibration sensitivity 结果（2026-07-25）
 
@@ -1234,9 +1243,27 @@ def finalize(args: argparse.Namespace) -> None:
 
 本实验在固定 B5 seed42、real-topology sufficient-statistics Federated H1 与 C5 105D per-gas Ridge 下，仅改变 C5 calibration budget。最终描述性状态为 `{decision}`；该状态不改变最终方法、runtime 或 QC。
 
-| Nominal budget | Actual rows range | S_CC RMSE mean±std | S_ALL RMSE mean±std |
-|---:|---:|---:|---:|
+| Nominal budget | Actual rows range | S_CC RMSE mean±std | S_ALL RMSE mean±std | CO RMSE mean±std | CO-high RMSE mean±std |
+|---:|---:|---:|---:|---:|---:|
 {report_rows}
+
+相对 320 reference，160/80/40 的 mean S_CC RMSE 相对变化分别为 {100*deltas[160]:.2f}%、{100*deltas[80]:.2f}% 和 {100*deltas[40]:.2f}%。160 的 S_CC subset standard deviation 为 {next(row for row in summary_rows if int(row['nominal_budget']) == 160)['S_CC_RMSE_sample_std']:.4f} ppm，80 为 {next(row for row in summary_rows if int(row['nominal_budget']) == 80)['S_CC_RMSE_sample_std']:.4f} ppm，40 为 {next(row for row in summary_rows if int(row['nominal_budget']) == 40)['S_CC_RMSE_sample_std']:.4f} ppm。
+
+## 分气体结果
+
+| Nominal budget | Gas | RMSE mean±std (ppm) |
+|---:|---|---:|
+{gas_report_rows}
+
+Methane 与 CO/CO-high 是随预算缩减退化最明显的部分；Ethylene 的均值并非严格单调，说明 sensitivity 具有气体依赖性。所有 replicate 均保留，没有根据结果删除或替换 subset。
+
+## Target Ridge 校准耗时
+
+| Nominal budget | Total p50 (s) | Total p95 (s) | Timing N |
+|---:|---:|---:|---:|
+{timing_report_rows}
+
+160/80/40 使用 group-aware 5-fold alpha selection，而 320 保留冻结的 240/80 holdout，因此耗时不要求随 calibration rows 单调变化。计时覆盖 rich feature、H1 prediction、fold preparation、alpha search、final refit 与 serialization；详细分阶段统计见 `low_calibration_timing_summary.csv`。
 
 ## 协议与统计边界
 
@@ -1256,6 +1283,8 @@ def finalize(args: argparse.Namespace) -> None:
 6. No model or threshold selection is performed using low-calibration test results.
 
 完整统计见 `low_calibration_summary.csv`、`low_calibration_per_gas_summary.csv`、`low_calibration_alpha_summary.csv` 与 `low_calibration_timing_summary.csv`；论文表格和图分别位于 `paper_tables/` 与 `paper_figures/`。
+
+当前结果具备进入 paper evidence freeze 的条件：协议、subset、模型、calibration lock、test evaluation、表图和报告均有 SHA256 provenance；但论文表述必须保留 `HIGH_CALIBRATION_SENSITIVITY` 与 historical-test evidence boundary。
 """
     report_path = Path(args.report_path)
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1263,11 +1292,22 @@ def finalize(args: argparse.Namespace) -> None:
     frozen_after = frozen_hashes(ROOT)
     if frozen_after != json.loads((output / "frozen_asset_manifest.json").read_text(encoding="utf-8"))["runtime_v4_six_sha256"]:
         raise RuntimeError("runtime v4 six frozen SHA changed")
+    final_state = dict(state)
+    final_state.pop("sha256_index", None)
+    final_state.update(
+        {
+            "stage": "COMPLETE",
+            "decision": decision,
+            "report": descriptor(report_path),
+            "sha256_index_path": str((output / "sha256_index.json").resolve()),
+            "sha256_index_generated_after_state": True,
+        }
+    )
+    write_json(output / "stage_state.json", final_state)
     tracked = [
         path
         for path in output.rglob("*")
-        if path.is_file()
-        and path.name not in {"sha256_index.json", "test_predictions.csv", "calibration_timing_repetitions.csv"}
+        if path.is_file() and path.name != "sha256_index.json"
     ]
     write_json(
         output / "sha256_index.json",
@@ -1281,7 +1321,11 @@ def finalize(args: argparse.Namespace) -> None:
                 }
                 for path in sorted(tracked)
             ],
-            "large_row_results_excluded_from_git": ["test_predictions.csv", "calibration_timing_repetitions.csv"],
+            "external_artifacts": {"report": descriptor(report_path)},
+            "large_row_results_sha_bound_but_excluded_from_git": [
+                "test_predictions.csv",
+                "calibration_timing_repetitions.csv",
+            ],
         },
     )
     index_path = Path(args.index_path)
@@ -1292,23 +1336,14 @@ def finalize(args: argparse.Namespace) -> None:
             "experiment_id": EXPERIMENT_ID,
             "status": "COMPLETE",
             "decision": decision,
-            "code_commit": git_head(),
+            "formal_run_code_commit": protocol["formal_code_commit"],
+            "analysis_code_commit": git_head(),
             "result_root": str(output.relative_to(ROOT)).replace("\\", "/"),
             "report": str(report_path.relative_to(ROOT)).replace("\\", "/"),
             "sha256_index": str((output / "sha256_index.json").relative_to(ROOT)).replace("\\", "/"),
             "paper_evidence_freeze_ready": True,
             "runtime_changed": False,
             "QC_changed": False,
-        },
-    )
-    write_json(
-        output / "stage_state.json",
-        {
-            **state,
-            "stage": "COMPLETE",
-            "decision": decision,
-            "report": descriptor(report_path),
-            "sha256_index": descriptor(output / "sha256_index.json"),
         },
     )
 
