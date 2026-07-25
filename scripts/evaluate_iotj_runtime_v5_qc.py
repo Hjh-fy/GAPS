@@ -622,6 +622,7 @@ def v4_baseline(workpoint: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     source = read_csv(path)
     rows = [{
         "sample_index": int(float(row["sample_index"])), "true_class": int(float(row["true_class"])),
+        "pred_class": int(float(row["pred_class"])),
         "true_ppm": float(row["true_ppm"]), "prediction_ppm": float(row["target_ridge_plus_source_preds_ppm"]),
         "qc_decision": row["qc_decision"],
     } for row in source]

@@ -16,6 +16,7 @@ from gaps_deploy.runtime_v5_qc import (
     make_selection_lock,
     require_selection_lock,
 )
+from scripts.evaluate_iotj_runtime_v5_qc import v4_baseline
 
 
 def _metadata() -> list[dict[str, object]]:
@@ -173,3 +174,10 @@ def test_policy_decisions_emit_auto_output_only_for_accept() -> None:
     assert RuntimeV5QCPolicy.decision(0.9, 10.0, {"accept_threshold": 0.5, "reject_threshold": 0.8}) == ("reject", None)
     with pytest.raises(ValueError, match="NaN/Inf"):
         RuntimeV5QCPolicy.decision(np.nan, 10.0, {"accept_threshold": 0.5, "reject_threshold": 0.8})
+
+
+def test_v4_baseline_loader_carries_route_for_automatic_guard() -> None:
+    summary, gas_rows = v4_baseline("HC95")
+    assert summary["N"] == 1360
+    assert summary["misclassified_N"] >= 0
+    assert len(gas_rows) == 4
