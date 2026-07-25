@@ -1021,6 +1021,73 @@ def finalize(args: argparse.Namespace) -> None:
     per_gas = read_csv(output / "per_replicate_per_gas_metrics.csv")
     timing = read_csv(output / "calibration_timing_repetitions.csv")
     alpha = read_csv(output / "calibration_alpha_audit.csv")
+    metadata = json.loads(
+        (
+            Path(args.data_root)
+            / "client_5/calibration_experiment_info.json"
+        ).read_text(encoding="utf-8")
+    )
+    replayed_subsets = _load_subset_indexes(output, metadata)
+    fold_assignment_rows: list[dict[str, Any]] = []
+    fold_audit_rows: list[dict[str, Any]] = []
+    for (budget, replicate), indexes in sorted(replayed_subsets.items()):
+        if budget == 320:
+            continue
+        seed = REPLICATE_SEEDS[replicate]
+        folds = assign_group_folds(
+            metadata, indexes, n_splits=5, seed=seed
+        )
+        filename_folds: dict[str, set[int]] = {}
+        for index in indexes:
+            filename = str(metadata[index]["filename"])
+            filename_folds.setdefault(filename, set()).add(folds[index])
+            fold_assignment_rows.append(
+                {
+                    "nominal_budget": budget,
+                    "replicate": replicate,
+                    "seed": seed,
+                    "sample_index": index,
+                    "filename": filename,
+                    "fold": folds[index],
+                    "gas_id": int(metadata[index]["classification_label"]),
+                    "gas": CLASS_NAMES[
+                        int(metadata[index]["classification_label"])
+                    ],
+                    "concentration_ppm": float(
+                        metadata[index]["concentration"]
+                    ),
+                }
+            )
+        leakage = sum(len(values) != 1 for values in filename_folds.values())
+        fold_audit_rows.append(
+            {
+                "nominal_budget": budget,
+                "replicate": replicate,
+                "actual_rows": len(indexes),
+                "unique_filenames": len(filename_folds),
+                "filename_fold_leakage_count": leakage,
+                "fold_row_counts": {
+                    str(fold): sum(value == fold for value in folds.values())
+                    for fold in range(5)
+                },
+                "status": "PASS" if leakage == 0 else "FAIL_CLOSED",
+            }
+        )
+    if any(row["status"] != "PASS" for row in fold_audit_rows):
+        raise RuntimeError("replayed calibration fold isolation failed")
+    write_csv(
+        output / "calibration_fold_assignment_audit.csv",
+        fold_assignment_rows,
+    )
+    write_json(
+        output / "fold_isolation_audit.json",
+        {
+            "schema_version": SCHEMA,
+            "status": "PASS",
+            "audit_scope": "post-test deterministic replay of frozen pre-test subset seeds and fold algorithm; not used for selection",
+            "assignments": fold_audit_rows,
+        },
+    )
     summary_rows: list[dict[str, Any]] = []
     for budget in BUDGETS:
         selected = [row for row in metrics if int(row["nominal_budget"]) == budget]
@@ -1206,6 +1273,7 @@ def finalize(args: argparse.Namespace) -> None:
         "- Verdict: AUDITED_SENSITIVITY_EVIDENCE.\n"
         "- Frozen classifier, Federated H1, feature schema, alpha grid, and test universe verified.\n"
         "- Filename groups remain intact within nested subsets and calibration-only folds.\n"
+        "- `calibration_fold_assignment_audit.csv` and `fold_isolation_audit.json` replay every low-budget fold from the frozen subset seed/algorithm and report zero filename leakage.\n"
         "- Calibration lock existed and was SHA-bound before the one-shot low-calibration test stage.\n"
         "- Historical calibration/test split remains window-level; original-file independence is not claimed.\n"
         "- No QC, threshold, method, subset, alpha-grid, or budget was selected from test results.\n",
@@ -1270,6 +1338,7 @@ Methane 与 CO/CO-high 是随预算缩减退化最明显的部分；Ethylene 的
 - 40 ⊆ 80 ⊆ 160 ⊆ 320；同一 filename 的 calibration 行不会被拆分。
 - 160/80/40 各 5 个确定性 balanced subset replicates；320 为完整 calibration 单次参考。
 - 低预算 alpha 仅由 group-aware 5-fold calibration-only selection 决定；320 保持冻结 240/80 语义。
+- 冻结 seed/算法的独立重放审计覆盖全部 15 个低预算组合，filename fold leakage 为 0。
 - 计时使用 PC 高精度单调时钟，每个 budget/replicate 10 次；重复计时的模型 numeric SHA 必须一致。
 - primary metric 为固定 1360-row test 的 S_CC RMSE，未使用 QC accepted RMSE。
 
