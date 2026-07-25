@@ -1,0 +1,116 @@
+{
+  "schema_version": "iotj.final_system_frozen_assets.v1",
+  "code_commit": "a9a4b42739f3c56add369a067e6c27da03c7f0ba",
+  "status": "PASS",
+  "assets": {
+    "runtime_v4": {
+      "bundle_manifest": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\bundle_candidate\\manifest.json",
+        "bytes": 4617,
+        "sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+        "status": "PASS"
+      },
+      "c5_test_features": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_features.npy",
+        "bytes": 8704128,
+        "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+        "status": "PASS"
+      },
+      "c5_test_metadata": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_experiment_info.json",
+        "bytes": 535350,
+        "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+        "status": "PASS"
+      },
+      "c5_test_phase_labels": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_phase_labels.npy",
+        "bytes": 11008,
+        "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+        "status": "PASS"
+      },
+      "hc95_reference": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\test_hc95_records.csv",
+        "bytes": 11942586,
+        "sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+        "status": "PASS"
+      },
+      "hc90_reference": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\test_hc90_records.csv",
+        "bytes": 11942586,
+        "sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+        "status": "PASS"
+      }
+    },
+    "runtime_v5": {
+      "base_runtime_v5_contract": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\runtime_contract_v5.json",
+        "bytes": 2328,
+        "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+        "status": "PASS"
+      },
+      "base_runtime_v5_bundle_manifest": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\bundle_manifest.json",
+        "bytes": 2442,
+        "sha256": "f239c3b4929d1748574ec4d2fe4f61e09030087c2104b8c726046b5a39bffb1e",
+        "status": "PASS"
+      },
+      "classifier": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\assets\\classifier.pth",
+        "bytes": 184201,
+        "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+        "status": "PASS"
+      },
+      "federated_h1": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\assets\\federated_h1.json",
+        "bytes": 50226,
+        "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4",
+        "status": "PASS"
+      },
+      "target_ridge": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\assets\\target_ridge_105d.json",
+        "bytes": 46151,
+        "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de",
+        "status": "PASS"
+      },
+      "calibration_features": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\calibration_features.npy",
+        "bytes": 2048128,
+        "sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+        "status": "PASS"
+      },
+      "calibration_metadata": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\calibration_experiment_info.json",
+        "bytes": 125960,
+        "sha256": "e9d147f30cf7a8f534da43a0b14558dc7ec3f83eca443dad226306ed2c56a01e",
+        "status": "PASS"
+      },
+      "calibration_phase_labels": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\calibration_phase_labels.npy",
+        "bytes": 2688,
+        "sha256": "fc459637354518e2d4eeb26b89648b2735797555e88bdd7bacc482179c7608fd",
+        "status": "PASS"
+      },
+      "test_features": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_features.npy",
+        "bytes": 8704128,
+        "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+        "status": "PASS"
+      },
+      "test_metadata": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_experiment_info.json",
+        "bytes": 535350,
+        "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+        "status": "PASS"
+      },
+      "test_phase_labels": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_phase_labels.npy",
+        "bytes": 11008,
+        "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+        "status": "PASS"
+      }
+    }
+  },
+  "runtime_v4_six_sha_unchanged": true,
+  "formal_benchmark_code_commit": "4ccfc489821410ddacb6ad36180694bb953311f1",
+  "benchmark_script_commit_identity_pass": true
+}

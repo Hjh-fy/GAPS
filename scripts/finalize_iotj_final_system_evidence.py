@@ -17,7 +17,7 @@ if str(ENTRY_ROOT) not in sys.path:
     sys.path.insert(0, str(ENTRY_ROOT))
 
 from scripts.build_iotj_final_system_evidence import (
-    ROOT, _normalize_v4, _normalize_v5, _write_csv, _write_json,
+    ROOT, _normalize_v4, _normalize_v5, _package_sizes, _write_csv, _write_json,
     _write_table_set, summarize_selective_rows,
 )
 
@@ -86,6 +86,19 @@ def rewrite_qc_table(root: Path) -> list[dict[str, Any]]:
 
 def finalize(args: argparse.Namespace) -> None:
     root = args.result_root
+    run_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    committed_benchmark = subprocess.check_output(["git", "show", f"{run_commit}:scripts/benchmark_iotj_final_runtime.py"], cwd=ROOT)
+    working_benchmark = (ROOT / "scripts/benchmark_iotj_final_runtime.py").read_bytes().replace(b"\r\n", b"\n")
+    if hashlib.sha256(committed_benchmark).hexdigest() != hashlib.sha256(working_benchmark).hexdigest():
+        raise ValueError("formal benchmark script is not byte-equivalent to the recorded commit")
+    frozen_manifest = read_json(root / "frozen_asset_manifest.json")
+    frozen_manifest["formal_benchmark_code_commit"] = run_commit
+    frozen_manifest["benchmark_script_commit_identity_pass"] = True
+    _write_json(root / "frozen_asset_manifest.json", frozen_manifest)
+    protocol = read_json(root / "benchmark_protocol.json")
+    protocol["formal_benchmark_code_commit"] = run_commit
+    protocol["actual_runs"] = {"PC": 500, "Pi": 500}
+    _write_json(root / "benchmark_protocol.json", protocol)
     summaries, breakdown = benchmark_summaries(root)
     _write_csv(root / "benchmarks/benchmark_summary.csv", summaries)
     _write_csv(root / "benchmarks/latency_breakdown.csv", breakdown)
@@ -108,6 +121,14 @@ def finalize(args: argparse.Namespace) -> None:
     _write_csv(root / "cold_start/cold_start_summary.csv", cold_rows)
 
     overall = rewrite_qc_table(root)
+    # Recompute deployable package footprints from the frozen roots.  In
+    # particular, the v5 QC2 candidate is the v5 core plus its QC overlay.
+    _write_csv(root / "system_metrics/package_size_summary.csv", _package_sizes())
+    b5_path = root / "system_metrics/b5_fl_communication_summary.csv"
+    b5_rows = list(csv.DictReader(b5_path.open(encoding="utf-8")))
+    for row in b5_rows:
+        row["actual_clients"] = "C1;C2"
+    _write_csv(b5_path, b5_rows)
     h1_payload = read_json(ROOT / "results/iotj_b5_c5_runtime_v5_candidate_20260724/federated_h1/communication_payload_summary.json")
     h1_rows = []
     actual_total = 0
@@ -203,7 +224,7 @@ Pi 首次两次尝试均在正式计时前 fail-closed，原因分别为便携�
     tracked = [path for path in root.rglob("*") if path.is_file() and not path.name.endswith("_rows.csv") and path.name != "sha256_index.json"]
     sha_rows = [{"path": str(path.relative_to(ROOT)).replace("\\", "/"), "bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()} for path in sorted(tracked)]
     _write_json(root / "sha256_index.json", {"schema_version": "iotj.final_system_benchmark_sha256.v1", "artifacts": sha_rows, "large_row_logs_excluded_from_git": True})
-    index = {"schema_version": "iotj.final_system_benchmark_result_index.v1", "experiment_id": "IOTJ-FINAL-SYSTEM-BENCHMARK-20260725", "status": "COMPLETE", "code_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), "result_root": str(root.relative_to(ROOT)).replace("\\", "/"), "report": str(args.report_path.relative_to(ROOT)).replace("\\", "/"), "decision": "RUNTIME_V4_FORMAL_BASELINE_V5_REGRESSION_FINAL_V5_QC2_NOT_PROMOTED", "low_calibration_started": False, "sha256_index": str((root / "sha256_index.json").relative_to(ROOT)).replace("\\", "/")}
+    index = {"schema_version": "iotj.final_system_benchmark_result_index.v1", "experiment_id": "IOTJ-FINAL-SYSTEM-BENCHMARK-20260725", "status": "COMPLETE", "code_commit": run_commit, "result_root": str(root.relative_to(ROOT)).replace("\\", "/"), "report": str(args.report_path.relative_to(ROOT)).replace("\\", "/"), "decision": "RUNTIME_V4_FORMAL_BASELINE_V5_REGRESSION_FINAL_V5_QC2_NOT_PROMOTED", "low_calibration_started": False, "sha256_index": str((root / "sha256_index.json").relative_to(ROOT)).replace("\\", "/")}
     _write_json(args.index_path, index)
 
 

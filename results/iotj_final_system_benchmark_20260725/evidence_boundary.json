@@ -1,0 +1,10 @@
+{
+  "runtime_v4": "formal selective-output baseline",
+  "runtime_v5_qc2": "valid candidate not promoted because yield/per-gas guards failed",
+  "runtime_v5_regression": "selected simplified Federated-H1 regression",
+  "quality_coverage_interpretation": "lower accepted RMSE must be interpreted together with lower yield",
+  "filename_grouping_scope": "calibration OOF folds only",
+  "historical_calibration_test_split": "window-level; original-file independence is not claimed",
+  "post_test_threshold_change": false,
+  "low_calibration_started": false
+}

@@ -1,0 +1,150 @@
+{
+  "schema_version": "iotj.final_runtime_benchmark.v1",
+  "status": "PASS",
+  "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+  "platform_id": "PI5",
+  "protocol": {
+    "batch_size": 1,
+    "warmup": 50,
+    "runs": 500,
+    "threads": 1,
+    "device": "cpu",
+    "clock": "time.perf_counter_ns",
+    "disk_io_in_steady_state": false
+  },
+  "latency": {
+    "n": 500,
+    "mean_ms": 4.530299936,
+    "sample_std_ms": 0.06793081088238372,
+    "p50_ms": 4.522537,
+    "p90_ms": 4.5551022,
+    "p95_ms": 4.57112125,
+    "p99_ms": 4.59872208,
+    "min_ms": 4.471666,
+    "max_ms": 5.67338,
+    "throughput_windows_per_s": 211.41202580396245
+  },
+  "latency_breakdown": {
+    "input_validation": {
+      "n": 500,
+      "mean_ms": 0.018467536,
+      "sample_std_ms": 0.001967233204698247,
+      "p50_ms": 0.0184445,
+      "p90_ms": 0.0200551,
+      "p95_ms": 0.0207049,
+      "p99_ms": 0.02225044999999999,
+      "min_ms": 0.015704,
+      "max_ms": 0.039426
+    },
+    "B5_classification": {
+      "n": 500,
+      "mean_ms": 3.1040637280000003,
+      "sample_std_ms": 0.0528378406831518,
+      "p50_ms": 3.092368,
+      "p90_ms": 3.1545659,
+      "p95_ms": 3.16856855,
+      "p99_ms": 3.2237015499999995,
+      "min_ms": 3.045432,
+      "max_ms": 3.754438
+    },
+    "rich_feature_generation": {
+      "n": 500,
+      "mean_ms": 0.364772868,
+      "sample_std_ms": 0.010736417460510218,
+      "p50_ms": 0.363401,
+      "p90_ms": 0.368077,
+      "p95_ms": 0.38669265,
+      "p99_ms": 0.39496655999999997,
+      "min_ms": 0.349484,
+      "max_ms": 0.522412
+    },
+    "H1": {
+      "n": 500,
+      "mean_ms": 0.096670862,
+      "sample_std_ms": 0.005124507030688039,
+      "p50_ms": 0.09576899999999999,
+      "p90_ms": 0.0993928,
+      "p95_ms": 0.10163095,
+      "p99_ms": 0.12161978,
+      "min_ms": 0.090168,
+      "max_ms": 0.147186
+    },
+    "target_Ridge": {
+      "n": 500,
+      "mean_ms": 0.058545089999999994,
+      "sample_std_ms": 0.004375386351094344,
+      "p50_ms": 0.057778,
+      "p90_ms": 0.0601526,
+      "p95_ms": 0.061193349999999994,
+      "p99_ms": 0.08241985999999998,
+      "min_ms": 0.055241,
+      "max_ms": 0.120112
+    },
+    "risk_component": {
+      "n": 500,
+      "mean_ms": 0.62839328,
+      "sample_std_ms": 0.01709204237153831,
+      "p50_ms": 0.622394,
+      "p90_ms": 0.6483311,
+      "p95_ms": 0.6555702499999999,
+      "p99_ms": 0.6724392299999999,
+      "min_ms": 0.608672,
+      "max_ms": 0.809154
+    },
+    "QC_decision": {
+      "n": 500,
+      "mean_ms": 0.0068768020000000004,
+      "sample_std_ms": 0.0012270392599615441,
+      "p50_ms": 0.0067315,
+      "p90_ms": 0.0073909,
+      "p95_ms": 0.007649849999999999,
+      "p99_ms": 0.00883356,
+      "min_ms": 0.00574,
+      "max_ms": 0.025315
+    },
+    "end_to_end_profiled": {
+      "n": 500,
+      "mean_ms": 4.279070666000001,
+      "sample_std_ms": 0.06529177463948727,
+      "p50_ms": 4.262276,
+      "p90_ms": 4.3395608999999995,
+      "p95_ms": 4.36346475,
+      "p99_ms": 4.47126125,
+      "min_ms": 4.211165,
+      "max_ms": 4.974429
+    }
+  },
+  "cold_start": {
+    "bundle_load_ms": 29.10724,
+    "first_inference_ms": 7.675212
+  },
+  "resources": {
+    "rss_baseline_bytes": 223608832,
+    "rss_peak_bytes": 246562816,
+    "rss_end_bytes": 247382016,
+    "process_cpu_core_percent": 172.08938900442544,
+    "available_ram_end_bytes": 7643283456,
+    "thread_count": 7,
+    "temperature_start_c": 52.35,
+    "temperature_peak_c": 54.55,
+    "temperature_end_c": 52.9,
+    "throttled_before": "throttled=0x0",
+    "throttled_after": "throttled=0x0"
+  },
+  "environment": {
+    "hostname": "gaps-pi",
+    "os": "Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41",
+    "machine": "aarch64",
+    "python": "3.13.5",
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.1",
+    "torch_threads": 1
+  },
+  "row_universe": {
+    "source_N": 1360,
+    "measured_N": 500,
+    "order": "fixed C5 test order modulo N",
+    "unique_measured_rows": 500
+  },
+  "prediction_stability_check": "PASS"
+}

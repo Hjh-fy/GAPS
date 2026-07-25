@@ -282,8 +282,10 @@ def _package_sizes() -> list[dict[str, Any]]:
     v5 = ROOT / "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5"
     v5_qc = ROOT / "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle"
     rows = []
-    for runtime, root, status in (("RUNTIME_V4_FULL", v4, "FORMAL_BASELINE"), ("RUNTIME_V5_REGRESSION_CORE", v5, "FINAL_SIMPLIFIED_REGRESSION"), ("RUNTIME_V5_QC2_CANDIDATE", v5_qc, "VALID_CANDIDATE_NOT_PROMOTED")):
-        assets = [path for path in root.rglob("*") if path.is_file()]
+    for runtime, roots, status in (("RUNTIME_V4_FULL", (v4,), "FORMAL_BASELINE"), ("RUNTIME_V5_REGRESSION_CORE", (v5,), "FINAL_SIMPLIFIED_REGRESSION"), ("RUNTIME_V5_QC2_CANDIDATE", (v5, v5_qc), "VALID_CANDIDATE_NOT_PROMOTED")):
+        # The v5 QC bundle is an overlay, so its deployable footprint includes
+        # the complete v5 regression core as well as the frozen QC references.
+        assets = [path for root in roots for path in root.rglob("*") if path.is_file()]
         rows.append({"runtime": runtime, "file_count": len(assets), "total_bytes": sum(path.stat().st_size for path in assets), "deployment_status": status})
     return rows
 
@@ -351,7 +353,7 @@ def build(args: argparse.Namespace) -> None:
     model_params = 22765
     theoretical_per_direction = model_params * 4 * 2
     _write_csv(metrics / "b5_fl_communication_summary.csv", [{
-        "rounds": 25, "clients_per_round": 2, "serialized_model_parameters": model_params,
+        "rounds": 25, "clients_per_round": 2, "actual_clients": "C1;C2", "serialized_model_parameters": model_params,
         "theoretical_server_to_clients_bytes_per_round": theoretical_per_direction,
         "theoretical_clients_to_server_bytes_per_round": theoretical_per_direction,
         "theoretical_model_payload_25round_bytes": theoretical_per_direction * 2 * 25,

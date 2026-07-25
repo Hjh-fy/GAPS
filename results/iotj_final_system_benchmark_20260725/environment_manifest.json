@@ -1,0 +1,34 @@
+{
+  "schema_version": "iotj.final_system_environment.v1",
+  "PC": {
+    "hostname": "DESKTOP-HIA0RFK",
+    "os": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+    "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:03:56) [MSC v.1929 64 bit (AMD64)]",
+    "numpy": "1.26.4",
+    "cpu_count": 6,
+    "ram_bytes": 16994848768,
+    "torch": "2.5.1"
+  },
+  "Pi": {
+    "hostname": "gaps-pi",
+    "os": "Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41",
+    "machine": "aarch64",
+    "python": "3.13.5",
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.1",
+    "torch_threads": 1,
+    "model": "Raspberry Pi 5 Model B Rev 1.1",
+    "ram_bytes": 8589934592,
+    "benchmark_temperature_range_c": [
+      49.05,
+      54.55
+    ],
+    "throttled_all_runs": "0x0"
+  },
+  "thread_configuration": {
+    "inference_threads": 1,
+    "interop_threads": 1
+  }
+}

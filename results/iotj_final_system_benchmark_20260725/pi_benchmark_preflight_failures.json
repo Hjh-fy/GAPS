@@ -1,0 +1,20 @@
+{
+  "schema_version": "iotj.final_benchmark_preflight_failures.v1",
+  "failures": [
+    {
+      "sequence": 1,
+      "stage": "before timing",
+      "reason": "portable package omitted scripts/iotj_b5_c5_bundle_contract.py and v4 parity reference relocation",
+      "model_or_policy_executed": false,
+      "resolution": "import/reference closure added and regression-tested"
+    },
+    {
+      "sequence": 2,
+      "stage": "before v5 timing",
+      "reason": "v5 calibration_lineage absolute path was not relocated",
+      "model_or_policy_executed": false,
+      "resolution": "lineage copied byte-identically, descriptor relocated, regression-tested"
+    }
+  ],
+  "parameter_or_protocol_change": false
+}

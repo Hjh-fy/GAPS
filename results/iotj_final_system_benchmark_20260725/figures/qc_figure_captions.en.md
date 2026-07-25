@@ -1,0 +1,1 @@
+**Quality–coverage trade-off.** Only the four frozen HC95/HC90 operating points are shown; no curve or post-test threshold is fitted. The second panel compares overall, CO, and CO-high accepted yield.

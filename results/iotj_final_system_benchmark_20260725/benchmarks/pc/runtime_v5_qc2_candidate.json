@@ -1,0 +1,150 @@
+{
+  "schema_version": "iotj.final_runtime_benchmark.v1",
+  "status": "PASS",
+  "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+  "platform_id": "PC_WINDOWS",
+  "protocol": {
+    "batch_size": 1,
+    "warmup": 50,
+    "runs": 500,
+    "threads": 1,
+    "device": "cpu",
+    "clock": "time.perf_counter_ns",
+    "disk_io_in_steady_state": false
+  },
+  "latency": {
+    "n": 500,
+    "mean_ms": 7.5891182,
+    "sample_std_ms": 6.33704829233987,
+    "p50_ms": 5.47655,
+    "p90_ms": 12.817320000000002,
+    "p95_ms": 19.311525,
+    "p99_ms": 32.29274499999998,
+    "min_ms": 3.3305,
+    "max_ms": 69.1521,
+    "throughput_windows_per_s": 125.7797590381813
+  },
+  "latency_breakdown": {
+    "input_validation": {
+      "n": 500,
+      "mean_ms": 0.07435420000000001,
+      "sample_std_ms": 0.9493275178116926,
+      "p50_ms": 0.0214,
+      "p90_ms": 0.032810000000000006,
+      "p95_ms": 0.047505,
+      "p99_ms": 0.10584799999999932,
+      "min_ms": 0.0166,
+      "max_ms": 21.1289
+    },
+    "B5_classification": {
+      "n": 500,
+      "mean_ms": 4.401477,
+      "sample_std_ms": 5.246085894439269,
+      "p50_ms": 2.90845,
+      "p90_ms": 7.471710000000006,
+      "p95_ms": 13.234599999999936,
+      "p99_ms": 20.87902899999996,
+      "min_ms": 1.8301,
+      "max_ms": 76.2016
+    },
+    "rich_feature_generation": {
+      "n": 500,
+      "mean_ms": 0.8364349999999999,
+      "sample_std_ms": 1.60107206791209,
+      "p50_ms": 0.4907,
+      "p90_ms": 0.9659900000000003,
+      "p95_ms": 2.0792149999999987,
+      "p99_ms": 6.517299999999992,
+      "min_ms": 0.3996,
+      "max_ms": 26.9318
+    },
+    "H1": {
+      "n": 500,
+      "mean_ms": 0.171389,
+      "sample_std_ms": 0.6103415947348886,
+      "p50_ms": 0.098,
+      "p90_ms": 0.16764,
+      "p95_ms": 0.2598699999999998,
+      "p99_ms": 1.3762839999999932,
+      "min_ms": 0.0818,
+      "max_ms": 11.8062
+    },
+    "target_Ridge": {
+      "n": 500,
+      "mean_ms": 0.130143,
+      "sample_std_ms": 0.7443848319297043,
+      "p50_ms": 0.0666,
+      "p90_ms": 0.12079000000000004,
+      "p95_ms": 0.1674949999999999,
+      "p99_ms": 0.5744629999999994,
+      "min_ms": 0.0582,
+      "max_ms": 15.4862
+    },
+    "risk_component": {
+      "n": 500,
+      "mean_ms": 1.5251379999999999,
+      "sample_std_ms": 3.0598934695321947,
+      "p50_ms": 0.8291,
+      "p90_ms": 1.9947500000000007,
+      "p95_ms": 4.036389999999989,
+      "p99_ms": 15.549899999999953,
+      "min_ms": 0.6238,
+      "max_ms": 40.9671
+    },
+    "QC_decision": {
+      "n": 500,
+      "mean_ms": 0.0104936,
+      "sample_std_ms": 0.019551694980057006,
+      "p50_ms": 0.0077,
+      "p90_ms": 0.011110000000000004,
+      "p95_ms": 0.013914999999999986,
+      "p99_ms": 0.061351999999999775,
+      "min_ms": 0.0058,
+      "max_ms": 0.2769
+    },
+    "end_to_end_profiled": {
+      "n": 500,
+      "mean_ms": 7.1510734000000005,
+      "sample_std_ms": 6.505329105200318,
+      "p50_ms": 5.012700000000001,
+      "p90_ms": 13.053100000000002,
+      "p95_ms": 19.566914999999995,
+      "p99_ms": 33.368167999999976,
+      "min_ms": 3.1602,
+      "max_ms": 78.0322
+    }
+  },
+  "cold_start": {
+    "bundle_load_ms": 85.5254,
+    "first_inference_ms": 14.1249
+  },
+  "resources": {
+    "rss_baseline_bytes": 194916352,
+    "rss_peak_bytes": 207507456,
+    "rss_end_bytes": 207704064,
+    "process_cpu_core_percent": 52.67027409723842,
+    "available_ram_end_bytes": 4210393088,
+    "thread_count": 7,
+    "temperature_start_c": null,
+    "temperature_peak_c": null,
+    "temperature_end_c": null,
+    "throttled_before": null,
+    "throttled_after": null
+  },
+  "environment": {
+    "hostname": "DESKTOP-HIA0RFK",
+    "os": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "python": "3.12.4",
+    "torch": "2.5.1",
+    "numpy": "1.26.4",
+    "torch_threads": 1
+  },
+  "row_universe": {
+    "source_N": 1360,
+    "measured_N": 500,
+    "order": "fixed C5 test order modulo N",
+    "unique_measured_rows": 500
+  },
+  "prediction_stability_check": "PASS"
+}

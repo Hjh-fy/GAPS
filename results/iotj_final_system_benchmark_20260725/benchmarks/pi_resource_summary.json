@@ -1,0 +1,85 @@
+{
+  "schema_version": "iotj.final_runtime_resource.v1",
+  "platform": "Pi",
+  "records": [
+    {
+      "runtime": "RUNTIME_V4_FULL",
+      "resources": {
+        "rss_baseline_bytes": 223625216,
+        "rss_peak_bytes": 249446400,
+        "rss_end_bytes": 249987072,
+        "process_cpu_core_percent": 171.05151881959125,
+        "available_ram_end_bytes": 7656275968,
+        "thread_count": 7,
+        "temperature_start_c": 51.25,
+        "temperature_peak_c": 54.0,
+        "temperature_end_c": 54.0,
+        "throttled_before": "throttled=0x0",
+        "throttled_after": "throttled=0x0",
+        "throttled_during": "no event: get_throttled sticky register remained 0x0 after the run"
+      },
+      "environment": {
+        "hostname": "gaps-pi",
+        "os": "Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41",
+        "machine": "aarch64",
+        "python": "3.13.5",
+        "torch": "2.6.0+cpu",
+        "numpy": "2.5.1",
+        "torch_threads": 1
+      }
+    },
+    {
+      "runtime": "RUNTIME_V5_REGRESSION_CORE",
+      "resources": {
+        "rss_baseline_bytes": 223641600,
+        "rss_peak_bytes": 245612544,
+        "rss_end_bytes": 246382592,
+        "process_cpu_core_percent": 184.57952563632426,
+        "available_ram_end_bytes": 7677640704,
+        "thread_count": 7,
+        "temperature_start_c": 49.05,
+        "temperature_peak_c": 52.35,
+        "temperature_end_c": 52.35,
+        "throttled_before": "throttled=0x0",
+        "throttled_after": "throttled=0x0",
+        "throttled_during": "no event: get_throttled sticky register remained 0x0 after the run"
+      },
+      "environment": {
+        "hostname": "gaps-pi",
+        "os": "Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41",
+        "machine": "aarch64",
+        "python": "3.13.5",
+        "torch": "2.6.0+cpu",
+        "numpy": "2.5.1",
+        "torch_threads": 1
+      }
+    },
+    {
+      "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+      "resources": {
+        "rss_baseline_bytes": 223608832,
+        "rss_peak_bytes": 246562816,
+        "rss_end_bytes": 247382016,
+        "process_cpu_core_percent": 172.08938900442544,
+        "available_ram_end_bytes": 7643283456,
+        "thread_count": 7,
+        "temperature_start_c": 52.35,
+        "temperature_peak_c": 54.55,
+        "temperature_end_c": 52.9,
+        "throttled_before": "throttled=0x0",
+        "throttled_after": "throttled=0x0",
+        "throttled_during": "no event: get_throttled sticky register remained 0x0 after the run"
+      },
+      "environment": {
+        "hostname": "gaps-pi",
+        "os": "Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41",
+        "machine": "aarch64",
+        "python": "3.13.5",
+        "torch": "2.6.0+cpu",
+        "numpy": "2.5.1",
+        "torch_threads": 1
+      }
+    }
+  ],
+  "throttling_observed": false
+}

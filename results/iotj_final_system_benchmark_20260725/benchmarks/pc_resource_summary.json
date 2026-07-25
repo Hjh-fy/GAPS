@@ -1,0 +1,82 @@
+{
+  "schema_version": "iotj.final_runtime_resource.v1",
+  "platform": "PC",
+  "records": [
+    {
+      "runtime": "RUNTIME_V4_FULL",
+      "resources": {
+        "rss_baseline_bytes": 194990080,
+        "rss_peak_bytes": 209555456,
+        "rss_end_bytes": 209723392,
+        "process_cpu_core_percent": 64.4909259842026,
+        "available_ram_end_bytes": 4358987776,
+        "thread_count": 7,
+        "temperature_start_c": null,
+        "temperature_peak_c": null,
+        "temperature_end_c": null,
+        "throttled_before": null,
+        "throttled_after": null
+      },
+      "environment": {
+        "hostname": "DESKTOP-HIA0RFK",
+        "os": "Windows-11-10.0.26200-SP0",
+        "machine": "AMD64",
+        "python": "3.12.4",
+        "torch": "2.5.1",
+        "numpy": "1.26.4",
+        "torch_threads": 1
+      }
+    },
+    {
+      "runtime": "RUNTIME_V5_REGRESSION_CORE",
+      "resources": {
+        "rss_baseline_bytes": 195035136,
+        "rss_peak_bytes": 205217792,
+        "rss_end_bytes": 205426688,
+        "process_cpu_core_percent": 58.72698809846424,
+        "available_ram_end_bytes": 4284592128,
+        "thread_count": 6,
+        "temperature_start_c": null,
+        "temperature_peak_c": null,
+        "temperature_end_c": null,
+        "throttled_before": null,
+        "throttled_after": null
+      },
+      "environment": {
+        "hostname": "DESKTOP-HIA0RFK",
+        "os": "Windows-11-10.0.26200-SP0",
+        "machine": "AMD64",
+        "python": "3.12.4",
+        "torch": "2.5.1",
+        "numpy": "1.26.4",
+        "torch_threads": 1
+      }
+    },
+    {
+      "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+      "resources": {
+        "rss_baseline_bytes": 194916352,
+        "rss_peak_bytes": 207507456,
+        "rss_end_bytes": 207704064,
+        "process_cpu_core_percent": 52.67027409723842,
+        "available_ram_end_bytes": 4210393088,
+        "thread_count": 7,
+        "temperature_start_c": null,
+        "temperature_peak_c": null,
+        "temperature_end_c": null,
+        "throttled_before": null,
+        "throttled_after": null
+      },
+      "environment": {
+        "hostname": "DESKTOP-HIA0RFK",
+        "os": "Windows-11-10.0.26200-SP0",
+        "machine": "AMD64",
+        "python": "3.12.4",
+        "torch": "2.5.1",
+        "numpy": "1.26.4",
+        "torch_threads": 1
+      }
+    }
+  ],
+  "throttling_observed": null
+}
