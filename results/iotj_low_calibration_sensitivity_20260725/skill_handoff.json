@@ -1,0 +1,38 @@
+{
+  "schema_version": "iotj.low_calibration_sensitivity.v1",
+  "handoffs": [
+    {
+      "from_skill": "experiment-planner",
+      "to_skill": "experiment-registry",
+      "completed_checks": [
+        "protocol frozen",
+        "matrix fixed"
+      ],
+      "unknown_or_conflict": []
+    },
+    {
+      "from_skill": "experiment-registry",
+      "to_skill": "result-analysis",
+      "completed_checks": [
+        "identities and provenance resolved"
+      ],
+      "unknown_or_conflict": []
+    },
+    {
+      "from_skill": "result-analysis",
+      "to_skill": "experiment-audit",
+      "completed_checks": [
+        "descriptive subset statistics"
+      ],
+      "unknown_or_conflict": []
+    }
+  ],
+  "read_only_assets": [
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/row_map_1360.json",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/parity_report.json",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/runtime_rows.csv",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/parity_report.json",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/runtime_rows.csv"
+  ]
+}

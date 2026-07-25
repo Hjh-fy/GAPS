@@ -1,0 +1,77 @@
+{
+  "schema_version": "iotj.low_calibration_sensitivity.v1",
+  "experiment_id": "IOTJ-LOW-CALIBRATION-SENSITIVITY-S42-20260725",
+  "created_at": "2026-07-25T21:56:28.005139+00:00",
+  "formal_code_commit": "8b5e80e7d4a89721abc34d7fd56e86779287ecb0",
+  "method": "canonical B5 seed42 + real-topology sufficient-statistics Federated H1 + C5 105D per-gas Ridge",
+  "budgets": [
+    320,
+    160,
+    80,
+    40
+  ],
+  "replicates": {
+    "320": 1,
+    "160": 5,
+    "80": 5,
+    "40": 5
+  },
+  "replicate_seeds": [
+    2026072500,
+    2026072501,
+    2026072502,
+    2026072503,
+    2026072504
+  ],
+  "subset_algorithm": "nested group-complete deterministic beam-DP minimizing gas/concentration imbalance",
+  "subset_tie_break": "SHA256(seed|sorted filenames)",
+  "selection": {
+    "320": "frozen per-gas 240/80 calibration fit/validation semantics",
+    "160_80_40": "group-aware 5-fold calibration-only per-gas alpha selection",
+    "alpha_grid": [
+      0.0,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "preprocessing_scope": "fold training only",
+    "final_refit": "entire selected calibration subset"
+  },
+  "timing": {
+    "clock": "time.perf_counter_ns",
+    "repeats_per_budget_replicate": 10,
+    "platform": "PC"
+  },
+  "decision_rule": {
+    "A": "all 160/80/40 mean S_CC relative degradation vs 320 <= 5%",
+    "B": "160 and 80 mean S_CC relative degradation vs 320 <= 10%, but A not met",
+    "C": "160 or 80 mean S_CC relative degradation vs 320 > 10%"
+  },
+  "test": {
+    "rows": 1360,
+    "historical_test_previously_used": true,
+    "opened_by_this_stage": false,
+    "used_for_subset_or_alpha_selection": false
+  },
+  "evidence_boundary": [
+    "Low-calibration is a sensitivity analysis under a frozen method.",
+    "The same historical C5 test split has been used in prior method confirmation.",
+    "Calibration subsets are selected without access to test labels or errors.",
+    "Filename grouping is used where possible to reduce within-calibration leakage.",
+    "Historical calibration/test splitting remains window-level.",
+    "No model or threshold selection is performed using low-calibration test results."
+  ],
+  "prohibited": [
+    "B5 change",
+    "H1 change",
+    "H2/H3",
+    "feature-schema change",
+    "target MLP",
+    "QC",
+    "threshold search",
+    "test-based subset/alpha/budget selection"
+  ]
+}
