@@ -33,6 +33,16 @@ class C5FederatedSourceRidgeRuntimeError(RuntimeError):
 CONTRACT_KEYS = {"schema_version", "status", "bundle_manifest", "classifier_model", "inputs", "outputs", "qc_status", "offline_reference"}
 DESCRIPTOR_KEYS = {"path", "bytes", "sha256"}
 OUTPUT_FIELDS = ["sample_index", "pred_class", "source_h1_ppm", "prediction_ppm", "max_probability", "qc_status", "auto_output_ppm"]
+RUNTIME_ASSET_KEYS = {"classifier", "federated_h1", "target_ridge"}
+CLASSIFIER_MODEL_KEYS = {
+    "architecture",
+    "num_sensors",
+    "num_classes",
+    "feat_dim",
+    "encoder_type",
+    "tcn_norm",
+    "use_cls_proj",
+}
 
 
 @dataclass(frozen=True)
@@ -105,6 +115,50 @@ class C5FederatedSourceRidgeRuntime:
         self.contract = contract
 
     @classmethod
+    def _from_verified_assets(
+        cls,
+        asset_paths: Mapping[str, Path],
+        classifier_model: Mapping[str, Any],
+        *,
+        device: str = "cpu",
+        bundle: FederatedSourceRidgeBundle | None = None,
+        contract: Mapping[str, Any] | None = None,
+    ) -> "C5FederatedSourceRidgeRuntime":
+        if set(asset_paths) != RUNTIME_ASSET_KEYS:
+            raise C5FederatedSourceRidgeRuntimeError(
+                "verified runtime assets must be exactly classifier, federated_h1, target_ridge"
+            )
+        paths = {name: Path(path) for name, path in asset_paths.items()}
+        if any(not path.is_file() for path in paths.values()):
+            raise C5FederatedSourceRidgeRuntimeError("verified runtime asset is missing")
+        config = dict(classifier_model)
+        if set(config) != CLASSIFIER_MODEL_KEYS:
+            raise C5FederatedSourceRidgeRuntimeError(
+                "classifier configuration schema differs"
+            )
+        if config.pop("architecture", None) != "FedGasBaseModel":
+            raise C5FederatedSourceRidgeRuntimeError(
+                "classifier architecture differs"
+            )
+        try:
+            model = FedGasBaseModel(**config)
+        except TypeError as error:
+            raise C5FederatedSourceRidgeRuntimeError(
+                "classifier configuration is invalid"
+            ) from error
+        checkpoint = paths["classifier"]
+        _, state = load_checkpoint_state(checkpoint)
+        load_state_dict_strict(model, state, checkpoint)
+        return cls(
+            model,
+            _load_heads(paths["federated_h1"], 104),
+            _load_heads(paths["target_ridge"], 105),
+            device=device,
+            bundle=bundle,
+            contract=contract,
+        )
+
+    @classmethod
     def from_runtime_contract(cls, path: Path, device: str = "cpu") -> "C5FederatedSourceRidgeRuntime":
         contract_path = Path(path)
         try:
@@ -138,22 +192,9 @@ class C5FederatedSourceRidgeRuntime:
             raise C5FederatedSourceRidgeRuntimeError("runtime offline reference descriptor differs")
         if contract.get("outputs") != OUTPUT_FIELDS or contract.get("qc_status") != "disabled_pending_dependency_audit":
             raise C5FederatedSourceRidgeRuntimeError("runtime output or QC contract differs")
-        config = dict(contract.get("classifier_model", {}))
-        if set(config) != {"architecture", "num_sensors", "num_classes", "feat_dim", "encoder_type", "tcn_norm", "use_cls_proj"}:
-            raise C5FederatedSourceRidgeRuntimeError("classifier configuration schema differs")
-        if config.pop("architecture", None) != "FedGasBaseModel":
-            raise C5FederatedSourceRidgeRuntimeError("classifier architecture differs")
-        try:
-            model = FedGasBaseModel(**config)
-        except TypeError as error:
-            raise C5FederatedSourceRidgeRuntimeError("classifier configuration is invalid") from error
-        checkpoint = bundle.asset_paths["classifier"]
-        _, state = load_checkpoint_state(checkpoint)
-        load_state_dict_strict(model, state, checkpoint)
-        return cls(
-            model,
-            _load_heads(bundle.asset_paths["federated_h1"], 104),
-            _load_heads(bundle.asset_paths["target_ridge"], 105),
+        return cls._from_verified_assets(
+            bundle.asset_paths,
+            contract.get("classifier_model", {}),
             device=device,
             bundle=bundle,
             contract=contract,

@@ -8,11 +8,14 @@ load models, evaluate predictions, or alter any reported result.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import hashlib
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Sequence
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +25,9 @@ OUTPUT = PAPER / "GAPS_IoTJ_protocol_closed_20260726.zh.html"
 TABLE = PAPER / "tables" / "table_legacy_classification_ablation_protocol_closed_20260726.csv"
 INDEX = PAPER / "GAPS_IoTJ_protocol_closeout_index_20260726.json"
 EXPECTED_SOURCE_SHA256 = "b7b0aace15367c0ffd60fb3fed5bf93a4ca269f0bd6b74e07836aba4f63a96a4"
+EXPECTED_FORMAL_OUTPUT_SHA256 = "3e23158f3772865da6e804d5799ad5a6988de7cb367637abc44c0e67d61881fa"
+EXPECTED_FORMAL_TABLE_SHA256 = "74171741d904b98579dfa78b636b353f91ed2d901b35be001d1ad2fc442ff7b5"
+EXPECTED_FORMAL_INDEX_SHA256 = "5d53ed23816830bd4b11678d4f04c2adbff594f1decd443436f394b138d41196"
 PROTOCOL_NAME = "calibrated-target held-out-window evaluation"
 
 
@@ -158,7 +164,11 @@ def table_html() -> str:
     )
 
 
-def main() -> None:
+def generate(output: Path, table: Path, index: Path) -> None:
+    destinations = (output, table, index)
+    existing = [str(path) for path in destinations if path.exists()]
+    if existing:
+        raise FileExistsError(f"REFUSE_TO_OVERWRITE: {existing}")
     if sha256(SOURCE) != EXPECTED_SOURCE_SHA256:
         raise RuntimeError("evidence-frozen manuscript SHA256 mismatch")
     source = SOURCE.read_text(encoding="utf-8")
@@ -302,9 +312,12 @@ def main() -> None:
         if phrase not in text:
             raise RuntimeError(f"required manuscript phrase missing: {phrase}")
 
-    OUTPUT.write_text(text, encoding="utf-8")
-    TABLE.parent.mkdir(parents=True, exist_ok=True)
-    with TABLE.open("w", encoding="utf-8-sig", newline="") as handle:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    table.parent.mkdir(parents=True, exist_ok=True)
+    index.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("x", encoding="utf-8") as handle:
+        handle.write(text)
+    with table.open("x", encoding="utf-8-sig", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(LEGACY_ROWS[0]))
         writer.writeheader()
         writer.writerows(LEGACY_ROWS)
@@ -321,15 +334,15 @@ def main() -> None:
             "immutable": True,
         },
         "output": {
-            "path": OUTPUT.relative_to(ROOT).as_posix(),
-            "bytes": OUTPUT.stat().st_size,
-            "sha256": sha256(OUTPUT),
+            "path": _display_path(output),
+            "bytes": output.stat().st_size,
+            "sha256": sha256(output),
         },
         "legacy_ablation_table": {
-            "path": TABLE.relative_to(ROOT).as_posix(),
+            "path": _display_path(table),
             "rows": len(LEGACY_ROWS),
-            "bytes": TABLE.stat().st_size,
-            "sha256": sha256(TABLE),
+            "bytes": table.stat().st_size,
+            "sha256": sha256(table),
             "historical_a7_included": False,
         },
         "test_access_boundary": {
@@ -376,11 +389,135 @@ def main() -> None:
         "frozen_results_modified": False,
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
     }
-    INDEX.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+    with index.open("x", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+
+
+def _display_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        return resolved.as_posix()
+
+
+def verify(output: Path, table: Path, index: Path) -> dict[str, object]:
+    required = {"output": output, "table": table, "index": index}
+    missing = [f"{name}:{path}" for name, path in required.items() if not path.is_file()]
+    if missing:
+        raise RuntimeError(f"verification targets missing: {missing}")
+    try:
+        payload = json.loads(index.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise RuntimeError("protocol closeout index is invalid") from error
+    if (
+        not isinstance(payload, dict)
+        or payload.get("schema_version")
+        != "iotj.manuscript_protocol_closeout.index.v1"
+        or payload.get("status") != "NO_FURTHER_EXPERIMENTS_REQUIRED_FOR_CURRENT_SCOPE"
+        or payload.get("protocol_name") != PROTOCOL_NAME
+    ):
+        raise RuntimeError("protocol closeout index schema/status differs")
+    if sha256(SOURCE) != EXPECTED_SOURCE_SHA256:
+        raise RuntimeError("evidence-frozen manuscript SHA256 mismatch")
+    source = payload.get("source")
+    if (
+        not isinstance(source, dict)
+        or source.get("sha256") != EXPECTED_SOURCE_SHA256
+        or source.get("immutable") is not True
+    ):
+        raise RuntimeError("protocol closeout source identity differs")
+    output_record = payload.get("output")
+    table_record = payload.get("legacy_ablation_table")
+    if (
+        not isinstance(output_record, dict)
+        or output_record.get("bytes") != output.stat().st_size
+        or output_record.get("sha256") != sha256(output)
+    ):
+        raise RuntimeError("protocol closeout HTML identity differs")
+    if (
+        not isinstance(table_record, dict)
+        or table_record.get("rows") != len(LEGACY_ROWS)
+        or table_record.get("bytes") != table.stat().st_size
+        or table_record.get("sha256") != sha256(table)
+        or table_record.get("historical_a7_included") is not False
+    ):
+        raise RuntimeError("protocol closeout table identity differs")
+    if (
+        output.resolve() == OUTPUT.resolve()
+        and table.resolve() == TABLE.resolve()
+        and index.resolve() == INDEX.resolve()
+    ):
+        expected = {
+            "output": EXPECTED_FORMAL_OUTPUT_SHA256,
+            "table": EXPECTED_FORMAL_TABLE_SHA256,
+            "index": EXPECTED_FORMAL_INDEX_SHA256,
+        }
+        actual = {
+            "output": sha256(output),
+            "table": sha256(table),
+            "index": sha256(index),
+        }
+        if actual != expected:
+            raise RuntimeError(
+                f"formal protocol-closeout SHA256 differs: expected={expected}, actual={actual}"
+            )
+    return {
+        "status": "VERIFY_ONLY_PASS",
+        "output_sha256": sha256(output),
+        "table_sha256": sha256(table),
+        "index_sha256": sha256(index),
+        "source_sha256": sha256(SOURCE),
+        "files_written": 0,
+    }
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Verify the formal protocol closeout by default; generation is explicit and no-overwrite."
     )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--verify-only", action="store_true", help="Verify existing files (default).")
+    mode.add_argument("--generate", action="store_true", help="Generate into three new explicit paths.")
+    parser.add_argument("--output-html", type=Path)
+    parser.add_argument("--table", type=Path)
+    parser.add_argument("--index", type=Path)
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    try:
+        if args.generate:
+            if args.output_html is None or args.table is None or args.index is None:
+                raise RuntimeError(
+                    "--generate requires new --output-html, --table, and --index paths"
+                )
+            generate(args.output_html, args.table, args.index)
+            print(
+                json.dumps(
+                    {
+                        "status": "GENERATED_NEW_OUTPUTS",
+                        "output_html": str(args.output_html),
+                        "table": str(args.table),
+                        "index": str(args.index),
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            return 0
+        output = args.output_html or OUTPUT
+        table = args.table or TABLE
+        index = args.index or INDEX
+        print(json.dumps(verify(output, table, index), ensure_ascii=False, indent=2))
+        return 0
+    except FileExistsError as error:
+        print(str(error), file=sys.stderr)
+        return 3
+    except (OSError, RuntimeError) as error:
+        print(f"FAIL_CLOSED: {error}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
