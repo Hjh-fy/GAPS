@@ -1,0 +1,188 @@
+{
+  "schema_version": "iotj.paper_evidence_freeze.v1",
+  "assets": {
+    "classification_summary": {
+      "path": "results/iotj_b5_multiseed_20260724/b5_classification_multiseed_summary.csv",
+      "bytes": 535,
+      "sha256": "11adaa5202268a206ac01f49fe8ca515716d2e80b9cfc88c5877f3ef6ef925c8"
+    },
+    "classification_per_seed": {
+      "path": "results/iotj_b5_multiseed_20260724/per_seed_b5_classification_metrics.csv",
+      "bytes": 1525,
+      "sha256": "aef1a8c10936693d7444ab14fd727cf473296d5d859236be7b3f323ae0193e51"
+    },
+    "classification_manifest": {
+      "path": "results/iotj_b5_multiseed_20260724/b5_multiseed_completion_manifest.json",
+      "bytes": 1636,
+      "sha256": "2bc9cbb5a1516db3cf0f62201c767ee7e3d288ddd0fba60c61d8cc05dc1609d0"
+    },
+    "regression_summary": {
+      "path": "results/iotj_b5_regression_multiseed_20260724/regression_multiseed_summary.csv",
+      "bytes": 3014,
+      "sha256": "5f6e3078bb82652d5268fda9e626c85dac07976e385bebf76ccb6fbaa4541378"
+    },
+    "regression_per_seed": {
+      "path": "results/iotj_b5_regression_multiseed_20260724/per_seed_regression_metrics.csv",
+      "bytes": 2934,
+      "sha256": "6c01a8c403e0ce105de47505cf83fe72abb33e7b5feaf58e50fd43fc6e2b1a3a"
+    },
+    "regression_per_gas": {
+      "path": "results/iotj_b5_regression_multiseed_20260724/per_gas_multiseed_summary.csv",
+      "bytes": 2676,
+      "sha256": "bf0c0166f49e6583c1a23c7c774e1a70fec0c1df3b29c9071bdcb48f4c6823e7"
+    },
+    "regression_decision": {
+      "path": "results/iotj_b5_regression_multiseed_20260724/final_regression_decision.json",
+      "bytes": 1140,
+      "sha256": "5bcc33278f1f092494e6c307256fd00842f8d68bc3818fa5ac627c7b42a10fa0"
+    },
+    "regression_protocol": {
+      "path": "results/iotj_b5_regression_multiseed_20260724/protocol_manifest.json",
+      "bytes": 2695,
+      "sha256": "512d00295b6893841cb675eaa55c224ce87cfb59d1f5d1b4952264efe6fc6b85"
+    },
+    "h1_equivalence": {
+      "path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/federated_h1/equivalence_decision.json",
+      "bytes": 1784,
+      "sha256": "34b9125cba3e46bf4703ba8c518ff442c87a2456ed53bc1761b1c6e11c21ccee"
+    },
+    "h1_payload": {
+      "path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/federated_h1/communication_payload_summary.json",
+      "bytes": 3456,
+      "sha256": "ae0c9a7207942ffe8dd94bf1b711cc6e74c97f6a04dbfba49f7fff1f2eb884ba"
+    },
+    "h1_model": {
+      "path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/federated_h1/global_h1_model.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+    },
+    "target_ridge": {
+      "path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/target_ridge/target_ridge_105d_manifest.json",
+      "bytes": 46151,
+      "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de"
+    },
+    "runtime_v5_contract": {
+      "path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/runtime_contract_v5.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482"
+    },
+    "qc_decision": {
+      "path": "results/iotj_b5_c5_runtime_v5_qc_20260725/decision_gate.json",
+      "bytes": 1757,
+      "sha256": "92d6b826a673d2912ae2b5cacc8d4602d0faa0e94a53e562e3509e74d2366da2"
+    },
+    "qc_comparison": {
+      "path": "results/iotj_b5_c5_runtime_v5_qc_20260725/comparison_vs_runtime_v4.json",
+      "bytes": 5087,
+      "sha256": "49f8a9b40a73bdcb601094e7ad17d6667c692c7791b0cfe636a01a32cf92f0a2"
+    },
+    "qc_oof": {
+      "path": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_candidate_calibration_summary.csv",
+      "bytes": 2101,
+      "sha256": "7d6ac08bb3b42125a46b770c447e01e4cc776bebb0787f5b4dfcad79344c7680"
+    },
+    "qc_per_gas": {
+      "path": "results/iotj_final_system_benchmark_20260725/paper_tables/table_qc_per_gas.csv",
+      "bytes": 2223,
+      "sha256": "06170b4306357b80941a5fe28d571b58d38aba0dd8bf4a29a7f67fec82fc6b33"
+    },
+    "qc_overall": {
+      "path": "results/iotj_final_system_benchmark_20260725/paper_tables/table_qc_overall.csv",
+      "bytes": 2323,
+      "sha256": "a627be74997fedcba22419dec76219150f75ff1bb09b13e2ed3068ffa3e86a32"
+    },
+    "benchmark": {
+      "path": "results/iotj_final_system_benchmark_20260725/benchmarks/benchmark_summary.csv",
+      "bytes": 1571,
+      "sha256": "528f60a0f87d94ecc748001c580e32d5ae67de3bbeb78b2848a1efe5baaf654c"
+    },
+    "packages": {
+      "path": "results/iotj_final_system_benchmark_20260725/system_metrics/package_size_summary.csv",
+      "bytes": 225,
+      "sha256": "0346b757f7ac7df130f8d4e10ad527f8d2f1a0a4f86a9e4028ea1fe9ed523c22"
+    },
+    "b5_payload": {
+      "path": "results/iotj_final_system_benchmark_20260725/system_metrics/b5_fl_communication_summary.csv",
+      "bytes": 478,
+      "sha256": "72832672a95192bd3789955c79812f70a2481de7ab96c321c7e7accb64303c7f"
+    },
+    "h1_system_payload": {
+      "path": "results/iotj_final_system_benchmark_20260725/system_metrics/federated_h1_communication_summary.csv",
+      "bytes": 1251,
+      "sha256": "3b0a2d886870fb80de146f0bbce88fd9daf97f0035e2ed62113f6a0d1fd905ce"
+    },
+    "lowcal_summary": {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/low_calibration_summary.csv",
+      "bytes": 3004,
+      "sha256": "b110cadf495b0e3a93e61401b3e8d0186fe30223127610ed257a221cac23aa0b"
+    },
+    "lowcal_per_gas": {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/low_calibration_per_gas_summary.csv",
+      "bytes": 1857,
+      "sha256": "21f339399246420ab446bae28d8346db7789821a096e5b4460ed386943b8192c"
+    },
+    "lowcal_decision": {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/decision_gate.json",
+      "bytes": 396,
+      "sha256": "9499068a42c71fd4a29dff4b748fc1ce5c2320797e256bcf3e65a0549ef88f0d"
+    },
+    "harmonized_table": {
+      "path": "results/iotj_calibration_protocol_harmonization_20260726/paper_tables/table_calibration_protocol_comparison.csv",
+      "bytes": 1080,
+      "sha256": "00abe930564f28c30e025641ff80664bad6585c17b2c5dfbd1d8a538f8b19d48"
+    },
+    "harmonized_decision": {
+      "path": "results/iotj_calibration_protocol_harmonization_20260726/decision_gate.json",
+      "bytes": 719,
+      "sha256": "a263ee49908044121d101e3356827a499d699dcba46b1a6fe10fb91007f42422"
+    },
+    "historical_audit": {
+      "path": "results/iotj_calibration_protocol_harmonization_20260726/historical_holdout_audit.json",
+      "bytes": 7624,
+      "sha256": "19e38dd6c22af4c8382d0c7b0ff651bf1e29f70e6a09f535149a4de39001faab"
+    },
+    "runtime_frozen": {
+      "path": "results/iotj_final_system_benchmark_20260725/frozen_asset_manifest.json",
+      "bytes": 6720,
+      "sha256": "813ffd2b8c1291f8d7b036f647d74409d690ceafef16173b5aa0ce2792aff1d1"
+    }
+  },
+  "runtime_v4_six_sha256": {
+    "bundle_manifest": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\bundle_candidate\\manifest.json",
+      "bytes": 4617,
+      "sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+      "status": "PASS"
+    },
+    "c5_test_features": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_features.npy",
+      "bytes": 8704128,
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+      "status": "PASS"
+    },
+    "c5_test_metadata": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_experiment_info.json",
+      "bytes": 535350,
+      "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+      "status": "PASS"
+    },
+    "c5_test_phase_labels": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_phase_labels.npy",
+      "bytes": 11008,
+      "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+      "status": "PASS"
+    },
+    "hc95_reference": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\test_hc95_records.csv",
+      "bytes": 11942586,
+      "sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+      "status": "PASS"
+    },
+    "hc90_reference": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\test_hc90_records.csv",
+      "bytes": 11942586,
+      "sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+      "status": "PASS"
+    }
+  }
+}
