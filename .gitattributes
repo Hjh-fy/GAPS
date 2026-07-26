@@ -1,4 +1,4 @@
-# Release archives are byte-addressed artifacts. Never apply line-ending filters.
-release/gaps_runtime_v5_core_20260726/** -text
-release/gaps_runtime_v5_core_20260726.zip -text
-release/gaps_runtime_v5_core_20260726.zip.sha256 -text
+# Release archives are byte-addressed artifacts. Never filter or text-diff them.
+release/gaps_runtime_v5_core_20260726/** binary
+release/gaps_runtime_v5_core_20260726.zip binary
+release/gaps_runtime_v5_core_20260726.zip.sha256 binary
