@@ -1,0 +1,76 @@
+{
+  "schema_version": "iotj.paper_evidence_freeze.v1",
+  "tables": [
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A1_per_seed_classification.csv",
+      "bytes": 1525,
+      "sha256": "aef1a8c10936693d7444ab14fd727cf473296d5d859236be7b3f323ae0193e51"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A2_per_seed_regression.csv",
+      "bytes": 2934,
+      "sha256": "6c01a8c403e0ce105de47505cf83fe72abb33e7b5feaf58e50fd43fc6e2b1a3a"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A3_per_gas_regression.csv",
+      "bytes": 2676,
+      "sha256": "bf0c0166f49e6583c1a23c7c774e1a70fec0c1df3b29c9071bdcb48f4c6823e7"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A4_qc_oof_candidates.csv",
+      "bytes": 2101,
+      "sha256": "7d6ac08bb3b42125a46b770c447e01e4cc776bebb0787f5b4dfcad79344c7680"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A5_qc_per_gas.csv",
+      "bytes": 2223,
+      "sha256": "06170b4306357b80941a5fe28d571b58d38aba0dd8bf4a29a7f67fec82fc6b33"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A6_communication_payloads.csv",
+      "bytes": 478,
+      "sha256": "72832672a95192bd3789955c79812f70a2481de7ab96c321c7e7accb64303c7f"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A7_harmonization.csv",
+      "bytes": 246,
+      "sha256": "0395ff113498ab6101ba574455620fdcbe01b65619638348a6447d94a8cb138b"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_A8_lowcal_per_gas.csv",
+      "bytes": 1857,
+      "sha256": "21f339399246420ab446bae28d8346db7789821a096e5b4460ed386943b8192c"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_I_dataset_roles.csv",
+      "bytes": 490,
+      "sha256": "76f7e5ec40f90699fd3e06f833dcf50c01b6913ada6f9151bf5c4e029c2e3621"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_II_classification.csv",
+      "bytes": 205,
+      "sha256": "c1d9cb16391acfc36f9cbd453ae660f91fddc7841d123fce26dbfa9eb8e22719"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_III_regression.csv",
+      "bytes": 371,
+      "sha256": "09f9ef41063b7d6e5af143111bfd06791f00e3ab20997f5c28c46be9bc83d3e3"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_IV_qc.csv",
+      "bytes": 381,
+      "sha256": "a7f2132c0ef3d4999bfae32446e9a85caccf2b4283ea7ad3a6229eb976aa281e"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_V_system.csv",
+      "bytes": 647,
+      "sha256": "54b6b5eed2a9284066ccc254294b915865f785b680c39e30a3fbe30dbaaacd80"
+    },
+    {
+      "path": "docs/paper_evidence_freeze/paper_tables/table_VI_calibration.csv",
+      "bytes": 298,
+      "sha256": "0546d15a57f7ff1706fcd2e25e6c7472c6bc5e30e4a784c0247352838e1aa8a8"
+    }
+  ],
+  "all_tables_from_frozen_sources": true
+}
