@@ -1,0 +1,123 @@
+{
+  "schema_version": "gaps.documentation_validation.v1",
+  "status": "PASS",
+  "validated_at": "2026-07-26T21:34:00+08:00",
+  "source_head_before_documentation_commit": "2e0fe7c985fc2f487863f65a21f957a4c33e82bd",
+  "scope": {
+    "training_run": false,
+    "inference_run": false,
+    "checkpoint_evaluation_run": false,
+    "benchmark_run": false,
+    "formal_test_opened": false,
+    "documentation_and_static_validation_only": true
+  },
+  "documented_files": {
+    "required_count": 18,
+    "missing_count": 0,
+    "all_exist": true
+  },
+  "compileall": {
+    "command": "python -m compileall -q gaps_flower gaps_deploy scripts",
+    "exit_code": 0,
+    "status": "PASS"
+  },
+  "static_imports": {
+    "status": "PASS",
+    "modules": [
+      "gaps_flower.task",
+      "gaps_flower.client_app",
+      "gaps_flower.server_app",
+      "gaps_flower.strategy",
+      "gaps_flower.domain_adaptation",
+      "gaps_deploy.c5_federated_source_ridge_bundle",
+      "gaps_deploy.c5_federated_source_ridge_runtime",
+      "gaps_deploy.c5_federated_source_ridge_qc_runtime",
+      "gaps_deploy.runtime_v5_qc",
+      "gaps_deploy.runtime_v5_qc_bundle",
+      "gaps_deploy.final_runtime"
+    ]
+  },
+  "help_checks": {
+    "status": "PASS",
+    "top_level_cli_count": 16,
+    "materializer_subcommand_count": 6,
+    "failed": [],
+    "top_level_modules": [
+      "gaps_flower.client_app",
+      "gaps_flower.server_app",
+      "gaps_deploy.final_runtime",
+      "scripts.freeze_iotj_confirmation_protocol",
+      "scripts.run_iotj_confirmation_observability",
+      "scripts.evaluate_iotj_b5_multiseed_seed",
+      "scripts.materialize_iotj_federated_h1_topology",
+      "scripts.evaluate_iotj_h1_federated_ridge_equivalence",
+      "scripts.evaluate_iotj_b5_regression_multiseed",
+      "scripts.build_iotj_runtime_v5_candidate",
+      "scripts.evaluate_iotj_runtime_v5_qc",
+      "scripts.prepare_iotj_final_benchmark_package",
+      "scripts.benchmark_iotj_final_runtime",
+      "scripts.probe_iotj_runtime_cold_start",
+      "scripts.build_iotj_final_system_evidence",
+      "scripts.finalize_iotj_final_system_evidence"
+    ],
+    "materializer_subcommands": [
+      "client-moments",
+      "server-scalers",
+      "client-equations",
+      "server-candidates",
+      "client-scores",
+      "server-model"
+    ]
+  },
+  "contract_runtime_bundle_tests": {
+    "status": "PASS",
+    "passed": 42,
+    "failed": 0,
+    "duration_seconds": 12.92,
+    "formal_assets_used": false,
+    "pytest_basetemp_location": "system temporary directory",
+    "test_files": [
+      "tests/test_iotj_b5_multiseed_protocol.py",
+      "tests/test_iotj_h1_federated_ridge_equivalence.py",
+      "tests/test_iotj_runtime_v5_candidate_builder.py",
+      "tests/test_runtime_v5_qc_policy.py",
+      "tests/test_runtime_v5_qc_runtime.py",
+      "tests/test_iotj_final_system_benchmark.py",
+      "tests/test_validate_iotj_b5_c5_runtime_parity.py",
+      "tests/test_build_iotj_b5_c5_deployment_bundle.py",
+      "tests/test_iotj_b5_c5_canonical_replay.py"
+    ]
+  },
+  "entrypoint_labels": {
+    "README.md": "CANONICAL CURRENT GUIDE",
+    "代码文件介绍.md": "CANONICAL CURRENT GUIDE",
+    "docs/mainline_entrypoints_20260626.md": "LEGACY / SUPERSEDED",
+    "docs/experiments/iotj_latest_handoff_20260715.zh.md": "LEGACY / SUPERSEDED",
+    "no_conflicting_canonical_labels": true
+  },
+  "entrypoint_integrity": {
+    "no_missing_entrypoint": true,
+    "runtime_v5_has_standalone_inference_cli": false,
+    "runtime_v5_python_api_documented": true,
+    "runtime_v4_role_documented": "formal selective-output baseline",
+    "runtime_v5_qc2_role_documented": "valid candidate not promoted"
+  },
+  "frozen_asset_check": {
+    "modified": false,
+    "git_diff_exit_code": 0,
+    "checked_scopes": [
+      "docs/paper/GAPS_IoTJ_evidence_frozen_20260726.zh.html",
+      "docs/paper_evidence_freeze",
+      "results/iotj_b5_multiseed_20260724",
+      "results/iotj_b5_regression_multiseed_20260724",
+      "results/iotj_b5_c5_deployment_p1_20260722"
+    ],
+    "evidence_frozen_manuscript_sha256": "b7b0aace15367c0ffd60fb3fed5bf93a4ca269f0bd6b74e07836aba4f63a96a4"
+  },
+  "test_access_boundary": {
+    "formal_test_opened": false,
+    "formal_test_labels_read": false,
+    "synthetic_unit_tests_only": true
+  },
+  "verdict": "DOCUMENTATION_STATIC_VALIDATION_PASS"
+}

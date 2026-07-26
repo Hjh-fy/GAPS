@@ -1,5 +1,21 @@
 # GAPS 最新进度与证据交接（2026-07-15）
 
+> **LEGACY / SUPERSEDED**
+>
+> 本文件保留 2026-07-15 至 2026-07-21 的交接与失败恢复历史，但其中
+> “缺 seeds 43–46”“runtime/benchmark/low-calibration 未完成”等状态已经关闭。
+>
+> 2026-07-26 当前入口：
+>
+> - `docs/system/GAPS_SYSTEM_OVERVIEW_20260726.zh.md`
+> - `docs/system/GAPS_CODE_MAP_20260726.zh.md`
+> - `docs/system/GAPS_COMMAND_COOKBOOK_20260726.zh.md`
+> - `docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md`
+> - `docs/experiments/iotj_manuscript_protocol_scope_lock_20260726.zh.md`
+>
+> 当前状态：`NO_FURTHER_EXPERIMENTS_REQUIRED_FOR_CURRENT_SCOPE`。本文件正文
+> 不得再作为当前下一步计划或最终数字来源。
+
 > 用途：新开对话、让新的 GPT/Codex 从 GitHub 接手时，先阅读本文件，再进入代码和详细实验账本。
 >
 > Git 分支：`codex/system-safety-hardening`。最低完整证据提交为 `02dc259`；本文件及其后续更新以所在提交为准。不要只读取默认分支后假定它代表当前实验状态。
