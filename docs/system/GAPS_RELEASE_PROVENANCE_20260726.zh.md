@@ -10,6 +10,8 @@
 
 - 合同：`docs/system/iotj_release_provenance_manifest_20260726.json`
 - 校验器：`scripts/verify_iotj_release_provenance.py`
+- 正式只读校验回执：
+  `docs/system/iotj_release_provenance_verification_20260726.json`
 - 合同 schema：`iotj.release_provenance.v1`
 - 合同状态：`PROVENANCE_LOCKED`
 - 资产记录：35 项，合计 37,309,036 bytes
