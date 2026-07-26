@@ -779,6 +779,7 @@ test 仅作描述性评估；没有根据 test 选择 protocol、subset、fold�
         "runtime_v4_six_sha_unchanged": frozen_hashes(ROOT) == json.loads(
             (output / "frozen_asset_manifest.json").read_text(encoding="utf-8"))["runtime_v4_six_sha256"],
     })
+    write_json(output / "stage_state.json", {**state, "stage": "COMPLETE", "decision": decision})
     write_json(output / "sha256_index.json", _sha_index(output))
     index = {
         "schema_version": SCHEMA, "experiment_id": EXPERIMENT_ID, "status": "COMPLETE",
@@ -788,7 +789,6 @@ test 仅作描述性评估；没有根据 test 选择 protocol、subset、fold�
         "evidence_boundary": "post-freeze descriptive harmonization audit; not a new confirmatory test",
     }
     write_json(Path(args.index_path), index)
-    write_json(output / "stage_state.json", {**state, "stage": "COMPLETE", "decision": decision})
 
 
 def parse_args() -> argparse.Namespace:
