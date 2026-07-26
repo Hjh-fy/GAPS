@@ -1,0 +1,160 @@
+{
+  "schema_version": "gaps.iotj.submission_candidate_v3_1.number_audit.v1",
+  "audit_date": "2026-07-27",
+  "status": "PASS",
+  "readiness": "READY_TO_FREEZE_CHINESE_CONTENT_FOR_ENGLISH_TRANSLATION",
+  "freeze_state": "PENDING_HUMAN_SIGNOFF",
+  "candidate": {
+    "path": "docs/paper/GAPS_IoTJ_submission_candidate_v3_1.zh.html",
+    "sha256": "5fdf5f5b57ca72c969c3684dc2fda795b3727dd8caaff3dbee5c4c1fc4ad5f3e",
+    "parent_candidate_path": "docs/paper/GAPS_IoTJ_submission_candidate_v3.zh.html",
+    "parent_candidate_sha256": "83f665d0442cbcef2aa0f9b931c9efd758b25926dbca2dcef1dbd7fb3f9c1422",
+    "parent_candidate_commit": "d82932cd56d70092928535dc162e74ac7c058872",
+    "system_release_freeze_commit": "36ee62339c025064cb415bfd13c5e7139a954edc",
+    "paper_evidence_freeze_commit": "b78e8bec989cc8a925698d682aff05efe859fcd2",
+    "prior_candidates_overwritten": false
+  },
+  "authoritative_sources": [
+    {
+      "path": "docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md",
+      "sha256": "bc3c22fe701853e8b978a5de156d34e32216b16708d89214a847778abd595dad"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/b5_classification_multiseed_summary.csv",
+      "sha256": "11adaa5202268a206ac01f49fe8ca515716d2e80b9cfc88c5877f3ef6ef925c8"
+    },
+    {
+      "path": "results/iotj_b5_regression_multiseed_20260724/regression_multiseed_summary.csv",
+      "sha256": "5f6e3078bb82652d5268fda9e626c85dac07976e385bebf76ccb6fbaa4541378"
+    },
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/benchmarks/benchmark_summary.csv",
+      "sha256": "528f60a0f87d94ecc748001c580e32d5ae67de3bbeb78b2848a1efe5baaf654c"
+    },
+    {
+      "path": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_test_summary.csv",
+      "sha256": "9901a8adf53f59b847497d19349d2ec9bd789fd141cb692919a9da4a1d8eb08e"
+    },
+    {
+      "path": "results/iotj_b5_c5_deployment_p1_20260722/h8_no_rescue/r4_policy.json",
+      "sha256": "18b6c14373018474807eec2bd19a0b508b75adfbf994b0821a786a11def9c263"
+    }
+  ],
+  "checked_number_groups": [
+    {
+      "id": "DATA_PROTOCOL",
+      "values": {
+        "input_shape": [100, 8],
+        "source_clients": ["C1", "C2"],
+        "target_client": "C5",
+        "source_train_rows_per_client": 2360,
+        "source_adaptation_reference_rows_per_client": 320,
+        "target_calibration_rows": 320,
+        "target_test_rows": 1360
+      },
+      "result": "MATCH",
+      "boundary": "source training windows, H1 statistic exchange, and server adaptation reference windows are distinct data-flow roles"
+    },
+    {
+      "id": "CLASSIFICATION_FIVE_SEED",
+      "scope": "five complete classifier training seeds; C5 test N=1360 per seed",
+      "values": {
+        "accuracy_mean": 0.989118,
+        "accuracy_sample_sd": 0.005983,
+        "accuracy_min": 0.980147,
+        "accuracy_max": 0.994853,
+        "macro_f1_mean": 0.989134,
+        "macro_f1_sample_sd": 0.005960,
+        "nll_mean": 0.100237,
+        "ece_mean": 0.010607
+      },
+      "result": "MATCH"
+    },
+    {
+      "id": "REGRESSION_FIVE_ROUTE",
+      "scope": "five frozen classifier routes; source heads fixed; target Ridge recomputed per route",
+      "values": {
+        "rich_features_scc_rmse_mean_sd_ppm": [14.4546, 0.2621],
+        "federated_h1_scc_rmse_mean_sd_ppm": [11.6339, 0.3142],
+        "three_reference_scc_rmse_mean_sd_ppm": [11.5208, 0.3148],
+        "federated_h1_delta_vs_rich_features_ppm": -2.8208,
+        "three_reference_advantage_vs_h1_ppm": 0.1131,
+        "federated_h1_relative_delta_vs_three_reference_percent": 0.981637,
+        "performance_retention_tolerance_percent": 1.0,
+        "three_reference_lower_scc_routes": "5/5"
+      },
+      "result": "MATCH",
+      "claim_boundary": "descriptive paired-route result and engineering performance-retention rule; not a formal noninferiority test"
+    },
+    {
+      "id": "H1_NUMERICAL_AGREEMENT",
+      "values": {
+        "selected_alpha_agreement": "4/4",
+        "max_prediction_abs_diff_ppm": 6.2532e-08,
+        "s_all_rmse_abs_diff_ppm": 9.4460e-11,
+        "s_cc_rmse_abs_diff_ppm": 6.7040e-12
+      },
+      "result": "MATCH",
+      "claim_boundary": "numerically highly consistent at the reported absolute differences; no machine-precision claim"
+    },
+    {
+      "id": "PARAMETERS",
+      "values": {
+        "formal_regression_parameters": 28737,
+        "federated_h1_parameters": 420,
+        "target_ridge_parameters": 424,
+        "simplified_total_regression_parameters": 844,
+        "classifier_parameters_separately_counted": 22765
+      },
+      "result": "MATCH"
+    },
+    {
+      "id": "RUNTIME_LATENCY",
+      "scope": "CPU, batch=1, threads=1, warmup=50, runs=500",
+      "values": {
+        "formal_pc_p50_p95_ms": [5.434, 13.945],
+        "formal_pi_p50_p95_ms": [4.571, 4.621],
+        "simplified_pc_p50_p95_ms": [4.072, 14.786],
+        "simplified_pi_p50_p95_ms": [3.725, 3.765],
+        "candidate_qc_pc_p50_p95_ms": [5.477, 19.312],
+        "candidate_qc_pi_p50_p95_ms": [4.523, 4.571]
+      },
+      "result": "MATCH",
+      "claim_boundary": "three runtime objects have different functional identities; abstract reports simplified-core Pi p50 without an equivalence claim"
+    },
+    {
+      "id": "QC_DIAGNOSTICS",
+      "values": {
+        "formal_hc90_co_coverage_percent": 84.71,
+        "formal_hc90_co_rmse_ppm": 19.7243,
+        "candidate_hc90_co_coverage_percent": 64.12,
+        "candidate_hc90_co_rmse_ppm": 20.8318
+      },
+      "result": "MATCH"
+    },
+    {
+      "id": "METRIC_REPORTING_SCOPE",
+      "values": {
+        "primary_regression_metric": "RMSE",
+        "supplementary_diagnostics": ["MAE", "NRMSE"],
+        "mae_or_nrmse_used_for_selection": false,
+        "mae_or_nrmse_used_for_main_claim": false
+      },
+      "result": "CONSISTENT_WITH_FROZEN_DIAGNOSTIC_ASSETS"
+    }
+  ],
+  "textual_revision_checks": {
+    "unique_numeric_token_set_changed_vs_v3": false,
+    "abstract_formal_baseline_latency_duplicate_removed": true,
+    "formal_baseline_latency_retained_in_table_v": true,
+    "main_table_numbering_unchanged": true,
+    "main_figure_numbering_unchanged": true,
+    "references_unchanged": true
+  },
+  "numeric_conflicts": [],
+  "numeric_conflict_count": 0,
+  "frozen_result_files_modified": false,
+  "new_experiment_training_inference_evaluation_or_benchmark_run": false,
+  "formal_test_accessed": false,
+  "final_decision": "PASS"
+}
