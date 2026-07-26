@@ -9,7 +9,8 @@
 |---|---|---|
 | Paper evidence | `COMPLETE` | evidence freeze、protocol close、claim–evidence 与正式数字已经冻结。 |
 | Code import/tests | `COMPLETE_FOR_AUDITED_SCOPE` | canonical imports、CLI help、compileall 及 42 项合同/runtime/bundle 测试通过。 |
-| External assets | `REQUIRED` | 正式 classifier、runtime bundle、policy、reference 和部分数据不全部随 Git 分发，必须按 manifest/SHA 恢复。 |
+| Release provenance | `CLOSED` | 35 项外部资产已按版本化 manifest、bytes 和 SHA256 锁定；不代表 archive 已生成。 |
+| External archive | `PENDING` | 正式 classifier、runtime bundle、policy 和 lineage 仍未形成 portable release archive。 |
 | Runtime v5 CLI | `MISSING` | Runtime v5 regression core 目前提供 Python API；benchmark CLI 不是部署 inference CLI。 |
 | Clean-checkout deployment | `NOT_COMPLETE` | 干净 Git checkout 尚不能仅凭 tracked bytes 完成正式 v4/v5 部署。 |
 
@@ -18,7 +19,8 @@
 ```text
 PAPER_EVIDENCE_READY
 CODE_CONTRACT_READY
-RELEASE_ARTIFACT_CLOSURE_PENDING
+RELEASE_PROVENANCE_CLOSED
+RELEASE_ARCHIVE_PENDING
 ```
 
 不能表述为 `CLEAN_CHECKOUT_DEPLOYMENT_READY`。
@@ -57,10 +59,21 @@ RELEASE_ARTIFACT_CLOSURE_PENDING
 恢复后必须逐项核对 bytes 和 SHA256。不能因为文件名相同就视为同一资产，也不能在
 缺失时回退到随机初始化、legacy rescue 或其他 checkpoint。
 
+外部资产身份与 loader 依赖审计见：
+
+- `docs/system/iotj_release_provenance_manifest_20260726.json`
+- `docs/system/GAPS_RELEASE_PROVENANCE_20260726.zh.md`
+- `scripts/verify_iotj_release_provenance.py`
+
+当前 manifest 已覆盖 35 项资产。必须注意：v4 loader 会在启动时强制校验 1360 行
+offline parity reference；现有 v4/v5 contracts 还含冻结绝对路径。因此 raw copy
+不是 portable deployment，不能据此宣称 clean-checkout ready。
+
 ## 4. Release 阻塞项
 
-1. 建立只读、版本化的 external asset release archive；
-2. 将 archive 内资产与现有 manifest/SHA index 双向绑定；
+1. 根据已锁定 provenance manifest 建立只读、版本化的 external asset release archive；
+2. 生成独立 portable binding contracts，将 archive 内资产与冻结 contract/SHA
+   双向绑定，且不覆盖原合同；
 3. 增加 Runtime v5 独立 inference CLI，明确输入/输出 schema 与 fail-closed
    行为；
 4. 在全新 checkout + 恢复后的 release archive 上完成 import、bundle load 和

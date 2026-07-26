@@ -1,0 +1,570 @@
+{
+  "schema_version": "iotj.release_provenance.v1",
+  "status": "PROVENANCE_LOCKED",
+  "release_id": "gaps-iotj-final-system-20260726",
+  "created_date": "2026-07-26",
+  "code": {
+    "repository": "GAPS",
+    "branch": "codex/iotj-confirmation-observability",
+    "provenance_base_commit": "a0210e8922d7ee4ca7cb92fbfead50e19ebfc250",
+    "frozen_evidence_commit": "b78e8bec989cc8a925698d682aff05efe859fcd2"
+  },
+  "source_roots": {
+    "repository": "Git worktree root containing this manifest",
+    "workspace": "Parent workspace root containing dataset/ and the worktree collection"
+  },
+  "profiles": {
+    "runtime_v4_loader_closure": {
+      "description": "Exact frozen Runtime-v4 contract, bundle, ten bundle assets, and the offline parity file required by the current loader.",
+      "asset_ids": [
+        "v4_runtime_contract",
+        "v4_bundle_manifest",
+        "v4_class_map",
+        "v4_classifier",
+        "v4_feature_schema",
+        "v4_h23_reference",
+        "v4_normalization",
+        "v4_qc_component_calibrator",
+        "v4_qc_feature_reference",
+        "v4_qc_risk_policy",
+        "v4_qc_risk_selection",
+        "v4_r4_policy",
+        "v4_offline_parity_reference"
+      ],
+      "runtime_loadable_after_raw_restore": false
+    },
+    "runtime_v5_core_loader_closure": {
+      "description": "Exact frozen Runtime-v5 core contract, bundle, three runtime assets, and calibration lineage required by the current loader.",
+      "asset_ids": [
+        "v5_runtime_contract",
+        "v5_bundle_manifest",
+        "v5_classifier",
+        "v5_federated_h1",
+        "v5_target_ridge",
+        "v5_calibration_lock"
+      ],
+      "runtime_loadable_after_raw_restore": false
+    },
+    "runtime_v5_qc2_candidate_loader_closure": {
+      "description": "Runtime-v5 core plus the frozen QC2 candidate bundle, policy, and HC95/HC90 contracts.",
+      "asset_ids": [
+        "v5_runtime_contract",
+        "v5_bundle_manifest",
+        "v5_classifier",
+        "v5_federated_h1",
+        "v5_target_ridge",
+        "v5_calibration_lock",
+        "v5_qc_bundle_manifest",
+        "v5_qc_base_runtime_contract",
+        "v5_qc_policy",
+        "v5_qc_hc95_contract",
+        "v5_qc_hc90_contract"
+      ],
+      "runtime_loadable_after_raw_restore": false
+    },
+    "formal_release_audit_inventory": {
+      "description": "All runtime, provenance, and formal test-bound records needed to audit the current local release evidence; not a deployment distribution profile.",
+      "asset_ids": [
+        "v4_runtime_contract",
+        "v4_bundle_manifest",
+        "v4_input_audit",
+        "v4_class_map",
+        "v4_classifier",
+        "v4_feature_schema",
+        "v4_h23_reference",
+        "v4_normalization",
+        "v4_qc_component_calibrator",
+        "v4_qc_feature_reference",
+        "v4_qc_risk_policy",
+        "v4_qc_risk_selection",
+        "v4_r4_policy",
+        "v4_offline_parity_reference",
+        "v5_runtime_contract",
+        "v5_bundle_manifest",
+        "v5_classifier",
+        "v5_federated_h1",
+        "v5_target_ridge",
+        "v5_calibration_lock",
+        "v5_offline_reference",
+        "v5_qc_bundle_manifest",
+        "v5_qc_base_runtime_contract",
+        "v5_qc_policy",
+        "v5_qc_hc95_contract",
+        "v5_qc_hc90_contract",
+        "v5_qc_selection_lock",
+        "v5_qc_decision_gate",
+        "v5_qc_calibration_parity_report",
+        "v5_qc_test_parity_report",
+        "c5_test_features",
+        "c5_test_metadata",
+        "c5_test_phase_labels",
+        "v4_hc95_test_records",
+        "v4_hc90_test_records"
+      ],
+      "runtime_loadable_after_raw_restore": false
+    }
+  },
+  "assets": [
+    {
+      "asset_id": "v4_runtime_contract",
+      "component": "runtime_v4",
+      "role": "frozen_absolute_path_runtime_contract",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json",
+      "bytes": 2377,
+      "sha256": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_bundle_manifest",
+      "component": "runtime_v4",
+      "role": "frozen_bundle_manifest",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json",
+      "bytes": 4617,
+      "sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_input_audit",
+      "component": "runtime_v4",
+      "role": "bundle_input_audit",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/input_audit.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/input_audit.json",
+      "bytes": 3739,
+      "sha256": "66db187ee9645997ebdadb5bd1580e069e8d7596194c133082da15cc8321dfdb",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_class_map",
+      "component": "runtime_v4",
+      "role": "class_map",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/class_map.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/class_map.json",
+      "bytes": 510,
+      "sha256": "a54892dca07147f39513fc2f2c94391a153ea44aad984302cb2e1db75c8ed1b6",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_classifier",
+      "component": "runtime_v4",
+      "role": "b5_seed42_classifier",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/classifier.pth",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/classifier.pth",
+      "bytes": 184201,
+      "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_feature_schema",
+      "component": "runtime_v4",
+      "role": "feature_schema",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/feature_schema.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/feature_schema.json",
+      "bytes": 3118,
+      "sha256": "910c495369cd2f2098f6a38179b73389ea80118fdf0817618da674b1356ff365",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_h23_reference",
+      "component": "runtime_v4",
+      "role": "h23_source_reference",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/h23_reference.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/h23_reference.json",
+      "bytes": 802008,
+      "sha256": "1d825aae925e31e98042edd5fba7629d7b5a8304036fd78c949a3666c5903e46",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_normalization",
+      "component": "runtime_v4",
+      "role": "normalization",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/normalization.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/normalization.json",
+      "bytes": 324,
+      "sha256": "6d31d640115f47be7d2b59a3ac9134d95ae44fb328b1b6fadb843bc301528485",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_qc_component_calibrator",
+      "component": "runtime_v4",
+      "role": "qc_component_calibrator",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_component_calibrator.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_component_calibrator.json",
+      "bytes": 11009,
+      "sha256": "b409a06a51999a304e99b98f5c41a5e91819a0a7fd9983223a818596e5dfc18a",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_qc_feature_reference",
+      "component": "runtime_v4",
+      "role": "qc_feature_reference",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_feature_reference.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_feature_reference.json",
+      "bytes": 1466440,
+      "sha256": "dcf45ac083274f94d83d4696232016bc9e360ca7fff105ace1fdb07c84fb959e",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_qc_risk_policy",
+      "component": "runtime_v4",
+      "role": "hc95_hc90_risk_policy",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_risk_policy.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_risk_policy.json",
+      "bytes": 679,
+      "sha256": "7aa195fb099d459b741d8920d5ed89efb2f32fd2f374e9126b2c58ea789baf5b",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_qc_risk_selection",
+      "component": "runtime_v4",
+      "role": "qc_risk_selection",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_risk_selection.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/qc_risk_selection.json",
+      "bytes": 16723,
+      "sha256": "8212c78c57649b627ce99a8f6fead4cd220ddad25a19f0340f0bd8650fd2a1ce",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_r4_policy",
+      "component": "runtime_v4",
+      "role": "fixed_h8_r4_policy",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/r4_policy.json",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/assets/r4_policy.json",
+      "bytes": 481909,
+      "sha256": "18b6c14373018474807eec2bd19a0b508b75adfbf994b0821a786a11def9c263",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v4_offline_parity_reference",
+      "component": "runtime_v4",
+      "role": "offline_parity_reference_required_at_bundle_load",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/bundle_inputs/offline_reference_1360.csv",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/bundle_inputs/offline_reference_1360.csv",
+      "bytes": 67206,
+      "sha256": "602e5c77c0b2bf5a8a62debf50dc76e95f34c14837cd19ef544dc8be2ae0cc59",
+      "evidence_class": "LOADER_COUPLED_AUDIT_ASSET",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "v5_runtime_contract",
+      "component": "runtime_v5_core",
+      "role": "frozen_absolute_path_runtime_contract",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/runtime_contract_v5.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/runtime_contract_v5.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_bundle_manifest",
+      "component": "runtime_v5_core",
+      "role": "frozen_bundle_manifest",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/bundle_manifest.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/bundle_manifest.json",
+      "bytes": 2442,
+      "sha256": "f239c3b4929d1748574ec4d2fe4f61e09030087c2104b8c726046b5a39bffb1e",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_classifier",
+      "component": "runtime_v5_core",
+      "role": "b5_seed42_classifier",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/assets/classifier.pth",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/assets/classifier.pth",
+      "bytes": 184201,
+      "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_federated_h1",
+      "component": "runtime_v5_core",
+      "role": "sufficient_statistics_federated_h1",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/assets/federated_h1.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/assets/federated_h1.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_target_ridge",
+      "component": "runtime_v5_core",
+      "role": "c5_target_ridge_105d",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/assets/target_ridge_105d.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/assets/target_ridge_105d.json",
+      "bytes": 46151,
+      "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_calibration_lock",
+      "component": "runtime_v5_core",
+      "role": "calibration_lineage_required_at_bundle_load",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/target_ridge/calibration_lock.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/target_ridge/calibration_lock.json",
+      "bytes": 2266,
+      "sha256": "4edf75222e41d8bf43097625a076964e9338493478edc76c9a04a08794d5affe",
+      "evidence_class": "LOADER_COUPLED_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_offline_reference",
+      "component": "runtime_v5_core",
+      "role": "offline_reference_1360",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/target_ridge/offline_reference_1360.csv",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_candidate_20260724/target_ridge/offline_reference_1360.csv",
+      "bytes": 58967,
+      "sha256": "7f2186d137b9cef1bb11d9c82dc41cb14558cdcfc8118cf21e6f7873ede75208",
+      "evidence_class": "FORMAL_TEST_MATERIAL",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "v5_qc_bundle_manifest",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "frozen_qc_bundle_manifest",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle/manifest.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle/manifest.json",
+      "bytes": 817,
+      "sha256": "77818f5aa69588fc8b948717282694793f30c6240cb47313d12848980c50d168",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_base_runtime_contract",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "frozen_absolute_path_base_runtime_contract",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle/base_runtime_contract.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle/base_runtime_contract.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_policy",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "group_aware_qc2_policy",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle/qc_policy.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_bundle/qc_policy.json",
+      "bytes": 772571,
+      "sha256": "9878028e97ae9b616194b2d01a557896c1805d1bebb57b6500f90ea16a0c1b8e",
+      "evidence_class": "RUNTIME_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_hc95_contract",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "hc95_qc_runtime_contract",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_hc95_contract.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_hc95_contract.json",
+      "bytes": 714,
+      "sha256": "2b764e2cf845bd0ae7b2edcccbbb2948736b90c3532114c254423933d1def1d9",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_hc90_contract",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "hc90_qc_runtime_contract",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_hc90_contract.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_hc90_contract.json",
+      "bytes": 714,
+      "sha256": "af1a55e3b24eba4198025bf473b9be205a2d8b50af71c3a403db67091a73d4ab",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_selection_lock",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "pre_test_qc_selection_lock",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_selection_lock.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/qc_selection_lock.json",
+      "bytes": 2033,
+      "sha256": "64877b7676bc4497074a2619282e0d2fedd658db76c2d1868b91699edba6d518",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_decision_gate",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "qc_decision_gate",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/decision_gate.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/decision_gate.json",
+      "bytes": 1757,
+      "sha256": "92d6b826a673d2912ae2b5cacc8d4602d0faa0e94a53e562e3509e74d2366da2",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "v5_qc_calibration_parity_report",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "calibration_parity_report",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_qc_calibration_parity_report.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_qc_calibration_parity_report.json",
+      "bytes": 501,
+      "sha256": "1ed8cf7f69efaa4f9963ebd6f9a5beb7642ca7e087ae1d7363061ef13de26e9a",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": false
+    },
+    {
+      "asset_id": "v5_qc_test_parity_report",
+      "component": "runtime_v5_qc2_candidate",
+      "role": "test_parity_report",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_qc_test_parity_report.json",
+      "restore_path": "repo/results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_qc_test_parity_report.json",
+      "bytes": 502,
+      "sha256": "ec58fe4d5eead03266ba3de46aa101842266d52a4644fa19a20bbcf45272b513",
+      "evidence_class": "PROVENANCE_AUDIT_ASSET",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "c5_test_features",
+      "component": "formal_test_evidence",
+      "role": "c5_test_window_features_1360",
+      "source_root": "workspace",
+      "source_path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_features.npy",
+      "restore_path": "workspace/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_features.npy",
+      "bytes": 8704128,
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+      "evidence_class": "FORMAL_TEST_MATERIAL",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "c5_test_metadata",
+      "component": "formal_test_evidence",
+      "role": "c5_test_metadata_1360",
+      "source_root": "workspace",
+      "source_path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_experiment_info.json",
+      "restore_path": "workspace/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_experiment_info.json",
+      "bytes": 535350,
+      "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+      "evidence_class": "FORMAL_TEST_MATERIAL",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "c5_test_phase_labels",
+      "component": "formal_test_evidence",
+      "role": "c5_test_phase_labels_1360",
+      "source_root": "workspace",
+      "source_path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_phase_labels.npy",
+      "restore_path": "workspace/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_phase_labels.npy",
+      "bytes": 11008,
+      "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+      "evidence_class": "FORMAL_TEST_MATERIAL",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "v4_hc95_test_records",
+      "component": "formal_test_evidence",
+      "role": "runtime_v4_hc95_test_reference_1360",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc95_records.csv",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc95_records.csv",
+      "bytes": 11942586,
+      "sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+      "evidence_class": "FORMAL_TEST_MATERIAL",
+      "contains_formal_test_material": true
+    },
+    {
+      "asset_id": "v4_hc90_test_records",
+      "component": "formal_test_evidence",
+      "role": "runtime_v4_hc90_test_reference_1360",
+      "source_root": "repository",
+      "source_path": "results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc90_records.csv",
+      "restore_path": "repo/results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc90_records.csv",
+      "bytes": 11942586,
+      "sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+      "evidence_class": "FORMAL_TEST_MATERIAL",
+      "contains_formal_test_material": true
+    }
+  ],
+  "loader_dependency_audit": {
+    "runtime_v4": {
+      "api": "gaps_deploy.c5_h8_runtime.C5H8Runtime.from_runtime_contract",
+      "actual_load_dependencies": [
+        "runtime contract",
+        "bundle manifest",
+        "ten bundle assets",
+        "offline parity reference"
+      ],
+      "finding": "The current bundle loader verifies the 1360-row offline parity reference during construction, so audit evidence is coupled to runtime startup."
+    },
+    "runtime_v5_core": {
+      "api": "gaps_deploy.c5_federated_source_ridge_runtime.C5FederatedSourceRidgeRuntime.from_runtime_contract",
+      "actual_load_dependencies": [
+        "runtime contract",
+        "bundle manifest",
+        "classifier",
+        "Federated H1",
+        "target Ridge",
+        "calibration lineage lock"
+      ],
+      "finding": "Input and offline-reference descriptors are schema-checked but their files are not opened during runtime construction."
+    },
+    "runtime_v5_qc2_candidate": {
+      "api": "gaps_deploy.c5_federated_source_ridge_qc_runtime.C5FederatedSourceRidgeQCRuntime.from_runtime_contract",
+      "actual_load_dependencies": [
+        "QC workpoint contract",
+        "QC bundle manifest",
+        "QC policy",
+        "Runtime-v5 core loader closure"
+      ],
+      "finding": "QC2 remains a valid candidate not promoted as the formal final runtime."
+    }
+  },
+  "constraints": {
+    "hash_only_verification": true,
+    "no_checkpoint_deserialization": true,
+    "no_formal_test_material_in_default_archive": true,
+    "no_frozen_asset_rewrite": true,
+    "absolute_path_contracts_are_not_portable": true
+  }
+}
