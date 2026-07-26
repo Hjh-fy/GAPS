@@ -1,0 +1,4 @@
+Method,Input/dependency,S_CC RMSE (ppm),S_ALL RMSE (ppm),Decision
+Rich features only,104D,14.4546 ± 0.2621,20.4668 ± 3.4577,baseline
+Federated-H1 personalization,104D + one source reference,11.6339 ± 0.3142,18.5080 ± 4.3211,selected: 1% non-inferior
+All-prior personalization,104D + three source references,11.5208 ± 0.3148,18.5982 ± 4.4192,absolute S_CC lower
