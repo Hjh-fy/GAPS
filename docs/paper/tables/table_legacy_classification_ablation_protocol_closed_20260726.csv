@@ -1,0 +1,11 @@
+﻿Configuration,Target labels,Distribution alignment,Semantic constraint,Accuracy,Evidence status
+A0,0,None,None,0.265441,LEGACY_SINGLE_SEED
+A0T,320,None,Target supervised CE,0.982353,LEGACY_SINGLE_SEED
+A5,320,Historical CORAL/MMD/stage/adversarial,Historical alignment + replay,0.730147,LEGACY_HISTORICAL_SEMANTICS
+A6,320,None,Historical prototype/consistency/residual,0.980147,LEGACY_HISTORICAL_SEMANTICS
+B1,320,Corrected class-conditional CORAL,Semantic core,0.987500,LEGACY_SINGLE_SEED_CORRECTED_SCREEN
+B2,320,Corrected global/class MMD2,Semantic core,0.992647,LEGACY_SINGLE_SEED_CORRECTED_SCREEN
+B3,320,Corrected cross-domain class/phase stage MMD2,Semantic core,0.988971,LEGACY_SINGLE_SEED_CORRECTED_SCREEN
+B4,320,Corrected Wasserstein-min adversarial,Semantic core,0.989706,LEGACY_SINGLE_SEED_CORRECTED_SCREEN
+B5 (v3 screen),320,Corrected full distribution terms,Semantic core,0.988971,LEGACY_SINGLE_SEED_CORRECTED_SCREEN
+Final B5 (seed42),320,Corrected full distribution terms,Semantic core,0.980147,FINAL_FROZEN_CANONICAL

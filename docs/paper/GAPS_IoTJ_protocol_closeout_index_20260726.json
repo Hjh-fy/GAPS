@@ -1,0 +1,60 @@
+{
+  "schema_version": "iotj.manuscript_protocol_closeout.index.v1",
+  "status": "NO_FURTHER_EXPERIMENTS_REQUIRED_FOR_CURRENT_SCOPE",
+  "protocol_name": "calibrated-target held-out-window evaluation",
+  "source": {
+    "path": "docs/paper/GAPS_IoTJ_evidence_frozen_20260726.zh.html",
+    "sha256": "b7b0aace15367c0ffd60fb3fed5bf93a4ca269f0bd6b74e07836aba4f63a96a4",
+    "immutable": true
+  },
+  "output": {
+    "path": "docs/paper/GAPS_IoTJ_protocol_closed_20260726.zh.html",
+    "bytes": 30908,
+    "sha256": "3e23158f3772865da6e804d5799ad5a6988de7cb367637abc44c0e67d61881fa"
+  },
+  "legacy_ablation_table": {
+    "path": "docs/paper/tables/table_legacy_classification_ablation_protocol_closed_20260726.csv",
+    "rows": 10,
+    "bytes": 1043,
+    "sha256": "74171741d904b98579dfa78b636b353f91ed2d901b35be001d1ad2fc442ff7b5",
+    "historical_a7_included": false
+  },
+  "test_access_boundary": {
+    "test_labels_used_for_model_fitting": false,
+    "test_labels_used_for_hyperparameter_selection": false,
+    "test_labels_used_for_alpha_selection": false,
+    "test_labels_used_for_qc_threshold_selection": false,
+    "test_labels_used_for_checkpoint_selection": false,
+    "method_selection_after_evidence_freeze": false
+  },
+  "current_scope_new_training_items": [],
+  "cancelled_submission_experiments": [
+    "original-file-level retraining",
+    "FedProx",
+    "FedAdam",
+    "SCAFFOLD",
+    "multi-target reruns",
+    "new QC",
+    "new regression heads"
+  ],
+  "future_work_only": [
+    "unseen-session or original-file-independent evaluation",
+    "additional physical target devices",
+    "stronger privacy protection for sufficient statistics"
+  ],
+  "supporting_documents": [
+    {
+      "path": "docs/experiments/iotj_manuscript_protocol_scope_lock_20260726.zh.md",
+      "bytes": 2764,
+      "sha256": "9497c22cf7605322613e07ea871894dc1e9287ec8c84bc7127fca327a38d376a"
+    },
+    {
+      "path": "docs/experiments/iotj_protocol_closeout_number_consistency_audit_20260726.md",
+      "bytes": 3381,
+      "sha256": "10d6ee9ba15951376fa03a82676132161290f7e6518e9590447a2e82e4eede98"
+    }
+  ],
+  "experiments_run": 0,
+  "frozen_results_modified": false,
+  "generated_at": "2026-07-26T20:54:00+08:00"
+}
