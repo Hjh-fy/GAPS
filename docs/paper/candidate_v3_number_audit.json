@@ -1,0 +1,188 @@
+{
+  "schema_version": "gaps.iotj.submission_candidate_v3.number_audit.v1",
+  "audit_date": "2026-07-27",
+  "status": "PASS",
+  "readiness": "READY_FOR_HUMAN_REVIEW_NOT_YET_FROZEN_FOR_ENGLISH",
+  "candidate": {
+    "path": "docs/paper/GAPS_IoTJ_submission_candidate_v3.zh.html",
+    "sha256": "83f665d0442cbcef2aa0f9b931c9efd758b25926dbca2dcef1dbd7fb3f9c1422",
+    "parent_candidate_path": "docs/paper/GAPS_IoTJ_submission_candidate_v2.zh.html",
+    "parent_candidate_sha256": "57eef73898122c73eb1c5ec4727c3f578d34f5ee2e8b09f627d16675c3bb9860",
+    "parent_candidate_commit": "e800605e1441f6311f5738ed53f73f0b8618ee64",
+    "system_release_freeze_commit": "36ee62339c025064cb415bfd13c5e7139a954edc",
+    "paper_evidence_freeze_commit": "b78e8bec989cc8a925698d682aff05efe859fcd2",
+    "v1_or_v2_overwritten": false
+  },
+  "authoritative_sources": [
+    {
+      "path": "docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md",
+      "sha256": "bc3c22fe701853e8b978a5de156d34e32216b16708d89214a847778abd595dad"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/b5_classification_multiseed_summary.csv",
+      "sha256": "11adaa5202268a206ac01f49fe8ca515716d2e80b9cfc88c5877f3ef6ef925c8"
+    },
+    {
+      "path": "results/iotj_b5_regression_multiseed_20260724/regression_multiseed_summary.csv",
+      "sha256": "5f6e3078bb82652d5268fda9e626c85dac07976e385bebf76ccb6fbaa4541378"
+    },
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/benchmarks/benchmark_summary.csv",
+      "sha256": "528f60a0f87d94ecc748001c580e32d5ae67de3bbeb78b2848a1efe5baaf654c"
+    },
+    {
+      "path": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_test_summary.csv",
+      "sha256": "9901a8adf53f59b847497d19349d2ec9bd789fd141cb692919a9da4a1d8eb08e"
+    },
+    {
+      "path": "results/iotj_b5_c5_deployment_p1_20260722/h8_no_rescue/r4_policy.json",
+      "sha256": "18b6c14373018474807eec2bd19a0b508b75adfbf994b0821a786a11def9c263"
+    },
+    {
+      "path": "run_source_lightweight_regression_head_ablation.py",
+      "sha256": "6e98b5953f50016fce0c583e9d4b5d2a4fe84647d6a8dd864120000ceda931ec"
+    },
+    {
+      "path": "run_source_augmented_target_ridge_eval.py",
+      "sha256": "1e48e696470d12b42d921032dc823d14a42725fb1f757df8f0f273b5252e4014"
+    },
+    {
+      "path": "gaps_deploy/c5_h8_runtime.py",
+      "sha256": "942e1b9e62fb222f941eea21015f8c5d1a5b8034635eaebfb308b166882d887c"
+    }
+  ],
+  "checked_number_groups": [
+    {
+      "id": "DATA_PROTOCOL",
+      "values": {
+        "input_shape": [100, 8],
+        "source_clients": ["C1", "C2"],
+        "target_client": "C5",
+        "source_train_rows_per_client": 2360,
+        "source_adaptation_reference_rows_per_client": 320,
+        "target_calibration_rows": 320,
+        "target_test_rows": 1360,
+        "gas_count": 4,
+        "concentration_levels_per_gas": 10,
+        "raw_hz": 100,
+        "target_hz": 10,
+        "window_points": 100,
+        "stride_points": 50
+      },
+      "result": "MATCH",
+      "boundary": "calibrated-target held-out-window evaluation; not original-file/session independent"
+    },
+    {
+      "id": "CLASSIFICATION_FIVE_SEED",
+      "scope": "five complete classifier training seeds; C5 test N=1360 per seed",
+      "values": {
+        "accuracy_mean": 0.989118,
+        "accuracy_sample_sd": 0.005983,
+        "accuracy_min": 0.980147,
+        "accuracy_max": 0.994853,
+        "macro_f1_mean": 0.989134,
+        "macro_f1_sample_sd": 0.005960,
+        "nll_mean": 0.100237,
+        "ece_mean": 0.010607
+      },
+      "result": "MATCH"
+    },
+    {
+      "id": "REGRESSION_FIVE_ROUTE",
+      "scope": "five frozen classifier routes; source heads fixed; target Ridge recomputed per route",
+      "values": {
+        "rich_only_scc_rmse_mean_sd_ppm": [14.4546, 0.2621],
+        "federated_h1_scc_rmse_mean_sd_ppm": [11.6339, 0.3142],
+        "all_prior_scc_rmse_mean_sd_ppm": [11.5208, 0.3148],
+        "federated_h1_delta_vs_rich_only_ppm": -2.8208,
+        "all_prior_advantage_vs_h1_ppm": 0.1131,
+        "federated_h1_relative_delta_vs_all_prior_percent": 0.981637,
+        "performance_retention_tolerance_percent": 1.0,
+        "all_prior_lower_scc_routes": "5/5"
+      },
+      "result": "MATCH",
+      "claim_boundary": "descriptive paired-route result and engineering performance-retention rule; not a formal noninferiority test"
+    },
+    {
+      "id": "ALL_PRIOR_INPUT_CONTRACT",
+      "values": {
+        "rich_feature_dimension": 104,
+        "h1_output_dimension": 1,
+        "h2_output_dimension": 1,
+        "h3_output_dimension": 1,
+        "target_input_dimension": 107,
+        "h2_hidden_units": 16,
+        "h3_hidden_units": 16,
+        "h2_frozen_alpha_per_gas": 0.01,
+        "h3_frozen_alpha": 0.1,
+        "mlp_max_iter": 800
+      },
+      "result": "MATCH"
+    },
+    {
+      "id": "H1_EQUIVALENCE",
+      "values": {
+        "selected_alpha_agreement": "4/4",
+        "max_prediction_abs_diff_ppm": 6.2532e-08,
+        "s_all_rmse_abs_diff_ppm": 9.4460e-11,
+        "s_cc_rmse_abs_diff_ppm": 6.7040e-12
+      },
+      "result": "MATCH",
+      "claim_boundary": "machine-precision numerical agreement; not a privacy or network-deployment claim"
+    },
+    {
+      "id": "PARAMETERS_AND_PACKAGE",
+      "values": {
+        "formal_regression_parameters": 28737,
+        "federated_h1_parameters": 420,
+        "target_ridge_parameters": 424,
+        "simplified_total_regression_parameters": 844,
+        "classifier_parameters_separately_counted": 22765,
+        "formal_bundle_bytes": 2971538,
+        "simplified_core_bundle_bytes": 289916,
+        "candidate_qc_bundle_bytes": 1065632
+      },
+      "result": "MATCH"
+    },
+    {
+      "id": "RUNTIME_LATENCY",
+      "scope": "CPU, batch=1, threads=1, warmup=50, runs=500, fixed C5 test order",
+      "values": {
+        "formal_pc_p50_p95_ms": [5.434, 13.945],
+        "formal_pi_p50_p95_ms": [4.571, 4.621],
+        "simplified_pc_p50_p95_ms": [4.072, 14.786],
+        "simplified_pi_p50_p95_ms": [3.725, 3.765],
+        "candidate_qc_pc_p50_p95_ms": [5.477, 19.312],
+        "candidate_qc_pi_p50_p95_ms": [4.523, 4.571]
+      },
+      "result": "MATCH",
+      "claim_boundary": "no all-platform or all-percentile improvement claim"
+    },
+    {
+      "id": "QC_DIAGNOSTICS",
+      "values": {
+        "formal_hc90_co_coverage_percent": 84.71,
+        "formal_hc90_co_rmse_ppm": 19.7243,
+        "candidate_hc90_co_coverage_percent": 64.12,
+        "candidate_hc90_co_rmse_ppm": 20.8318
+      },
+      "result": "MATCH",
+      "claim_boundary": "candidate evaluated but not adopted; formal selective-output baseline retained"
+    }
+  ],
+  "structural_checks": {
+    "logical_main_tables": 5,
+    "main_figures": 5,
+    "appendix_support_tables": 6,
+    "references": 19,
+    "html_table_tags_balanced": true,
+    "html_figure_tags_balanced": true,
+    "html_section_tags_balanced": true
+  },
+  "numeric_conflicts": [],
+  "numeric_conflict_count": 0,
+  "frozen_result_files_modified": false,
+  "new_experiment_training_inference_evaluation_or_benchmark_run": false,
+  "formal_test_accessed": false,
+  "final_decision": "PASS"
+}
