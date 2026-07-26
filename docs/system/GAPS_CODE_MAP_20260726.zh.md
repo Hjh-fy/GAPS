@@ -104,6 +104,9 @@ Runtime v5 当前没有独立通用 inference CLI；正式 API 是 Python class�
 | `scripts/build_iotj_final_system_evidence.py` | `verify_frozen_assets`, `build` | final evidence builder | frozen results | system tables/figures | completed | canonical reporting | 否 |
 | `scripts/finalize_iotj_final_system_evidence.py` | `finalize` | closeout | benchmark root | report/index/SHA | completed | canonical reporting | 否 |
 | `scripts/freeze_iotj_paper_evidence.py` | evidence/table/figure/manuscript builders | paper freeze | approved results | `docs/paper_evidence_freeze/` + frozen HTML | completed | canonical paper evidence | 否 |
+| `scripts/close_iotj_manuscript_protocol.py` | `main`, SHA/replace guards | protocol closeout maintainer | immutable evidence-frozen HTML | protocol-closed HTML/table/index | audited; no rerun | canonical document provenance | 否 |
+| `docs/system/benchmark_command_manifest_20260725.json` | reconstructed argv registry | release maintainer | frozen protocol/results/argparse | known/unknown command fields | read-only reconstruction | benchmark provenance aid | 否 |
+| `RELEASE_READINESS.md` | release gate summary | release maintainer | current code/evidence/assets audit | readiness/blockers | current | canonical release status | 否 |
 
 ## 11. Tests
 

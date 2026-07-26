@@ -63,7 +63,18 @@ RG1 相对 RG2 的 mean S_CC 退化为 `0.981637%`，满足预注册 `≤1%` 非
 | S_CC RMSE | `11.3415985730 ppm` | seed42；1333 correct-route rows | regression capability |
 | CO RMSE | `22.6649997607 ppm` | seed42；all CO rows | appendix |
 | CO-high RMSE | `35.0212127843 ppm` | seed42；102 rows | appendix |
-| target Ridge parameters | `424` | four per-gas 105D heads | model-only |
+| Federated H1 parameters | `420` | four per-gas 104D Ridge heads：`4 × (104 + 1)` | regression model-only |
+| target Ridge parameters | `424` | four per-gas 105D Ridge heads：`4 × (105 + 1)` | regression model-only |
+| total regression parameters | `844` | Federated H1 `420` + target Ridge `424` | excludes classifier |
+| classifier parameters | `22,765` | frozen B5；separately counted | not included in regression total |
+
+参数分解由冻结资产的四个 coefficient vectors 计数：H1 每个 gas 为
+`104 weights + 1 intercept`，target Ridge 每个 gas 为
+`105 weights + 1 intercept`。资产 SHA256 分别为
+`1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4` 和
+`2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de`；
+系统效率表 SHA256 为
+`2447f694906be3bd200ecbbfa15ebc2c3869ddf537578d079a678eeca705fdd4`。
 
 该 `S_CC` 不是自动输出 RMSE，也不是 five-seed mean。
 
@@ -94,7 +105,10 @@ RG1 相对 RG2 的 mean S_CC 退化为 `0.981637%`，满足预注册 `≤1%` 非
 | v5 regression core | 844 | 289,916 | 4.0716 / 14.7863 | 195.711 | 3.72454 / 3.76499 | 234.234 | 52.35 | final simplified regression |
 | v5 QC2 | 844 | 1,065,632 | 5.47655 / 19.3115 | 197.895 | 4.52254 / 4.57112 | 235.141 | 54.55 | valid candidate, not promoted |
 
-三个对象均包含 22,765 个 classifier parameters。表中的 regression params 不包括非训练 QC reference/policy bytes。Pi 三次均为 `throttled=0x0`。
+三个对象均另含 `22,765` 个 classifier parameters；该值与 regression params
+分开计数。v5 的 `844` 明确分解为 Federated H1 `420` + target Ridge `424`。
+表中的 regression params 不包括非训练 QC reference/policy bytes。Pi 三次均为
+`throttled=0x0`。
 
 ## 8. QC quality–coverage
 

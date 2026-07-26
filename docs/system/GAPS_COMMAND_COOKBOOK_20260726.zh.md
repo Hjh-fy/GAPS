@@ -322,7 +322,7 @@ python -m scripts.evaluate_iotj_runtime_v5_qc evaluate-test ...
 
 ## N. PC/Pi benchmark
 
-精确脚本：
+脚本参数合同：
 
 ```powershell
 python -m scripts.benchmark_iotj_final_runtime `
@@ -333,6 +333,10 @@ python -m scripts.benchmark_iotj_final_runtime `
   --device cpu --threads 1 --batch-size 1 --warmup 50 --runs 500 `
   --output <new_result.json> --rows-output <new_rows.csv>
 ```
+
+2026-07-25 正式运行的已知参数、结果路径和未知原始 shell 字段，见只读重建
+`docs/system/benchmark_command_manifest_20260725.json`。该文件没有重跑 benchmark，
+也不声称恢复了未被记录的 Python executable、working directory 或 shell quoting。
 
 | machine | type | reads test | inputs | output | formal | rerun |
 |---|---|---|---|---|---|---|

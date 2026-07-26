@@ -114,7 +114,7 @@
 
 ### `MANUAL_REVIEW_KEEP_OR_COMMIT`
 
-- `scripts/close_iotj_manuscript_protocol.py`：已提交 protocol-close 文档的生成器，建议单独审查后纳入 Git；
+- `scripts/close_iotj_manuscript_protocol.py`：已完成静态安全/provenance 审查并决定纳入 Git，不再属于清理候选；
 - `scripts/audit_iotj_minimal_experiment_gap.py`；
 - `docs/experiments/iotj_minimal_experiment_gap_audit_20260726.zh.md`；
 - `docs/experiments/iotj_minimal_experiment_gap_audit_index_20260726.json`；

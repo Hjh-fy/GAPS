@@ -76,9 +76,12 @@ benchmark 脚本可加载它，但 benchmark CLI 不是通用部署 inference CL
 
 ### 7. `gaps_deploy/final_runtime.py` 应标为 v4/legacy 还是重命名？
 
-**标为 Runtime v4 formal baseline wrapper，不建议当前重命名。**
+**标为 maintained legacy C12→C345 package wrapper，不建议当前重命名。**
 
-它的内部 R3aK16/AutoV2 schema 是历史实现，但 v4 仍是正式 selective-output baseline。重命名会破坏历史命令与 import；当前通过文档显式标记即可。
+它的内部 R3aK16/AutoV2 schema 和 package contract 是历史实现。正式 C5
+Runtime-v4 selective-output baseline API 是
+`gaps_deploy.c5_h8_runtime.C5H8Runtime`，不能把 `final_runtime.py` 本身写成正式
+C5 v4 唯一入口。重命名会破坏历史命令与 import；当前通过文档显式标记即可。
 
 ### 8. README 中哪些旧命令已不存在？
 
@@ -108,16 +111,20 @@ commit：`2e0fe7c985fc2f487863f65a21f957a4c33e82bd`
 
 ### 11. 是否存在只在本地、没有 Git provenance 的关键命令？
 
-**存在局部工程缺口。**
+**原始 shell 捕获仍有边界，但 provenance 缺口已在 2026-07-26 文档收口中处理。**
 
 - B5 seeds 43–46 controller launch `.cmd` 已进入 Git；
 - server/client argv 已进入 command manifests 和 run_config；
 - H1/runtime-v5/benchmark 的代码与结果 manifest 已进入 Git；
-- 但最终 benchmark 的“逐平台完整 shell invocation”没有独立 command manifest，现有证据主要是 argparse、protocol 和 result records；
-- `scripts/close_iotj_manuscript_protocol.py` 当前仍未跟踪，是 protocol-close 文档生成器的 provenance 缺口。
+- 最终 benchmark 原始逐平台 shell invocation 没有被完整捕获；现已新增
+  `docs/system/benchmark_command_manifest_20260725.json`，明确以 argparse、
+  protocol、result records 和保留的 Pi package 做只读重建，并保留未知字段；
+- `scripts/close_iotj_manuscript_protocol.py` 已通过静态安全/provenance 审查，
+  本轮决定纳入 Git；它只做冻结 SHA 守卫和确定性文档生成。
 
 recommended owner：实验 registry / release 维护者。
-next inspection action：后续文档维护提交中单独审查并决定是否纳入这两个 provenance 资产；不重新运行 benchmark。
+next inspection action：release 阶段补齐 external asset archive 与 clean-checkout
+receipt；不重新运行 benchmark。
 
 ### 12. 是否存在两个不同 checkpoint 被称为 final B5？
 

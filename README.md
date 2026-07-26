@@ -16,6 +16,7 @@
 > - `docs/system/GAPS_COMMAND_COOKBOOK_20260726.zh.md`
 > - `docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md`
 > - `docs/system/GAPS_REPOSITORY_ARCHIVE_INVENTORY_20260726.zh.md`
+> - `RELEASE_READINESS.md`
 >
 > 本文下方 2026-07-15 及更早的 R3aK16/AutoV2/H2.3/H8 内容保留为历史代码
 > 导航；与上述文档冲突时，以 `docs/system/` 和 protocol-close index 为准。
@@ -210,11 +211,12 @@ co_corrected_ppm: CO-specific 增强层输出，不覆盖 final_ppm
 
 `gaps_flower/regression_client.py` 和 `gaps_flower/regression_server.py` 仍有参考价值，但当前主线更多通过 `run_time_aware_raw_calibrated_qc_eval.py`、`gaps_flower/regression_task.py` 和 `gaps_deploy/*` 串起回归/QC 流程。
 
-## 主线四：部署运行时与最终包
+## 历史主线四：C12→C345 package wrapper
 
 主要文件：
 
 ```text
+gaps_deploy/c5_h8_runtime.py
 gaps_deploy/final_runtime.py
 scripts/build_final_deployment_package.py
 scripts/validate_final_deployment_bundle.py
@@ -225,8 +227,11 @@ validate_package_runtime.py
 功能关系：
 
 ```text
+gaps_deploy/c5_h8_runtime.py
+-> C5H8Runtime：formal C5 Runtime-v4 selective-output baseline API
+
 gaps_deploy/final_runtime.py
--> 面向最终部署包的运行时封装
+-> maintained legacy C12→C345 package wrapper，不是正式 C5 v4 唯一入口
 
 scripts/build_final_deployment_package.py
 -> 构建最终部署包入口

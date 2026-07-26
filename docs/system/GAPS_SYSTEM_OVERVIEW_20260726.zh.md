@@ -33,7 +33,7 @@ GAPS 面向异构金属氧化物气体传感器的跨设备分类、浓度估计
 flowchart LR
     C1["Pi C1<br/>source windows"] --> FL["B5 Flower local training"]
     C2["ECS C2<br/>source windows"] --> FL
-    FL --> AVG["Alibaba ECS<br/>FedAvg + semantic aggregation"]
+    FL --> AVG["Alibaba ECS<br/>FedAvg-based model aggregation +<br/>semantic statistics collection"]
     C5CAL["C5 calibration<br/>320 windows"] --> DA["calibration-assisted<br/>server DA"]
     AVG --> DA
     DA --> B5["Frozen B5 classifier<br/>predicted gas route"]
