@@ -8,11 +8,11 @@
 | 维度 | 状态 | 说明 |
 |---|---|---|
 | Paper evidence | `COMPLETE` | evidence freeze、protocol close、claim–evidence 与正式数字已经冻结。 |
-| Code import/tests | `COMPLETE_FOR_AUDITED_SCOPE` | canonical imports、CLI help、compileall 及 42 项合同/runtime/bundle 测试通过。 |
+| Code import/tests | `COMPLETE_FOR_AUDITED_SCOPE` | canonical imports、CLI help、compileall、既有合同测试及 portable release 相关测试通过。 |
 | Release provenance | `CLOSED` | 35 项外部资产已按版本化 manifest、bytes 和 SHA256 锁定；不代表 archive 已生成。 |
-| External archive | `PENDING` | 正式 classifier、runtime bundle、policy 和 lineage 仍未形成 portable release archive。 |
-| Runtime v5 CLI | `MISSING` | Runtime v5 regression core 目前提供 Python API；benchmark CLI 不是部署 inference CLI。 |
-| Clean-checkout deployment | `NOT_COMPLETE` | 干净 Git checkout 尚不能仅凭 tracked bytes 完成正式 v4/v5 部署。 |
+| External archive | `V5_CORE_COMPLETE` | Runtime-v5 core archive、SHA256SUMS、portable binding 与 synthetic examples 已形成；不覆盖 v4/QC。 |
+| Runtime v5 CLI | `AVAILABLE_FOR_CORE` | `python -m gaps_deploy.runtime_v5_cli` 支持 verify、describe 与 inference。 |
+| Clean-checkout deployment | `RUNTIME_V5_CORE_READY` | 固定 commit 的 fresh checkout、archive restore、load 和 synthetic smoke 已通过；full system 未闭合。 |
 
 因此当前状态是：
 
@@ -20,10 +20,11 @@
 PAPER_EVIDENCE_READY
 CODE_CONTRACT_READY
 RELEASE_PROVENANCE_CLOSED
-RELEASE_ARCHIVE_PENDING
+CLEAN_CHECKOUT_RUNTIME_V5_CORE_READY
 ```
 
-不能表述为 `CLEAN_CHECKOUT_DEPLOYMENT_READY`。
+不能表述为 `CLEAN_CHECKOUT_FULL_SYSTEM_READY` 或
+`FULL_V4_V5_QC_REPRODUCTION_READY`。
 
 ## 1. 已完成
 
@@ -43,16 +44,33 @@ RELEASE_ARCHIVE_PENDING
 | `gaps_deploy.c5_h8_runtime.C5H8Runtime` | formal C5 Runtime-v4 baseline API |
 | `gaps_deploy/final_runtime.py` | maintained legacy C12→C345 package wrapper |
 | `C5FederatedSourceRidgeRuntime` | final Runtime v5 regression-core Python API |
+| `gaps_deploy.runtime_v5_cli` | portable Runtime-v5 core thin inference CLI |
+| `gaps_deploy.runtime_v5_portable` | strict relative-path portable binding loader |
 | `C5FederatedSourceRidgeQCRuntime` | v5 QC2 candidate Python API |
 | `scripts/benchmark_iotj_final_runtime.py` | evidence benchmark tool；不是部署 CLI |
 
-## 3. 干净检出仍缺什么
+## 3. Runtime-v5 core portable closure
+
+以下内容已经闭合：
+
+- `release/gaps_runtime_v5_core_20260726.zip`
+- archive SHA256：
+  `740e8237384041523e51969b88795c27e43e88650c73e1a5209092880cf547de`
+- portable binding schema：`gaps.runtime_v5.portable_binding.v1`
+- B5 classifier、Federated H1、105D target Ridge、calibration lock；
+- SHA256SUMS、archive manifest、provenance mapping；
+- 不含正式 C5 test、HC95/HC90 records、offline predictions 或 QC policy；
+- fresh checkout receipt：
+  `docs/system/iotj_runtime_v5_clean_checkout_receipt_20260726.json`。
+
+因此 Runtime-v5 regression core 已能从 tracked archive 在新的 checkout 中恢复并运行
+synthetic inference。
+
+## 4. 完整系统仍缺什么
 
 正式运行至少需要恢复 manifest 绑定的：
 
-- B5 classifier checkpoint；
 - Runtime-v4 bundle、H2.3/R4/QC references 与 policy；
-- Runtime-v5 Federated H1 和 105D target Ridge；
 - Runtime-v5 QC2 policy（仅在复现 candidate 时）；
 - C5 输入数据或等价的正式输入 package。
 
@@ -69,20 +87,16 @@ RELEASE_ARCHIVE_PENDING
 offline parity reference；现有 v4/v5 contracts 还含冻结绝对路径。因此 raw copy
 不是 portable deployment，不能据此宣称 clean-checkout ready。
 
-## 4. Release 阻塞项
+## 5. Full-system 阻塞项（不属于本轮范围）
 
-1. 根据已锁定 provenance manifest 建立只读、版本化的 external asset release archive；
-2. 生成独立 portable binding contracts，将 archive 内资产与冻结 contract/SHA
-   双向绑定，且不覆盖原合同；
-3. 增加 Runtime v5 独立 inference CLI，明确输入/输出 schema 与 fail-closed
-   行为；
-4. 在全新 checkout + 恢复后的 release archive 上完成 import、bundle load 和
-   synthetic smoke contract；
-5. 生成 clean-checkout deployment receipt。
+1. Runtime-v4 portable loader/package；
+2. Runtime-v5 QC2 candidate 的独立 reproduction closure；
+3. 完整正式输入 package 的分发策略。
 
-以上是工程发布动作，不要求重训、重评估、重跑 benchmark 或重新打开 test。
+这些未完成项不影响 `CLEAN_CHECKOUT_RUNTIME_V5_CORE_READY`，但阻止声明 full system
+ready。本轮按约束不继续开发它们。
 
-## 5. Benchmark provenance
+## 6. Benchmark provenance
 
 既有命令的只读重建见：
 
@@ -92,7 +106,7 @@ offline parity reference；现有 v4/v5 contracts 还含冻结绝对路径。因
 working directory。它不替代正式 benchmark 结果，也不声称完整原始 shell invocation
 曾被捕获。
 
-## 6. 冻结边界
+## 7. 冻结边界
 
 发布整理不得修改：
 
