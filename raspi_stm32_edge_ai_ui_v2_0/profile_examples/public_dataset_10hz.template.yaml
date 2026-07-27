@@ -1,0 +1,21 @@
+# Design profile only. Build a loadable manifest.json after the frozen model
+# backend and physical input contract are available.
+dataset_profile: public_gas_drift_timeaware_10hz
+device_profile: public_dataset_replay
+purpose: benchmark_and_pi_replay
+provenance:
+  source_original_hz: 100
+  preprocessing: time-aware resampling to 10 Hz
+runtime:
+  input_hz: 10
+  unstable_duration_s: 20
+  baseline_duration_s: 30
+  window_duration_s: 10
+  stride_duration_s: 5
+  input_shape: [100, 8]
+  normalization_enabled: false
+  feature_semantics: public_dataset_relative_conductance
+notes:
+  - This profile is not valid for the laboratory STM32 sensors.
+  - Use the same frozen split and preprocessor for PC/Pi replay parity.
+  - The current full GAPS FinalDeployRuntime needs a service adapter or a parity-tested export.

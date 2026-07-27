@@ -1,0 +1,91 @@
+{
+  "schema_version": "gaps.edge_ui.responsive_validation.v1",
+  "created_at": "2026-07-27",
+  "status": "PASS",
+  "scope": "UI layout and deployment-equivalence validation; not a model benchmark",
+  "device": {
+    "host": "gaps@192.168.137.172",
+    "platform": "Raspberry Pi 5",
+    "display_backend": "Wayland",
+    "desktop_output": [
+      1920,
+      1080
+    ]
+  },
+  "package": {
+    "name": "gaps_runtime_v5_public_c5_10hz_replay",
+    "fingerprint": "8029dada9a95fccd4db9838d5004bef4e5a2a4493f178f66b79e23ac95dad5ce",
+    "model_backend": "gaps_runtime_v5",
+    "runtime_v5_release_id": "gaps_runtime_v5_core_20260726",
+    "runtime_v5_qc_status": "disabled_pending_dependency_audit"
+  },
+  "checks": {
+    "python_compileall": "PASS",
+    "parser_self_test": "PASS",
+    "ui_logic_self_test": "PASS",
+    "schema_v2_package_self_test": "PASS",
+    "schema_v2_runtime_self_test": "PASS",
+    "runtime_v5_fail_closed_self_test": "PASS",
+    "pi_wayland_800x480_visual_smoke": "PASS",
+    "pi_wayland_1920_maximized_visual_smoke": "PASS",
+    "all_ai_cards_horizontally_visible_800x480": true,
+    "all_ai_cards_horizontally_visible_1920": true,
+    "qc_disabled_has_no_auto_output": true
+  },
+  "first_window_equivalence": {
+    "prediction_ppm_max_abs_difference": 2.842170943040401e-14,
+    "source_h1_ppm_max_abs_difference": 0.0,
+    "max_probability_abs_difference": 1.1920928955078125e-07,
+    "tolerance": 1e-06
+  },
+  "responsive_layout": {
+    "compact": {
+      "window_size": [
+        800,
+        480
+      ],
+      "edge_viewport_size": [
+        790,
+        325
+      ],
+      "edge_content_size": [
+        790,
+        325
+      ],
+      "horizontal_overflow": false,
+      "vertical_overflow": false
+    },
+    "large": {
+      "window_size": [
+        1920,
+        1018
+      ],
+      "edge_viewport_size": [
+        1890,
+        851
+      ],
+      "edge_content_size": [
+        1890,
+        967
+      ],
+      "horizontal_overflow": false,
+      "vertical_scroll_for_secondary_controls": true
+    }
+  },
+  "artifacts": {
+    "source": {
+      "raspi_stm32_edge_ai_ui_v2_0/edge_ui_app.py": "50c13d63e42e7a82cd74b86c0b7800f3d57a6a9a1be302139f6cf4f2538b879e",
+      "raspi_stm32_edge_ai_ui_v2_0/qt_runtime_v5_smoke_test.py": "f3ee670118a133dd2a4e23d0724a2e4337c01a77aece9fae94809e602675870b",
+      "raspi_stm32_edge_ai_ui_v2_0/README.md": "20dd9fc9f8906cf65a659a1a71ad5e673497887e96d705dd769e588ff5f2caf2",
+      "raspi_stm32_edge_ai_ui_v2_0/UI_RESPONSIVE_REDESIGN_20260727.zh.md": "8d5404e259d3230eb30eea77d50090d62ec54b1c7be082e14641a198bae953b3"
+    },
+    "screenshots": {
+      "ui_pi_responsive_800x480_20260727_r6.png": "d98e5a499196466bb4981d55d4a7d860222a08df10c65450685dca5dca66220b",
+      "ui_pi_responsive_1920_20260727_r4.png": "f41569f8cde511e67417b00a1fdf4a326b19a84a68331f61f0153bf9acd068ea"
+    },
+    "smoke_results": {
+      "ui_pi_responsive_800x480_visual_smoke_20260727_r6.json": "92a62f5dc8bbc10917c3fcccc328c7062474503174fb02290aafb86e609f637f",
+      "ui_pi_responsive_1920_visual_smoke_20260727_r4.json": "f2e782683d9ab1458124599fe6d4f495ae164b38d827443a0ca11d7d2e307035"
+    }
+  }
+}

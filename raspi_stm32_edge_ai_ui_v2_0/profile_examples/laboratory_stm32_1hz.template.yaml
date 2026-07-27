@@ -1,0 +1,30 @@
+# Design profile only. Replace all placeholders from the verified STM32
+# firmware and sensor circuit before building a loadable manifest.json.
+dataset_profile: laboratory_stm32_1hz_v1
+device_profile: stm32_gas_board_v1
+purpose: live_edge_inference
+runtime:
+  input_hz: 1
+  target_hz: 1
+  unstable_duration_s: 20
+  baseline_duration_s: 60
+  window_duration_candidates_s: [30, 60, 100]
+  selected_window_duration_s: null
+  stride_duration_s: null
+  normalization_enabled: null
+  phase_mode: event_driven
+  inference_phases: [exposure, recovery]
+hardware_contract:
+  sensor_fields: []
+  rload_ohm: []
+  adc_vref: 3.3
+  adc_max: 4095
+  divider_polarity_verified: false
+  temperature_offset_verified: false
+  frame_sequence_available: false
+  device_monotonic_timestamp_available: false
+  crc_available: false
+notes:
+  - Train a separate laboratory model; do not reuse public sensor weights by default.
+  - Select the window duration using laboratory calibration data only.
+  - Keep the final test split untouched until the full pipeline is frozen.

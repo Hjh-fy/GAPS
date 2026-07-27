@@ -1,0 +1,5 @@
+# Deployment packages are hash-locked artifacts. Preserve every byte exactly.
+deployment_packages/** -text
+
+# Raspberry Pi launch helpers must remain executable shell text after checkout.
+*.sh text eol=lf

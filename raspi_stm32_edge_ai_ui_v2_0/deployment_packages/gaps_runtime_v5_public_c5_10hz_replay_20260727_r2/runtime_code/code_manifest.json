@@ -1,0 +1,110 @@
+{
+  "schema_version": "gaps.runtime_v5.code_bundle.v1",
+  "source_commit": "e800605e1441f6311f5738ed53f73f0b8618ee64",
+  "files": {
+    "gaps_deploy/__init__.py": {
+      "bytes": 1044,
+      "sha256": "5fec9c58a6f9572a97ea59155dec4caee39c963d33615d00e411733e4e62e3ee"
+    },
+    "gaps_deploy/build_package.py": {
+      "bytes": 16042,
+      "sha256": "da2c7492427363ee3cf6ea98ea2531437ff92059fe524040d22d97af88487ce8"
+    },
+    "gaps_deploy/build_per_client_packages.py": {
+      "bytes": 18232,
+      "sha256": "22ee4e663f3564853dce69a1565b5a193e2dcf56a4d4a7ee9f9847ab788cb92c"
+    },
+    "gaps_deploy/build_qc_policy_from_predictions.py": {
+      "bytes": 10281,
+      "sha256": "a6c79a9aa4f5fd6d3704c725d7a4f08782ec7892866092dd8d635a0372b016c9"
+    },
+    "gaps_deploy/c5_federated_source_ridge_bundle.py": {
+      "bytes": 5642,
+      "sha256": "ad4f50ef55f63bf9c6837911237dae0a6d3a31d86346563232a3e386bafc9085"
+    },
+    "gaps_deploy/c5_federated_source_ridge_qc_runtime.py": {
+      "bytes": 6350,
+      "sha256": "15d600689cea5abbe18da20f74fd447ab10009b6b388105d3f99a9f09ce957da"
+    },
+    "gaps_deploy/c5_federated_source_ridge_runtime.py": {
+      "bytes": 12362,
+      "sha256": "6e56ee1f0689baaf364054019590a55fdfc5c6e7e2e0958cd2ace89fd221ba87"
+    },
+    "gaps_deploy/c5_h8_bundle.py": {
+      "bytes": 7240,
+      "sha256": "f2edf9737b6852df1769935064587b90039eca1d6e96938359a78e60189874b3"
+    },
+    "gaps_deploy/c5_h8_runtime.py": {
+      "bytes": 28538,
+      "sha256": "942e1b9e62fb222f941eea21015f8c5d1a5b8034635eaebfb308b166882d887c"
+    },
+    "gaps_deploy/calibration.py": {
+      "bytes": 18721,
+      "sha256": "79ed4abfa370553d897241b7ceb2e2ab2d74178147e6b0fe30b01dab696623ad"
+    },
+    "gaps_deploy/deploy_config.py": {
+      "bytes": 6427,
+      "sha256": "bd3a1c6b1b11c1267f44e6e96e498fb2ea414d05605d7bbd358ed5b139ae1a35"
+    },
+    "gaps_deploy/evaluate_qc_status_metrics.py": {
+      "bytes": 9608,
+      "sha256": "b8c3860f78f27fbe000b328f84501b66ae773c82f23b0d06e79ea114c96b2fa6"
+    },
+    "gaps_deploy/final_runtime.py": {
+      "bytes": 11199,
+      "sha256": "4a94e47d533c35ca18fa49024284a9b962cb9921016ae4dcb09b766e0093b47e"
+    },
+    "gaps_deploy/inference.py": {
+      "bytes": 46801,
+      "sha256": "6fcea7c2c62366e8c2264bee84b177cfeb7e1a38c787a7fa847de29badc9250d"
+    },
+    "gaps_deploy/package_contract.py": {
+      "bytes": 13002,
+      "sha256": "43aaeabfe650fe09279914ae182b33eaad12f087da5c601bf89c67284f9681a1"
+    },
+    "gaps_deploy/predict_client_file.py": {
+      "bytes": 17736,
+      "sha256": "8901bc9b49cf0b100d88991e7f791c4f7cb933a91ff2127cd07d6ecbf881c25d"
+    },
+    "gaps_deploy/qc_policy.py": {
+      "bytes": 35217,
+      "sha256": "c68f1eab2994cc441ad823e097ac5ebe802692f8ca144f732ae89cdfd28c6b49"
+    },
+    "gaps_deploy/r4a_residual.py": {
+      "bytes": 8719,
+      "sha256": "e302d8c6c37b26a8c45a98af5bd253aade01da50e96647a60bfa6addb92ebd40"
+    },
+    "gaps_deploy/response_anchoring.py": {
+      "bytes": 9883,
+      "sha256": "af48f87c93480e964c422bbc989ff6600fb3f78d933ad74be0d4eb687df1e95a"
+    },
+    "gaps_deploy/rich_residual.py": {
+      "bytes": 24844,
+      "sha256": "66477941ef68ce9834a8df9e2d3a3c099d79812e1d2a5c28852b77b602c99099"
+    },
+    "gaps_deploy/runtime_v5_cli.py": {
+      "bytes": 7831,
+      "sha256": "a0a0c49f2a3e582d6cbb901ce2ec03946087f1263155f079870f5fc920577fd8"
+    },
+    "gaps_deploy/runtime_v5_portable.py": {
+      "bytes": 8544,
+      "sha256": "6411ef6dc16899fd8342b278965564c74e282e67cf89f315ed3efe00451296af"
+    },
+    "gaps_deploy/runtime_v5_qc.py": {
+      "bytes": 20913,
+      "sha256": "04b4187fd8129faace786b1d15f44d2d9367d024b7542147d45d785a16b6d5d3"
+    },
+    "gaps_deploy/runtime_v5_qc_bundle.py": {
+      "bytes": 3197,
+      "sha256": "f72bebf216242370817cdc1616f6af0d7b1e59c53ce3617cacb8d058bdb988d4"
+    },
+    "gaps_deploy/validate_deployment_packages.py": {
+      "bytes": 15397,
+      "sha256": "9338779a5e3903b49d107b66101999d972a9057a1b9659ef8da646b05cf4ad6f"
+    },
+    "model.py": {
+      "bytes": 63314,
+      "sha256": "c1944c4408a1a9870ff07439ff5fb4cf1a7ab1145393a8aaad1a6c83ad7154f9"
+    }
+  }
+}

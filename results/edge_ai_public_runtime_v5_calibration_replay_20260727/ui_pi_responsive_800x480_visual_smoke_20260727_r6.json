@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "reason": "",
+  "ui_result_verified": true,
+  "max_abs_differences_first_window": {
+    "prediction_ppm": 2.842170943040401e-14,
+    "source_h1_ppm": 0.0,
+    "max_probability": 1.1920928955078125e-07
+  },
+  "package_name": "gaps_runtime_v5_public_c5_10hz_replay",
+  "package_fingerprint": "8029dada9a95fccd4db9838d5004bef4e5a2a4493f178f66b79e23ac95dad5ce",
+  "model_backend": "gaps_runtime_v5",
+  "runtime_v5_release_id": "gaps_runtime_v5_core_20260726",
+  "runtime_v5_qc_status": "disabled_pending_dependency_audit",
+  "state": "ready",
+  "layout_diagnostics": {
+    "compact_mode": true,
+    "window_size": [
+      800,
+      480
+    ],
+    "edge_viewport_size": [
+      790,
+      325
+    ],
+    "edge_content_size": [
+      790,
+      325
+    ],
+    "all_ai_cards_horizontally_visible": true,
+    "horizontal_scrollbar_policy": 1
+  },
+  "screenshot": "/home/gaps/edge_ai_public_calibration_replay_20260727/ui_pi_responsive_800x480_20260727_r6.png",
+  "screenshot_size": [
+    800,
+    480
+  ],
+  "schema_version": "gaps.edge_ui.qt_runtime_v5_smoke.v1",
+  "package_dir": "/home/gaps/edge_ui_runtime_v5_validation_20260727_r2/deployment_packages/gaps_runtime_v5_public_c5_10hz_replay_20260727_r2",
+  "elapsed_seconds_diagnostic": 1.7191065940423869
+}

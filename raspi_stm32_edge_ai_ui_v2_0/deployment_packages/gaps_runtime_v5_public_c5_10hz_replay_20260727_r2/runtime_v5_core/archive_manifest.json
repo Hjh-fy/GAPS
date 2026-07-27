@@ -1,0 +1,73 @@
+{
+  "schema_version": "gaps.runtime_v5.portable_archive.v1",
+  "status": "READY_FOR_CLEAN_CHECKOUT_SMOKE",
+  "release_id": "gaps_runtime_v5_core_20260726",
+  "frozen_base_commit": "4d0e6b84341142a80ffd265e2e95dcda06fd1c72",
+  "portable_binding": {
+    "path": "portable_binding.json",
+    "bytes": 2259,
+    "sha256": "4a3c678d629359ac40df98496f13226bfe2199414c795d483bbbd514828b973d"
+  },
+  "payload_file_count": 11,
+  "payload_bytes": 292343,
+  "payload_tree_sha256": "e6fa5cfdf93f4e42ffc5cd429854e40abaf0944c975c68b4cb00882a2e5ca8e5",
+  "payload_files": [
+    {
+      "path": "assets/classifier.pth",
+      "bytes": 184201,
+      "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c"
+    },
+    {
+      "path": "assets/federated_h1.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+    },
+    {
+      "path": "assets/target_ridge_105d.json",
+      "bytes": 46151,
+      "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de"
+    },
+    {
+      "path": "lineage/calibration_lock.json",
+      "bytes": 2266,
+      "sha256": "4edf75222e41d8bf43097625a076964e9338493478edc76c9a04a08794d5affe"
+    },
+    {
+      "path": "portable_binding.json",
+      "bytes": 2259,
+      "sha256": "4a3c678d629359ac40df98496f13226bfe2199414c795d483bbbd514828b973d"
+    },
+    {
+      "path": "provenance_mapping.json",
+      "bytes": 2030,
+      "sha256": "8c8e9c5d3ab064d452fd77f14c77fd1d237f2043fd4cbb6f393577aba808843e"
+    },
+    {
+      "path": "README.md",
+      "bytes": 1142,
+      "sha256": "f06dfb2a1bf38dbd5f52ce5910f267c3ed8f5d1e6c0aabab46c5968a09ee5234"
+    },
+    {
+      "path": "synthetic/expected_output_schema.json",
+      "bytes": 302,
+      "sha256": "440835a7802a2f57b31d6b3dec55ef49887fbc1f0061669fab0ddeaa1bf6e53a"
+    },
+    {
+      "path": "synthetic/input.npy",
+      "bytes": 3328,
+      "sha256": "2f45ce54a7dc8874ea5cb817c39e539c772f46487b0afa0b8ca7969b4364d3e9"
+    },
+    {
+      "path": "synthetic/metadata.json",
+      "bytes": 302,
+      "sha256": "1bb914a9ee9a5369f5a624d8d2e62234699dedd6038d0d88a07f1c156dfbbf81"
+    },
+    {
+      "path": "synthetic/phase.npy",
+      "bytes": 136,
+      "sha256": "f6df0000bed676f0a4b777e2a1d915b6608dab452e11737f82c685cebf0e8ba7"
+    }
+  ],
+  "formal_test_material": false,
+  "frozen_results_modified": false
+}

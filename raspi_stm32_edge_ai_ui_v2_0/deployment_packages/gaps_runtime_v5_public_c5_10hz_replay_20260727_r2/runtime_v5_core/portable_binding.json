@@ -1,0 +1,77 @@
+{
+  "schema_version": "gaps.runtime_v5.portable_binding.v1",
+  "status": "READY",
+  "release_id": "gaps_runtime_v5_core_20260726",
+  "source_frozen": {
+    "runtime_contract_sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+    "bundle_manifest_sha256": "f239c3b4929d1748574ec4d2fe4f61e09030087c2104b8c726046b5a39bffb1e"
+  },
+  "classifier_model": {
+    "architecture": "FedGasBaseModel",
+    "num_sensors": 8,
+    "num_classes": 4,
+    "feat_dim": 64,
+    "encoder_type": "tcn",
+    "tcn_norm": "instance",
+    "use_cls_proj": true
+  },
+  "runtime": {
+    "implementation": "gaps_deploy.c5_federated_source_ridge_runtime.C5FederatedSourceRidgeRuntime",
+    "rich_feature_dimension": 104,
+    "target_ridge_dimension": 105,
+    "output_fields": [
+      "sample_index",
+      "pred_class",
+      "source_h1_ppm",
+      "prediction_ppm",
+      "max_probability",
+      "qc_status",
+      "auto_output_ppm"
+    ],
+    "qc_status": "disabled_pending_dependency_audit"
+  },
+  "assets": {
+    "calibration_lock": {
+      "path": "lineage/calibration_lock.json",
+      "bytes": 2266,
+      "sha256": "4edf75222e41d8bf43097625a076964e9338493478edc76c9a04a08794d5affe"
+    },
+    "classifier": {
+      "path": "assets/classifier.pth",
+      "bytes": 184201,
+      "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c"
+    },
+    "federated_h1": {
+      "path": "assets/federated_h1.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+    },
+    "target_ridge": {
+      "path": "assets/target_ridge_105d.json",
+      "bytes": 46151,
+      "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de"
+    }
+  },
+  "dependency_contract": {
+    "allowed_assets": [
+      "calibration_lock",
+      "classifier",
+      "federated_h1",
+      "target_ridge"
+    ],
+    "formal_test_material": false,
+    "qc": false,
+    "legacy_fallback": false,
+    "forbidden": [
+      "C5_test_features",
+      "test_labels",
+      "HC95_test_records",
+      "HC90_test_records",
+      "offline_formal_predictions",
+      "H2",
+      "H3",
+      "C4",
+      "legacy_rescue"
+    ]
+  }
+}

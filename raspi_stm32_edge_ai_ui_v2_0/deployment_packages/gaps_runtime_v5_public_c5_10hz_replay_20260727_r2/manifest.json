@@ -1,0 +1,71 @@
+{
+  "schema_version": 3,
+  "package_name": "gaps_runtime_v5_public_c5_10hz_replay",
+  "dataset_profile": "public_c5_timeaware_100hz_to_10hz_calibration_replay",
+  "device_profile": "public_dataset_c5_precomputed_replay_only",
+  "model_backend": "gaps_runtime_v5",
+  "runtime_v5": {
+    "binding_file": "runtime_v5_core/portable_binding.json",
+    "release_id": "gaps_runtime_v5_core_20260726",
+    "fixed_phase_id": 2,
+    "metadata": {
+      "phase_label": "late"
+    },
+    "code_root": "runtime_code",
+    "code_manifest_file": "runtime_code/code_manifest.json",
+    "code_source_commit": "e800605e1441f6311f5738ed53f73f0b8618ee64"
+  },
+  "input": {
+    "sensor_fields": [
+      "adc_ch0_pa0",
+      "adc_ch1_pa1",
+      "adc_ch2_pa2",
+      "adc_ch3_pa3",
+      "adc_ch4_pa4",
+      "adc_ch5_pa5",
+      "adc_ch6_pa6",
+      "adc_ch7_pa7"
+    ],
+    "feature_mode": "precomputed",
+    "raw_sample_hz": 10.0,
+    "target_sample_hz": 10.0,
+    "unstable_duration_s": 0.0,
+    "baseline_duration_s": 0.0,
+    "window_duration_s": 10.0,
+    "stride_duration_s": 10.0,
+    "min_rate_ratio": 0.95,
+    "max_rate_ratio": 1.05,
+    "allow_rate_mismatch": false,
+    "max_gap_s": 0.3,
+    "reject_implausible_frames": true
+  },
+  "normalization": {
+    "enabled": false
+  },
+  "phase_control": {
+    "mode": "automatic",
+    "inference_phases": [
+      "automatic"
+    ]
+  },
+  "output": {
+    "gas_names": [
+      "Ethanol",
+      "CO",
+      "Ethylene",
+      "Methane"
+    ],
+    "qc_status": "disabled_pending_dependency_audit",
+    "auto_output": false
+  },
+  "integrity": {
+    "runtime_v5_binding_sha256": "4a3c678d629359ac40df98496f13226bfe2199414c795d483bbbd514828b973d",
+    "runtime_v5_code_manifest_sha256": "b3c131199c6d1c86e171d1abcb9e76b4720c444abddb754348bacece73ea2f11"
+  },
+  "usage_guard": {
+    "purpose": "public_dataset_precomputed_stream_replay_only",
+    "live_raw_stm32_allowed": false,
+    "formal_test_material": false,
+    "labels_required": false
+  }
+}

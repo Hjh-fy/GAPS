@@ -1,0 +1,7 @@
+pyserial>=3.5
+pyqtgraph>=0.13.7
+PyQt5>=5.15.0
+numpy>=1.23
+PyYAML>=6.0
+# PyTorch is optional and is needed only when an edge-AI deployment package is loaded.
+# Install a wheel/build compatible with the Raspberry Pi OS and CPU architecture.

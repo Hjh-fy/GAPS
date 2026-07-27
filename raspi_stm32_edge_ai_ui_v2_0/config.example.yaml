@@ -1,0 +1,18 @@
+serial:
+  # Bind HC-04 to this device first; see bind_hc04.sh.
+  port: /dev/rfcomm0
+  baudrate: 115200
+
+ui:
+  fullscreen: true
+  font_scale: 1.05
+  max_plot_points: 1800
+  # Protect Raspberry Pi memory. raw.csv remains unlimited and disk-streamed.
+  max_segment_rows: 100000
+
+logging:
+  data_root: ~/GAPS_data/experiments
+
+ai:
+  # Leave blank to run as a pure acquisition upper-computer.
+  package: ""
