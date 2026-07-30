@@ -30,6 +30,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         output_dir: str,
         run_name: str = "",
         save_history: bool = True,
+        model_config: Optional[dict] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -39,6 +40,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.run_name = run_name
         self.save_history = save_history
+        self.model_config = dict(model_config or {})
         self._round_events = {}
         self.history_path = self.output_dir / "history.json"
 
@@ -68,6 +70,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             "model_state": state,
             "parameter_keys": self.parameter_keys,
             "run_name": self.run_name,
+            "model_config": self.model_config,
         }
         path = self.output_dir / f"server_round_{server_round:03d}.pth"
         torch.save(ckpt, path)
@@ -288,6 +291,9 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         event = self._round_event(server_round)
         event["evaluate_clients"] = len(results)
         event["evaluate_failures"] = len(failures)
+        event["evaluate_failure_details"] = [
+            repr(failure) for failure in failures
+        ]
         event["evaluate_loss"] = float(aggregated_loss) if aggregated_loss is not None else None
         event["evaluate_metrics"] = dict(aggregated_metrics or {})
         self._write_history()
@@ -417,10 +423,22 @@ class GapsStrategy(CheckpointFedAvg):
             self._da_source_arrays = load_domain_adaptation_arrays(
                 source_dirs,
                 strict=True,
+                expected_window_shape=(
+                    int(self.model_config.get("seq_len", 100)),
+                    int(self.model_config.get("input_dim", 8)),
+                ),
+                num_classes=int(self.model_config.get("num_classes", 4)),
+                num_phases=int(self.model_config.get("num_phases", 3)),
             )
             self._da_target_arrays = load_domain_adaptation_arrays(
                 target_dirs,
                 strict=True,
+                expected_window_shape=(
+                    int(self.model_config.get("seq_len", 100)),
+                    int(self.model_config.get("input_dim", 8)),
+                ),
+                num_classes=int(self.model_config.get("num_classes", 4)),
+                num_phases=int(self.model_config.get("num_phases", 3)),
             )
 
     def _semantic_protos_json(self) -> str:
@@ -984,7 +1002,7 @@ class GapsStrategy(CheckpointFedAvg):
                 "TARGET_CE_CLASS_BALANCED": self.da_target_ce_class_balanced,
                 "SERVER_OPT_LR": self.da_server_opt_lr,
                 "HIDDEN_DIM2": 64,
-                "NUM_CLASSES": 4,
+                "NUM_CLASSES": int(self.model_config.get("num_classes", 4)),
                 "MAX_VAL_BATCHES": 10,
                 "ADV_DOMAIN_LR": 0.001,
                 "ADV_CRITIC_ITERS": 3,
@@ -1061,6 +1079,7 @@ class GapsStrategy(CheckpointFedAvg):
             "parameter_keys": self.parameter_keys,
             "run_name": self.run_name,
             "adaptive": True,
+            "model_config": self.model_config,
             "diagnostics": diag,
             "semantic_protos": {
                 key: value.detach().cpu().clone()
@@ -1101,7 +1120,15 @@ class GapsStrategy(CheckpointFedAvg):
         """
         from gaps_flower.task import create_model, make_config
 
-        config = make_config(device=str(device), local_epochs=1, batch_size=32)
+        config = make_config(
+            device=str(device),
+            local_epochs=1,
+            batch_size=32,
+            num_classes=self.model_config.get("num_classes"),
+            input_dim=self.model_config.get("input_dim"),
+            num_clients=self.model_config.get("num_clients"),
+            num_phases=self.model_config.get("num_phases"),
+        )
         model = create_model(config)
         model.load_state_dict(aggregated_state, strict=False)
         return model.to(device)

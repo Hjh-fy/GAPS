@@ -95,6 +95,10 @@ def main() -> None:
     parser.add_argument("--output-dir", default="results/flower_server")
     parser.add_argument("--run-name", default="flower_smoke")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--num-classes", type=int, default=4)
+    parser.add_argument("--input-dim", type=int, default=8)
+    parser.add_argument("--num-clients", type=int, default=4)
+    parser.add_argument("--num-phases", type=int, default=3)
     parser.add_argument("--profile", choices=PROFILE_CHOICES, default="smoke",
                         help="Server model/config profile; keep this aligned with client --profile for matrix runs")
     parser.add_argument("--save-history", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
@@ -184,6 +188,10 @@ def main() -> None:
         batch_size=32,
         profile=args.profile,
         seed=args.seed,
+        num_classes=args.num_classes,
+        input_dim=args.input_dim,
+        num_clients=args.num_clients,
+        num_phases=args.num_phases,
     )
     model = create_model(config)
     initial_arrays, parameter_keys = get_parameters(model)
@@ -194,6 +202,14 @@ def main() -> None:
         output_dir=args.output_dir,
         run_name=args.run_name,
         save_history=args.save_history,
+        model_config={
+            "num_classes": config.NUM_CLASSES,
+            "input_dim": config.INPUT_DIM,
+            "num_clients": config.NUM_CLIENTS,
+            "num_phases": config.NUM_PHASES,
+            "seq_len": config.SEQ_LEN,
+            "profile": args.profile,
+        },
         fraction_fit=1.0,
         fraction_evaluate=1.0,
         min_fit_clients=args.min_clients,

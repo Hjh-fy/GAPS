@@ -17,7 +17,11 @@ import torch
 
 from client import Client
 from config import FLConfig
-from federated_dataset import create_client_test_only_loader, create_train_loader
+from federated_dataset import (
+    create_client_test_only_loader,
+    create_merged_calibration_loader,
+    create_train_loader,
+)
 from utils import create_model_by_config, set_random_seed
 
 
@@ -86,6 +90,10 @@ def make_config(
     batch_size: int = 32,
     profile: str = "smoke",
     seed: int = 42,
+    num_classes: int | None = None,
+    input_dim: int | None = None,
+    num_clients: int | None = None,
+    num_phases: int | None = None,
 ) -> FLConfig:
     """Create the runtime config used by Flower clients and the DA server.
 
@@ -103,6 +111,19 @@ def make_config(
     config.LOCAL_EPOCHS = local_epochs
     config.BATCH_SIZE = batch_size
     config.SEED = int(seed)
+    structural_overrides = {
+        "NUM_CLASSES": num_classes,
+        "INPUT_DIM": input_dim,
+        "NUM_CLIENTS": num_clients,
+        "NUM_PHASES": num_phases,
+    }
+    for field_name, value in structural_overrides.items():
+        if value is None:
+            continue
+        value = int(value)
+        if value <= 0:
+            raise ValueError(f"{field_name} must be positive, got {value}")
+        setattr(config, field_name, value)
 
     # Always keep the Flower classification path independent from regression.
     # Regression has a separate offline/FedAvg-style script path in this package.
@@ -252,8 +273,13 @@ def client_dir(data_root: str | Path, client_id: int) -> Path:
     return Path(data_root) / f"client_{client_id}"
 
 
-def load_client_loaders(data_root: str | Path, client_id: int, config: FLConfig):
-    """Load local train/test data for one edge client."""
+def load_client_loaders(
+    data_root: str | Path,
+    client_id: int,
+    config: FLConfig,
+    eval_split: str = "test",
+):
+    """Load one edge client's train split and an explicit evaluation split."""
     cdir = client_dir(data_root, client_id)
     train_loader = create_train_loader(
         cdir,
@@ -261,8 +287,21 @@ def load_client_loaders(data_root: str | Path, client_id: int, config: FLConfig)
         shuffle=True,
         normalize=False,
     )
-    test_loader = create_client_test_only_loader(cdir, batch_size=config.BATCH_SIZE)
-    return train_loader, test_loader
+    if eval_split == "calibration":
+        eval_loader = create_merged_calibration_loader(
+            [cdir],
+            batch_size=config.BATCH_SIZE,
+        )
+    elif eval_split == "test":
+        eval_loader = create_client_test_only_loader(
+            cdir,
+            batch_size=config.BATCH_SIZE,
+        )
+    else:
+        raise ValueError(
+            f"Unsupported eval_split={eval_split!r}; expected calibration or test"
+        )
+    return train_loader, eval_loader
 
 
 def make_client(client_id: int, model: torch.nn.Module, train_loader, config: FLConfig) -> Client:

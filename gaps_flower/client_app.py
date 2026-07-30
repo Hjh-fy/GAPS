@@ -44,6 +44,11 @@ class GapsFlowerClient(fl.client.NumPyClient):
         batch_size: int,
         profile: str = "smoke",
         seed: int = 42,
+        num_classes: int = 4,
+        input_dim: int = 8,
+        num_clients: int = 4,
+        num_phases: int = 3,
+        eval_split: str = "test",
     ):
         self.client_id = client_id
         self.profile = profile
@@ -55,24 +60,36 @@ class GapsFlowerClient(fl.client.NumPyClient):
             batch_size=batch_size,
             profile=profile,
             seed=seed,
+            num_classes=num_classes,
+            input_dim=input_dim,
+            num_clients=num_clients,
+            num_phases=num_phases,
         )
         self.model = create_model(self.config)
         self.parameter_keys = get_parameters(self.model)[1]
-        train_loader, test_loader = load_client_loaders(
-            data_root, client_id, self.config
+        train_loader, eval_loader = load_client_loaders(
+            data_root,
+            client_id,
+            self.config,
+            eval_split=eval_split,
         )
         self.gaps_client = make_client(
             client_id, self.model, train_loader, self.config
         )
-        self.test_loader = test_loader
+        self.eval_split = eval_split
+        self.eval_loader = eval_loader
+        # Backward-compatible alias for callers that inspect this attribute.
+        self.test_loader = eval_loader
         self.train_samples = len(train_loader.dataset)
-        self.test_samples = len(test_loader.dataset)
+        self.eval_samples = len(eval_loader.dataset)
+        self.test_samples = self.eval_samples
         self.last_server_state: Optional[dict[str, torch.Tensor]] = None
         logger.info(
-            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s, seed=%d",
+            "[GAPS client %d] ready: train_samples=%d, eval_split=%s, eval_samples=%d, device=%s, local_epochs=%d, profile=%s, seed=%d",
             client_id,
             self.train_samples,
-            self.test_samples,
+            self.eval_split,
+            self.eval_samples,
             device,
             local_epochs,
             profile,
@@ -147,38 +164,75 @@ class GapsFlowerClient(fl.client.NumPyClient):
     def evaluate(self, parameters, config):
         """本地评估"""
         start = time.perf_counter()
-        current_server_state = parameters_to_state_dict(
-            parameters, self.parameter_keys, self.model.state_dict()
-        )
-        set_parameters(self.model, parameters, self.parameter_keys)
-        self.last_server_state = {
-            key: value.detach().cpu().clone()
-            for key, value in current_server_state.items()
-        }
-        loss, num_examples, metrics = evaluate(
-            self.model, self.test_loader, self.config, client_id=self.client_id
-        )
-        elapsed = time.perf_counter() - start
-        metrics["evaluate_seconds"] = float(elapsed)
         logger.info(
-            "[GAPS client %d] evaluate: samples=%d, accuracy=%.4f, seconds=%.2f",
+            "[GAPS client %d] evaluate START: split=%s",
             self.client_id,
-            num_examples,
-            metrics.get("accuracy", 0.0),
-            elapsed,
+            self.eval_split,
         )
-        return loss, num_examples, metrics
+        try:
+            current_server_state = parameters_to_state_dict(
+                parameters, self.parameter_keys, self.model.state_dict()
+            )
+            set_parameters(self.model, parameters, self.parameter_keys)
+            self.last_server_state = {
+                key: value.detach().cpu().clone()
+                for key, value in current_server_state.items()
+            }
+            loss, num_examples, metrics = evaluate(
+                self.model,
+                self.eval_loader,
+                self.config,
+                client_id=self.client_id,
+            )
+            elapsed = time.perf_counter() - start
+            metrics["evaluate_seconds"] = float(elapsed)
+            metrics["eval_split"] = self.eval_split
+            logger.info(
+                "[GAPS client %d] evaluate DONE: split=%s, samples=%d, "
+                "accuracy=%.4f, seconds=%.2f",
+                self.client_id,
+                self.eval_split,
+                num_examples,
+                metrics.get("accuracy", 0.0),
+                elapsed,
+            )
+            return loss, num_examples, metrics
+        except Exception:
+            logger.exception(
+                "[GAPS client %d] evaluate FAILED: split=%s",
+                self.client_id,
+                self.eval_split,
+            )
+            raise
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run one GAPS Flower edge client")
     parser.add_argument("--server-address", default="127.0.0.1:8080")
     parser.add_argument("--client-id", type=int, required=True)
+    parser.add_argument(
+        "--run-tag",
+        default="",
+        help="Optional controller-owned run identity used for process provenance.",
+    )
     parser.add_argument("--data-root", required=True)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--local-epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--num-classes", type=int, default=4)
+    parser.add_argument("--input-dim", type=int, default=8)
+    parser.add_argument("--num-clients", type=int, default=4)
+    parser.add_argument("--num-phases", type=int, default=3)
+    parser.add_argument(
+        "--eval-split",
+        choices=("calibration", "test"),
+        default="test",
+        help=(
+            "Split used during Flower round evaluation. Formal experiments "
+            "should use calibration; reserve test for post-training evaluation."
+        ),
+    )
     parser.add_argument(
         "--profile",
         choices=tuple(CLASSIFICATION_PROFILE_FLAGS) + (
@@ -208,6 +262,16 @@ def main() -> None:
         batch_size=args.batch_size,
         profile=args.profile,
         seed=args.seed,
+        num_classes=args.num_classes,
+        input_dim=args.input_dim,
+        num_clients=args.num_clients,
+        num_phases=args.num_phases,
+        eval_split=args.eval_split,
+    )
+    logger.info(
+        "[GAPS client %d] controller run_tag=%s",
+        args.client_id,
+        args.run_tag or "-",
     )
     fl.client.start_numpy_client(server_address=args.server_address, client=client)
 

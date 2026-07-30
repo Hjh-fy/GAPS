@@ -44,13 +44,40 @@ def load_checkpoint_model(
     checkpoint_path: str,
     device: torch.device,
     batch_size: int,
+    num_classes: int | None = None,
+    input_dim: int | None = None,
+    num_clients: int | None = None,
+    num_phases: int | None = None,
 ) -> tuple[torch.nn.Module, Any, dict[str, Any]]:
-    config = make_config(device=str(device), local_epochs=1, batch_size=batch_size)
-    model = create_model(config)
     try:
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     except TypeError:
         checkpoint = torch.load(checkpoint_path, map_location=device)
+    saved_config = checkpoint.get("model_config") or {}
+    config = make_config(
+        device=str(device),
+        local_epochs=1,
+        batch_size=batch_size,
+        num_classes=(
+            num_classes
+            if num_classes is not None
+            else saved_config.get("num_classes")
+        ),
+        input_dim=(
+            input_dim if input_dim is not None else saved_config.get("input_dim")
+        ),
+        num_clients=(
+            num_clients
+            if num_clients is not None
+            else saved_config.get("num_clients")
+        ),
+        num_phases=(
+            num_phases
+            if num_phases is not None
+            else saved_config.get("num_phases")
+        ),
+    )
+    model = create_model(config)
     state = checkpoint.get("model_state")
     if state is None:
         raise ValueError(f"Checkpoint has no model_state: {checkpoint_path}")
@@ -245,7 +272,10 @@ def main() -> None:
     parser.add_argument("--split", choices=SPLIT_CHOICES, default="test")
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--num-classes", type=int, default=4)
+    parser.add_argument("--num-classes", type=int, default=None)
+    parser.add_argument("--input-dim", type=int, default=None)
+    parser.add_argument("--num-clients", type=int, default=None)
+    parser.add_argument("--num-phases", type=int, default=None)
     parser.add_argument("--ece-bins", type=int, default=15)
     parser.add_argument("--inference-mode", choices=("logits", "soft_agg"), default="logits")
     parser.add_argument("--semantic-protos", default="", help="Path to semantic_protos_latest.json for soft_agg; optional if checkpoint contains semantic_protos")
@@ -258,6 +288,10 @@ def main() -> None:
         args.checkpoint,
         device,
         args.batch_size,
+        num_classes=args.num_classes,
+        input_dim=args.input_dim,
+        num_clients=args.num_clients,
+        num_phases=args.num_phases,
     )
     client_ids = parse_client_ids(args.client_ids)
     semantic_protos = load_semantic_protos(
@@ -275,7 +309,7 @@ def main() -> None:
             model=model,
             loader=loader,
             device=device,
-            num_classes=args.num_classes,
+            num_classes=config.NUM_CLASSES,
             ece_bins=args.ece_bins,
             inference_mode=args.inference_mode,
             semantic_protos=semantic_protos,

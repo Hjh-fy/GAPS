@@ -1,0 +1,48 @@
+{
+  "batch_size": 32,
+  "controller_path": "scripts\\lab_three_gas_3class\\run_lab_three_node_fold.ps1",
+  "controller_sha256": "1c35ed9da0be1b4025e36fb51e3a9d51068236df6ba5856a9e8a5b4fd5599827",
+  "controller_snapshot": "results\\lab_3gas_accuracy_recovery_20260730\\protocol_rec_a3_conductance_v1\\controller\\run_lab_three_node_fold.ps1",
+  "created_at_utc": "2026-07-30T09:32:59.731797+00:00",
+  "dataset_manifest_sha256": "84a7f76090a5208b8ec13bbf1f0b09bc85e251e78aa9532fd9da5805091d9722",
+  "directions": [
+    "P2->P3"
+  ],
+  "domain_adaptation_mode": "corrected_b2",
+  "evidence_boundary": {
+    "may_claim_final_lab_performance": false,
+    "may_modify_frozen_iotj_evidence": false,
+    "reason": "Gas onset/end times still use the nominal schedule; rebuild from reviewed exact boundaries before final reporting.",
+    "status": "preliminary_nominal_boundary_screening"
+  },
+  "execution_topology_manifest_sha256": "b0ea1cc3a0fdf6d87825deec017718d4137e2abc9bbab4e45b95689e08aa55d9",
+  "folds": [
+    1
+  ],
+  "input_shape": [
+    100,
+    6
+  ],
+  "local_epochs": 3,
+  "model_profile": "proto_replay",
+  "num_classes": 3,
+  "num_phases": 1,
+  "protocol_manifest_sha256": "7afb2478a116b4fdc8d17cf22da045c13f8e1dca4203cec3a83dcd5f07b76919",
+  "round_selection": "fixed final configured round",
+  "rounds": 25,
+  "schema_version": "gaps.lab_three_gas.protocol.v2",
+  "seed": 42,
+  "selected_channels": [
+    1,
+    2,
+    4,
+    6,
+    8,
+    9
+  ],
+  "server_da_steps_per_round": 100,
+  "source_archive_sha256": "ce45f3edd58b7068a5d47631830afdf0165ca7be81b7ad443b2deabc9788d9ff",
+  "split_protocol": "all_concentration_timepurged_p2_to_p3_v1",
+  "target_ce_weight": 0.0,
+  "task": "three_class_gas_classification_only"
+}

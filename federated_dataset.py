@@ -132,7 +132,8 @@ def create_train_loader(client_dir: Union[str, Path],
             mean_std = (mean, std)
     
     features = np.load(client_path / "train_features.npy")
-    regression_labels = np.load(client_path / "train_regression_labels.npy")
+    regression_path = client_path / "train_regression_labels.npy"
+    regression_labels = np.load(regression_path) if regression_path.exists() else None
     classification_labels = np.load(client_path / "train_classification_labels.npy")
     # 尝试加载 phase_labels，如果存在的话
     phase_labels = None
@@ -273,7 +274,8 @@ def create_client_test_only_loader(client_dir: Union[str, Path],
         raise FileNotFoundError(f"客户端目录 {client_dir} 中没有找到 test_features.npy")
 
     features = np.load(feat_path)
-    regression_labels = np.load(client_path / "test_regression_labels.npy")
+    regression_path = client_path / "test_regression_labels.npy"
+    regression_labels = np.load(regression_path) if regression_path.exists() else None
     classification_labels = np.load(client_path / "test_classification_labels.npy")
 
     phase_path = client_path / "test_phase_labels.npy"
@@ -376,7 +378,8 @@ def create_merged_calibration_loader(
         if not cal_feat.exists():
             continue
         features = np.load(cal_feat)
-        reg_labels = np.load(client_path / "calibration_regression_labels.npy")
+        reg_path = client_path / "calibration_regression_labels.npy"
+        reg_labels = np.load(reg_path) if reg_path.exists() else None
         cls_labels = np.load(client_path / "calibration_classification_labels.npy")
         
         # 加载阶段标签（如果存在）
@@ -389,7 +392,8 @@ def create_merged_calibration_loader(
             phase_labels = np.full(len(features), -1, dtype=np.int64)
         
         all_features.append(features)
-        all_reg_labels.append(reg_labels)
+        if reg_labels is not None:
+            all_reg_labels.append(reg_labels)
         all_cls_labels.append(cls_labels)
         all_phase_labels.append(phase_labels)
 
@@ -397,7 +401,11 @@ def create_merged_calibration_loader(
         raise ValueError("No calibration data found in given client directories.")
 
     features = np.concatenate(all_features, axis=0)
-    reg_labels = np.concatenate(all_reg_labels, axis=0)
+    reg_labels = (
+        np.concatenate(all_reg_labels, axis=0)
+        if all_reg_labels
+        else None
+    )
     cls_labels = np.concatenate(all_cls_labels, axis=0)
     phase_labels = np.concatenate(all_phase_labels, axis=0) if all_phase_labels else None
 

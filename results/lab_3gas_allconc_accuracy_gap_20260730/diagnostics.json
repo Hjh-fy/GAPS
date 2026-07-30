@@ -1,0 +1,857 @@
+{
+  "analysis_id": "LAB3GAS-ALLCONC-P2P3-ACCURACY-GAP-20260730",
+  "status": "diagnostic_not_formal_experiment",
+  "provenance": {
+    "lab_summary": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\results\\lab_3gas_allconc_accuracy_gap_20260730\\input\\formal_evaluation_summary.json",
+      "sha256": "eadde8b3fc2137834506f47be4b1577ac9e765e8f128dc97789286f5994eb97a"
+    },
+    "lab_run_config": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\results\\lab_3gas_allconc_accuracy_gap_20260730\\input\\lab_run_config.json",
+      "sha256": "06c612f42a5c12caa2abb3a9076ad18145bb7bad6e59ade26f7aad29c41618a4"
+    },
+    "public_run_config": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\results\\iotj_b2_b5_cross_direction_20260713\\B2_proto_replay_corrected_server_da_f1_c1_to_c5_s42_r25\\run_config.json",
+      "sha256": "d6910cdc6cf29250153952e53daf2504b78f7af1fba459e0374b6c058716b4c4"
+    },
+    "public_metrics": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\results\\iotj_b2_b5_cross_direction_20260713_f1_summary\\B2_proto_replay_corrected_server_da_f1_c1_to_c5_s42_r25\\classification_metrics.json",
+      "sha256": "af7b9f54289d69c6f9e9e1243d7b61a9ed9591b1d10bff2362fce61239fdb16e"
+    }
+  },
+  "reported_metrics": {
+    "lab": {
+      "selected_round": 2,
+      "adapted_test_window_accuracy": 0.919047619047619,
+      "adapted_test_window_macro_f1": 0.9191148174445002,
+      "adapted_test_exposure_accuracy": 1.0,
+      "test_windows": 420,
+      "test_exposures": 30
+    },
+    "public_b2": {
+      "selected_checkpoint_policy": "final_round_25",
+      "round": 25,
+      "adapted_test_window_accuracy": 0.9889705882352942,
+      "adapted_test_window_macro_f1": 0.9889539773984188,
+      "test_windows": 1360
+    }
+  },
+  "protocol_differences": {
+    "lab": {
+      "classes": 3,
+      "channels": 6,
+      "source_train_windows": 420,
+      "source_exposures": 30,
+      "target_calibration_windows": 90,
+      "target_test_windows": 420,
+      "target_exposures": 30,
+      "gas_interval_seconds_used": [
+        0,
+        1200
+      ],
+      "phase_labels": 1,
+      "split_level": "raw-time-purged windows within each exposure",
+      "calibration_test_raw_time_overlap": 0,
+      "checkpoint_policy": "source calibration then earliest tie"
+    },
+    "public_b2": {
+      "classes": 4,
+      "channels": 8,
+      "source_train_windows": 2360,
+      "source_unique_files": 160,
+      "target_calibration_windows": 320,
+      "target_test_windows": 1360,
+      "response_window_protocol_seconds": [
+        60,
+        170
+      ],
+      "phase_labels": 3,
+      "split_level": "window-level class-concentration stratified",
+      "target_filename_overlap": {
+        "calibration_unique_files": 80,
+        "test_unique_files": 80,
+        "shared_unique_files": 80,
+        "calibration_file_coverage": 1.0,
+        "test_file_coverage": 1.0
+      },
+      "checkpoint_policy": "final adapted round 25"
+    }
+  },
+  "da_configuration_differences": {
+    "profile": {
+      "lab": "strong_cls",
+      "public_b2": "proto_replay",
+      "same": false
+    },
+    "domain_adapt_steps": {
+      "lab": 100,
+      "public_b2": 100,
+      "same": true
+    },
+    "da_use_coral": {
+      "lab": true,
+      "public_b2": false,
+      "same": false
+    },
+    "da_use_mmd": {
+      "lab": true,
+      "public_b2": true,
+      "same": true
+    },
+    "da_use_adversarial": {
+      "lab": true,
+      "public_b2": false,
+      "same": false
+    },
+    "da_mmd_objective": {
+      "lab": "legacy_quartic",
+      "public_b2": "mmd2",
+      "same": false
+    },
+    "da_stage_alignment": {
+      "lab": "legacy_intra_domain",
+      "public_b2": "cross_domain_same_class_phase",
+      "same": false
+    },
+    "da_adv_feature_objective": {
+      "lab": "legacy_grl_plus",
+      "public_b2": "wasserstein_min",
+      "same": false
+    },
+    "da_lambda_coral": {
+      "lab": 0.5,
+      "public_b2": 0.0,
+      "same": false
+    },
+    "da_lambda_global_mmd": {
+      "lab": 0.5,
+      "public_b2": 0.5,
+      "same": true
+    },
+    "da_lambda_class_mmd": {
+      "lab": 0.5,
+      "public_b2": 0.5,
+      "same": true
+    },
+    "da_lambda_adv": {
+      "lab": 0.5,
+      "public_b2": 0.0,
+      "same": false
+    },
+    "da_lambda_proto_mmd": {
+      "lab": 0.2,
+      "public_b2": 0.0,
+      "same": false
+    },
+    "da_lambda_stage_mmd": {
+      "lab": 0.2,
+      "public_b2": 0.0,
+      "same": false
+    },
+    "da_server_opt_lr": {
+      "lab": 0.0005,
+      "public_b2": 0.0005,
+      "same": true
+    }
+  },
+  "lab_distribution": {
+    "p3_test_channel_mean_in_p2_z_space": [
+      -0.5410482388763609,
+      1.1118055715965374,
+      -0.030088094896256995,
+      0.24492091764199705,
+      0.7647952331421908,
+      -0.35939173316747475
+    ],
+    "p3_test_channel_std_in_p2_z_space": [
+      1.0027516406715211,
+      0.7635557052146354,
+      0.9420947047299779,
+      0.9508033404209999,
+      0.7527926150239476,
+      0.8626754283136814
+    ],
+    "p2_relative_resistance_fraction_below_minus_0_8": 0.11888095238095238,
+    "p2_relative_resistance_fraction_below_minus_0_9": 0.07420238095238095,
+    "p3_relative_resistance_fraction_below_minus_0_8": 0.039369047619047616,
+    "p3_relative_resistance_fraction_below_minus_0_9": 0.0,
+    "class_domain_geometry": {
+      "source_to_target_class_centroid_shift_per_dimension": {
+        "0": 0.41431171695377783,
+        "1": 0.48905293843069925,
+        "2": 0.26026436145596016
+      },
+      "target_pairwise_class_centroid_distance_per_dimension": {
+        "0-1": 0.7012683902372594,
+        "0-2": 0.5847520991384925,
+        "1-2": 0.2206217356702942
+      },
+      "descriptor": "per-channel mean/std/amplitude/edge-slope; scaled by P2 train"
+    }
+  },
+  "calibration_test_similarity": {
+    "lab_time_purged": {
+      "mean_per_dimension": 0.17271628489681068,
+      "median_per_dimension": 0.10783362480571568,
+      "p90_per_dimension": 0.39154822926311583
+    },
+    "public_window_random": {
+      "mean_per_dimension": 0.05038387255817988,
+      "median_per_dimension": 0.020512331171279572,
+      "p90_per_dimension": 0.13611869456553616
+    },
+    "interpretation": "Lower distance means test windows are closer to a calibration window in standardized flattened feature space."
+  },
+  "separability_probes": {
+    "p2_train_to_p3_test_relative_resistance": {
+      "accuracy": 0.5476190476190477,
+      "macro_f1": 0.4594511255010792,
+      "confusion_matrix": [
+        [
+          90,
+          0,
+          50
+        ],
+        [
+          0,
+          0,
+          140
+        ],
+        [
+          0,
+          0,
+          140
+        ]
+      ],
+      "n_train_windows": 420,
+      "n_test_windows": 420,
+      "feature_contract": "per-channel mean/std/amplitude/edge-slope",
+      "status": "recomputed_separability_probe_not_formal_gaps_metric"
+    },
+    "p3_calibration_to_p3_test_relative_resistance": {
+      "accuracy": 0.919047619047619,
+      "macro_f1": 0.9200978637068863,
+      "confusion_matrix": [
+        [
+          126,
+          14,
+          0
+        ],
+        [
+          0,
+          130,
+          10
+        ],
+        [
+          0,
+          10,
+          130
+        ]
+      ],
+      "n_train_windows": 90,
+      "n_test_windows": 420,
+      "feature_contract": "per-channel mean/std/amplitude/edge-slope",
+      "status": "recomputed_separability_probe_not_formal_gaps_metric"
+    },
+    "p2_train_plus_p3_calibration_to_p3_test_relative_resistance": {
+      "accuracy": 0.95,
+      "macro_f1": 0.949908417275259,
+      "confusion_matrix": [
+        [
+          139,
+          0,
+          1
+        ],
+        [
+          0,
+          120,
+          20
+        ],
+        [
+          0,
+          0,
+          140
+        ]
+      ],
+      "n_train_windows": 510,
+      "n_test_windows": 420,
+      "feature_contract": "per-channel mean/std/amplitude/edge-slope",
+      "status": "recomputed_separability_probe_not_formal_gaps_metric"
+    },
+    "p2_train_to_p3_test_relative_conductance_approx": {
+      "accuracy": 0.6071428571428571,
+      "macro_f1": 0.5103914224865976,
+      "confusion_matrix": [
+        [
+          115,
+          0,
+          25
+        ],
+        [
+          0,
+          0,
+          140
+        ],
+        [
+          0,
+          0,
+          140
+        ]
+      ],
+      "n_train_windows": 420,
+      "n_test_windows": 420,
+      "feature_contract": "per-channel mean/std/amplitude/edge-slope",
+      "status": "recomputed_separability_probe_not_formal_gaps_metric"
+    },
+    "p3_calibration_to_p3_test_relative_conductance_approx": {
+      "accuracy": 0.969047619047619,
+      "macro_f1": 0.9688059918521458,
+      "confusion_matrix": [
+        [
+          140,
+          0,
+          0
+        ],
+        [
+          0,
+          140,
+          0
+        ],
+        [
+          11,
+          2,
+          127
+        ]
+      ],
+      "n_train_windows": 90,
+      "n_test_windows": 420,
+      "feature_contract": "per-channel mean/std/amplitude/edge-slope",
+      "status": "recomputed_separability_probe_not_formal_gaps_metric"
+    },
+    "p2_train_plus_p3_calibration_to_p3_test_relative_conductance_approx": {
+      "accuracy": 0.9619047619047619,
+      "macro_f1": 0.9619640488185089,
+      "confusion_matrix": [
+        [
+          139,
+          0,
+          1
+        ],
+        [
+          0,
+          130,
+          10
+        ],
+        [
+          5,
+          0,
+          135
+        ]
+      ],
+      "n_train_windows": 510,
+      "n_test_windows": 420,
+      "feature_contract": "per-channel mean/std/amplitude/edge-slope",
+      "status": "recomputed_separability_probe_not_formal_gaps_metric"
+    },
+    "source_relative_resistance_by_base_window_index": {
+      "0": {
+        "n": 30,
+        "accuracy": 0.3333333333333333
+      },
+      "1": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "13": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "14": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "15": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "16": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "17": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "21": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "22": {
+        "n": 30,
+        "accuracy": 0.5
+      },
+      "5": {
+        "n": 30,
+        "accuracy": 0.6333333333333333
+      },
+      "6": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "7": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "8": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "9": {
+        "n": 30,
+        "accuracy": 0.6
+      }
+    },
+    "source_relative_resistance_by_gas": {
+      "acetaldehyde": {
+        "n": 140,
+        "accuracy": 0.6428571428571429
+      },
+      "acetic_acid": {
+        "n": 140,
+        "accuracy": 1.0
+      },
+      "methane": {
+        "n": 140,
+        "accuracy": 0.0
+      }
+    },
+    "source_relative_resistance_by_version": {
+      "v1": {
+        "n": 210,
+        "accuracy": 0.49523809523809526
+      },
+      "v2": {
+        "n": 210,
+        "accuracy": 0.6
+      }
+    },
+    "target_relative_resistance_by_base_window_index": {
+      "0": {
+        "n": 30,
+        "accuracy": 0.3333333333333333
+      },
+      "1": {
+        "n": 30,
+        "accuracy": 0.5333333333333333
+      },
+      "13": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "14": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "15": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "16": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "17": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "21": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "22": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "5": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "6": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "7": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "8": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "9": {
+        "n": 30,
+        "accuracy": 1.0
+      }
+    },
+    "target_relative_resistance_by_gas": {
+      "acetaldehyde": {
+        "n": 140,
+        "accuracy": 0.9
+      },
+      "acetic_acid": {
+        "n": 140,
+        "accuracy": 0.9285714285714286
+      },
+      "methane": {
+        "n": 140,
+        "accuracy": 0.9285714285714286
+      }
+    },
+    "target_relative_resistance_by_version": {
+      "v1": {
+        "n": 210,
+        "accuracy": 0.9095238095238095
+      },
+      "v2": {
+        "n": 210,
+        "accuracy": 0.9285714285714286
+      }
+    },
+    "combined_relative_resistance_by_base_window_index": {
+      "0": {
+        "n": 30,
+        "accuracy": 0.6333333333333333
+      },
+      "1": {
+        "n": 30,
+        "accuracy": 0.6666666666666666
+      },
+      "13": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "14": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "15": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "16": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "17": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "21": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "22": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "5": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "6": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "7": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "8": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "9": {
+        "n": 30,
+        "accuracy": 1.0
+      }
+    },
+    "combined_relative_resistance_by_gas": {
+      "acetaldehyde": {
+        "n": 140,
+        "accuracy": 0.9928571428571429
+      },
+      "acetic_acid": {
+        "n": 140,
+        "accuracy": 1.0
+      },
+      "methane": {
+        "n": 140,
+        "accuracy": 0.8571428571428571
+      }
+    },
+    "combined_relative_resistance_by_version": {
+      "v1": {
+        "n": 210,
+        "accuracy": 0.9523809523809523
+      },
+      "v2": {
+        "n": 210,
+        "accuracy": 0.9476190476190476
+      }
+    },
+    "source_relative_conductance_approx_by_base_window_index": {
+      "0": {
+        "n": 30,
+        "accuracy": 0.6666666666666666
+      },
+      "1": {
+        "n": 30,
+        "accuracy": 0.5666666666666667
+      },
+      "13": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "14": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "15": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "16": {
+        "n": 30,
+        "accuracy": 0.6333333333333333
+      },
+      "17": {
+        "n": 30,
+        "accuracy": 0.6333333333333333
+      },
+      "21": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "22": {
+        "n": 30,
+        "accuracy": 0.6333333333333333
+      },
+      "5": {
+        "n": 30,
+        "accuracy": 0.5666666666666667
+      },
+      "6": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "7": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "8": {
+        "n": 30,
+        "accuracy": 0.6
+      },
+      "9": {
+        "n": 30,
+        "accuracy": 0.6
+      }
+    },
+    "source_relative_conductance_approx_by_gas": {
+      "acetaldehyde": {
+        "n": 140,
+        "accuracy": 0.8214285714285714
+      },
+      "acetic_acid": {
+        "n": 140,
+        "accuracy": 1.0
+      },
+      "methane": {
+        "n": 140,
+        "accuracy": 0.0
+      }
+    },
+    "source_relative_conductance_approx_by_version": {
+      "v1": {
+        "n": 210,
+        "accuracy": 0.5571428571428572
+      },
+      "v2": {
+        "n": 210,
+        "accuracy": 0.6571428571428571
+      }
+    },
+    "target_relative_conductance_approx_by_base_window_index": {
+      "0": {
+        "n": 30,
+        "accuracy": 0.6666666666666666
+      },
+      "1": {
+        "n": 30,
+        "accuracy": 0.9
+      },
+      "13": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "14": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "15": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "16": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "17": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "21": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "22": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "5": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "6": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "7": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "8": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "9": {
+        "n": 30,
+        "accuracy": 1.0
+      }
+    },
+    "target_relative_conductance_approx_by_gas": {
+      "acetaldehyde": {
+        "n": 140,
+        "accuracy": 1.0
+      },
+      "acetic_acid": {
+        "n": 140,
+        "accuracy": 0.9071428571428571
+      },
+      "methane": {
+        "n": 140,
+        "accuracy": 1.0
+      }
+    },
+    "target_relative_conductance_approx_by_version": {
+      "v1": {
+        "n": 210,
+        "accuracy": 0.9714285714285714
+      },
+      "v2": {
+        "n": 210,
+        "accuracy": 0.9666666666666667
+      }
+    },
+    "combined_relative_conductance_approx_by_base_window_index": {
+      "0": {
+        "n": 30,
+        "accuracy": 0.6333333333333333
+      },
+      "1": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "13": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "14": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "15": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "16": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "17": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "21": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "22": {
+        "n": 30,
+        "accuracy": 1.0
+      },
+      "5": {
+        "n": 30,
+        "accuracy": 0.9666666666666667
+      },
+      "6": {
+        "n": 30,
+        "accuracy": 0.9666666666666667
+      },
+      "7": {
+        "n": 30,
+        "accuracy": 0.9666666666666667
+      },
+      "8": {
+        "n": 30,
+        "accuracy": 0.9333333333333333
+      },
+      "9": {
+        "n": 30,
+        "accuracy": 1.0
+      }
+    },
+    "combined_relative_conductance_approx_by_gas": {
+      "acetaldehyde": {
+        "n": 140,
+        "accuracy": 0.9928571428571429
+      },
+      "acetic_acid": {
+        "n": 140,
+        "accuracy": 0.9642857142857143
+      },
+      "methane": {
+        "n": 140,
+        "accuracy": 0.9285714285714286
+      }
+    },
+    "combined_relative_conductance_approx_by_version": {
+      "v1": {
+        "n": 210,
+        "accuracy": 0.9714285714285714
+      },
+      "v2": {
+        "n": 210,
+        "accuracy": 0.9523809523809523
+      }
+    }
+  },
+  "limitations": [
+    "One seed and one source-target direction.",
+    "Repeated windows are not independent experimental units.",
+    "Linear probe results are diagnostic and are not GAPS results.",
+    "Relative-conductance probes convert already smoothed relative resistance; a formal comparison must rebuild from raw R before smoothing.",
+    "The formal GAPS summary contains aggregate confusion matrices but no per-window prediction stream, so GAPS error localization by time/concentration is currently unavailable.",
+    "Nominal gas boundaries have not been replaced by detected onsets."
+  ]
+}

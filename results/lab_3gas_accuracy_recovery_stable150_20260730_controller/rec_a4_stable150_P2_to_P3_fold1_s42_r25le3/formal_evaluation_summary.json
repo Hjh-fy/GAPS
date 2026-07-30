@@ -1,0 +1,794 @@
+{
+  "selection_policy": "last_round",
+  "selection_rule": "fixed final configured round; source calibration is monitoring only",
+  "source_clients": [
+    2
+  ],
+  "target_client": 3,
+  "selected_round": 25,
+  "selected_source_validation_exposure_macro_f1": 1.0,
+  "rounds": [
+    {
+      "round": 1,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_001.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 0.9554720133667501
+    },
+    {
+      "round": 2,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_002.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 3,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_003.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 4,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_004.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 5,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_005.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 6,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_006.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 7,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_007.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 8,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_008.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 9,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_009.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 10,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_010.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 11,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_011.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 12,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_012.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 13,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_013.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 14,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_014.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 15,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_015.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 16,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_016.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 17,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_017.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 18,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_018.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 19,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_019.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 20,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_020.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 21,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_021.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 22,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_022.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 23,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_023.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 24,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_024.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    },
+    {
+      "round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025.pth",
+      "source_validation_exposure_macro_f1": 1.0,
+      "source_validation_window_macro_f1": 1.0
+    }
+  ],
+  "final": {
+    "unadapted": {
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025.pth",
+      "target_calibration": {
+        "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025.pth",
+        "round": 25,
+        "split": "calibration",
+        "device": "cpu",
+        "model_config": {
+          "num_classes": 3,
+          "input_dim": 6,
+          "num_clients": 3,
+          "num_phases": 1,
+          "seq_len": 100
+        },
+        "clients": {
+          "3": {
+            "loss": 0.30439544518768447,
+            "window": {
+              "accuracy": 0.9666666666666667,
+              "macro_f1": 0.9665831244778613,
+              "confusion_matrix": [
+                [
+                  30,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  30,
+                  0
+                ],
+                [
+                  0,
+                  3,
+                  27
+                ]
+              ],
+              "n_samples": 90
+            },
+            "exposure": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  10,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  10,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ]
+              ],
+              "n_exposures": 30,
+              "by_platform": {
+                "3": {
+                  "accuracy": 1.0,
+                  "macro_f1": 1.0,
+                  "confusion_matrix": [
+                    [
+                      10,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      10,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      10
+                    ]
+                  ],
+                  "n_samples": 30
+                }
+              }
+            }
+          }
+        },
+        "global": {
+          "window": {
+            "accuracy": 0.9666666666666667,
+            "macro_f1": 0.9665831244778613,
+            "confusion_matrix": [
+              [
+                30,
+                0,
+                0
+              ],
+              [
+                0,
+                30,
+                0
+              ],
+              [
+                0,
+                3,
+                27
+              ]
+            ],
+            "n_samples": 90
+          },
+          "exposure": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                10,
+                0,
+                0
+              ],
+              [
+                0,
+                10,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 1.0,
+                "macro_f1": 1.0,
+                "confusion_matrix": [
+                  [
+                    10,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    10,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      },
+      "target_test": {
+        "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025.pth",
+        "round": 25,
+        "split": "test",
+        "device": "cpu",
+        "model_config": {
+          "num_classes": 3,
+          "input_dim": 6,
+          "num_clients": 3,
+          "num_phases": 1,
+          "seq_len": 100
+        },
+        "clients": {
+          "3": {
+            "loss": 0.7421552823648603,
+            "window": {
+              "accuracy": 0.9472222222222222,
+              "macro_f1": 0.9467723376741715,
+              "confusion_matrix": [
+                [
+                  119,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  120,
+                  0
+                ],
+                [
+                  1,
+                  17,
+                  102
+                ]
+              ],
+              "n_samples": 360
+            },
+            "exposure": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  10,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  10,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ]
+              ],
+              "n_exposures": 30,
+              "by_platform": {
+                "3": {
+                  "accuracy": 1.0,
+                  "macro_f1": 1.0,
+                  "confusion_matrix": [
+                    [
+                      10,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      10,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      10
+                    ]
+                  ],
+                  "n_samples": 30
+                }
+              }
+            }
+          }
+        },
+        "global": {
+          "window": {
+            "accuracy": 0.9472222222222222,
+            "macro_f1": 0.9467723376741715,
+            "confusion_matrix": [
+              [
+                119,
+                0,
+                1
+              ],
+              [
+                0,
+                120,
+                0
+              ],
+              [
+                1,
+                17,
+                102
+              ]
+            ],
+            "n_samples": 360
+          },
+          "exposure": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                10,
+                0,
+                0
+              ],
+              [
+                0,
+                10,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 1.0,
+                "macro_f1": 1.0,
+                "confusion_matrix": [
+                  [
+                    10,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    10,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      }
+    },
+    "adapted": {
+      "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025_adapted.pth",
+      "target_calibration": {
+        "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025_adapted.pth",
+        "round": 25,
+        "split": "calibration",
+        "device": "cpu",
+        "model_config": {
+          "num_classes": 3,
+          "input_dim": 6,
+          "num_clients": 3,
+          "num_phases": 1,
+          "seq_len": 100
+        },
+        "clients": {
+          "3": {
+            "loss": 8.198948004671062e-07,
+            "window": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  30,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  30,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  30
+                ]
+              ],
+              "n_samples": 90
+            },
+            "exposure": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  10,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  10,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ]
+              ],
+              "n_exposures": 30,
+              "by_platform": {
+                "3": {
+                  "accuracy": 1.0,
+                  "macro_f1": 1.0,
+                  "confusion_matrix": [
+                    [
+                      10,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      10,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      10
+                    ]
+                  ],
+                  "n_samples": 30
+                }
+              }
+            }
+          }
+        },
+        "global": {
+          "window": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                30,
+                0,
+                0
+              ],
+              [
+                0,
+                30,
+                0
+              ],
+              [
+                0,
+                0,
+                30
+              ]
+            ],
+            "n_samples": 90
+          },
+          "exposure": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                10,
+                0,
+                0
+              ],
+              [
+                0,
+                10,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 1.0,
+                "macro_f1": 1.0,
+                "confusion_matrix": [
+                  [
+                    10,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    10,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      },
+      "target_test": {
+        "checkpoint": "/root/GAPS/results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025_adapted.pth",
+        "round": 25,
+        "split": "test",
+        "device": "cpu",
+        "model_config": {
+          "num_classes": 3,
+          "input_dim": 6,
+          "num_clients": 3,
+          "num_phases": 1,
+          "seq_len": 100
+        },
+        "clients": {
+          "3": {
+            "loss": 0.0044339319275625,
+            "window": {
+              "accuracy": 0.9972222222222222,
+              "macro_f1": 0.9972221739960764,
+              "confusion_matrix": [
+                [
+                  120,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  120,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  119
+                ]
+              ],
+              "n_samples": 360
+            },
+            "exposure": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  10,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  10,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ]
+              ],
+              "n_exposures": 30,
+              "by_platform": {
+                "3": {
+                  "accuracy": 1.0,
+                  "macro_f1": 1.0,
+                  "confusion_matrix": [
+                    [
+                      10,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      10,
+                      0
+                    ],
+                    [
+                      0,
+                      0,
+                      10
+                    ]
+                  ],
+                  "n_samples": 30
+                }
+              }
+            }
+          }
+        },
+        "global": {
+          "window": {
+            "accuracy": 0.9972222222222222,
+            "macro_f1": 0.9972221739960764,
+            "confusion_matrix": [
+              [
+                120,
+                0,
+                0
+              ],
+              [
+                0,
+                120,
+                0
+              ],
+              [
+                1,
+                0,
+                119
+              ]
+            ],
+            "n_samples": 360
+          },
+          "exposure": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                10,
+                0,
+                0
+              ],
+              [
+                0,
+                10,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 1.0,
+                "macro_f1": 1.0,
+                "confusion_matrix": [
+                  [
+                    10,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    10,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
