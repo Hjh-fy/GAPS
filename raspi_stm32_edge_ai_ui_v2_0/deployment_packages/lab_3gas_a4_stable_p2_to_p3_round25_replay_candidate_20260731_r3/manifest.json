@@ -1,0 +1,92 @@
+{
+  "schema_version": 4,
+  "package_name": "lab_3gas_a4_stable_p2_to_p3_round25_replay_candidate_20260731_r3",
+  "dataset_profile": "lab_3gas_P2src_P3tgt_A4_stable_1hz",
+  "device_profile": "replay_only_pending_stm32_resistance_contract",
+  "model_backend": "torchscript",
+  "model_file": "model.ts",
+  "input": {
+    "sensor_fields": [
+      "lab_ch1_relative_resistance_smoothed",
+      "lab_ch2_relative_resistance_smoothed",
+      "lab_ch4_relative_resistance_smoothed",
+      "lab_ch6_relative_resistance_smoothed",
+      "lab_ch8_relative_resistance_smoothed",
+      "lab_ch9_relative_resistance_smoothed"
+    ],
+    "target_sample_hz": 1.0,
+    "raw_sample_hz": 1.0,
+    "window_size": 100,
+    "stride": 50,
+    "feature_mode": "precomputed",
+    "max_gap_s": 1.5,
+    "min_rate_ratio": 0.95,
+    "max_rate_ratio": 1.05,
+    "reject_implausible_frames": true
+  },
+  "phase_control": {
+    "mode": "event_driven",
+    "inference_phases": [
+      "exposure"
+    ],
+    "stable_window_start_offset_s": 250.0,
+    "first_result_nominal_offset_s": 350.0
+  },
+  "normalization": {
+    "enabled": true,
+    "file": "norm_stats.npz",
+    "mean_key": "mean",
+    "std_key": "std",
+    "scope": "P2_train_only"
+  },
+  "output": {
+    "task_type": "classification",
+    "has_concentration": false,
+    "gas_names": [
+      "乙醛",
+      "甲烷",
+      "乙酸"
+    ],
+    "probability_aggregation": "exposure_running_arithmetic_mean"
+  },
+  "qc": {
+    "enabled": false,
+    "policy_name": "classification_qc_not_validated"
+  },
+  "preprocessing_contract": {
+    "physical_input": "resistance_ohm",
+    "selected_channels": [
+      1,
+      2,
+      4,
+      6,
+      8,
+      9
+    ],
+    "resample": "strict_1hz_linear_interpolation",
+    "baseline": "per_channel_median_pre_exposure_300s",
+    "transform": "(R-R0)/abs(R0)",
+    "smoothing": "centered_reflect_moving_average_5s",
+    "window": "100s",
+    "stride": "50s",
+    "online_centered_filter_delay_s": 2.0,
+    "adapter_state": "not_included_in_replay_candidate"
+  },
+  "deployment_scope": {
+    "replay_only": true,
+    "raw_stm32_frames_allowed": false,
+    "live_blocker": "CH1/2/4/6/8/9 frame mapping and six-channel ADC-to-resistance electrical contract are unverified"
+  },
+  "provenance": {
+    "experiment_id": "A4-EDGE-P1A",
+    "training_run": "rec_a4_stable150_P2_to_P3_fold1_s42_r25le3",
+    "checkpoint_round": 25,
+    "checkpoint_sha256": "ad51c370d9d79f90a385e3c2898df90184e79289eb67694b42ca1b5559ab1e76",
+    "source_commit": "6c483ed41e21b5f9d52ef5243d8d4c734f1e6057",
+    "torchscript_mha_fastpath": "disabled_for_qt_worker_portability"
+  },
+  "integrity": {
+    "model_sha256": "2a7fd4b5cc1dae1000141a9d287de77de6d32d62a1d535a56de936675e06cee5",
+    "normalization_sha256": "e32143b410e217e0e581720f8c1aba72371049b10c3c223491116782aa5e5f15"
+  }
+}

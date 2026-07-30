@@ -1,0 +1,17 @@
+{
+  "n_samples": 360,
+  "eager_correct": 359,
+  "torchscript_correct": 359,
+  "eager_accuracy": 0.9972222222222222,
+  "torchscript_accuracy": 0.9972222222222222,
+  "class_match_count": 360,
+  "class_match_rate": 1.0,
+  "max_logit_abs_diff": 1.9073486328125e-06,
+  "max_probability_abs_diff": 2.0750068330244176e-12,
+  "checkpoint_sha256": "ad51c370d9d79f90a385e3c2898df90184e79289eb67694b42ca1b5559ab1e76",
+  "norm_stats_sha256": "e32143b410e217e0e581720f8c1aba72371049b10c3c223491116782aa5e5f15",
+  "model_sha256": "2a7fd4b5cc1dae1000141a9d287de77de6d32d62a1d535a56de936675e06cee5",
+  "validation_features_sha256": "fe3a6a9c002adb1f4c79b058cb72f92d824e7bc6b45c6435467a80682b69e0ad",
+  "validation_labels_sha256": "073013f0be8aa25c5c1cf81bf9aeb85a07b501335493af2481799921e3286539",
+  "source_commit": "6c483ed41e21b5f9d52ef5243d8d4c734f1e6057"
+}

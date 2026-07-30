@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checks": {
+    "worker_loaded_classification_package": true,
+    "has_no_concentration": true,
+    "qc_unavailable": true,
+    "consensus_card": true,
+    "summary_has_no_ppm": true,
+    "content_fits_viewport": true,
+    "all_six_cards_horizontally_visible": true
+  },
+  "qt_platform": "wayland",
+  "window_size": [
+    800,
+    480
+  ],
+  "content_size": [
+    800,
+    457
+  ],
+  "predicted_gas": "乙醛",
+  "confidence": 0.9999992847442627,
+  "consensus_predicted_gas": "乙醛",
+  "package_fingerprint": "88a4a4d75c6bd2f1a917a1e771712a0568e9c284bee599f4f83ab26257fb0877",
+  "result_label": "Window: 乙醛 (100.0%) · Consensus: 乙醛 (100.0%, n=1)"
+}
