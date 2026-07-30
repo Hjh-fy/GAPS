@@ -58,8 +58,16 @@ class EdgeAIResult:
     predicted_class: int
     predicted_gas: str
     confidence: float
-    ppm_base_prediction: float
-    ppm_full_prediction: float
+    class_probabilities: List[float]
+    consensus_predicted_class: int
+    consensus_predicted_gas: str
+    consensus_confidence: float
+    consensus_probabilities: List[float]
+    consensus_window_count: int
+    task_type: str
+    has_concentration: bool
+    ppm_base_prediction: Optional[float]
+    ppm_full_prediction: Optional[float]
     ppm_auto_output: Optional[float]
     decision: str
     selected_calibration: str
@@ -104,7 +112,7 @@ class EdgeAIPackage:
             raise EdgeAIPackageError(f"Invalid manifest.json: {exc}") from exc
 
         self.schema_version = int(self.manifest.get("schema_version", 1))
-        if self.schema_version not in {1, 2, 3}:
+        if self.schema_version not in {1, 2, 3, 4}:
             raise EdgeAIPackageError(f"Unsupported package schema_version={self.schema_version}")
 
         self.package_name = str(self.manifest.get("package_name") or self.package_dir.name)
@@ -257,6 +265,10 @@ class EdgeAIPackage:
                 raise EdgeAIPackageError(f"Failed to load normalization statistics: {exc}") from exc
             if not np.all(np.isfinite(self.mean)) or not np.all(np.isfinite(self.std)):
                 raise EdgeAIPackageError("Normalization mean/std must contain only finite values")
+            while self.mean.ndim > 2 and self.mean.shape[0] == 1:
+                self.mean = np.squeeze(self.mean, axis=0)
+            while self.std.ndim > 2 and self.std.shape[0] == 1:
+                self.std = np.squeeze(self.std, axis=0)
             self.std = np.where(np.abs(self.std) > 1e-8, self.std, 1.0).astype(np.float32)
         else:
             self.mean = np.zeros((1, len(self.sensor_fields)), dtype=np.float32)
@@ -281,6 +293,23 @@ class EdgeAIPackage:
         if not self.gas_names or any(not str(name).strip() for name in self.gas_names):
             raise EdgeAIPackageError("output.gas_names must contain non-empty names")
         self.gas_names = [str(name) for name in self.gas_names]
+        self.task_type = str(
+            output_cfg.get("task_type", "classification_regression")
+        ).strip().lower()
+        if self.task_type not in {"classification", "classification_regression"}:
+            raise EdgeAIPackageError(
+                "output.task_type must be classification or classification_regression"
+            )
+        self.has_concentration = bool(
+            output_cfg.get(
+                "has_concentration",
+                self.task_type == "classification_regression",
+            )
+        )
+        if self.task_type == "classification" and self.has_concentration:
+            raise EdgeAIPackageError(
+                "classification-only packages must set output.has_concentration=false"
+            )
         self.qc_cfg = dict(self.manifest.get("qc") or {})
         min_confidence = float(self.qc_cfg.get("min_confidence", 0.0))
         accept_max_risk = float(
@@ -619,6 +648,49 @@ class EdgeAIPackage:
         return cls._sha256(manifest_path), source_commit
 
 
+def prewarm_torchscript_package(package_dir: Path) -> Dict[str, Any]:
+    """Initialize Torch and the exact TorchScript graph on the UI main thread.
+
+    PyTorch CPU kernels can crash intermittently when their first execution
+    occurs inside a Qt QThread on Raspberry Pi.  A single verified zero-window
+    inference initializes those kernels before the package is handed to the
+    worker.  Runtime-v5 packages are deliberately left unchanged.
+    """
+    package = EdgeAIPackage(Path(package_dir))
+    if package.model_backend != "torchscript":
+        return {
+            "prewarmed": False,
+            "model_backend": package.model_backend,
+            "package_fingerprint": package.package_fingerprint,
+        }
+    try:
+        import torch
+    except Exception as exc:  # pragma: no cover - deployment environment
+        raise EdgeAIPackageError(
+            "PyTorch is required to prewarm a TorchScript package"
+        ) from exc
+    assert package.model_path is not None
+    try:
+        model = torch.jit.load(str(package.model_path), map_location="cpu")
+        model.eval()
+        example = torch.zeros(
+            (1, package.window_size, len(package.sensor_fields)),
+            dtype=torch.float32,
+        )
+        with torch.no_grad():
+            model(example)
+    except Exception as exc:
+        raise EdgeAIPackageError(
+            f"TorchScript main-thread prewarm failed: {exc}"
+        ) from exc
+    return {
+        "prewarmed": True,
+        "model_backend": package.model_backend,
+        "package_fingerprint": package.package_fingerprint,
+        "input_shape": [1, package.window_size, len(package.sensor_fields)],
+    }
+
+
 class EdgeAIRuntime:
     """Stateful single-stream deployment runtime."""
 
@@ -663,6 +735,10 @@ class EdgeAIRuntime:
         self._gap_reset_count = 0
         self._invalid_frame_count = 0
         self._inference_counter = 0
+        self._consensus_probability_sum = np.zeros(
+            len(self.package.gas_names), dtype=np.float64
+        )
+        self._consensus_window_count = 0
         if self.package.phase_mode != "automatic":
             self._last_status = "waiting_for_baseline_phase"
         elif self.package.unstable_samples > 0:
@@ -733,6 +809,7 @@ class EdgeAIRuntime:
         self._timestamps.clear()
         self._samples_since_inference = 0
         self._last_input_ts = None
+        self._reset_consensus()
         if not keep_baseline:
             self._baseline_rows.clear()
             self._baseline = None
@@ -770,6 +847,7 @@ class EdgeAIRuntime:
         self._experiment_phase = phase
         if phase != previous:
             self._clear_window()
+            self._reset_consensus()
         if not self.baseline_ready:
             self._last_status = "baseline_required"
         elif self._phase_allows_inference():
@@ -800,6 +878,8 @@ class EdgeAIRuntime:
             "dataset_profile": self.package.dataset_profile,
             "device_profile": self.package.device_profile,
             "model_backend": self.package.model_backend,
+            "task_type": self.package.task_type,
+            "has_concentration": self.package.has_concentration,
             "runtime_v5_release_id": self.package.runtime_v5_release_id,
             "runtime_v5_qc_status": (
                 "disabled_pending_dependency_audit"
@@ -813,6 +893,7 @@ class EdgeAIRuntime:
             "gap_reset_count": self._gap_reset_count,
             "invalid_frame_count": self._invalid_frame_count,
             "max_gap_s": self.package.max_gap_s,
+            "consensus_window_count": self._consensus_window_count,
         }
 
     def append_row(self, row: Dict[str, Any]) -> Optional[EdgeAIResult]:
@@ -908,6 +989,10 @@ class EdgeAIRuntime:
         self._timestamps.clear()
         self._samples_since_inference = 0
 
+    def _reset_consensus(self) -> None:
+        self._consensus_probability_sum.fill(0.0)
+        self._consensus_window_count = 0
+
     def _phase_allows_inference(self) -> bool:
         if self.package.phase_mode == "automatic":
             return True
@@ -998,23 +1083,49 @@ class EdgeAIRuntime:
             raise EdgeAIPackageError("TorchScript confidence is not finite")
         gas = self.package.gas_names[pred_class] if 0 <= pred_class < len(self.package.gas_names) else f"Class{pred_class}"
 
-        ppm_tensor = parsed["ppm"]
-        if not hasattr(ppm_tensor, "reshape"):
-            raise EdgeAIPackageError("TorchScript ppm output is not tensor-like")
-        flat_ppm = ppm_tensor.reshape(-1)
-        if flat_ppm.numel() < 1:
-            raise EdgeAIPackageError("TorchScript ppm output is empty")
-        if flat_ppm.numel() == len(self.package.gas_names):
-            base_ppm = float(flat_ppm[pred_class].item())
+        probability_values = (
+            probs.reshape(-1, len(self.package.gas_names))[0]
+            .detach()
+            .cpu()
+            .numpy()
+            .astype(np.float64)
+        )
+        if not np.all(np.isfinite(probability_values)):
+            raise EdgeAIPackageError("TorchScript class probabilities are not finite")
+        self._consensus_probability_sum += probability_values
+        self._consensus_window_count += 1
+        consensus_values = (
+            self._consensus_probability_sum / self._consensus_window_count
+        )
+        consensus_class = int(np.argmax(consensus_values))
+        consensus_confidence = float(consensus_values[consensus_class])
+        consensus_gas = self.package.gas_names[consensus_class]
+
+        if self.package.has_concentration:
+            ppm_tensor = parsed["ppm"]
+            if not hasattr(ppm_tensor, "reshape"):
+                raise EdgeAIPackageError("TorchScript ppm output is not tensor-like")
+            flat_ppm = ppm_tensor.reshape(-1)
+            if flat_ppm.numel() < 1:
+                raise EdgeAIPackageError("TorchScript ppm output is empty")
+            if flat_ppm.numel() == len(self.package.gas_names):
+                base_ppm = float(flat_ppm[pred_class].item())
+            else:
+                base_ppm = float(flat_ppm[0].item())
+            if not math.isfinite(base_ppm):
+                raise EdgeAIPackageError("TorchScript ppm output is not finite")
+            ppm, calibration_name = self._apply_calibration(base_ppm, pred_class)
         else:
-            base_ppm = float(flat_ppm[0].item())
-        if not math.isfinite(base_ppm):
-            raise EdgeAIPackageError("TorchScript ppm output is not finite")
-        ppm, calibration_name = self._apply_calibration(base_ppm, pred_class)
+            base_ppm = None
+            ppm = None
+            calibration_name = "not_applicable"
 
         risk_score = parsed.get("risk_score")
         risk_value: Optional[float]
-        if risk_score is None:
+        if not self.package.has_concentration:
+            risk_value = None
+            risk_name = "not_validated_for_lab_classification"
+        elif risk_score is None:
             risk_value = 1.0 - confidence
             risk_name = "classifier_uncertainty"
         else:
@@ -1023,19 +1134,24 @@ class EdgeAIRuntime:
         if risk_value is not None and not math.isfinite(risk_value):
             raise EdgeAIPackageError("TorchScript/QC risk score is not finite")
 
-        min_conf = float(self.package.qc_cfg.get("min_confidence", 0.0))
-        accept_max = float(self.package.qc_cfg.get("accept_max_risk", self.package.qc_cfg.get("max_risk_score", float("inf"))))
-        reject_min = float(self.package.qc_cfg.get("reject_min_risk", float("inf")))
-        if confidence < min_conf:
-            decision = str(self.package.qc_cfg.get("low_confidence_decision", "review"))
-        elif risk_value is not None and risk_value >= reject_min:
-            decision = "reject"
-        elif risk_value is None or risk_value <= accept_max:
-            decision = "accept"
+        if not self.package.has_concentration:
+            decision = "unavailable_qc_not_validated"
+            accepted = False
+            selected_policy = "classification_qc_not_validated"
         else:
-            decision = "review"
-        accepted = decision == "accept"
-        selected_policy = str(self.package.qc_cfg.get("policy_name", "package_qc"))
+            min_conf = float(self.package.qc_cfg.get("min_confidence", 0.0))
+            accept_max = float(self.package.qc_cfg.get("accept_max_risk", self.package.qc_cfg.get("max_risk_score", float("inf"))))
+            reject_min = float(self.package.qc_cfg.get("reject_min_risk", float("inf")))
+            if confidence < min_conf:
+                decision = str(self.package.qc_cfg.get("low_confidence_decision", "review"))
+            elif risk_value is not None and risk_value >= reject_min:
+                decision = "reject"
+            elif risk_value is None or risk_value <= accept_max:
+                decision = "accept"
+            else:
+                decision = "review"
+            accepted = decision == "accept"
+            selected_policy = str(self.package.qc_cfg.get("policy_name", "package_qc"))
         meta = list(self._window_meta)
         if len(meta) != self.package.window_size:
             raise EdgeAIPackageError("AI window metadata is incomplete")
@@ -1062,9 +1178,17 @@ class EdgeAIRuntime:
             predicted_class=pred_class,
             predicted_gas=gas,
             confidence=confidence,
+            class_probabilities=probability_values.astype(float).tolist(),
+            consensus_predicted_class=consensus_class,
+            consensus_predicted_gas=consensus_gas,
+            consensus_confidence=consensus_confidence,
+            consensus_probabilities=consensus_values.astype(float).tolist(),
+            consensus_window_count=self._consensus_window_count,
+            task_type=self.package.task_type,
+            has_concentration=self.package.has_concentration,
             ppm_base_prediction=base_ppm,
             ppm_full_prediction=ppm,
-            ppm_auto_output=ppm if accepted else None,
+            ppm_auto_output=ppm if accepted and ppm is not None else None,
             decision=decision,
             selected_calibration=calibration_name,
             selected_policy=selected_policy,
@@ -1192,6 +1316,14 @@ class EdgeAIRuntime:
             predicted_class=pred_class,
             predicted_gas=gas,
             confidence=confidence,
+            class_probabilities=[],
+            consensus_predicted_class=pred_class,
+            consensus_predicted_gas=gas,
+            consensus_confidence=confidence,
+            consensus_probabilities=[],
+            consensus_window_count=1,
+            task_type=self.package.task_type,
+            has_concentration=self.package.has_concentration,
             ppm_base_prediction=source_h1_ppm,
             ppm_full_prediction=prediction_ppm,
             ppm_auto_output=None,
@@ -1272,12 +1404,19 @@ class EdgeAIRuntime:
         elif isinstance(output, (tuple, list)) and len(output) >= 2:
             logits, ppm = output[0], output[1]
             risk = output[2] if len(output) >= 3 else None
+        elif self.package.task_type == "classification" and hasattr(output, "dim"):
+            logits = output
+            ppm = None
+            risk = None
         else:
             raise EdgeAIPackageError(
-                "TorchScript output must be a dict with logits/ppm or a tuple (logits, ppm[, risk_score])"
+                "TorchScript output must be logits for classification, or a dict/tuple "
+                "containing logits and ppm for classification_regression"
             )
-        if logits is None or ppm is None:
-            raise EdgeAIPackageError("TorchScript output is missing logits or ppm")
+        if logits is None:
+            raise EdgeAIPackageError("TorchScript output is missing logits")
+        if self.package.has_concentration and ppm is None:
+            raise EdgeAIPackageError("TorchScript output is missing ppm")
         return {"logits": logits, "ppm": ppm, "risk_score": risk}
 
     def _observed_hz(self) -> float:

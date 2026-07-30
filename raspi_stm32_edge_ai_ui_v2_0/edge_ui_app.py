@@ -36,6 +36,7 @@ from data_buffer import ADC_FIELD_NAMES, SensorRingBuffer
 from frame_parser_v20 import CSV_COLUMNS_WITH_DERIVED
 from serial_worker import SerialWorker
 from edge_ai_worker import EdgeAIWorker
+from edge_ai_runtime import EdgeAIPackageError, prewarm_torchscript_package
 from config_loader import load_config, ui_defaults
 
 
@@ -205,6 +206,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self._last_ai_unsaved_reason = ""
         self._recording_error_latched = False
         self._compact_ui: Optional[bool] = None
+        self._ai_display_has_concentration: Optional[bool] = None
         self._ai_history_ppm: List[float] = []
         self._ai_history_index: List[int] = []
 
@@ -218,7 +220,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.select_sensor(0)
         self.update_disk_space()
         if self.ai_package_path is not None:
-            self.ai_load_signal.emit(str(self.ai_package_path))
+            if self._prewarm_ai_package(self.ai_package_path):
+                self.ai_load_signal.emit(str(self.ai_package_path))
 
     # ------------------------- UI construction -------------------------
     def _build_ui(self) -> None:
@@ -290,17 +293,17 @@ class MainWindow(QtWidgets.QMainWindow):
         return bar
 
     def _build_main_tabs(self) -> QtWidgets.QWidget:
-        tabs = QtWidgets.QTabWidget()
-        tabs.setObjectName("MainTabs")
-        tabs.tabBar().setUsesScrollButtons(False)
-        tabs.tabBar().setElideMode(QtCore.Qt.ElideRight)
+        self.tabs = QtWidgets.QTabWidget()
+        self.tabs.setObjectName("MainTabs")
+        self.tabs.tabBar().setUsesScrollButtons(False)
+        self.tabs.tabBar().setElideMode(QtCore.Qt.ElideRight)
         # Leading padding avoids a Qt/Wayland first-tab glyph clipping quirk.
-        tabs.addTab(self._build_sensor_tab(), "  Live Curve")
+        self.tabs.addTab(self._build_sensor_tab(), "  Live Curve")
         self.status_scroll = self._wrap_scroll(self._build_status_tab())
         self.edge_ai_scroll = self._wrap_scroll(self._build_edge_ai_tab())
-        tabs.addTab(self.status_scroll, "Data / Save")
-        tabs.addTab(self.edge_ai_scroll, "Edge AI")
-        return tabs
+        self.tabs.addTab(self.status_scroll, "Data / Save")
+        self.tabs.addTab(self.edge_ai_scroll, "Edge AI")
+        return self.tabs
 
     def _wrap_scroll(self, widget: QtWidgets.QWidget) -> QtWidgets.QScrollArea:
         scroll = QtWidgets.QScrollArea()
@@ -541,9 +544,9 @@ class MainWindow(QtWidgets.QMainWindow):
         history_layout = QtWidgets.QVBoxLayout(self.ai_history_panel)
         history_layout.setContentsMargins(7, 5, 7, 7)
         history_layout.setSpacing(3)
-        history_title = QtWidgets.QLabel("Recent concentration predictions")
-        history_title.setObjectName("SectionTitle")
-        history_layout.addWidget(history_title)
+        self.ai_history_title = QtWidgets.QLabel("Recent concentration predictions")
+        self.ai_history_title.setObjectName("SectionTitle")
+        history_layout.addWidget(self.ai_history_title)
         self.ai_history_plot = pg.PlotWidget()
         self.ai_history_plot.setBackground(None)
         self.ai_history_plot.showGrid(x=True, y=True, alpha=0.18)
@@ -633,6 +636,7 @@ class MainWindow(QtWidgets.QMainWindow):
         normalized = str(decision).strip().lower()
         mapping = {
             "disabled_pending_dependency_audit": ("Unavailable", "warning"),
+            "unavailable_qc_not_validated": ("Unavailable", "warning"),
             "accept": ("Accepted", "ok"),
             "accepted": ("Accepted", "ok"),
             "auto": ("Automatic", "ok"),
@@ -831,6 +835,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ai_thread.start()
 
     # ------------------------- Actions -------------------------
+    def _prewarm_ai_package(self, package_path: Path) -> bool:
+        try:
+            info = prewarm_torchscript_package(package_path)
+        except (EdgeAIPackageError, OSError, ValueError) as exc:
+            message = f"AI package prewarm failed: {exc}"
+            self.on_ai_package_loaded(False, message)
+            self.on_ai_error(message)
+            return False
+        if bool(info.get("prewarmed", False)):
+            self._append_event(
+                "TorchScript main-thread prewarm completed: "
+                f"shape={info.get('input_shape')}, "
+                f"sha256={info.get('package_fingerprint')}",
+                "ai_torchscript_prewarm",
+            )
+        return True
+
     def choose_ai_package(self) -> None:
         start_dir = str(self.ai_package_path or self.data_root)
         selected = QtWidgets.QFileDialog.getExistingDirectory(
@@ -845,7 +866,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self._set_ai_state_visual("AI LOADING", "AIIdlePill")
         self.ai_package_label.setText(self._friendly_model_name(self.ai_package_path.name))
         self.ai_package_label.setToolTip(str(self.ai_package_path))
-        self.ai_load_signal.emit(str(self.ai_package_path))
+        if self._prewarm_ai_package(self.ai_package_path):
+            self.ai_load_signal.emit(str(self.ai_package_path))
 
     def refresh_ports(self) -> None:
         current = self.port_combo.currentText() or self.default_port
@@ -1365,6 +1387,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._ai_history_ppm.clear()
             self._ai_history_index.clear()
             self.ai_history_curve.setData([], [])
+            self._ai_display_has_concentration = None
             self._append_event(f"Edge AI package loaded: {message}", "ai_package_loaded")
         else:
             self.last_ai_status = {}
@@ -1373,6 +1396,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ai_package_label.setText("No active model")
             self.ai_package_label.setToolTip(str(message))
             self.ai_result_label.setText("Waiting for a verified model package.")
+            self._ai_display_has_concentration = None
             self._append_event(f"Edge AI package not active: {message}", "ai_package_unloaded")
 
     @QtCore.pyqtSlot(dict)
@@ -1392,7 +1416,21 @@ class MainWindow(QtWidgets.QMainWindow):
         dataset_profile = str(status.get("dataset_profile", "unspecified"))
         device_profile = str(status.get("device_profile", "unspecified"))
         normalized = bool(status.get("normalization_enabled", False))
+        task_type = str(status.get("task_type", "classification_regression"))
+        has_concentration = bool(status.get("has_concentration", True))
         fingerprint = str(status.get("package_fingerprint", ""))
+        if self._ai_display_has_concentration != has_concentration:
+            self._ai_display_has_concentration = has_concentration
+            if has_concentration:
+                self.ai_ppm_card.title.setText("Concentration")
+                self.ai_ppm_card.unit.setText("ppm")
+                self.ai_history_title.setText("Recent concentration predictions")
+                self.ai_history_plot.setLabel("left", "Prediction", units="ppm")
+            else:
+                self.ai_ppm_card.title.setText("Exposure Consensus")
+                self.ai_ppm_card.unit.setText("class")
+                self.ai_history_title.setText("Recent consensus confidence")
+                self.ai_history_plot.setLabel("left", "Confidence", units="%")
         self.ai_rate_card.set_value(observed, "{:.2f}")
         phase_text = {
             "automatic": "Auto",
@@ -1422,7 +1460,8 @@ class MainWindow(QtWidgets.QMainWindow):
             f"state={state}; phase={phase}; baseline={base_n}/{base_req}; "
             f"window={win_n}/{win_req}; input={observed:.4f}/{expected:.4f} Hz; "
             f"dataset={dataset_profile}; device={device_profile}; mode={mode}; "
-            f"normalization={'on' if normalized else 'off'}"
+            f"normalization={'on' if normalized else 'off'}; task={task_type}; "
+            f"has_concentration={has_concentration}"
         )
         self.ai_progress_label.setToolTip(technical_details)
         package_name = str(status.get("package_name", "") or "")
@@ -1456,6 +1495,8 @@ class MainWindow(QtWidgets.QMainWindow):
                                     "runtime_v5_qc_status", ""
                                 ),
                                 "normalization_enabled": normalized,
+                                "task_type": task_type,
+                                "has_concentration": has_concentration,
                                 "expected_hz": expected,
                                 "feature_mode": mode,
                                 "schema_version": status.get("schema_version", ""),
@@ -1499,14 +1540,28 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_ai_result(self, result: Dict[str, object]) -> None:
         self.last_ai_result = dict(result)
         gas = str(result.get("predicted_gas", "--"))
-        ppm = float(result.get("ppm_full_prediction", 0.0))
+        has_concentration = bool(result.get("has_concentration", True))
+        ppm_value = result.get("ppm_full_prediction")
         conf = float(result.get("confidence", 0.0))
         decision = str(result.get("decision", "review"))
         latency = float(result.get("inference_latency_ms", 0.0))
         risk = result.get("risk_score")
         risk_text = "--" if risk in (None, "") else f"{float(risk):.3f}"
         self.ai_gas_card.set_value(gas, "{}")
-        self.ai_ppm_card.set_value(ppm, "{:.1f}")
+        if has_concentration:
+            ppm = float(ppm_value)
+            self.ai_ppm_card.set_value(ppm, "{:.1f}")
+            history_value = ppm
+        else:
+            consensus_gas = str(result.get("consensus_predicted_gas", gas))
+            consensus_conf = float(result.get("consensus_confidence", conf))
+            consensus_n = int(result.get("consensus_window_count", 1))
+            self.ai_ppm_card.set_value(consensus_gas, "{}")
+            self.ai_ppm_card.value.setToolTip(
+                f"{consensus_gas}; confidence={consensus_conf:.6f}; "
+                f"valid_windows={consensus_n}"
+            )
+            history_value = consensus_conf * 100.0
         self.ai_conf_card.set_value(conf * 100.0, "{:.1f}")
         qc_display, qc_status = self._friendly_qc_decision(decision)
         self.ai_qc_card.set_value(qc_display, "{}")
@@ -1518,23 +1573,35 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ai_conf_card.set_status("ok")
         self.ai_latency_card.set_status("ok")
         auto = result.get("ppm_auto_output")
-        if decision == "disabled_pending_dependency_audit":
-            auto_text = "QC disabled; no auto output"
-        else:
-            auto_text = (
-                "manual review"
-                if auto in (None, "")
-                else f"auto={float(auto):.1f} ppm"
+        if not has_concentration:
+            probabilities = result.get("class_probabilities", [])
+            self.ai_result_label.setText(
+                f"Window: {gas} ({conf * 100.0:.1f}%) · "
+                f"Consensus: {consensus_gas} ({consensus_conf * 100.0:.1f}%, "
+                f"n={consensus_n})"
             )
-        self.ai_result_label.setText(
-            f"{gas} · full prediction {ppm:.1f} ppm · {auto_text}"
-        )
-        self.ai_result_label.setToolTip(
-            f"confidence={conf:.6f}; risk={risk_text}; QC={decision}"
-        )
+            self.ai_result_label.setToolTip(
+                f"class_probabilities={probabilities}; QC={decision}; "
+                "classification-only package; concentration unavailable"
+            )
+        else:
+            if decision == "disabled_pending_dependency_audit":
+                auto_text = "QC disabled; no auto output"
+            else:
+                auto_text = (
+                    "manual review"
+                    if auto in (None, "")
+                    else f"auto={float(auto):.1f} ppm"
+                )
+            self.ai_result_label.setText(
+                f"{gas} · full prediction {ppm:.1f} ppm · {auto_text}"
+            )
+            self.ai_result_label.setToolTip(
+                f"confidence={conf:.6f}; risk={risk_text}; QC={decision}"
+            )
         next_index = self._ai_history_index[-1] + 1 if self._ai_history_index else 1
         self._ai_history_index.append(next_index)
-        self._ai_history_ppm.append(ppm)
+        self._ai_history_ppm.append(history_value)
         self._ai_history_index = self._ai_history_index[-120:]
         self._ai_history_ppm = self._ai_history_ppm[-120:]
         self.ai_history_curve.setData(

@@ -15,7 +15,10 @@ from frame_parser_v20 import CSV_COLUMNS_WITH_DERIVED
 
 AI_OUTPUT_COLUMNS = [
     "timestamp_iso", "stream_frame_index", "predicted_class", "predicted_gas",
-    "confidence", "ppm_base_prediction", "ppm_full_prediction", "ppm_auto_output", "decision",
+    "confidence", "class_probabilities", "consensus_predicted_class",
+    "consensus_predicted_gas", "consensus_confidence", "consensus_probabilities",
+    "consensus_window_count", "task_type", "has_concentration",
+    "ppm_base_prediction", "ppm_full_prediction", "ppm_auto_output", "decision",
     "selected_calibration", "selected_policy", "risk_score", "risk_score_name", "inference_latency_ms", "observed_hz",
     "window_size", "package_name", "package_fingerprint", "dataset_profile", "device_profile",
     "model_backend", "normalization_applied", "experiment_phase", "inference_id",
