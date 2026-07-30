@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "branch": "codex/lab-3gas-analysis-20260731",
+  "commit": "9702ad443a078e206fb437a7db01b9cb29e9d814",
+  "source_archive": {
+    "file": "lab_a4_edge_ui_9702ad4.tar.gz",
+    "sha256": "5ff1487326d4b23828bca08b13f1a9f2311cd3aef38d2a4dac1c86a97e501c3d"
+  },
+  "package": {
+    "name": "lab_3gas_a4_stable_p2_to_p3_round25_replay_candidate_20260731_r3",
+    "fingerprint": "88a4a4d75c6bd2f1a917a1e771712a0568e9c284bee599f4f83ab26257fb0877",
+    "model_sha256": "2a7fd4b5cc1dae1000141a9d287de77de6d32d62a1d535a56de936675e06cee5",
+    "normalization_sha256": "e32143b410e217e0e581720f8c1aba72371049b10c3c223491116782aa5e5f15"
+  },
+  "validation_data": {
+    "features_sha256": "fe3a6a9c002adb1f4c79b058cb72f92d824e7bc6b45c6435467a80682b69e0ad",
+    "labels_sha256": "073013f0be8aa25c5c1cf81bf9aeb85a07b501335493af2481799921e3286539"
+  },
+  "nodes": [
+    {
+      "role": "Flower Server + Server DA",
+      "ssh": "root@121.40.139.213",
+      "directory": "/root/GAPS/lab_a4_edge_ui_candidate_9702ad4",
+      "python": "/root/gaps_env/bin/python",
+      "replay_status": "PASS",
+      "runtime_correct": "359/360",
+      "class_match": "360/360"
+    },
+    {
+      "role": "P2 / C2",
+      "ssh": "root@114.55.171.63",
+      "directory": "/root/GAPS/lab_a4_edge_ui_candidate_9702ad4",
+      "python": "/root/gaps_c2_cpu_env/bin/python",
+      "replay_status": "PASS",
+      "runtime_correct": "359/360",
+      "class_match": "360/360"
+    },
+    {
+      "role": "P1 / C1",
+      "ssh": "gaps@192.168.137.172",
+      "directory": "/home/gaps/GAPS/lab_a4_edge_ui_candidate_9702ad4",
+      "python": "/home/gaps/GAPS/gaps_rpi_env/bin/python",
+      "replay_status": "PASS",
+      "runtime_correct": "359/360",
+      "class_match": "360/360",
+      "qt_worker_stability": "5/5",
+      "wayland_status": "PASS"
+    }
+  ],
+  "deployment_boundary": {
+    "replay_only": true,
+    "raw_stm32_frames_allowed": false,
+    "live_blocker": "six-channel frame mapping and ADC-to-resistance electrical contract remain unverified"
+  }
+}

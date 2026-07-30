@@ -44,6 +44,18 @@
 
 PC 与树莓派的延迟来自不同操作系统和调度环境，只能作部署可行性描述，不能据此宣称平台性能优劣。
 
+## 三机同步复核
+
+同一源码归档、r3 模型包和冻结验证输入已同步到正式三机的独立目录。云服务器 A 与 B 均再次得到 `359/360`、运行时/直接模型类别 `360/360` 一致、最大概率差 `0`。描述性延迟如下：
+
+| 节点 | Python/Torch | Median | P95 | 数值结果 |
+|---|---|---:|---:|---|
+| 云服务器 A | `/root/gaps_env/bin/python`, Torch 2.12.0+cu130 | 10.863 ms | 23.104 ms | PASS |
+| 云服务器 B | `/root/gaps_c2_cpu_env/bin/python`, Torch 2.12.0+cpu | 3.664 ms | 5.423 ms | PASS |
+| 树莓派 | `/home/gaps/GAPS/gaps_rpi_env/bin/python`, Torch 2.12.1+cpu | 2.269 ms | 2.324 ms | PASS |
+
+三机的源码归档、模型和冻结特征 SHA256 完全一致。延迟仍只作单次部署描述，不作硬件优劣比较。
+
 ## 结论边界
 
 当前证据支持：
@@ -68,3 +80,5 @@ PC 与树莓派的延迟来自不同操作系统和调度环境，只能作部�
 - `results/lab_3gas_a4_edge_ui_integration_20260731/p3_pi_replay/pi_replay_summary_r3.json`
 - `results/lab_3gas_a4_edge_ui_integration_20260731/p3_pi_replay/pi_qt_worker_r3_stability1.json` 至 `stability5.json`
 - `results/lab_3gas_a4_edge_ui_integration_20260731/p3_pi_replay/pi_qt_wayland_worker_r3.json`
+- `results/lab_3gas_a4_edge_ui_integration_20260731/p4_cloud_sync/server_a_replay_summary.json`
+- `results/lab_3gas_a4_edge_ui_integration_20260731/p4_cloud_sync/server_b_replay_summary.json`

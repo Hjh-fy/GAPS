@@ -1,0 +1,23 @@
+{
+  "experiment_id": "A4-EDGE-P2A",
+  "package_dir": "/root/GAPS/lab_a4_edge_ui_candidate_9702ad4/raspi_stm32_edge_ai_ui_v2_0/deployment_packages/lab_3gas_a4_stable_p2_to_p3_round25_replay_candidate_20260731_r3",
+  "package_fingerprint": "88a4a4d75c6bd2f1a917a1e771712a0568e9c284bee599f4f83ab26257fb0877",
+  "model_sha256": "2a7fd4b5cc1dae1000141a9d287de77de6d32d62a1d535a56de936675e06cee5",
+  "norm_stats_sha256": "e32143b410e217e0e581720f8c1aba72371049b10c3c223491116782aa5e5f15",
+  "features_sha256": "fe3a6a9c002adb1f4c79b058cb72f92d824e7bc6b45c6435467a80682b69e0ad",
+  "labels_sha256": "073013f0be8aa25c5c1cf81bf9aeb85a07b501335493af2481799921e3286539",
+  "n_windows": 360,
+  "direct_correct": 359,
+  "runtime_correct": 359,
+  "runtime_accuracy": 0.9972222222222222,
+  "direct_runtime_class_match_count": 360,
+  "direct_runtime_class_match_rate": 1.0,
+  "max_probability_abs_diff": 0.0,
+  "normalization_roundtrip_max_abs_diff": 2.384185791015625e-07,
+  "consensus_window_count": 2,
+  "consensus_max_abs_diff": 0.0,
+  "latency_ms_median": 3.66446899715811,
+  "latency_ms_p95": 5.422810406889768,
+  "classification_only_ppm_null": true,
+  "classification_qc_unavailable": true
+}
