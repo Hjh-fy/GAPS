@@ -1,0 +1,100 @@
+{
+  "schema_version": "iotj.b5_server_da_budget_result_index.v1",
+  "experiment_identity": {
+    "classifier": "B5",
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "target_client": "C5",
+    "rounds": 25,
+    "local_epochs_per_round": 1,
+    "server_da_steps_per_round": [
+      100,
+      80,
+      50,
+      30
+    ],
+    "only_intended_variable": "server_adaptation.steps"
+  },
+  "source_code_commit_at_launch": "da3e153b37dae59e5ae07aa2501c285e777bdd55",
+  "evidence_status": {
+    "da100": "existing_canonical_reference",
+    "da80": "canonical_postflight_pass",
+    "da50": "canonical_postflight_pass",
+    "da30": "blocked_observability_contract_technical_result_only"
+  },
+  "artifacts": [
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/protocol_lock.json",
+      "sha256": "054604b12cb8a30e8024b870402bf7ca3f7ea12a44417d009d57826bb62b889d"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/sequence/sequence_events.jsonl",
+      "sha256": "97b873410f7d4eac07fc1cad60c4040af8c6fd85e78dece12e75042091f58f67"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da80/da80_postflight.json",
+      "sha256": "984b39d0b88a67ea7938062f7f0a7456fa54dda6110264bc1e33c8fa31fb43f3"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da80/da80_training_summary.json",
+      "sha256": "a84d084cc6b17191598baf01766e1e0204175ad0c0c6f1f8519ead7c6e6bd5b3"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da50/da50_postflight.json",
+      "sha256": "984b39d0b88a67ea7938062f7f0a7456fa54dda6110264bc1e33c8fa31fb43f3",
+      "note": "The v2 postflight payload does not contain the DA-step field; directory and training-summary bindings disambiguate it."
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da50/da50_training_summary.json",
+      "sha256": "af6824986683f17a713a3f3ff1c02b7f4a0c0886f0263bca2ba80091ad2c6a14"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da30/da30_noncanonical_observability_receipt.json",
+      "sha256": "9997a297860c7e684ada9da5b31ca6a0813b943feb8d98e7bd634b2fda7c461b"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da30/da30_noncanonical_training_summary.json",
+      "sha256": "169e4753615b73f55d2fd9c8d82a3ba747fe43077ee751f98935347bfd3da410"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/da30/classification_evaluation/da30_classification_metrics.json",
+      "sha256": "e153f73deacd11a203e4069c606f1688c06c2224dda27eab49b23f1aa124d028"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/summary/b5_server_da_budget_summary.json",
+      "sha256": "937587213cd7e1822720adc9279b3efcfd4072011271c4615f1c9f37a2f861eb"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/summary/b5_server_da_budget_comparison.csv",
+      "sha256": "76b02704eec1b0c7961686e6f0d07887d39330628e3d2a9c06dd093c6534bb0b"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/summary/b5_server_da_budget_comparison.png",
+      "sha256": "5cfb4a08ac4d72554eeee8d1c49b8d343d6e160c41deb926718c3a8aa0feddfb"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/summary/result_analysis.md",
+      "sha256": "7196abbc92df1f68bfc6d3c0a17c3c3dfd8c298eeb60392401395e7c09fc6944"
+    },
+    {
+      "path": "results/iotj_b5_server_da_budget_ablation_20260731/summary/experiment_audit.md",
+      "sha256": "44a42770aacbdf1440e59822285762cacd8ca4110da75fde5ba587037c2e8a95"
+    },
+    {
+      "path": "docs/experiments/iotj_b5_server_da_budget_result_20260731.zh.md",
+      "sha256": "31037c0d2bbe6d531370c49a29a73ab444e139c039f9348a5904c2004e73b233"
+    }
+  ],
+  "frozen_assets": {
+    "runtime_contract_sha256": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+    "bundle_manifest_sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "hc95_sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+    "unchanged": true
+  },
+  "selection_boundary": "descriptive post-freeze sensitivity only; no frozen B5 reselection",
+  "test_role": "evaluation only; not used for fitting, early stopping, checkpoint selection or DA-step selection"
+}

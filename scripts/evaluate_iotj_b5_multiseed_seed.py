@@ -31,6 +31,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--row-map", type=Path, required=True)
     parser.add_argument("--runtime-contract", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--run-id",
+        help="Explicit run identity; defaults to the historical multi-seed identity.",
+    )
+    parser.add_argument(
+        "--attempt-id",
+        help="Explicit attempt identity; defaults to <run-id>__a001.",
+    )
+    parser.add_argument(
+        "--output-prefix",
+        help="Output filename prefix; defaults to seed<seed>.",
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--batch-size", type=int, default=32)
     return parser.parse_args()
@@ -40,8 +52,9 @@ def main() -> None:
     args = _parse_args()
     if args.output_dir.exists():
         raise FileExistsError(f"refusing to overwrite output: {args.output_dir}")
-    run_id = f"c12_to_c5__b5__s{args.seed}"
-    attempt_id = f"{run_id}__a001"
+    run_id = args.run_id or f"c12_to_c5__b5__s{args.seed}"
+    attempt_id = args.attempt_id or f"{run_id}__a001"
+    output_prefix = args.output_prefix or f"seed{args.seed}"
     rows, metrics = evaluate_checkpoint_stream(
         args.checkpoint,
         data_root=args.data_root,
@@ -110,7 +123,7 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True)
     prediction_path = (
-        args.output_dir / f"seed{args.seed}_test_predictions.csv"
+        args.output_dir / f"{output_prefix}_test_predictions.csv"
     )
     with prediction_path.open("x", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=sorted(rows[0]))
@@ -132,7 +145,7 @@ def main() -> None:
         "test_used_for_training_selection_or_stopping": False,
     }
     metrics_path = (
-        args.output_dir / f"seed{args.seed}_classification_metrics.json"
+        args.output_dir / f"{output_prefix}_classification_metrics.json"
     )
     metrics_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",

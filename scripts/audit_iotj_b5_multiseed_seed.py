@@ -5,6 +5,7 @@ import csv
 import hashlib
 import json
 import math
+import re
 import statistics
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +13,6 @@ from typing import Any
 
 
 EXPECTED_ROUNDS = 25
-EXPECTED_DA_STEPS = 2500
 
 
 def _json(path: Path) -> Any:
@@ -50,10 +50,32 @@ def _stats(values: list[float]) -> dict[str, float]:
     }
 
 
+def _logged_local_epochs(path: Path) -> set[int]:
+    return {
+        int(value)
+        for value in re.findall(
+            r"\blocal_epochs=(\d+)\b", path.read_text(encoding="utf-8")
+        )
+    }
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--seed-dir", type=Path, required=True)
+    parser.add_argument("--raw-root", type=Path)
+    parser.add_argument("--attempt-id")
+    parser.add_argument("--local-epochs", type=int, default=5)
+    parser.add_argument("--server-da-steps-per-round", type=int, default=100)
+    parser.add_argument("--output-prefix")
+    parser.add_argument(
+        "--evidence-boundary", default="classification stability only"
+    )
+    parser.add_argument(
+        "--next-experiment-authorized",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+    )
     parser.add_argument("--runtime-contract", type=Path, required=True)
     parser.add_argument("--bundle-manifest", type=Path, required=True)
     parser.add_argument("--hc95", type=Path, required=True)
@@ -63,10 +85,15 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
+    if args.server_da_steps_per_round <= 0:
+        raise ValueError("server DA steps per round must be positive")
+    expected_da_steps = EXPECTED_ROUNDS * args.server_da_steps_per_round
     seed = args.seed
     run_id = f"c12_to_c5__b5__s{seed}"
-    attempt_id = f"{run_id}__a001"
-    attempt = args.seed_dir / "raw" / run_id / attempt_id
+    attempt_id = args.attempt_id or f"{run_id}__a001"
+    output_prefix = args.output_prefix or f"seed{seed}"
+    raw_root = args.raw_root or (args.seed_dir / "raw")
+    attempt = raw_root / run_id / attempt_id
     raw = attempt / "raw"
     training = raw / "ecs" / "training"
     status = _json(attempt / "attempt_status.json")
@@ -75,12 +102,12 @@ def main() -> None:
     metrics_path = (
         args.seed_dir
         / "classification_evaluation"
-        / f"seed{seed}_classification_metrics.json"
+        / f"{output_prefix}_classification_metrics.json"
     )
     predictions_path = (
         args.seed_dir
         / "classification_evaluation"
-        / f"seed{seed}_test_predictions.csv"
+        / f"{output_prefix}_test_predictions.csv"
     )
     metrics = _json(metrics_path)
     server_events = _jsonl(raw / "ecs" / "events.jsonl")
@@ -125,10 +152,14 @@ def main() -> None:
             )
         ),
         "zero_fit_eval_failures": not audit["reasons"],
-        "da_2500_steps": (
+        "da_expected_steps": (
             len(da_stats) == EXPECTED_ROUNDS
+            and all(
+                int(item["num_steps"]) == args.server_da_steps_per_round
+                for item in da_stats
+            )
             and sum(int(item["num_steps"]) for item in da_stats)
-            == EXPECTED_DA_STEPS
+            == expected_da_steps
         ),
         "round25_adapted_checkpoint": checkpoint.is_file(),
         "checkpoint_strict_load": (
@@ -140,6 +171,11 @@ def main() -> None:
         "seed_correct": (
             int(run_config["args"]["seed"]) == seed
             and all(int(x["training_seed"]) == seed for x in fit_ends + c1_fit + c2_fit)
+        ),
+        "local_epochs_correct": (
+            _logged_local_epochs(raw / "pi" / "client.log")
+            == _logged_local_epochs(raw / "ecs_c2" / "client.log")
+            == {args.local_epochs}
         ),
         "classification_rows_1360": (
             metrics["predicted_route_rows"] == 1360
@@ -191,19 +227,19 @@ def main() -> None:
                     "server_aggregate_non_da_ns"
                 ]
                 / 1e9,
-                "da_steps": 100,
+                "da_steps": args.server_da_steps_per_round,
                 "fit_failures": 0,
                 "eval_failures": 0,
             }
         )
-    trace_path = args.seed_dir / f"seed{seed}_training_trace.csv"
+    trace_path = args.seed_dir / f"{output_prefix}_training_trace.csv"
     with trace_path.open("x", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(trace_rows[0]))
         writer.writeheader()
         writer.writerows(trace_rows)
 
     run_manifest = {
-        "schema_version": "iotj.b5_seed_run_manifest.v1",
+        "schema_version": "iotj.b5_classification_run_manifest.v2",
         "run_id": run_id,
         "attempt_id": attempt_id,
         "seed": seed,
@@ -216,17 +252,17 @@ def main() -> None:
         "attempt_audit_sha256": status["audit_sha256"],
         "topology": "ecs_c2_pi_c1",
         "rounds": 25,
-        "local_epochs": 5,
+        "local_epochs": args.local_epochs,
         "batch_size": 32,
         "client_optimizer": "Adam",
         "client_lr": 0.0005,
-        "server_da_steps_per_round": 100,
-        "server_da_total_steps": 2500,
+        "server_da_steps_per_round": args.server_da_steps_per_round,
+        "server_da_total_steps": expected_da_steps,
         "checkpoint": str(checkpoint),
         "checkpoint_sha256": _sha256(checkpoint),
         "test_used_for_training_selection_or_stopping": False,
     }
-    run_manifest_path = args.seed_dir / f"seed{seed}_run_manifest.json"
+    run_manifest_path = args.seed_dir / f"{output_prefix}_run_manifest.json"
     run_manifest_path.write_text(
         json.dumps(run_manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -243,7 +279,7 @@ def main() -> None:
         ),
     }
     summary = {
-        "schema_version": "iotj.b5_seed_training_summary.v1",
+        "schema_version": "iotj.b5_classification_training_summary.v2",
         "run_id": run_id,
         "attempt_id": attempt_id,
         "seed": seed,
@@ -252,43 +288,51 @@ def main() -> None:
         "rounds": 25,
         "fitins": 50,
         "fitres": 50,
-        "da_total_steps": 2500,
+        "da_total_steps": expected_da_steps,
         "timing": timing,
         "checkpoint_sha256": _sha256(checkpoint),
         "latest_adapted_checkpoint_sha256": _sha256(latest_checkpoint),
         "round25_normal_checkpoint_sha256": _sha256(normal_checkpoint),
         "classification_metrics": metrics["metrics"],
     }
-    summary_path = args.seed_dir / f"seed{seed}_training_summary.json"
+    summary_path = args.seed_dir / f"{output_prefix}_training_summary.json"
     summary_path.write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     postflight = {
-        "schema_version": "iotj.b5_seed_postflight.v1",
+        "schema_version": "iotj.b5_classification_postflight.v2",
         "run_id": run_id,
         "attempt_id": attempt_id,
         "seed": seed,
+        "local_epochs": args.local_epochs,
+        "server_da_steps_per_round": args.server_da_steps_per_round,
+        "server_da_total_steps": expected_da_steps,
         "checks": checks,
         "verdict": "PASS",
-        "next_seed_authorized": seed < 46,
-        "evidence_boundary": "classification stability only",
+        "next_experiment_authorized": (
+            seed < 46
+            if args.next_experiment_authorized is None
+            else args.next_experiment_authorized
+        ),
+        "evidence_boundary": args.evidence_boundary,
     }
-    postflight_path = args.seed_dir / f"seed{seed}_postflight.json"
+    postflight_path = args.seed_dir / f"{output_prefix}_postflight.json"
     postflight_path.write_text(
         json.dumps(postflight, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    report_path = args.seed_dir / f"seed{seed}_completion_report.zh.md"
+    report_path = args.seed_dir / f"{output_prefix}_completion_report.zh.md"
     m = metrics["metrics"]
     report_path.write_text(
-        f"""# IoT-J B5 seed{seed} 正式完成报告
+        f"""# IoT-J B5 {output_prefix} 正式完成报告
 
 - run：`{run_id}`
 - attempt：`{attempt_id}`
 - 状态：`canonical / validator_accepted`
 - 训练：25/25 rounds，C1/C2 每轮参与，0 fit/eval failure
-- Server DA：100 steps/round，共 2500 steps
+- 客户端本地训练：{args.local_epochs} epoch(s)/round
+- Server DA：{args.server_da_steps_per_round} steps/round，共 {expected_da_steps} steps
 - attempt wall：{wall_seconds:.3f} s（{wall_seconds / 3600:.3f} h）
 - round-25 adapted checkpoint SHA256：`{_sha256(checkpoint)}`
 
@@ -303,9 +347,9 @@ def main() -> None:
 
 ## 审计结论
 
-POSTFLIGHT_PASS。checkpoint 已由严格 round-25 加载路径完成推理验证；训练、DA、拓扑、seed、row key、有限数值与冻结 runtime/HC95/HC90 检查全部通过。C5 test 未参与训练、停止或 checkpoint 选择。
+POSTFLIGHT_PASS。checkpoint 已由严格 round-25 加载路径完成推理验证；训练、DA、拓扑、seed、local epochs、row key、有限数值与冻结 runtime/HC95/HC90 检查全部通过。C5 test 未参与训练、停止或 checkpoint 选择。
 
-本结果只构成 B5 classification multi-seed 的单 seed 证据，不形成回归、QC、runtime v5 或 Pi benchmark 结论。
+证据边界：{args.evidence_boundary}。
 """,
         encoding="utf-8",
     )
@@ -318,7 +362,7 @@ POSTFLIGHT_PASS。checkpoint 已由严格 round-25 加载路径完成推理验�
         checkpoint,
         latest_checkpoint,
         normal_checkpoint,
-        args.seed_dir / f"seed{seed}_preflight.json",
+        args.seed_dir / f"{output_prefix}_preflight.json",
         run_manifest_path,
         trace_path,
         summary_path,
@@ -328,7 +372,7 @@ POSTFLIGHT_PASS。checkpoint 已由严格 round-25 加载路径完成推理验�
         report_path,
     ]
     artifact_manifest = {
-        "schema_version": "iotj.b5_seed_artifact_sha256.v1",
+        "schema_version": "iotj.b5_classification_artifact_sha256.v2",
         "run_id": run_id,
         "files": [
             {
@@ -339,7 +383,7 @@ POSTFLIGHT_PASS。checkpoint 已由严格 round-25 加载路径完成推理验�
             for path in artifact_paths
         ],
     }
-    artifact_path = args.seed_dir / f"seed{seed}_artifact_sha256.json"
+    artifact_path = args.seed_dir / f"{output_prefix}_artifact_sha256.json"
     artifact_path.write_text(
         json.dumps(artifact_manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

@@ -1,0 +1,66 @@
+{
+  "attempt_id": "c12_to_c5__b5__s42__a001",
+  "checkpoint": "results\\iotj_b5_server_da_budget_ablation_20260731\\da30\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+  "checkpoint_sha256": "203612c88ba9ed839ee8876dfc347ad9ac18e5b05f60da888b1ab9c7caa197df",
+  "ece_bins": 15,
+  "metrics": {
+    "N": 1360,
+    "accuracy": 0.9860294117647059,
+    "confusion_matrix": [
+      [
+        332,
+        2,
+        6,
+        0
+      ],
+      [
+        2,
+        336,
+        2,
+        0
+      ],
+      [
+        0,
+        5,
+        335,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        338
+      ]
+    ],
+    "ece": 0.007258776312365284,
+    "macro_f1": 0.9860525311861753,
+    "mean_confidence": 0.9923557998941225,
+    "nll": 0.07212931160811102,
+    "per_class_f1": {
+      "0": 0.9851632047477744,
+      "1": 0.9838945827232797,
+      "2": 0.9781021897810219,
+      "3": 0.9970501474926253
+    },
+    "per_class_precision": {
+      "0": 0.9940119760479041,
+      "1": 0.9795918367346939,
+      "2": 0.9710144927536232,
+      "3": 1.0
+    },
+    "per_class_recall": {
+      "0": 0.9764705882352941,
+      "1": 0.9882352941176471,
+      "2": 0.9852941176470589,
+      "3": 0.9941176470588236
+    }
+  },
+  "predicted_route_rows": 1360,
+  "row_map_contract_sha256": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+  "run_id": "c12_to_c5__b5__s42",
+  "schema_version": "iotj.b5_seed_classification_evaluation.v1",
+  "seed": 42,
+  "split": "C5_test",
+  "test_used_for_training_selection_or_stopping": false,
+  "unique_row_keys": 1360
+}
