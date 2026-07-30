@@ -1,0 +1,72 @@
+{
+  "schema_version": "iotj.b5_server_da_round_curve_analysis.v1",
+  "calculation_status": "recomputed_from_per_round_c5_metrics",
+  "sample_scope": "historical_C5_test_1360_held_out_windows",
+  "seed_set": [
+    42
+  ],
+  "stage_accuracy_mean": {
+    "DA100": {
+      "rounds_1_5": 0.8989705882352942,
+      "rounds_6_10": 0.9666176470588235,
+      "rounds_11_15": 0.985,
+      "rounds_16_20": 0.9876470588235294,
+      "rounds_21_25": 0.9855882352941177
+    },
+    "DA80": {
+      "rounds_1_5": 0.8914705882352941,
+      "rounds_6_10": 0.9502941176470588,
+      "rounds_11_15": 0.9817647058823529,
+      "rounds_16_20": 0.9877941176470588,
+      "rounds_21_25": 0.9835294117647059
+    },
+    "DA50": {
+      "rounds_1_5": 0.8779411764705882,
+      "rounds_6_10": 0.9195588235294118,
+      "rounds_11_15": 0.9570588235294117,
+      "rounds_16_20": 0.9792647058823529,
+      "rounds_21_25": 0.9795588235294117
+    },
+    "DA30": {
+      "rounds_1_5": 0.8573529411764707,
+      "rounds_6_10": 0.8891176470588236,
+      "rounds_11_15": 0.9477941176470588,
+      "rounds_16_20": 0.9769117647058824,
+      "rounds_21_25": 0.9839705882352942
+    }
+  },
+  "threshold_diagnostics": {
+    "DA100": {
+      "first_round_accuracy_ge_95pct": 7,
+      "rounds_accuracy_ge_95pct": 19,
+      "first_round_accuracy_ge_98pct": 9,
+      "rounds_accuracy_ge_98pct": 17
+    },
+    "DA80": {
+      "first_round_accuracy_ge_95pct": 9,
+      "rounds_accuracy_ge_95pct": 17,
+      "first_round_accuracy_ge_98pct": 9,
+      "rounds_accuracy_ge_98pct": 14
+    },
+    "DA50": {
+      "first_round_accuracy_ge_95pct": 12,
+      "rounds_accuracy_ge_95pct": 14,
+      "first_round_accuracy_ge_98pct": 18,
+      "rounds_accuracy_ge_98pct": 4
+    },
+    "DA30": {
+      "first_round_accuracy_ge_95pct": 14,
+      "rounds_accuracy_ge_95pct": 12,
+      "first_round_accuracy_ge_98pct": 17,
+      "rounds_accuracy_ge_98pct": 7
+    }
+  },
+  "interpretation_boundary": {
+    "retrospective_diagnostic_only": true,
+    "test_used_for_early_stopping": false,
+    "test_used_for_checkpoint_selection": false,
+    "test_used_for_budget_selection": false,
+    "statistical_significance_claim": false,
+    "da30_formal_evidence_approved": false
+  }
+}
