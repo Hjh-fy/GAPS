@@ -17,6 +17,7 @@ import tempfile
 import numpy as np
 from PyQt5 import QtWidgets
 
+from data_buffer import ADC_FIELD_NAMES
 from edge_ai_runtime import EdgeAIRuntime
 from edge_ui_app import MainWindow
 
@@ -27,6 +28,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--features", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--screenshot", type=Path)
+    parser.add_argument("--width", type=int, default=800)
+    parser.add_argument("--height", type=int, default=480)
+    parser.add_argument(
+        "--tab",
+        choices=("curve", "data", "ai"),
+        default="curve",
+    )
     return parser.parse_args()
 
 
@@ -63,6 +71,34 @@ def runtime_result(package_dir: Path, features_path: Path) -> tuple[dict, dict]:
     return runtime.status(), result.to_dict()
 
 
+def seed_visual_sensor_preview(window: MainWindow) -> None:
+    """Populate the visual smoke only; production input remains real serial data."""
+    for index in range(240):
+        row = {
+            "elapsed_s": index * 0.25,
+            "aht20_rh": 47.2,
+            "aht20_temp_c": 24.8,
+            "uart4_wz_h3_nk_ppb": 0.0,
+            "uart5_tb200b_ppb": 0.0,
+        }
+        for channel, field in enumerate(ADC_FIELD_NAMES):
+            baseline = 1580.0 + channel * 42.0
+            response = 210.0 / (1.0 + np.exp(-(index - 115) / 13.0))
+            ripple = 8.0 * np.sin(index / 10.0 + channel * 0.25)
+            row[field] = baseline + response + ripple
+        window.buffer.append_row(row)
+    window.refresh_plots()
+    window.select_sensor(window.selected_sensor_index)
+    window.rh_card.set_value(47.2, "{:.1f}")
+    window.temp_card.set_value(24.8, "{:.1f}")
+    window.disk_card.set_value(18.6, "{:.1f}")
+    window.saved_card.set_value(240, "{}")
+    window.segment_card.set_value(240, "{}")
+    window.status_summary_label.setText(
+        "Visual smoke preview: curve rendering and recording controls are ready."
+    )
+
+
 def main() -> int:
     args = parse_args()
     package_dir = args.package_dir.expanduser().resolve()
@@ -88,10 +124,13 @@ def main() -> int:
             font_scale=1.0,
             ai_package=None,
         )
-        window.resize(800, 480)
+        window.resize(args.width, args.height)
         window.show()
         window.on_ai_status(status)
         window.on_ai_result(result)
+        if args.tab in {"curve", "data"}:
+            seed_visual_sensor_preview(window)
+        window.tabs.setCurrentIndex({"curve": 0, "data": 1, "ai": 2}[args.tab])
         app.processEvents()
         content = window.centralWidget()
         checks = {
@@ -119,11 +158,15 @@ def main() -> int:
                 len(result.get("class_probabilities", [])) == 3
             ),
             "window_is_800x480": (
-                window.width() == 800 and window.height() == 480
+                window.width() == args.width and window.height() == args.height
             ),
             "content_fits_viewport": (
                 content.width() <= window.width()
                 and content.height() <= window.height()
+            ),
+            "active_tab_has_no_vertical_overflow": (
+                args.tab != "ai"
+                or not window.edge_ai_scroll.verticalScrollBar().isVisible()
             ),
             "all_six_cards_horizontally_visible": all(
                 card.mapTo(window, card.rect().topLeft()).x() >= 0

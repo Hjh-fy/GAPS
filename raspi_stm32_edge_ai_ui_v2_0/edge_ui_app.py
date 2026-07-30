@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Raspberry Pi acquisition and auditable edge-AI UI for the STM32 gas-sensor board.
 
-v2.2 combines guarded long-running acquisition with a responsive,
+v2.3 combines guarded long-running acquisition with a responsive,
 profile-driven GAPS edge-AI runtime:
 1. Connect to the real HC-04 Bluetooth serial or USB serial source
 2. Parse the current 43-byte / 20-field STM32 frame
@@ -106,16 +106,24 @@ class ExperimentDialog(QtWidgets.QDialog):
             "raspi_device_id": self.device_id.text().strip(),
             "stm32_board_id": self.stm32_board_id.text().strip(),
             "note": self.note.toPlainText().strip(),
-            "ui_version": "raspi_stm32_edge_ai_ui_v2_2",
+            "ui_version": "raspi_stm32_edge_ai_ui_v2_3",
             "protocol": "0x80 0x81 + 20 uint16 little-endian + 0x82",
         }
 
 
 class StatCard(QtWidgets.QFrame):
-    def __init__(self, title: str, unit: str = "", parent=None) -> None:
+    def __init__(
+        self,
+        title: str,
+        unit: str = "",
+        parent=None,
+        role: str = "neutral",
+    ) -> None:
         super().__init__(parent)
         self.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.setObjectName("StatCard")
+        self.setProperty("role", role)
+        self.setProperty("status", "neutral")
         self.title = QtWidgets.QLabel(title)
         self.title.setObjectName("CardTitle")
         self.value = QtWidgets.QLabel("--")
@@ -128,8 +136,8 @@ class StatCard(QtWidgets.QFrame):
         self.unit = QtWidgets.QLabel(unit)
         self.unit.setObjectName("CardUnit")
         layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(8, 5, 8, 5)
-        layout.setSpacing(1)
+        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setSpacing(2)
         layout.addWidget(self.title)
         layout.addWidget(self.value)
         layout.addWidget(self.unit)
@@ -144,6 +152,11 @@ class StatCard(QtWidgets.QFrame):
 
     def set_status(self, status: str) -> None:
         self.setProperty("status", status)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def set_role(self, role: str) -> None:
+        self.setProperty("role", role)
         self.style().unpolish(self)
         self.style().polish(self)
 
@@ -245,7 +258,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.setContentsMargins(6, 4, 6, 4)
         layout.setSpacing(5)
 
-        self.app_title_label = QtWidgets.QLabel("STM32 Monitor")
+        self.app_title_label = QtWidgets.QLabel("GAPS SENSE")
         self.app_title_label.setObjectName("AppTitle")
         layout.addWidget(self.app_title_label)
 
@@ -298,11 +311,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tabs.tabBar().setUsesScrollButtons(False)
         self.tabs.tabBar().setElideMode(QtCore.Qt.ElideRight)
         # Leading padding avoids a Qt/Wayland first-tab glyph clipping quirk.
-        self.tabs.addTab(self._build_sensor_tab(), "  Live Curve")
+        self.tabs.addTab(self._build_sensor_tab(), "  Sensor Curve")
         self.status_scroll = self._wrap_scroll(self._build_status_tab())
         self.edge_ai_scroll = self._wrap_scroll(self._build_edge_ai_tab())
-        self.tabs.addTab(self.status_scroll, "Data / Save")
-        self.tabs.addTab(self.edge_ai_scroll, "Edge AI")
+        self.tabs.addTab(self.status_scroll, "Data & Recording")
+        self.tabs.addTab(self.edge_ai_scroll, "AI Reliability")
         return self.tabs
 
     def _wrap_scroll(self, widget: QtWidgets.QWidget) -> QtWidgets.QScrollArea:
@@ -325,7 +338,7 @@ class MainWindow(QtWidgets.QMainWindow):
         grid = QtWidgets.QGridLayout(select_box)
         grid.setContentsMargins(4, 4, 4, 4)
         grid.setSpacing(4)
-        label = QtWidgets.QLabel("Select sensor")
+        label = QtWidgets.QLabel("Sensor channels")
         label.setObjectName("SensorSelectTitle")
         grid.addWidget(label, 0, 0, 1, 2)
         for idx in range(16):
@@ -344,12 +357,23 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.addWidget(select_box)
 
         self.sensor_plot = pg.PlotWidget()
-        self.sensor_plot.setBackground(None)
-        self.sensor_plot.showGrid(x=True, y=True, alpha=0.22)
+        self.sensor_plot.setBackground("#0A1220")
+        self.sensor_plot.showGrid(x=True, y=True, alpha=0.16)
         self.sensor_plot.setLabel("bottom", "t", units="s")
         self.sensor_plot.setLabel("left", "ADC raw")
         self.sensor_plot.setTitle("Sensor 1")
-        self.sensor_curve = self.sensor_plot.plot([], [], pen=pg.mkPen(pg.intColor(0, hues=16), width=2.6))
+        self.sensor_plot.setMenuEnabled(False)
+        self.sensor_plot.setDownsampling(mode="peak")
+        self.sensor_plot.setClipToView(True)
+        for axis_name in ("left", "bottom"):
+            axis = self.sensor_plot.getAxis(axis_name)
+            axis.setPen(pg.mkPen("#41516B"))
+            axis.setTextPen(pg.mkPen("#9FB0C8"))
+        self.sensor_curve = self.sensor_plot.plot(
+            [],
+            [],
+            pen=pg.mkPen("#28D7C0", width=2.8),
+        )
         layout.addWidget(self.sensor_plot, stretch=1)
         return tab
 
@@ -371,12 +395,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         cards = QtWidgets.QGridLayout()
         cards.setSpacing(6)
-        self.rh_card = StatCard("RH", "%")
-        self.temp_card = StatCard("Temp", "°C")
-        self.disk_card = StatCard("Disk Free", "GB")
-        self.saved_card = StatCard("raw.csv", "rows")
-        self.segment_card = StatCard("Segment", "rows")
-        self.selected_card = StatCard("Sensor", "selected")
+        self.rh_card = StatCard("Humidity", "%", role="environment")
+        self.temp_card = StatCard("Temperature", "°C", role="environment")
+        self.disk_card = StatCard("Disk Free", "GB", role="storage")
+        self.saved_card = StatCard("Saved Frames", "raw.csv rows", role="storage")
+        self.segment_card = StatCard("Current Segment", "rows", role="storage")
+        self.selected_card = StatCard("Active Sensor", "channel", role="signal")
         cards.addWidget(self.rh_card, 0, 0)
         cards.addWidget(self.temp_card, 0, 1)
         cards.addWidget(self.disk_card, 0, 2)
@@ -421,10 +445,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         marker_box = QtWidgets.QGroupBox("Experiment event markers")
         marker_layout = QtWidgets.QHBoxLayout(marker_box)
-        baseline_btn = QtWidgets.QPushButton("Baseline Start")
-        exposure_btn = QtWidgets.QPushButton("Exposure Start")
-        recovery_btn = QtWidgets.QPushButton("Recovery Start")
+        baseline_btn = QtWidgets.QPushButton("Baseline")
+        exposure_btn = QtWidgets.QPushButton("Exposure")
+        recovery_btn = QtWidgets.QPushButton("Recovery")
         note_btn = QtWidgets.QPushButton("Add Note")
+        baseline_btn.setProperty("actionRole", "baseline")
+        exposure_btn.setProperty("actionRole", "exposure")
+        recovery_btn.setProperty("actionRole", "recovery")
         baseline_btn.clicked.connect(lambda: self.mark_experiment_event("baseline_start", "Baseline started"))
         exposure_btn.clicked.connect(lambda: self.mark_experiment_event("exposure_start", "Gas exposure started"))
         recovery_btn.clicked.connect(lambda: self.mark_experiment_event("recovery_start", "Recovery started"))
@@ -438,7 +465,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.event_log_view = QtWidgets.QPlainTextEdit()
         self.event_log_view.setReadOnly(True)
         self.event_log_view.setMaximumBlockCount(140)
-        self.event_log_view.setFixedHeight(100)
+        self.event_log_view.setFixedHeight(84)
         self.event_log_view.setPlaceholderText("Connection, frame and saving messages appear here.")
         log_layout.addWidget(self.event_log_view)
         root.addWidget(log_box)
@@ -482,14 +509,33 @@ class MainWindow(QtWidgets.QMainWindow):
         header.addWidget(self.ai_compact_reset_btn)
         root.addLayout(header)
 
+        self.ai_context_bar = QtWidgets.QFrame()
+        self.ai_context_bar.setObjectName("ContextBar")
+        context_layout = QtWidgets.QHBoxLayout(self.ai_context_bar)
+        context_layout.setContentsMargins(7, 4, 7, 4)
+        context_layout.setSpacing(6)
+        self.ai_task_badge = QtWidgets.QLabel("MODEL TASK --")
+        self.ai_source_badge = QtWidgets.QLabel("INPUT --")
+        self.ai_reliability_badge = QtWidgets.QLabel("RELIABILITY --")
+        for badge in (
+            self.ai_task_badge,
+            self.ai_source_badge,
+            self.ai_reliability_badge,
+        ):
+            badge.setObjectName("ContextBadge")
+            badge.setProperty("tone", "neutral")
+            context_layout.addWidget(badge)
+        context_layout.addStretch(1)
+        root.addWidget(self.ai_context_bar)
+
         self.ai_cards_layout = QtWidgets.QGridLayout()
         self.ai_cards_layout.setSpacing(6)
-        self.ai_gas_card = StatCard("Gas", "class")
-        self.ai_ppm_card = StatCard("Concentration", "ppm")
-        self.ai_conf_card = StatCard("Confidence", "%")
-        self.ai_qc_card = StatCard("QC", "decision")
-        self.ai_latency_card = StatCard("Latency", "ms")
-        self.ai_rate_card = StatCard("Input Rate", "Hz")
+        self.ai_gas_card = StatCard("Detected Gas", "window class", role="prediction")
+        self.ai_ppm_card = StatCard("Concentration", "ppm", role="prediction")
+        self.ai_conf_card = StatCard("Model Score", "% softmax", role="reliability")
+        self.ai_qc_card = StatCard("Reliability", "QC decision", role="reliability")
+        self.ai_latency_card = StatCard("Inference", "ms", role="system")
+        self.ai_rate_card = StatCard("Input Rate", "Hz", role="system")
         self.ai_cards = [
             self.ai_gas_card,
             self.ai_ppm_card,
@@ -548,18 +594,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ai_history_title.setObjectName("SectionTitle")
         history_layout.addWidget(self.ai_history_title)
         self.ai_history_plot = pg.PlotWidget()
-        self.ai_history_plot.setBackground(None)
-        self.ai_history_plot.showGrid(x=True, y=True, alpha=0.18)
+        self.ai_history_plot.setBackground("#0A1220")
+        self.ai_history_plot.showGrid(x=True, y=True, alpha=0.14)
         self.ai_history_plot.setLabel("bottom", "Inference window")
         self.ai_history_plot.setLabel("left", "Prediction", units="ppm")
         self.ai_history_plot.setMenuEnabled(False)
+        for axis_name in ("left", "bottom"):
+            axis = self.ai_history_plot.getAxis(axis_name)
+            axis.setPen(pg.mkPen("#41516B"))
+            axis.setTextPen(pg.mkPen("#9FB0C8"))
         self.ai_history_curve = self.ai_history_plot.plot(
             [],
             [],
-            pen=pg.mkPen("#38BDF8", width=2.4),
+            pen=pg.mkPen("#28D7C0", width=2.6),
             symbol="o",
             symbolSize=5,
-            symbolBrush="#38BDF8",
+            symbolBrush="#28D7C0",
         )
         history_layout.addWidget(self.ai_history_plot, stretch=1)
         root.addWidget(self.ai_history_panel, stretch=1)
@@ -622,11 +672,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ai_state_label.style().polish(self.ai_state_label)
 
     @staticmethod
+    def _set_badge_tone(label: QtWidgets.QLabel, tone: str) -> None:
+        label.setProperty("tone", tone)
+        label.style().unpolish(label)
+        label.style().polish(label)
+
+    @staticmethod
     def _friendly_model_name(package_name: str) -> str:
         name = str(package_name).strip()
         low = name.lower()
+        if "lab_3gas_a4" in low or "rec_a4_stable150" in low:
+            suffix = "r3" if "_r3" in low else "candidate"
+            return f"LAB-S150 · P2→P3 · {suffix}"
         if "runtime_v5" in low and "public" in low:
-            return "Public dataset · 10 Hz · Runtime v5"
+            return "PUBLIC-4GAS · 10 Hz · Runtime v5"
         if "runtime_v5" in low:
             return "GAPS model · Runtime v5"
         return name or "Verified model package"
@@ -657,7 +716,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self._compact_ui = compact
         self._narrow_ui = narrow
 
-        self.app_title_label.setText("GAPS AI" if compact else "STM32 Monitor")
+        self.app_title_label.setText("GAPS" if compact else "GAPS SENSE")
+        tab_titles = (
+            ("Curve", "Data", "AI Reliability")
+            if compact
+            else ("Sensor Curve", "Data & Logs", "AI Reliability")
+        )
+        for index, text in enumerate(tab_titles):
+            self.tabs.setTabText(index, text)
         for widget in [
             self.quick_good_label,
             self.quick_bad_label,
@@ -691,6 +757,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ai_window_progress.setVisible(not compact_ready)
         self.ai_progress_label.setVisible(not compact_ready)
         self.ai_controls_widget.setVisible(not compact_ready)
+        self.ai_result_label.setVisible(not compact_ready)
+        for badge in self.ai_status_badges:
+            badge.setVisible(not compact_ready)
 
     def _build_bottom_bar(self) -> QtWidgets.QWidget:
         bar = QtWidgets.QFrame()
@@ -699,7 +768,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layout.setContentsMargins(6, 4, 6, 4)
         layout.setSpacing(5)
 
-        self.path_btn = QtWidgets.QPushButton("Save Path")
+        self.path_btn = QtWidgets.QPushButton("Storage")
         self.path_btn.setToolTip("Choose the default root folder for new experiment directories.")
         self.path_btn.clicked.connect(self.choose_save_path)
         layout.addWidget(self.path_btn)
@@ -723,7 +792,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.clear_btn.clicked.connect(self.clear_curves)
         layout.addWidget(self.clear_btn)
 
-        self.open_dir_btn = QtWidgets.QPushButton("Data Folder")
+        self.open_dir_btn = QtWidgets.QPushButton("Open Data")
         self.open_dir_btn.clicked.connect(self.open_data_folder)
         layout.addWidget(self.open_dir_btn)
 
@@ -740,71 +809,250 @@ class MainWindow(QtWidgets.QMainWindow):
         card_value = int(31 * self.font_scale)
         self.setStyleSheet(
             f"""
-            QMainWindow, QWidget {{ background: #111827; color: #E5E7EB; font-size: {base}px; }}
-            QFrame#TopBar, QFrame#BottomBar, QFrame#SidePanel, QFrame#PlotPanel, QFrame#SensorSelectBox {{ background: #1F2937; border-radius: 7px; }}
-            QTabWidget#MainTabs::pane {{ border: 1px solid #374151; background: #1F2937; border-radius: 7px; }}
-            QTabBar::tab {{ background: #374151; color: #F9FAFB; padding: 6px 14px; margin-right: 2px; border-top-left-radius: 5px; border-top-right-radius: 5px; font-weight: 800; }}
-            QTabBar::tab:selected {{ background: #2563EB; }}
-            QLabel#AppTitle {{ font-size: {title}px; font-weight: 900; color: #F9FAFB; }}
-            QLabel#SensorSelectTitle {{ font-weight: 900; color: #F9FAFB; }}
-            QLabel#DisconnectedLabel {{ color: #FCA5A5; font-weight: 900; }}
-            QLabel#ConnectedLabel {{ color: #86EFAC; font-weight: 900; }}
-            QLabel#QuickStat {{ color: #E5E7EB; font-weight: 900; }}
-            QLabel#IdlePill, QLabel#ConnectingPill, QLabel#ReceivingPill, QLabel#ErrorPill, QLabel#StalePill {{
-                padding: 4px 10px; border-radius: 8px; font-weight: 900;
+            QMainWindow, QWidget {{
+                background: #07101D;
+                color: #DCE7F5;
+                font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+                font-size: {base}px;
             }}
-            QLabel#IdlePill {{ background: #374151; color: #E5E7EB; }}
-            QLabel#ConnectingPill {{ background: #1D4ED8; color: #DBEAFE; }}
-            QLabel#ReceivingPill {{ background: #166534; color: #DCFCE7; }}
-            QLabel#ErrorPill {{ background: #991B1B; color: #FEE2E2; }}
-            QLabel#StalePill {{ background: #854D0E; color: #FEF3C7; }}
-            QLabel#DataAgeLabel, QLabel#SensorValueLabel {{ color: #CBD5E1; font-weight: 900; }}
-            QLabel#StatusSummary {{ color: #E5E7EB; font-weight: 800; }}
-            QLabel#HintText {{ color: #9CA3AF; font-weight: 700; }}
-            QLabel#SectionTitle {{ color: #E5E7EB; font-weight: 900; }}
+            QFrame#TopBar, QFrame#BottomBar {{
+                background: #101C2D;
+                border: 1px solid #1D2D44;
+                border-radius: 10px;
+            }}
+            QFrame#SidePanel, QFrame#PlotPanel {{
+                background: #0D1828;
+                border: 1px solid #1B2B42;
+                border-radius: 11px;
+            }}
+            QFrame#SensorSelectBox {{
+                background: #101C2D;
+                border: 1px solid #1D2D44;
+                border-radius: 9px;
+            }}
+            QTabWidget#MainTabs::pane {{
+                border: 1px solid #1B2B42;
+                background: #0D1828;
+                border-radius: 10px;
+                top: -1px;
+            }}
+            QTabBar::tab {{
+                background: #111F32;
+                color: #91A4BD;
+                padding: 7px 16px;
+                min-width: 132px;
+                margin-right: 3px;
+                border: 1px solid #1B2B42;
+                border-bottom: none;
+                border-top-left-radius: 7px;
+                border-top-right-radius: 7px;
+                font-weight: 800;
+            }}
+            QTabBar::tab:hover {{ color: #E9F3FF; background: #172740; }}
+            QTabBar::tab:selected {{
+                background: #173858;
+                color: #EAFBFF;
+                border-color: #267A91;
+            }}
+            QLabel#AppTitle {{
+                font-size: {title}px;
+                font-weight: 900;
+                letter-spacing: 1px;
+                color: #EAFBFF;
+            }}
+            QLabel#SensorSelectTitle {{ font-weight: 900; color: #DDEBFA; }}
+            QLabel#DisconnectedLabel {{ color: #FF8892; font-weight: 900; }}
+            QLabel#ConnectedLabel {{ color: #5DE2B5; font-weight: 900; }}
+            QLabel#QuickStat {{ color: #B6C8DD; font-weight: 800; }}
+            QLabel#IdlePill, QLabel#ConnectingPill, QLabel#ReceivingPill, QLabel#ErrorPill, QLabel#StalePill {{
+                padding: 4px 10px;
+                border-radius: 9px;
+                font-weight: 900;
+            }}
+            QLabel#IdlePill {{ background: #25354B; color: #CAD7E6; }}
+            QLabel#ConnectingPill {{ background: #174B72; color: #D4F2FF; }}
+            QLabel#ReceivingPill {{ background: #14513F; color: #C9FFE9; }}
+            QLabel#ErrorPill {{ background: #6E2932; color: #FFE0E3; }}
+            QLabel#StalePill {{ background: #654A1E; color: #FFE8B0; }}
+            QLabel#DataAgeLabel, QLabel#SensorValueLabel {{
+                color: #AFC1D6;
+                font-weight: 800;
+            }}
+            QLabel#StatusSummary {{
+                color: #D9E7F5;
+                background: #101F33;
+                border-left: 3px solid #28D7C0;
+                border-radius: 6px;
+                padding: 7px 9px;
+                font-weight: 700;
+            }}
+            QLabel#HintText {{ color: #8FA2BA; font-weight: 650; }}
+            QLabel#SectionTitle {{ color: #DDEBFA; font-weight: 900; }}
             QLabel#InferenceSummary {{
-                color: #E0F2FE; background: #0C4A6E; border: 1px solid #0369A1;
-                border-radius: 7px; padding: 7px; font-weight: 900;
+                color: #E5FBFF;
+                background: #10334A;
+                border: 1px solid #246B80;
+                border-radius: 8px;
+                padding: 8px 10px;
+                font-weight: 900;
             }}
             QLabel#InfoBadge {{
-                color: #CBD5E1; background: #111827; border: 1px solid #374151;
-                border-radius: 6px; padding: 4px 6px; font-weight: 800;
+                color: #B8C8DB;
+                background: #0A1422;
+                border: 1px solid #243650;
+                border-radius: 7px;
+                padding: 5px 7px;
+                font-weight: 800;
             }}
+            QFrame#ContextBar {{
+                background: #0A1422;
+                border: 1px solid #1D3048;
+                border-radius: 8px;
+            }}
+            QLabel#ContextBadge {{
+                color: #A9BAD0;
+                background: #18263A;
+                border-radius: 7px;
+                padding: 3px 8px;
+                font-size: {max(10, base - 3)}px;
+                font-weight: 900;
+            }}
+            QLabel#ContextBadge[tone="info"] {{ color: #C9F7FF; background: #17465D; }}
+            QLabel#ContextBadge[tone="ok"] {{ color: #C9FFE9; background: #14513F; }}
+            QLabel#ContextBadge[tone="warning"] {{ color: #FFE8AF; background: #59421D; }}
+            QLabel#ContextBadge[tone="error"] {{ color: #FFE0E3; background: #6E2932; }}
+            QLabel#ContextBadge[tone="neutral"] {{ color: #A9BAD0; background: #18263A; }}
             QLabel#SafetyNote {{
-                color: #FDE68A; background: #422006; border: 1px solid #854D0E;
-                border-radius: 6px; padding: 5px; font-weight: 700;
+                color: #F9DFA1;
+                background: #392C17;
+                border: 1px solid #6D5426;
+                border-radius: 7px;
+                padding: 6px 8px;
+                font-weight: 700;
             }}
             QLabel#AIIdlePill, QLabel#AIReadyPill, QLabel#AIErrorPill {{
-                padding: 5px 9px; border-radius: 7px; font-weight: 900;
+                padding: 5px 10px;
+                border-radius: 8px;
+                font-weight: 900;
             }}
-            QLabel#AIIdlePill {{ background: #374151; color: #E5E7EB; }}
-            QLabel#AIReadyPill {{ background: #166534; color: #DCFCE7; }}
-            QLabel#AIErrorPill {{ background: #991B1B; color: #FEE2E2; }}
-            QFrame#StatCard {{ background: #0F172A; border: 1px solid #374151; border-radius: 8px; }}
-            QFrame#StatCard[status="ok"] {{ border: 1px solid #15803D; }}
-            QFrame#StatCard[status="warning"] {{ border: 1px solid #A16207; }}
-            QFrame#StatCard[status="error"] {{ border: 1px solid #B91C1C; }}
-            QFrame#ChartPanel {{ background: #0F172A; border: 1px solid #374151; border-radius: 8px; }}
-            QLabel#CardTitle {{ color: #9CA3AF; font-size: {max(12, base - 1)}px; font-weight: 800; }}
-            QLabel#CardValue {{ color: #F9FAFB; font-size: {card_value}px; font-weight: 900; }}
-            QLabel#CardUnit {{ color: #9CA3AF; font-size: {max(11, base - 2)}px; }}
-            QLabel#SaveStateLabel {{ font-weight: 900; color: #FDE68A; }}
-            QPushButton {{ background: #374151; color: #F9FAFB; border: 1px solid #4B5563; padding: 7px 10px; border-radius: 6px; font-weight: 900; }}
-            QPushButton:hover {{ background: #4B5563; }}
-            QPushButton:disabled {{ background: #1F2937; color: #6B7280; }}
-            QPushButton#PrimaryButton {{ background: #2563EB; border-color: #60A5FA; }}
-            QPushButton#PrimaryButton:hover {{ background: #1D4ED8; }}
-            QPushButton#SecondaryButton {{ background: #1F2937; color: #CBD5E1; }}
-            QPushButton#SensorButton {{ background: #0F172A; color: #E5E7EB; border: 1px solid #4B5563; padding: 5px; border-radius: 6px; font-weight: 900; font-size: {max(15, base + 1)}px; }}
-            QPushButton#SensorButton:checked {{ background: #2563EB; color: #FFFFFF; border: 2px solid #93C5FD; }}
-            QComboBox, QLineEdit, QPlainTextEdit {{ background: #0F172A; color: #F9FAFB; border: 1px solid #4B5563; padding: 5px; }}
-            QGroupBox {{ border: 1px solid #374151; border-radius: 7px; margin-top: 7px; padding: 7px; font-weight: 900; }}
-            QGroupBox::title {{ subcontrol-origin: margin; left: 8px; padding: 0 4px; }}
+            QLabel#AIIdlePill {{ background: #25354B; color: #CAD7E6; }}
+            QLabel#AIReadyPill {{ background: #14513F; color: #C9FFE9; }}
+            QLabel#AIErrorPill {{ background: #6E2932; color: #FFE0E3; }}
+            QFrame#StatCard {{
+                background: #0A1422;
+                border: 1px solid #243650;
+                border-radius: 10px;
+            }}
+            QFrame#StatCard QLabel {{ background: transparent; border: none; }}
+            QFrame#StatCard[role="prediction"] {{ background: #0D2030; border-color: #24536A; }}
+            QFrame#StatCard[role="reliability"] {{ background: #101D2E; border-color: #334B68; }}
+            QFrame#StatCard[role="system"] {{ background: #0B1625; border-color: #23364E; }}
+            QFrame#StatCard[role="environment"] {{ background: #0D2030; border-color: #24536A; }}
+            QFrame#StatCard[role="storage"] {{ background: #101D2E; border-color: #334B68; }}
+            QFrame#StatCard[role="signal"] {{ background: #0B1625; border-color: #2A4B5A; }}
+            QFrame#StatCard[status="ok"] {{ border: 2px solid #23896D; }}
+            QFrame#StatCard[status="warning"] {{ border: 2px solid #9A732E; }}
+            QFrame#StatCard[status="error"] {{ border: 2px solid #A84450; }}
+            QFrame#ChartPanel {{
+                background: #0A1422;
+                border: 1px solid #243650;
+                border-radius: 10px;
+            }}
+            QLabel#CardTitle {{
+                color: #91A4BD;
+                font-size: {max(12, base - 1)}px;
+                font-weight: 800;
+            }}
+            QLabel#CardValue {{
+                color: #F3F8FF;
+                font-size: {card_value}px;
+                font-weight: 900;
+            }}
+            QLabel#CardUnit {{ color: #7F93AC; font-size: {max(11, base - 2)}px; }}
+            QLabel#SaveStateLabel {{ font-weight: 900; color: #F4D58B; }}
+            QPushButton {{
+                background: #1A2A40;
+                color: #E8F1FC;
+                border: 1px solid #304661;
+                padding: 7px 11px;
+                border-radius: 7px;
+                font-weight: 850;
+            }}
+            QPushButton:hover {{ background: #233852; border-color: #42617F; }}
+            QPushButton:pressed {{ background: #142338; }}
+            QPushButton:disabled {{ background: #111C2B; color: #5F7188; border-color: #1D2B3D; }}
+            QPushButton#PrimaryButton {{ background: #176B7D; border-color: #32A6B5; color: #F0FDFF; }}
+            QPushButton#PrimaryButton:hover {{ background: #1C7E91; }}
+            QPushButton#SecondaryButton {{ background: #111D2D; color: #B8C8DB; }}
+            QPushButton[actionRole="baseline"] {{ border-color: #3B7198; }}
+            QPushButton[actionRole="exposure"] {{ border-color: #9A732E; }}
+            QPushButton[actionRole="recovery"] {{ border-color: #23896D; }}
+            QPushButton#SensorButton {{
+                background: #0A1422;
+                color: #B8C8DB;
+                border: 1px solid #2B405B;
+                padding: 5px;
+                border-radius: 7px;
+                font-weight: 900;
+                font-size: {max(15, base + 1)}px;
+            }}
+            QPushButton#SensorButton:hover {{ color: #EAFBFF; border-color: #3B7084; }}
+            QPushButton#SensorButton:checked {{
+                background: #176B7D;
+                color: #FFFFFF;
+                border: 2px solid #5ADCCB;
+            }}
+            QComboBox, QLineEdit, QPlainTextEdit {{
+                background: #091321;
+                color: #E7F0FA;
+                border: 1px solid #2B405B;
+                border-radius: 6px;
+                padding: 5px 7px;
+                selection-background-color: #176B7D;
+            }}
+            QGroupBox {{
+                border: 1px solid #243650;
+                border-radius: 9px;
+                margin-top: 9px;
+                padding: 8px;
+                color: #C9D6E6;
+                font-weight: 850;
+            }}
+            QGroupBox::title {{
+                subcontrol-origin: margin;
+                left: 9px;
+                padding: 0 5px;
+                color: #AFC1D6;
+            }}
             QProgressBar {{
-                background: #0F172A; color: #E5E7EB; border: 1px solid #374151;
-                border-radius: 5px; min-height: 16px; text-align: center; font-weight: 800;
+                background: #091321;
+                color: #DCE7F5;
+                border: 1px solid #243650;
+                border-radius: 6px;
+                min-height: 17px;
+                text-align: center;
+                font-weight: 800;
             }}
-            QProgressBar::chunk {{ background: #2563EB; border-radius: 4px; }}
+            QProgressBar::chunk {{ background: #1EA58F; border-radius: 5px; }}
+            QScrollBar:vertical {{
+                background: #0A1422;
+                width: 9px;
+                margin: 2px;
+                border-radius: 4px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: #2D425D;
+                min-height: 24px;
+                border-radius: 4px;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+            QStatusBar {{ background: #07101D; color: #7F93AC; }}
+            QToolTip {{
+                background: #142338;
+                color: #E7F0FA;
+                border: 1px solid #36516E;
+                padding: 5px;
+            }}
             """
         )
 
@@ -1223,7 +1471,13 @@ class MainWindow(QtWidgets.QMainWindow):
         for i, btn in enumerate(self.sensor_buttons):
             btn.setChecked(i == idx)
         self.sensor_plot.setTitle(f"Sensor {idx + 1}")
-        self.sensor_curve.setPen(pg.mkPen(pg.intColor(idx, hues=16), width=2.8))
+        palette = (
+            "#28D7C0", "#4DA3FF", "#F5B942", "#B986FF",
+            "#FF7C91", "#72D67A", "#55C2E8", "#FF9F5A",
+            "#8FD3C7", "#7E9CFF", "#E6C75A", "#D18BDF",
+            "#F08A7E", "#78C7A3", "#70B7FF", "#C6A0FF",
+        )
+        self.sensor_curve.setPen(pg.mkPen(palette[idx], width=2.8))
         if hasattr(self, "selected_card"):
             self.selected_card.set_value(idx + 1, "{}")
         latest = self.buffer.latest()
@@ -1397,6 +1651,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ai_package_label.setToolTip(str(message))
             self.ai_result_label.setText("Waiting for a verified model package.")
             self._ai_display_has_concentration = None
+            self.ai_task_badge.setText("MODEL TASK --")
+            self.ai_source_badge.setText("INPUT --")
+            self.ai_reliability_badge.setText("RELIABILITY --")
+            for badge in (
+                self.ai_task_badge,
+                self.ai_source_badge,
+                self.ai_reliability_badge,
+            ):
+                self._set_badge_tone(badge, "neutral")
             self._append_event(f"Edge AI package not active: {message}", "ai_package_unloaded")
 
     @QtCore.pyqtSlot(dict)
@@ -1419,6 +1682,33 @@ class MainWindow(QtWidgets.QMainWindow):
         task_type = str(status.get("task_type", "classification_regression"))
         has_concentration = bool(status.get("has_concentration", True))
         fingerprint = str(status.get("package_fingerprint", ""))
+        if has_concentration:
+            self.ai_task_badge.setText("CLASS + CONCENTRATION")
+            self._set_badge_tone(self.ai_task_badge, "info")
+        else:
+            self.ai_task_badge.setText("3-GAS CLASSIFICATION")
+            self._set_badge_tone(self.ai_task_badge, "info")
+        replay_input = (
+            "replay" in device_profile.lower()
+            or str(mode).lower() == "precomputed"
+        )
+        self.ai_source_badge.setText(
+            "REPLAY INPUT" if replay_input else "LIVE SENSOR"
+        )
+        self._set_badge_tone(
+            self.ai_source_badge,
+            "warning" if replay_input else "ok",
+        )
+        qc_status_name = str(status.get("runtime_v5_qc_status", "")).lower()
+        if not has_concentration or "not_validated" in qc_status_name:
+            self.ai_reliability_badge.setText("QC UNVALIDATED")
+            self._set_badge_tone(self.ai_reliability_badge, "warning")
+        elif "disabled" in qc_status_name or "pending" in qc_status_name:
+            self.ai_reliability_badge.setText("QC UNAVAILABLE")
+            self._set_badge_tone(self.ai_reliability_badge, "warning")
+        else:
+            self.ai_reliability_badge.setText("AUDITABLE OUTPUT")
+            self._set_badge_tone(self.ai_reliability_badge, "ok")
         if self._ai_display_has_concentration != has_concentration:
             self._ai_display_has_concentration = has_concentration
             if has_concentration:
@@ -1431,6 +1721,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ai_ppm_card.unit.setText("class")
                 self.ai_history_title.setText("Recent consensus confidence")
                 self.ai_history_plot.setLabel("left", "Confidence", units="%")
+                self.ai_safety_note.setText(
+                    "Reliability: the percentage is an uncalibrated model score. "
+                    "Classification QC is not validated, so labels remain "
+                    "auditable observations rather than automatic safety decisions."
+                )
         self.ai_rate_card.set_value(observed, "{:.2f}")
         phase_text = {
             "automatic": "Auto",
@@ -1562,27 +1857,41 @@ class MainWindow(QtWidgets.QMainWindow):
                 f"valid_windows={consensus_n}"
             )
             history_value = consensus_conf * 100.0
-        self.ai_conf_card.set_value(conf * 100.0, "{:.1f}")
+        score_percent = conf * 100.0
+        score_text = ">99.9" if score_percent >= 99.95 else f"{score_percent:.1f}"
+        self.ai_conf_card.set_value(score_text, "{}")
         qc_display, qc_status = self._friendly_qc_decision(decision)
         self.ai_qc_card.set_value(qc_display, "{}")
         self.ai_qc_card.value.setToolTip(f"Runtime decision: {decision}")
         self.ai_qc_card.set_status(qc_status)
         self.ai_latency_card.set_value(latency, "{:.1f}")
         self.ai_gas_card.set_status("ok")
-        self.ai_ppm_card.set_status("ok")
-        self.ai_conf_card.set_status("ok")
+        self.ai_ppm_card.set_status(
+            "warning"
+            if not has_concentration and consensus_n < 2
+            else "ok"
+        )
+        self.ai_conf_card.set_status(
+            "ok" if conf >= 0.80 else "warning" if conf >= 0.60 else "error"
+        )
         self.ai_latency_card.set_status("ok")
         auto = result.get("ppm_auto_output")
         if not has_concentration:
             probabilities = result.get("class_probabilities", [])
+            consensus_state = (
+                "building"
+                if consensus_n < 2
+                else f"{consensus_n} windows"
+            )
             self.ai_result_label.setText(
-                f"Window: {gas} ({conf * 100.0:.1f}%) · "
-                f"Consensus: {consensus_gas} ({consensus_conf * 100.0:.1f}%, "
-                f"n={consensus_n})"
+                f"Prediction: {gas} · score {score_text}%   |   "
+                f"Consensus: {consensus_gas} · {consensus_state}"
             )
             self.ai_result_label.setToolTip(
                 f"class_probabilities={probabilities}; QC={decision}; "
-                "classification-only package; concentration unavailable"
+                f"consensus_confidence={consensus_conf:.6f}; "
+                "classification-only package; concentration unavailable; "
+                "model score is not a calibrated correctness probability"
             )
         else:
             if decision == "disabled_pending_dependency_audit":

@@ -23,6 +23,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--screenshot", type=Path)
     parser.add_argument("--timeout-s", type=float, default=30.0)
     parser.add_argument("--linger-s", type=float, default=0.0)
+    parser.add_argument("--width", type=int, default=800)
+    parser.add_argument("--height", type=int, default=480)
     return parser.parse_args()
 
 
@@ -70,7 +72,7 @@ def main() -> int:
             font_scale=1.0,
             ai_package=package_dir,
         )
-        window.resize(800, 480)
+        window.resize(args.width, args.height)
         window.show()
 
         def finish() -> None:
@@ -170,6 +172,9 @@ def main() -> int:
                 "content_fits_viewport": (
                     content.width() <= window.width()
                     and content.height() <= window.height()
+                ),
+                "edge_ai_has_no_vertical_overflow": (
+                    not window.edge_ai_scroll.verticalScrollBar().isVisible()
                 ),
                 "all_six_cards_horizontally_visible": all(
                     card.mapTo(window, card.rect().topLeft()).x() >= 0

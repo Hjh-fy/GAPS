@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "checks": {
+    "task_type_classification": true,
+    "has_no_concentration": true,
+    "qc_unavailable": true,
+    "consensus_card": true,
+    "summary_has_no_ppm": true,
+    "probability_vector_has_three_classes": true,
+    "window_is_800x480": true,
+    "content_fits_viewport": true,
+    "active_tab_has_no_vertical_overflow": true,
+    "all_six_cards_horizontally_visible": true
+  },
+  "window_size": [
+    1440,
+    900
+  ],
+  "content_size": [
+    1440,
+    882
+  ],
+  "predicted_gas": "乙醛",
+  "confidence": 0.9999992847442627,
+  "consensus_predicted_gas": "乙醛",
+  "consensus_window_count": 1,
+  "package_fingerprint": "88a4a4d75c6bd2f1a917a1e771712a0568e9c284bee599f4f83ab26257fb0877",
+  "result_label": "Prediction: 乙醛 · score >99.9%   |   Consensus: 乙醛 · building",
+  "pc_worker_boundary": "Windows Qt-worker Torch smoke is not authoritative because the native runtime raised 0xc0000374; Pi worker validation pending."
+}
