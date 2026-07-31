@@ -58,12 +58,17 @@ MAIN_INDICES = tuple(
     for index in range(23)
     if index not in set(CALIBRATION_INDICES) | set(PURGED_INDICES)
 )
+STABLE_INDICES = tuple(
+    index for index in MAIN_INDICES if index not in set(EARLY_INDICES)
+)
+FULL_INDICES = EARLY_INDICES + STABLE_INDICES
 
 DIRECTION_ROLES = {
     "P2_to_P3": ((2,), 3),
     "P2_to_P1": ((2,), 1),
     "P1_to_P3": ((1,), 3),
     "P12_to_P3": ((1, 2), 3),
+    "P3_to_P1": ((3,), 1),
 }
 
 
@@ -172,7 +177,7 @@ def assemble_direction_records(
     records: Iterable[dict],
     *,
     direction: str,
-    stable_indices: Sequence[int],
+    primary_indices: Sequence[int],
 ) -> dict:
     records = list(records)
     source_clients, target_client = resolve_direction(direction)
@@ -183,7 +188,7 @@ def assemble_direction_records(
             client_id: subset_records(
                 records,
                 platform=client_id,
-                indices=stable_indices,
+                indices=primary_indices,
                 role="source_train",
             )
             for client_id in source_clients
@@ -203,10 +208,16 @@ def assemble_direction_records(
             indices=CALIBRATION_INDICES,
             role="target_calibration",
         ),
+        "target_primary": subset_records(
+            records,
+            platform=target_client,
+            indices=primary_indices,
+            role="target_primary",
+        ),
         "target_stable": subset_records(
             records,
             platform=target_client,
-            indices=stable_indices,
+            indices=STABLE_INDICES,
             role="target_stable",
         ),
         "target_early": subset_records(
@@ -218,7 +229,7 @@ def assemble_direction_records(
         "target_full": subset_records(
             records,
             platform=target_client,
-            indices=tuple(EARLY_INDICES) + tuple(stable_indices),
+            indices=FULL_INDICES,
             role="target_full",
         ),
     }
@@ -245,7 +256,7 @@ def write_direction_dataset(
     config: BuildConfig,
     output_root: Path,
     direction: str,
-    stable_indices: Sequence[int],
+    primary_indices: Sequence[int],
 ) -> dict:
     """Write one direction while keeping all A4 split rules unchanged."""
     records = list(records)
@@ -259,7 +270,7 @@ def write_direction_dataset(
     parts = assemble_direction_records(
         records,
         direction=direction,
-        stable_indices=stable_indices,
+        primary_indices=primary_indices,
     )
     normalization_records = [
         record
@@ -334,10 +345,13 @@ def write_direction_dataset(
             target_dir, "calibration", target_calibration, mean, std
         ),
         "test": save_split(
-            target_dir, "test", parts["target_stable"], mean, std
+            target_dir, "test", parts["target_primary"], mean, std
         ),
         "early": save_split(
             target_dir, "early", parts["target_early"], mean, std
+        ),
+        "stable": save_split(
+            target_dir, "stable", parts["target_stable"], mean, std
         ),
         "full": save_split(
             target_dir, "full", parts["target_full"], mean, std
@@ -353,9 +367,19 @@ def write_direction_dataset(
         encoding="utf-8",
     )
 
+    primary_indices = tuple(primary_indices)
+    if primary_indices == FULL_INDICES:
+        split_protocol = f"a1_full_crossboard_{direction.lower()}_v1"
+        primary_scope = "full420"
+    elif primary_indices == STABLE_INDICES:
+        split_protocol = f"a4_crossboard_{direction.lower()}_v1"
+        primary_scope = "stable360"
+    else:
+        split_protocol = f"timepurged_crossboard_{direction.lower()}_v1"
+        primary_scope = "custom"
     split_config = {
         "fold": 1,
-        "split_protocol": f"a4_crossboard_{direction.lower()}_v1",
+        "split_protocol": split_protocol,
         "direction": direction,
         "source_clients": list(source_clients),
         "target_client": target_client,
@@ -363,8 +387,11 @@ def write_direction_dataset(
         "normalization_fit_clients": list(source_clients),
         "calibration_window_indices_zero_based": list(CALIBRATION_INDICES),
         "purged_window_indices_zero_based": list(PURGED_INDICES),
-        "stable_window_indices_zero_based": list(stable_indices),
+        "primary_scope": primary_scope,
+        "primary_window_indices_zero_based": list(primary_indices),
+        "stable_window_indices_zero_based": list(STABLE_INDICES),
         "early_window_indices_zero_based": list(EARLY_INDICES),
+        "full_window_indices_zero_based": list(FULL_INDICES),
         "clients": client_summaries,
     }
     (fold_dir / "fold_config.json").write_text(
@@ -421,7 +448,7 @@ def build_dataset(
         config=config,
         output_root=output_root,
         direction=direction,
-        stable_indices=main_indices,
+        primary_indices=main_indices,
     )
     split_config = direction_summary["folds"]["fold_1"]
     split_config.update(

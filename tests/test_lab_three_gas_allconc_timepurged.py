@@ -8,8 +8,10 @@ import scripts.lab_three_gas_3class.build_allconcentration_timepurged_dataset as
 from scripts.lab_three_gas_3class.build_allconcentration_timepurged_dataset import (
     CALIBRATION_INDICES,
     EARLY_INDICES,
+    FULL_INDICES,
     MAIN_INDICES,
     PURGED_INDICES,
+    STABLE_INDICES,
     assemble_direction_records,
     build_dataset,
     parse_args,
@@ -28,6 +30,22 @@ def test_timepurged_index_contract() -> None:
         | set(PURGED_INDICES)
         | set(MAIN_INDICES)
     ) == set(range(23))
+    assert EARLY_INDICES == (0, 1)
+    assert STABLE_INDICES == (
+        5,
+        6,
+        7,
+        8,
+        9,
+        13,
+        14,
+        15,
+        16,
+        17,
+        21,
+        22,
+    )
+    assert FULL_INDICES == EARLY_INDICES + STABLE_INDICES
 
 
 def test_active_windows_do_not_overlap_raw_time() -> None:
@@ -49,6 +67,7 @@ def test_crossboard_direction_contract() -> None:
     assert resolve_direction("P2_to_P1") == ((2,), 1)
     assert resolve_direction("P1_to_P3") == ((1,), 3)
     assert resolve_direction("P12_to_P3") == ((1, 2), 3)
+    assert resolve_direction("P3_to_P1") == ((3,), 1)
 
 
 def _record(platform: int) -> dict:
@@ -72,16 +91,37 @@ def test_p2_to_p1_record_roles_and_scopes() -> None:
     parts = assemble_direction_records(
         [_record(1), _record(2), _record(3)],
         direction="P2_to_P1",
-        stable_indices=(5, 6, 7, 8, 9, 13, 14, 15, 16, 17, 21, 22),
+        primary_indices=STABLE_INDICES,
     )
 
     assert tuple(parts["source_train"]) == (2,)
     assert len(parts["source_train"][2][0]["features"]) == 12
     assert parts["target_client"] == 1
     assert len(parts["target_calibration"][0]["features"]) == 3
+    assert len(parts["target_primary"][0]["features"]) == 12
     assert len(parts["target_stable"][0]["features"]) == 12
     assert len(parts["target_early"][0]["features"]) == len(EARLY_INDICES) == 2
     assert len(parts["target_full"][0]["features"]) == 14
+
+
+def test_a1_full_primary_has_independent_nonduplicated_diagnostic_scopes() -> None:
+    parts = assemble_direction_records(
+        [_record(1), _record(2), _record(3)],
+        direction="P3_to_P1",
+        primary_indices=FULL_INDICES,
+    )
+
+    assert tuple(parts["source_train"]) == (3,)
+    assert len(parts["source_train"][3][0]["features"]) == 14
+    assert parts["target_client"] == 1
+    assert len(parts["target_primary"][0]["features"]) == 14
+    assert len(parts["target_early"][0]["features"]) == 2
+    assert len(parts["target_stable"][0]["features"]) == 12
+    assert len(parts["target_full"][0]["features"]) == 14
+    assert [
+        row["base_window_index"]
+        for row in parts["target_full"][0]["window_rows"]
+    ] == list(FULL_INDICES)
 
 
 def test_write_p1_to_p3_dataset_with_named_target_scopes(
@@ -121,7 +161,7 @@ def test_write_p1_to_p3_dataset_with_named_target_scopes(
         config=config,
         output_root=tmp_path,
         direction="P1_to_P3",
-        stable_indices=(5, 6, 7, 8, 9, 13, 14, 15, 16, 17, 21, 22),
+        primary_indices=STABLE_INDICES,
     )
 
     target = tmp_path / "fold_1" / "client_3"
@@ -129,6 +169,7 @@ def test_write_p1_to_p3_dataset_with_named_target_scopes(
     assert summary["target_client"] == 3
     assert len(np.load(target / "test_features.npy")) == 360
     assert len(np.load(target / "early_features.npy")) == 60
+    assert len(np.load(target / "stable_features.npy")) == 360
     assert len(np.load(target / "full_features.npy")) == 420
     stats = np.load(tmp_path / "fold_1" / "norm_stats.npz")
     assert stats["normalization_clients"].tolist() == [1]
