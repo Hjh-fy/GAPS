@@ -14,7 +14,7 @@ else:
 
 
 SCOPE_SPLITS = {
-    "stable360": "test",
+    "stable360": "stable",
     "early60": "early",
     "full420": "full",
 }

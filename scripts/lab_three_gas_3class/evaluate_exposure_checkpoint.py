@@ -35,7 +35,7 @@ def make_named_loader(
     prefix: str,
     batch_size: int,
 ) -> DataLoader:
-    """Load a pre-normalized named evaluation split such as early or full."""
+    """Load a pre-normalized named split such as stable, early, or full."""
     features = np.load(client_dir / f"{prefix}_features.npy")
     labels = np.load(client_dir / f"{prefix}_classification_labels.npy")
     regression_path = client_dir / f"{prefix}_regression_labels.npy"
@@ -69,7 +69,7 @@ def main() -> None:
     parser.add_argument("--client-ids", default="1,2,3")
     parser.add_argument(
         "--split",
-        choices=("test", "calibration", "early", "full"),
+        choices=("test", "calibration", "stable", "early", "full"),
         default="test",
     )
     parser.add_argument("--device", default="auto")
@@ -89,7 +89,7 @@ def main() -> None:
     all_manifest = []
 
     for client_id in parse_client_ids(args.client_ids):
-        if args.split in {"early", "full"}:
+        if args.split in {"stable", "early", "full"}:
             loader = make_named_loader(
                 args.data_root / f"client_{client_id}",
                 args.split,

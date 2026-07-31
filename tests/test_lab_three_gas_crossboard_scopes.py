@@ -37,20 +37,20 @@ def test_one_checkpoint_is_evaluated_on_three_target_scopes(
         evaluator=fake_evaluate,
     )
 
-    assert calls == [([3], "test"), ([3], "early"), ([3], "full")]
+    assert calls == [([3], "stable"), ([3], "early"), ([3], "full")]
     assert tuple(summary["scopes"]) == ("stable360", "early60", "full420")
     assert summary["target_client"] == 3
 
 
-def test_named_loader_reads_early_prefix_without_renaming(tmp_path: Path) -> None:
-    np.save(tmp_path / "early_features.npy", np.zeros((2, 100, 6), np.float32))
+def test_named_loader_reads_stable_prefix_without_renaming(tmp_path: Path) -> None:
+    np.save(tmp_path / "stable_features.npy", np.zeros((2, 100, 6), np.float32))
     np.save(
-        tmp_path / "early_classification_labels.npy",
+        tmp_path / "stable_classification_labels.npy",
         np.asarray([0, 2], dtype=np.int64),
     )
-    np.save(tmp_path / "early_phase_labels.npy", np.zeros(2, np.int64))
+    np.save(tmp_path / "stable_phase_labels.npy", np.zeros(2, np.int64))
 
-    batch = next(iter(make_named_loader(tmp_path, "early", batch_size=2)))
+    batch = next(iter(make_named_loader(tmp_path, "stable", batch_size=2)))
 
     assert tuple(batch[0].shape) == (2, 100, 6)
     assert batch[1].tolist() == [0, 2]
