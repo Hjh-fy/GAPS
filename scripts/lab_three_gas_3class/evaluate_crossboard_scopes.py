@@ -33,8 +33,15 @@ def evaluate_scopes(
         raise FileExistsError(f"Refusing to overwrite evaluation: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    scope_splits = dict(SCOPE_SPLITS)
+    stable_features = (
+        data_root / f"client_{target_client}" / "stable_features.npy"
+    )
+    if not stable_features.is_file():
+        scope_splits["stable360"] = "test"
+
     scopes = {}
-    for scope_name, split in SCOPE_SPLITS.items():
+    for scope_name, split in scope_splits.items():
         scopes[scope_name] = evaluator(
             checkpoint,
             data_root,
@@ -47,6 +54,7 @@ def evaluate_scopes(
         "checkpoint": str(checkpoint),
         "data_root": str(data_root),
         "target_client": target_client,
+        "scope_splits": scope_splits,
         "scopes": scopes,
     }
     (output_dir / "summary.json").write_text(
