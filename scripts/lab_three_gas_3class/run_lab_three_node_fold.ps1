@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("P12_to_P3", "P2_to_P3", "P2_to_P1", "P1_to_P3")]
+    [ValidateSet("P12_to_P3", "P2_to_P3", "P2_to_P1", "P1_to_P3", "P3_to_P1")]
     [string]$Direction = "P12_to_P3",
     [ValidateRange(1, 5)]
     [int]$Fold = 1,
@@ -39,9 +39,17 @@ switch ($Direction) {
     "P2_to_P3" { $sourceClients = @(2); $targetClient = 3 }
     "P2_to_P1" { $sourceClients = @(2); $targetClient = 1 }
     "P1_to_P3" { $sourceClients = @(1); $targetClient = 3 }
+    "P3_to_P1" { $sourceClients = @(3); $targetClient = 1 }
 }
 $launchCloudB = $sourceClients -contains 2
-$launchPi = $sourceClients -contains 1
+$piClientId = if ($sourceClients -contains 3) {
+    3
+} elseif ($sourceClients -contains 1) {
+    1
+} else {
+    $null
+}
+$launchPi = $null -ne $piClientId
 if ($ContractOnly) {
     [ordered]@{
         direction = $Direction
@@ -49,6 +57,7 @@ if ($ContractOnly) {
         target_client = $targetClient
         launch_cloud_b = $launchCloudB
         launch_pi = $launchPi
+        pi_client_id = $piClientId
     } | ConvertTo-Json -Compress
     return
 }
@@ -167,9 +176,9 @@ function Stop-CurrentRun {
     if ($launchPi) {
         try {
             Invoke-Remote $PiHost `
-                "pkill -f '[g]aps_flower.client_app.*--client-id 1.*--run-tag $runId' || true" | Out-Null
+                "pkill -f '[g]aps_flower.client_app.*--client-id $piClientId.*--run-tag $runId' || true" | Out-Null
         } catch {
-            Write-RunLog "WARN failed to stop C1: $($_.Exception.Message)"
+            Write-RunLog "WARN failed to stop C${piClientId}: $($_.Exception.Message)"
         }
     }
 }
@@ -215,8 +224,8 @@ try {
     if ($launchPi) {
         $runtimeProbes += @{
             Host = $PiHost
-            Role = "C1/P1"
-            Command = "cd '$piRuntime' && /home/gaps/GAPS/gaps_rpi_env/bin/python scripts/lab_three_gas_3class/remote_runtime_preflight.py --runtime-src '$piRuntime' --role client --data-root '$piData' --client-id 1 --profile '$Profile' --input-dim '$InputDim'"
+            Role = "C${piClientId}/P${piClientId}"
+            Command = "cd '$piRuntime' && /home/gaps/GAPS/gaps_rpi_env/bin/python scripts/lab_three_gas_3class/remote_runtime_preflight.py --runtime-src '$piRuntime' --role client --data-root '$piData' --client-id $piClientId --profile '$Profile' --input-dim '$InputDim'"
         }
     }
     foreach ($probe in $runtimeProbes) {
@@ -279,7 +288,7 @@ try {
             "--log-root '$piLogRoot'",
             "--run-id '$runId'",
             "--data-root '$piData'",
-            "--client-id '1'",
+            "--client-id '$piClientId'",
             "--profile '$Profile'",
             "--local-epochs '$LocalEpochs'",
             "--batch-size '32'",
@@ -292,7 +301,7 @@ try {
             "--server-address '127.0.0.1:18080'"
         ) -join " "
         $piPid = Invoke-Remote $PiHost $piLaunch
-        Write-RunLog "C1_started pid=$($piPid -join '')"
+        Write-RunLog "C${piClientId}_started pid=$($piPid -join '')"
     }
 
     if ($launchCloudB) {

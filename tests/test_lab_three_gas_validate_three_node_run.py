@@ -57,3 +57,4 @@ def test_postflight_accepts_dynamic_source_and_target_roles() -> None:
     assert resolve_run_roles("P2_to_P1") == ([2], 1)
     assert resolve_run_roles("P1_to_P3") == ([1], 3)
     assert resolve_run_roles("P12_to_P3") == ([1, 2], 3)
+    assert resolve_run_roles("P3_to_P1") == ([3], 1)

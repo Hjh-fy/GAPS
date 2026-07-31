@@ -25,9 +25,11 @@ QUEUE = (
 @pytest.mark.parametrize(
     ("direction", "sources", "target"),
     [
+        ("P2_to_P3", [2], 3),
         ("P2_to_P1", [2], 1),
         ("P1_to_P3", [1], 3),
         ("P12_to_P3", [1, 2], 3),
+        ("P3_to_P1", [3], 1),
     ],
 )
 def test_controller_resolves_only_requested_roles(
@@ -55,7 +57,10 @@ def test_controller_resolves_only_requested_roles(
     assert contract["source_clients"] == sources
     assert contract["target_client"] == target
     assert contract["launch_cloud_b"] is (2 in sources)
-    assert contract["launch_pi"] is (1 in sources)
+    assert contract["launch_pi"] is (1 in sources or 3 in sources)
+    assert contract["pi_client_id"] == (
+        3 if 3 in sources else 1 if 1 in sources else None
+    )
 
 
 def test_crossboard_queue_is_seed42_and_sequential() -> None:
