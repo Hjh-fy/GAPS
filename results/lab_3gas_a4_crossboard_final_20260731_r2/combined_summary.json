@@ -1,0 +1,692 @@
+{
+  "schema_version": "gaps.lab_three_gas.a4_crossboard_summary.v1",
+  "protocol": {
+    "task": "three_gas_classification",
+    "input_shape": [
+      100,
+      6
+    ],
+    "selected_channels": [
+      1,
+      2,
+      4,
+      6,
+      8,
+      9
+    ],
+    "seed_set": [
+      42
+    ],
+    "rounds": 25,
+    "local_epochs": 3,
+    "checkpoint_policy": "fixed_round_25",
+    "code_identity": {
+      "training_source_archive_sha256": "e104a05e9e341305cd04e6270edae768087e5260aa691a037a3eed45ed0bc38d",
+      "posthoc_scope_evaluator_sha256": "6220b1fc394ad12542fce4dba8bc538dab2cafc3ac2f966c2a6b98fc59c7169c",
+      "checkpoint_evaluator_sha256": "9ae6fe779171894897f56dc6479a6f1caada8ad76979e2d8f234d3fed802bf87"
+    }
+  },
+  "experiments": [
+    {
+      "experiment_id": "A4-XB-E0-FULL420",
+      "direction": "P2_to_P3",
+      "source_clients": [
+        2
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 3,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "results/lab_3gas_accuracy_recovery_stable150_20260730/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/server_round_025_adapted.pth",
+      "formal_stable": {
+        "unadapted_accuracy": 0.9472222222222222,
+        "adapted_accuracy": 0.9972222222222222
+      },
+      "scopes": {
+        "stable360": {
+          "window_correct": 359,
+          "window_total": 360,
+          "window_accuracy": 0.9972222222222222,
+          "window_macro_f1": 0.9972221739960764,
+          "window_confusion_matrix": [
+            [
+              120,
+              0,
+              0
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              1,
+              0,
+              119
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "early60": {
+          "window_correct": 41,
+          "window_total": 60,
+          "window_accuracy": 0.6833333333333333,
+          "window_macro_f1": 0.5831244778613199,
+          "window_confusion_matrix": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              0,
+              20,
+              0
+            ],
+            [
+              2,
+              17,
+              1
+            ]
+          ],
+          "exposure_correct": 20,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.6666666666666666,
+          "exposure_macro_f1": 0.5473453749315819,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              1,
+              9,
+              0
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "full420": {
+          "window_correct": 400,
+          "window_total": 420,
+          "window_accuracy": 0.9523809523809523,
+          "window_macro_f1": 0.9517457197080285,
+          "window_confusion_matrix": [
+            [
+              140,
+              0,
+              0
+            ],
+            [
+              0,
+              140,
+              0
+            ],
+            [
+              3,
+              17,
+              120
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a4_crossboard_e0_20260731_r2_summary.json",
+        "postflight_audit": "results/lab_3gas_accuracy_recovery_stable150_20260730_controller/rec_a4_stable150_P2_to_P3_fold1_s42_r25le3/postflight_attempt_audit.json"
+      },
+      "status": "audited"
+    },
+    {
+      "experiment_id": "A4-XB-E1-P2P1-S42",
+      "direction": "P2_to_P1",
+      "source_clients": [
+        2
+      ],
+      "target_client": 1,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 3,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a4_crossboard_seed42_20260731/a4_cross_p2p1_P2_to_P1_fold1_s42_r25le3/server_round_025_adapted.pth",
+      "formal_stable": {
+        "unadapted_accuracy": 0.9861111111111112,
+        "adapted_accuracy": 0.9777777777777777
+      },
+      "scopes": {
+        "stable360": {
+          "window_correct": 352,
+          "window_total": 360,
+          "window_accuracy": 0.9777777777777777,
+          "window_macro_f1": 0.9777152443199179,
+          "window_confusion_matrix": [
+            [
+              120,
+              0,
+              0
+            ],
+            [
+              1,
+              114,
+              5
+            ],
+            [
+              0,
+              2,
+              118
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "early60": {
+          "window_correct": 25,
+          "window_total": 60,
+          "window_accuracy": 0.4166666666666667,
+          "window_macro_f1": 0.33774469258340223,
+          "window_confusion_matrix": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              19,
+              1,
+              0
+            ],
+            [
+              6,
+              10,
+              4
+            ]
+          ],
+          "exposure_correct": 14,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.4666666666666667,
+          "exposure_macro_f1": 0.41056658395368073,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              9,
+              1,
+              0
+            ],
+            [
+              2,
+              5,
+              3
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "full420": {
+          "window_correct": 377,
+          "window_total": 420,
+          "window_accuracy": 0.8976190476190476,
+          "window_macro_f1": 0.8967711928716554,
+          "window_confusion_matrix": [
+            [
+              140,
+              0,
+              0
+            ],
+            [
+              20,
+              115,
+              5
+            ],
+            [
+              6,
+              12,
+              122
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a4_crossboard_scope_evaluations_20260731_r2/p2_to_p1_summary.json",
+        "postflight_audit": "results/lab_3gas_a4_crossboard_seed42_20260731_controller/a4_cross_p2p1_P2_to_P1_fold1_s42_r25le3/postflight_attempt_audit.json"
+      },
+      "status": "audited"
+    },
+    {
+      "experiment_id": "A4-XB-E2-P1P3-S42",
+      "direction": "P1_to_P3",
+      "source_clients": [
+        1
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 3,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a4_crossboard_seed42_20260731/a4_cross_p1p3_P1_to_P3_fold1_s42_r25le3/server_round_025_adapted.pth",
+      "formal_stable": {
+        "unadapted_accuracy": 0.9888888888888889,
+        "adapted_accuracy": 0.9833333333333333
+      },
+      "scopes": {
+        "stable360": {
+          "window_correct": 354,
+          "window_total": 360,
+          "window_accuracy": 0.9833333333333333,
+          "window_macro_f1": 0.9832829332077129,
+          "window_confusion_matrix": [
+            [
+              115,
+              2,
+              3
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              0,
+              1,
+              119
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "early60": {
+          "window_correct": 32,
+          "window_total": 60,
+          "window_accuracy": 0.5333333333333333,
+          "window_macro_f1": 0.5221169807635974,
+          "window_confusion_matrix": [
+            [
+              17,
+              3,
+              0
+            ],
+            [
+              0,
+              3,
+              17
+            ],
+            [
+              1,
+              7,
+              12
+            ]
+          ],
+          "exposure_correct": 18,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.6,
+          "exposure_macro_f1": 0.5238095238095238,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ],
+            [
+              0,
+              2,
+              8
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "full420": {
+          "window_correct": 386,
+          "window_total": 420,
+          "window_accuracy": 0.919047619047619,
+          "window_macro_f1": 0.9195603191569126,
+          "window_confusion_matrix": [
+            [
+              132,
+              5,
+              3
+            ],
+            [
+              0,
+              123,
+              17
+            ],
+            [
+              1,
+              8,
+              131
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a4_crossboard_scope_evaluations_20260731_r2/p1_to_p3_summary.json",
+        "postflight_audit": "results/lab_3gas_a4_crossboard_seed42_20260731_controller/a4_cross_p1p3_P1_to_P3_fold1_s42_r25le3/postflight_attempt_audit.json"
+      },
+      "status": "audited"
+    },
+    {
+      "experiment_id": "A4-XB-E3-P12P3-S42",
+      "direction": "P12_to_P3",
+      "source_clients": [
+        1,
+        2
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 3,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a4_crossboard_seed42_20260731/a4_cross_p12p3_P12_to_P3_fold1_s42_r25le3/server_round_025_adapted.pth",
+      "formal_stable": {
+        "unadapted_accuracy": 0.975,
+        "adapted_accuracy": 0.9805555555555555
+      },
+      "scopes": {
+        "stable360": {
+          "window_correct": 353,
+          "window_total": 360,
+          "window_accuracy": 0.9805555555555555,
+          "window_macro_f1": 0.9804724866830882,
+          "window_confusion_matrix": [
+            [
+              113,
+              1,
+              6
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              0,
+              0,
+              120
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "early60": {
+          "window_correct": 17,
+          "window_total": 60,
+          "window_accuracy": 0.2833333333333333,
+          "window_macro_f1": 0.2801621814667759,
+          "window_confusion_matrix": [
+            [
+              7,
+              10,
+              3
+            ],
+            [
+              4,
+              4,
+              12
+            ],
+            [
+              12,
+              2,
+              6
+            ]
+          ],
+          "exposure_correct": 13,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.43333333333333335,
+          "exposure_macro_f1": 0.41817363922627077,
+          "exposure_confusion_matrix": [
+            [
+              5,
+              3,
+              2
+            ],
+            [
+              0,
+              2,
+              8
+            ],
+            [
+              4,
+              0,
+              6
+            ]
+          ],
+          "calculation_status": "reported"
+        },
+        "full420": {
+          "window_correct": 370,
+          "window_total": 420,
+          "window_accuracy": 0.8809523809523809,
+          "window_macro_f1": 0.8809736190282952,
+          "window_confusion_matrix": [
+            [
+              120,
+              11,
+              9
+            ],
+            [
+              4,
+              124,
+              12
+            ],
+            [
+              12,
+              2,
+              126
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "reported"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a4_crossboard_scope_evaluations_20260731_r2/p12_to_p3_summary.json",
+        "postflight_audit": "results/lab_3gas_a4_crossboard_seed42_20260731_controller/a4_cross_p12p3_P12_to_P3_fold1_s42_r25le3/postflight_attempt_audit.json"
+      },
+      "status": "audited"
+    }
+  ],
+  "limitations": [
+    "single_seed_descriptive_only",
+    "overlapping_windows_within_exposure",
+    "nominal_gas_boundaries",
+    "all_retained_concentrations_in_target_calibration",
+    "early_and_full_scopes_are_post_hoc_diagnostics",
+    "p12_has_no_matched_budget_control"
+  ]
+}

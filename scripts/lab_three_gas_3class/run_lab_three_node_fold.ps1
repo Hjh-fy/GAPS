@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("P12_to_P3", "P2_to_P3")]
+    [ValidateSet("P12_to_P3", "P2_to_P3", "P2_to_P1", "P1_to_P3")]
     [string]$Direction = "P12_to_P3",
     [ValidateRange(1, 5)]
     [int]$Fold = 1,
@@ -29,12 +29,31 @@ param(
     [ValidateRange(5, 120)]
     [int]$StallMinutes = 15,
     [int]$TimeoutHours = 8,
-    [switch]$PreflightOnly
+    [switch]$PreflightOnly,
+    [switch]$ContractOnly
 )
 
 $ErrorActionPreference = "Stop"
+switch ($Direction) {
+    "P12_to_P3" { $sourceClients = @(1, 2); $targetClient = 3 }
+    "P2_to_P3" { $sourceClients = @(2); $targetClient = 3 }
+    "P2_to_P1" { $sourceClients = @(2); $targetClient = 1 }
+    "P1_to_P3" { $sourceClients = @(1); $targetClient = 3 }
+}
+$launchCloudB = $sourceClients -contains 2
+$launchPi = $sourceClients -contains 1
+if ($ContractOnly) {
+    [ordered]@{
+        direction = $Direction
+        source_clients = @($sourceClients)
+        target_client = $targetClient
+        launch_cloud_b = $launchCloudB
+        launch_pi = $launchPi
+    } | ConvertTo-Json -Compress
+    return
+}
+
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$sourceClients = if ($Direction -eq "P12_to_P3") { @(1, 2) } else { @(2) }
 $sourceCsv = $sourceClients -join ","
 $runId = "${RunLabel}_${Direction}_fold${Fold}_s${Seed}_r${Rounds}le${LocalEpochs}"
 $controllerInstanceId = if ($PreflightOnly) {
@@ -137,13 +156,15 @@ function Stop-CurrentRun {
     } catch {
         Write-RunLog "WARN failed to stop current server: $($_.Exception.Message)"
     }
-    try {
-        Invoke-Remote $CloudBHost `
-            "pkill -f '[g]aps_flower.client_app.*--client-id 2.*--run-tag $runId' || true" | Out-Null
-    } catch {
-        Write-RunLog "WARN failed to stop C2: $($_.Exception.Message)"
+    if ($launchCloudB) {
+        try {
+            Invoke-Remote $CloudBHost `
+                "pkill -f '[g]aps_flower.client_app.*--client-id 2.*--run-tag $runId' || true" | Out-Null
+        } catch {
+            Write-RunLog "WARN failed to stop C2: $($_.Exception.Message)"
+        }
     }
-    if ($sourceClients -contains 1) {
+    if ($launchPi) {
         try {
             Invoke-Remote $PiHost `
                 "pkill -f '[g]aps_flower.client_app.*--client-id 1.*--run-tag $runId' || true" | Out-Null
@@ -180,16 +201,18 @@ try {
         },
         @{
             Host = $ServerHost
-            Role = "P3/target-data"
-            Command = "cd '$serverRuntime' && /root/gaps_env/bin/python scripts/lab_three_gas_3class/remote_runtime_preflight.py --runtime-src '$serverRuntime' --role client --data-root '$serverData' --client-id 3 --profile '$Profile' --input-dim '$InputDim'"
-        },
-        @{
+            Role = "P$targetClient/target-data"
+            Command = "cd '$serverRuntime' && /root/gaps_env/bin/python scripts/lab_three_gas_3class/remote_runtime_preflight.py --runtime-src '$serverRuntime' --role client --data-root '$serverData' --client-id $targetClient --profile '$Profile' --input-dim '$InputDim'"
+        }
+    )
+    if ($launchCloudB) {
+        $runtimeProbes += @{
             Host = $CloudBHost
             Role = "C2/P2"
             Command = "cd '$cloudBRuntime' && /root/gaps_c2_cpu_env/bin/python scripts/lab_three_gas_3class/remote_runtime_preflight.py --runtime-src '$cloudBRuntime' --role client --data-root '$cloudBData' --client-id 2 --profile '$Profile' --input-dim '$InputDim'"
         }
-    )
-    if ($sourceClients -contains 1) {
+    }
+    if ($launchPi) {
         $runtimeProbes += @{
             Host = $PiHost
             Role = "C1/P1"
@@ -215,10 +238,12 @@ try {
     $tunnels += Start-Tunnel "controller_to_server" (
         $common + @("-L", "127.0.0.1:18080:127.0.0.1:8080", $ServerHost)
     )
-    $tunnels += Start-Tunnel "controller_to_cloud_b" (
-        $common + @("-R", "127.0.0.1:18080:127.0.0.1:18080", $CloudBHost)
-    )
-    if ($sourceClients -contains 1) {
+    if ($launchCloudB) {
+        $tunnels += Start-Tunnel "controller_to_cloud_b" (
+            $common + @("-R", "127.0.0.1:18080:127.0.0.1:18080", $CloudBHost)
+        )
+    }
+    if ($launchPi) {
         $tunnels += Start-Tunnel "controller_to_pi" (
             $common + @("-R", "127.0.0.1:18080:127.0.0.1:18080", $PiHost)
         )
@@ -231,7 +256,7 @@ try {
         "--run-id '$runId'",
         "--data-root '$serverData'",
         "--source-clients '$sourceCsv'",
-        "--target-clients '3'",
+        "--target-clients '$targetClient'",
         "--rounds '$Rounds'",
         "--profile '$Profile'",
         "--da-mode '$DaMode'",
@@ -247,7 +272,7 @@ try {
     Write-RunLog "server_started pid=$($serverPid -join '') run=$runId"
     Start-Sleep -Seconds 8
 
-    if ($sourceClients -contains 1) {
+    if ($launchPi) {
         $piLaunch = @(
             "/home/gaps/GAPS/gaps_rpi_env/bin/python '$piRuntime/scripts/remote_launch_flower_client_clean.py'",
             "--project '$piRuntime'",
@@ -270,26 +295,28 @@ try {
         Write-RunLog "C1_started pid=$($piPid -join '')"
     }
 
-    $cloudBLaunch = @(
-        "/root/gaps_c2_cpu_env/bin/python '$cloudBRuntime/scripts/remote_launch_flower_client_clean.py'",
-        "--project '$cloudBRuntime'",
-        "--log-root '$cloudBLogRoot'",
-        "--run-id '$runId'",
-        "--data-root '$cloudBData'",
-        "--client-id '2'",
-        "--profile '$Profile'",
-        "--local-epochs '$LocalEpochs'",
-        "--batch-size '32'",
-        "--num-classes '3'",
-        "--input-dim '$InputDim'",
-        "--num-clients '3'",
-        "--num-phases '1'",
-        "--eval-split 'calibration'",
-        "--python-bin '/root/gaps_c2_cpu_env/bin/python'",
-        "--server-address '127.0.0.1:18080'"
-    ) -join " "
-    $cloudBPid = Invoke-Remote $CloudBHost $cloudBLaunch
-    Write-RunLog "C2_started pid=$($cloudBPid -join '')"
+    if ($launchCloudB) {
+        $cloudBLaunch = @(
+            "/root/gaps_c2_cpu_env/bin/python '$cloudBRuntime/scripts/remote_launch_flower_client_clean.py'",
+            "--project '$cloudBRuntime'",
+            "--log-root '$cloudBLogRoot'",
+            "--run-id '$runId'",
+            "--data-root '$cloudBData'",
+            "--client-id '2'",
+            "--profile '$Profile'",
+            "--local-epochs '$LocalEpochs'",
+            "--batch-size '32'",
+            "--num-classes '3'",
+            "--input-dim '$InputDim'",
+            "--num-clients '3'",
+            "--num-phases '1'",
+            "--eval-split 'calibration'",
+            "--python-bin '/root/gaps_c2_cpu_env/bin/python'",
+            "--server-address '127.0.0.1:18080'"
+        ) -join " "
+        $cloudBPid = Invoke-Remote $CloudBHost $cloudBLaunch
+        Write-RunLog "C2_started pid=$($cloudBPid -join '')"
+    }
 
     $deadline = (Get-Date).AddHours($TimeoutHours)
     $lastObservedRound = 0
@@ -306,7 +333,7 @@ try {
         $serverActive = Current-RunServer
         $lastRound = Invoke-Remote $ServerHost `
             "ls '$serverRunDir'/server_round_*.pth 2>/dev/null | grep -v adapted | tail -1 || true"
-        $health = if ($sourceClients -contains 1) {
+        $health = if ($launchPi) {
             Invoke-Remote $PiHost `
                 "vcgencmd measure_temp 2>/dev/null; vcgencmd get_throttled 2>/dev/null"
         } else {
@@ -351,7 +378,7 @@ try {
         "--run-dir '$serverRunDir'",
         "--data-root '$serverData'",
         "--source-clients '$sourceCsv'",
-        "--target-client '3'",
+        "--target-client '$targetClient'",
         "--rounds '$Rounds'",
         "--selection-policy '$SelectionPolicy'",
         "--device 'cpu'",
@@ -373,7 +400,9 @@ try {
         "--da-mode '$DaMode'",
         "--target-ce-weight '$TargetCeWeight'",
         "--selection-policy '$SelectionPolicy'",
-        "--target-data-dir '$serverData/client_3'",
+        "--source-clients '$sourceCsv'",
+        "--target-client '$targetClient'",
+        "--target-data-dir '$serverData/client_$targetClient'",
         "--evaluation-dir '$serverRunDir/formal_evaluation'",
         "--output '$serverRunDir/postflight_attempt_audit.json'"
     ) -join " "

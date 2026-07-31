@@ -7,6 +7,9 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+from torch.utils.data import DataLoader
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -18,12 +21,45 @@ from gaps_flower.evaluate_checkpoint import (  # noqa: E402
     parse_client_ids,
     resolve_device,
 )
+from federated_dataset import GasSensorWindowDataset  # noqa: E402
 from scripts.lab_three_gas_3class.train_centralized_baseline import (  # noqa: E402
     classification_metrics,
     exposure_metrics,
     load_manifest,
     predict,
 )
+
+
+def make_named_loader(
+    client_dir: Path,
+    prefix: str,
+    batch_size: int,
+) -> DataLoader:
+    """Load a pre-normalized named evaluation split such as early or full."""
+    features = np.load(client_dir / f"{prefix}_features.npy")
+    labels = np.load(client_dir / f"{prefix}_classification_labels.npy")
+    regression_path = client_dir / f"{prefix}_regression_labels.npy"
+    regression = np.load(regression_path) if regression_path.is_file() else None
+    phase_path = client_dir / f"{prefix}_phase_labels.npy"
+    phase = (
+        np.load(phase_path, allow_pickle=True)
+        if phase_path.is_file()
+        else np.full(len(features), -1, dtype=np.int64)
+    )
+    dataset = GasSensorWindowDataset(
+        features=features,
+        regression_labels=regression,
+        classification_labels=labels,
+        phase_labels=phase,
+        normalize=False,
+    )
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=0,
+        pin_memory=True,
+    )
 
 
 def main() -> None:
@@ -33,7 +69,7 @@ def main() -> None:
     parser.add_argument("--client-ids", default="1,2,3")
     parser.add_argument(
         "--split",
-        choices=("test", "calibration"),
+        choices=("test", "calibration", "early", "full"),
         default="test",
     )
     parser.add_argument("--device", default="auto")
@@ -53,13 +89,20 @@ def main() -> None:
     all_manifest = []
 
     for client_id in parse_client_ids(args.client_ids):
-        loader = make_loader(
-            args.data_root,
-            client_id,
-            args.split,
-            args.batch_size,
-        )
-        prefix = "test" if args.split == "test" else "calibration"
+        if args.split in {"early", "full"}:
+            loader = make_named_loader(
+                args.data_root / f"client_{client_id}",
+                args.split,
+                args.batch_size,
+            )
+        else:
+            loader = make_loader(
+                args.data_root,
+                client_id,
+                args.split,
+                args.batch_size,
+            )
+        prefix = args.split
         manifest = load_manifest(
             args.data_root
             / f"client_{client_id}"

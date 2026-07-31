@@ -7,6 +7,7 @@ import numpy as np
 
 from scripts.lab_three_gas_3class.validate_three_node_run import (
     expected_target_scope,
+    resolve_run_roles,
 )
 
 
@@ -50,3 +51,9 @@ def test_expected_target_scope_is_derived_from_dataset(tmp_path: Path) -> None:
         "calibration": {"n_windows": 90, "n_exposures": 30},
         "test": {"n_windows": 420, "n_exposures": 30},
     }
+
+
+def test_postflight_accepts_dynamic_source_and_target_roles() -> None:
+    assert resolve_run_roles("P2_to_P1") == ([2], 1)
+    assert resolve_run_roles("P1_to_P3") == ([1], 3)
+    assert resolve_run_roles("P12_to_P3") == ([1, 2], 3)

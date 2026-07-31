@@ -13,6 +13,29 @@ from typing import Any
 import numpy as np
 
 
+DIRECTION_ROLES = {
+    "P2_to_P3": ([2], 3),
+    "P2_to_P1": ([2], 1),
+    "P1_to_P3": ([1], 3),
+    "P12_to_P3": ([1, 2], 3),
+}
+
+
+def resolve_run_roles(direction: str) -> tuple[list[int], int]:
+    try:
+        sources, target = DIRECTION_ROLES[direction]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported direction: {direction}") from exc
+    return list(sources), target
+
+
+def parse_client_ids(text: str) -> list[int]:
+    clients = [int(item.strip()) for item in text.split(",") if item.strip()]
+    if not clients:
+        raise argparse.ArgumentTypeError("client list must not be empty")
+    return clients
+
+
 def load_json(path: Path) -> Any:
     if not path.is_file():
         raise FileNotFoundError(path)
@@ -55,12 +78,16 @@ def validate_evaluation(
     expected_target_scope: dict[str, dict[str, int]],
     expected_input_dim: int,
     selection_policy: str,
+    target_client: int,
 ) -> dict[str, Any]:
     require(
         evaluation["source_clients"] == source_clients,
         "Evaluation source client identity mismatch",
     )
-    require(evaluation["target_client"] == 3, "Target must be P3/client 3")
+    require(
+        evaluation["target_client"] == target_client,
+        "Evaluation target client identity mismatch",
+    )
     rows = evaluation["rounds"]
     require(len(rows) == expected_rounds, "Incomplete selection-round coverage")
     require(
@@ -189,9 +216,11 @@ def main() -> None:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument(
         "--direction",
-        choices=("P12_to_P3", "P2_to_P3"),
+        choices=tuple(DIRECTION_ROLES),
         required=True,
     )
+    parser.add_argument("--source-clients", type=parse_client_ids)
+    parser.add_argument("--target-client", type=int)
     parser.add_argument("--rounds", type=int, default=25)
     parser.add_argument("--local-epochs", type=int, default=3)
     parser.add_argument("--da-steps", type=int, default=100)
@@ -218,7 +247,17 @@ def main() -> None:
     args = parser.parse_args()
 
     run_dir = args.run_dir.resolve()
-    source_clients = [1, 2] if args.direction == "P12_to_P3" else [2]
+    source_clients, target_client = resolve_run_roles(args.direction)
+    if args.source_clients is not None:
+        require(
+            args.source_clients == source_clients,
+            "Explicit source clients do not match direction",
+        )
+    if args.target_client is not None:
+        require(
+            args.target_client == target_client,
+            "Explicit target client does not match direction",
+        )
     expected_round_list = list(range(1, args.rounds + 1))
     require(
         checkpoint_rounds(run_dir, adapted=False) == expected_round_list,
@@ -283,8 +322,8 @@ def main() -> None:
                 f"legacy_strong run_config {key} mismatch",
             )
     require(
-        config["server_calib_data"].endswith("/client_3"),
-        "Server calibration must be P3/client_3",
+        config["server_calib_data"].endswith(f"/client_{target_client}"),
+        f"Server calibration must be target client_{target_client}",
     )
     for client_id in source_clients:
         require(
@@ -342,6 +381,7 @@ def main() -> None:
         target_scope,
         args.input_dim,
         args.selection_policy,
+        target_client,
     )
     require_finite(evaluation, "formal_evaluation")
 
@@ -350,7 +390,7 @@ def main() -> None:
         "status": "valid",
         "direction": args.direction,
         "source_clients": source_clients,
-        "target_client": 3,
+        "target_client": target_client,
         "target_scope": target_scope,
         "rounds": args.rounds,
         "local_epochs": args.local_epochs,
@@ -360,11 +400,11 @@ def main() -> None:
         "target_ce_weight": args.target_ce_weight,
         "selection_policy": args.selection_policy,
         "selection_boundary": (
-            "final configured round fixed before P3 test; source calibration "
+            "final configured round fixed before target test; source calibration "
             "is monitoring only"
             if args.selection_policy == "last_round"
             else (
-                "all rounds scored on source calibration only; P3 test opened "
+                "all rounds scored on source calibration only; target test opened "
                 "after the selected round was locked"
             )
         ),
