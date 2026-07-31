@@ -39,6 +39,7 @@ SCRIPT_SOURCE_FILES = (
     "scripts/__init__.py",
     "scripts/remote_launch_flower_client_clean.py",
     "scripts/remote_launch_flower_server_clean.py",
+    "scripts/lab_three_gas_3class/evaluate_crossboard_scopes.py",
     "scripts/lab_three_gas_3class/evaluate_exposure_checkpoint.py",
     "scripts/lab_three_gas_3class/evaluate_source_target_run.py",
     "scripts/lab_three_gas_3class/remote_runtime_preflight.py",
