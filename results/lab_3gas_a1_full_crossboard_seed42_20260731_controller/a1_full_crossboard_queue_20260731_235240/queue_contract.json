@@ -1,0 +1,52 @@
+﻿{
+    "source_sha":  "d73afb6cc13af9f8909119fb8ca6a0e56305223d0cdca720676f9342e5adbf33",
+    "rounds":  25,
+    "local_epochs":  1,
+    "server_da_steps":  100,
+    "seed":  42,
+    "selection_policy":  "last_round",
+    "experiments":  [
+                        {
+                            "experiment_id":  "A1-FULL-E1-P2P3-S42",
+                            "protocol":  "A1",
+                            "direction":  "P2_to_P3",
+                            "dataset":  "client_data_lab_3gas_a1_full_crossboard_p2p3_v1",
+                            "run_label":  "a1_full_p2p3"
+                        },
+                        {
+                            "experiment_id":  "A4-CTRL-E2-P2P3-LE1-S42",
+                            "protocol":  "A4",
+                            "direction":  "P2_to_P3",
+                            "dataset":  "client_data_lab_3gas_a4_crossboard_p2p3_eval_v1",
+                            "run_label":  "a4_ctrl_le1_p2p3"
+                        },
+                        {
+                            "experiment_id":  "A1-FULL-E3-P1P3-S42",
+                            "protocol":  "A1",
+                            "direction":  "P1_to_P3",
+                            "dataset":  "client_data_lab_3gas_a1_full_crossboard_p1p3_v1",
+                            "run_label":  "a1_full_p1p3"
+                        },
+                        {
+                            "experiment_id":  "A1-FULL-E4-P12P3-S42",
+                            "protocol":  "A1",
+                            "direction":  "P12_to_P3",
+                            "dataset":  "client_data_lab_3gas_a1_full_crossboard_p12p3_v1",
+                            "run_label":  "a1_full_p12p3"
+                        },
+                        {
+                            "experiment_id":  "A1-FULL-E5-P2P1-S42",
+                            "protocol":  "A1",
+                            "direction":  "P2_to_P1",
+                            "dataset":  "client_data_lab_3gas_a1_full_crossboard_p2p1_v1",
+                            "run_label":  "a1_full_p2p1"
+                        },
+                        {
+                            "experiment_id":  "A1-FULL-E6-P3P1-S42",
+                            "protocol":  "A1",
+                            "direction":  "P3_to_P1",
+                            "dataset":  "client_data_lab_3gas_a1_full_crossboard_p3p1_v1",
+                            "run_label":  "a1_full_p3p1"
+                        }
+                    ]
+}

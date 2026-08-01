@@ -1,0 +1,1038 @@
+{
+  "schema_version": "gaps.lab_three_gas.a1_posthoc_summary.v1",
+  "protocol": {
+    "task": "three_gas_classification",
+    "input_shape": [
+      100,
+      6
+    ],
+    "selected_channels": [
+      1,
+      2,
+      4,
+      6,
+      8,
+      9
+    ],
+    "seed_set": [
+      42
+    ],
+    "rounds": 25,
+    "local_epochs": 1,
+    "server_da_steps_per_round": 100,
+    "checkpoint_policy": "fixed_round_25",
+    "source_archive_sha256": "d73afb6cc13af9f8909119fb8ca6a0e56305223d0cdca720676f9342e5adbf33"
+  },
+  "experiments": [
+    {
+      "experiment_id": "A1-FULL-E1-P2P3-S42",
+      "protocol": "A1",
+      "primary_scope": "full420",
+      "direction": "P2_to_P3",
+      "source_clients": [
+        2
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 1,
+      "da_steps_per_round": 100,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p2p3_P2_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "formal_primary": {
+        "unadapted_accuracy": 0.9119047619047619,
+        "adapted_accuracy": 0.9357142857142857
+      },
+      "scopes": {
+        "early60": {
+          "window_correct": 35,
+          "window_total": 60,
+          "window_accuracy": 0.5833333333333334,
+          "window_macro_f1": 0.5142286443913477,
+          "window_confusion_matrix": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              18
+            ],
+            [
+              7,
+              0,
+              13
+            ]
+          ],
+          "exposure_correct": 17,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.5666666666666667,
+          "exposure_macro_f1": 0.4626945786366076,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ],
+            [
+              3,
+              0,
+              7
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "stable360": {
+          "window_correct": 358,
+          "window_total": 360,
+          "window_accuracy": 0.9944444444444445,
+          "window_macro_f1": 0.9944444444444445,
+          "window_confusion_matrix": [
+            [
+              120,
+              0,
+              0
+            ],
+            [
+              0,
+              119,
+              1
+            ],
+            [
+              0,
+              1,
+              119
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "full420": {
+          "window_correct": 393,
+          "window_total": 420,
+          "window_accuracy": 0.9357142857142857,
+          "window_macro_f1": 0.9354967910267754,
+          "window_confusion_matrix": [
+            [
+              140,
+              0,
+              0
+            ],
+            [
+              0,
+              121,
+              19
+            ],
+            [
+              7,
+              1,
+              132
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a1_full_crossboard_seed42_20260801_posthoc/a1_full_p2p3_P2_to_P3_fold1_s42_r25le1/evaluation/summary.json",
+        "postflight_audit": "results/lab_3gas_a1_full_crossboard_seed42_20260731_controller/a1_full_p2p3_P2_to_P3_fold1_s42_r25le1/postflight_attempt_audit.json"
+      },
+      "status": "audited",
+      "checkpoint_sha256": "7d72f8e5b3fb9f3041a1fef5ed23a0402578b807525e288d27f0249521a12788"
+    },
+    {
+      "experiment_id": "A4-CTRL-E2-P2P3-LE1-S42",
+      "protocol": "A4",
+      "primary_scope": "stable360",
+      "direction": "P2_to_P3",
+      "source_clients": [
+        2
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 1,
+      "da_steps_per_round": 100,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a4_ctrl_le1_p2p3_P2_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "formal_primary": {
+        "unadapted_accuracy": 0.9694444444444444,
+        "adapted_accuracy": 0.9861111111111112
+      },
+      "scopes": {
+        "early60": {
+          "window_correct": 39,
+          "window_total": 60,
+          "window_accuracy": 0.65,
+          "window_macro_f1": 0.5597326649958229,
+          "window_confusion_matrix": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              19
+            ],
+            [
+              2,
+              0,
+              18
+            ]
+          ],
+          "exposure_correct": 20,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.6666666666666666,
+          "exposure_macro_f1": 0.5555555555555555,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "stable360": {
+          "window_correct": 355,
+          "window_total": 360,
+          "window_accuracy": 0.9861111111111112,
+          "window_macro_f1": 0.9860746470802729,
+          "window_confusion_matrix": [
+            [
+              119,
+              0,
+              1
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              1,
+              3,
+              116
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "full420": {
+          "window_correct": 394,
+          "window_total": 420,
+          "window_accuracy": 0.9380952380952381,
+          "window_macro_f1": 0.9380156317846288,
+          "window_confusion_matrix": [
+            [
+              139,
+              0,
+              1
+            ],
+            [
+              0,
+              121,
+              19
+            ],
+            [
+              3,
+              3,
+              134
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a1_full_crossboard_seed42_20260801_posthoc/a4_ctrl_le1_p2p3_P2_to_P3_fold1_s42_r25le1/evaluation/summary.json",
+        "postflight_audit": "results/lab_3gas_a1_full_crossboard_seed42_20260731_controller/a4_ctrl_le1_p2p3_P2_to_P3_fold1_s42_r25le1/postflight_attempt_audit.json"
+      },
+      "status": "audited",
+      "checkpoint_sha256": "14554fab46a722f6e03c9ddbad692ee9c75a8c7037b29ad75dffbdd9d6e5aaa1"
+    },
+    {
+      "experiment_id": "A1-FULL-E3-P1P3-S42",
+      "protocol": "A1",
+      "primary_scope": "full420",
+      "direction": "P1_to_P3",
+      "source_clients": [
+        1
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 1,
+      "da_steps_per_round": 100,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p1p3_P1_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "formal_primary": {
+        "unadapted_accuracy": 0.8952380952380953,
+        "adapted_accuracy": 0.9023809523809524
+      },
+      "scopes": {
+        "early60": {
+          "window_correct": 30,
+          "window_total": 60,
+          "window_accuracy": 0.5,
+          "window_macro_f1": 0.4444444444444444,
+          "window_confusion_matrix": [
+            [
+              10,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              20
+            ],
+            [
+              0,
+              0,
+              20
+            ]
+          ],
+          "exposure_correct": 14,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.4666666666666667,
+          "exposure_macro_f1": 0.41269841269841273,
+          "exposure_confusion_matrix": [
+            [
+              4,
+              6,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "stable360": {
+          "window_correct": 349,
+          "window_total": 360,
+          "window_accuracy": 0.9694444444444444,
+          "window_macro_f1": 0.9695043125056019,
+          "window_confusion_matrix": [
+            [
+              110,
+              10,
+              0
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              0,
+              1,
+              119
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "full420": {
+          "window_correct": 379,
+          "window_total": 420,
+          "window_accuracy": 0.9023809523809524,
+          "window_macro_f1": 0.90231177868498,
+          "window_confusion_matrix": [
+            [
+              120,
+              20,
+              0
+            ],
+            [
+              0,
+              120,
+              20
+            ],
+            [
+              0,
+              1,
+              139
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a1_full_crossboard_seed42_20260801_posthoc/a1_full_p1p3_P1_to_P3_fold1_s42_r25le1/evaluation/summary.json",
+        "postflight_audit": "results/lab_3gas_a1_full_crossboard_seed42_20260731_controller/a1_full_p1p3_P1_to_P3_fold1_s42_r25le1/postflight_attempt_audit.json"
+      },
+      "status": "audited",
+      "checkpoint_sha256": "3adc6acaa2f2d0f3a2097d3cfdac053e37cbd66988fffc774e5867068023f51d"
+    },
+    {
+      "experiment_id": "A1-FULL-E4-P12P3-S42",
+      "protocol": "A1",
+      "primary_scope": "full420",
+      "direction": "P12_to_P3",
+      "source_clients": [
+        1,
+        2
+      ],
+      "target_client": 3,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 1,
+      "da_steps_per_round": 100,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "formal_primary": {
+        "unadapted_accuracy": 0.9,
+        "adapted_accuracy": 0.9071428571428571
+      },
+      "scopes": {
+        "early60": {
+          "window_correct": 31,
+          "window_total": 60,
+          "window_accuracy": 0.5166666666666667,
+          "window_macro_f1": 0.43720121686223384,
+          "window_confusion_matrix": [
+            [
+              15,
+              2,
+              3
+            ],
+            [
+              0,
+              0,
+              20
+            ],
+            [
+              4,
+              0,
+              16
+            ]
+          ],
+          "exposure_correct": 18,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.6,
+          "exposure_macro_f1": 0.506896551724138,
+          "exposure_confusion_matrix": [
+            [
+              9,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ],
+            [
+              1,
+              0,
+              9
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "stable360": {
+          "window_correct": 350,
+          "window_total": 360,
+          "window_accuracy": 0.9722222222222222,
+          "window_macro_f1": 0.971945326382143,
+          "window_confusion_matrix": [
+            [
+              110,
+              3,
+              7
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              0,
+              0,
+              120
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "full420": {
+          "window_correct": 381,
+          "window_total": 420,
+          "window_accuracy": 0.9071428571428571,
+          "window_macro_f1": 0.9079724319957188,
+          "window_confusion_matrix": [
+            [
+              125,
+              5,
+              10
+            ],
+            [
+              0,
+              120,
+              20
+            ],
+            [
+              4,
+              0,
+              136
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a1_full_crossboard_seed42_20260801_posthoc/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/evaluation/summary.json",
+        "postflight_audit": "results/lab_3gas_a1_full_crossboard_seed42_20260731_controller/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/postflight_attempt_audit.json"
+      },
+      "status": "audited",
+      "checkpoint_sha256": "860ca17461e22463fc79fba452a5bff7252d15b9b056bf594e71364d5fcd58ad"
+    },
+    {
+      "experiment_id": "A1-FULL-E5-P2P1-S42",
+      "protocol": "A1",
+      "primary_scope": "full420",
+      "direction": "P2_to_P1",
+      "source_clients": [
+        2
+      ],
+      "target_client": 1,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 1,
+      "da_steps_per_round": 100,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p2p1_P2_to_P1_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "formal_primary": {
+        "unadapted_accuracy": 0.8380952380952381,
+        "adapted_accuracy": 0.9380952380952381
+      },
+      "scopes": {
+        "early60": {
+          "window_correct": 41,
+          "window_total": 60,
+          "window_accuracy": 0.6833333333333333,
+          "window_macro_f1": 0.6556183301946014,
+          "window_confusion_matrix": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              15,
+              5,
+              0
+            ],
+            [
+              4,
+              0,
+              16
+            ]
+          ],
+          "exposure_correct": 17,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.5666666666666667,
+          "exposure_macro_f1": 0.4765300059417707,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              3,
+              0,
+              7
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "stable360": {
+          "window_correct": 353,
+          "window_total": 360,
+          "window_accuracy": 0.9805555555555555,
+          "window_macro_f1": 0.9805299168847866,
+          "window_confusion_matrix": [
+            [
+              117,
+              2,
+              1
+            ],
+            [
+              1,
+              116,
+              3
+            ],
+            [
+              0,
+              0,
+              120
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "full420": {
+          "window_correct": 394,
+          "window_total": 420,
+          "window_accuracy": 0.9380952380952381,
+          "window_macro_f1": 0.9380465284140823,
+          "window_confusion_matrix": [
+            [
+              137,
+              2,
+              1
+            ],
+            [
+              16,
+              121,
+              3
+            ],
+            [
+              4,
+              0,
+              136
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a1_full_crossboard_seed42_20260801_posthoc/a1_full_p2p1_P2_to_P1_fold1_s42_r25le1/evaluation/summary.json",
+        "postflight_audit": "results/lab_3gas_a1_full_crossboard_seed42_20260731_controller/a1_full_p2p1_P2_to_P1_fold1_s42_r25le1/postflight_attempt_audit.json"
+      },
+      "status": "audited",
+      "checkpoint_sha256": "a3092a10ce99ece6fe23a1486973a9da698ed5cdf91888874a8c9438c8f8ec37"
+    },
+    {
+      "experiment_id": "A1-FULL-E6-P3P1-S42",
+      "protocol": "A1",
+      "primary_scope": "full420",
+      "direction": "P3_to_P1",
+      "source_clients": [
+        3
+      ],
+      "target_client": 1,
+      "seed": 42,
+      "rounds": 25,
+      "local_epochs": 1,
+      "da_steps_per_round": 100,
+      "model_profile": "proto_replay",
+      "domain_adaptation_mode": "corrected_b2",
+      "target_ce_weight": 0.0,
+      "selection_policy": "last_round",
+      "selected_round": 25,
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p3p1_P3_to_P1_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "formal_primary": {
+        "unadapted_accuracy": 0.9333333333333333,
+        "adapted_accuracy": 0.9523809523809523
+      },
+      "scopes": {
+        "early60": {
+          "window_correct": 41,
+          "window_total": 60,
+          "window_accuracy": 0.6833333333333333,
+          "window_macro_f1": 0.6536630674561709,
+          "window_confusion_matrix": [
+            [
+              20,
+              0,
+              0
+            ],
+            [
+              15,
+              5,
+              0
+            ],
+            [
+              0,
+              4,
+              16
+            ]
+          ],
+          "exposure_correct": 18,
+          "exposure_total": 30,
+          "exposure_accuracy": 0.6,
+          "exposure_macro_f1": 0.5185185185185185,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              8
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "stable360": {
+          "window_correct": 359,
+          "window_total": 360,
+          "window_accuracy": 0.9972222222222222,
+          "window_macro_f1": 0.9972221739960764,
+          "window_confusion_matrix": [
+            [
+              120,
+              0,
+              0
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              1,
+              0,
+              119
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        },
+        "full420": {
+          "window_correct": 400,
+          "window_total": 420,
+          "window_accuracy": 0.9523809523809523,
+          "window_macro_f1": 0.9523773858346348,
+          "window_confusion_matrix": [
+            [
+              140,
+              0,
+              0
+            ],
+            [
+              15,
+              125,
+              0
+            ],
+            [
+              1,
+              4,
+              135
+            ]
+          ],
+          "exposure_correct": 30,
+          "exposure_total": 30,
+          "exposure_accuracy": 1.0,
+          "exposure_macro_f1": 1.0,
+          "exposure_confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "calculation_status": "recomputed"
+        }
+      },
+      "provenance": {
+        "scope_summary": "results/lab_3gas_a1_full_crossboard_seed42_20260801_posthoc/a1_full_p3p1_P3_to_P1_fold1_s42_r25le1/evaluation/summary.json",
+        "postflight_audit": "results/lab_3gas_a1_full_crossboard_seed42_20260731_controller/a1_full_p3p1_P3_to_P1_fold1_s42_r25le1/postflight_attempt_audit.json"
+      },
+      "status": "audited",
+      "checkpoint_sha256": "3d3c5c5cdf2d2c5554063bb3254cd47f75c1dce9af14a83bfb2d679f5629b3be"
+    }
+  ],
+  "limitations": [
+    "single_seed_descriptive_only",
+    "overlapping_windows_within_exposure",
+    "nominal_gas_boundaries",
+    "all_retained_concentrations_in_target_calibration",
+    "post_hoc_time_scope_diagnostics"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema_version": "gaps.lab_three_gas.attempt_audit.v1",
+  "status": "valid",
+  "direction": "P2_to_P1",
+  "source_clients": [
+    2
+  ],
+  "target_client": 1,
+  "target_scope": {
+    "calibration": {
+      "n_windows": 90,
+      "n_exposures": 30
+    },
+    "test": {
+      "n_windows": 420,
+      "n_exposures": 30
+    }
+  },
+  "rounds": 25,
+  "local_epochs": 1,
+  "da_steps_per_round": 100,
+  "model_profile": "proto_replay",
+  "domain_adaptation_mode": "corrected_b2",
+  "target_ce_weight": 0.0,
+  "selection_policy": "last_round",
+  "selection_boundary": "final configured round fixed before target test; source calibration is monitoring only",
+  "evidence_boundary": "preliminary_nominal_boundary_screening",
+  "selected_round": 25,
+  "metrics": {
+    "unadapted": {
+      "target_test_window_accuracy": 0.8380952380952381,
+      "target_test_window_macro_f1": 0.8325728474469892,
+      "target_test_exposure_accuracy": 0.9,
+      "target_test_exposure_macro_f1": 0.8976982097186701
+    },
+    "adapted": {
+      "target_test_window_accuracy": 0.9380952380952381,
+      "target_test_window_macro_f1": 0.9380465284140823,
+      "target_test_exposure_accuracy": 1.0,
+      "target_test_exposure_macro_f1": 1.0
+    }
+  }
+}

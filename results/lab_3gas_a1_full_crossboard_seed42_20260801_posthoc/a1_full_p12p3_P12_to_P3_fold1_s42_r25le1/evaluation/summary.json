@@ -1,0 +1,480 @@
+{
+  "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+  "data_root": "/root/GAPS/dataset/client_data_lab_3gas_a1_full_crossboard_p12p3_v1/fold_1",
+  "target_client": 3,
+  "scope_splits": {
+    "stable360": "stable",
+    "early60": "early",
+    "full420": "full"
+  },
+  "scopes": {
+    "stable360": {
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "round": 25,
+      "split": "stable",
+      "device": "cpu",
+      "model_config": {
+        "num_classes": 3,
+        "input_dim": 6,
+        "num_clients": 3,
+        "num_phases": 1,
+        "seq_len": 100
+      },
+      "clients": {
+        "3": {
+          "loss": 0.18298914613745484,
+          "window": {
+            "accuracy": 0.9722222222222222,
+            "macro_f1": 0.971945326382143,
+            "confusion_matrix": [
+              [
+                110,
+                3,
+                7
+              ],
+              [
+                0,
+                120,
+                0
+              ],
+              [
+                0,
+                0,
+                120
+              ]
+            ],
+            "n_samples": 360
+          },
+          "exposure": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                10,
+                0,
+                0
+              ],
+              [
+                0,
+                10,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 1.0,
+                "macro_f1": 1.0,
+                "confusion_matrix": [
+                  [
+                    10,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    10,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      },
+      "global": {
+        "window": {
+          "accuracy": 0.9722222222222222,
+          "macro_f1": 0.971945326382143,
+          "confusion_matrix": [
+            [
+              110,
+              3,
+              7
+            ],
+            [
+              0,
+              120,
+              0
+            ],
+            [
+              0,
+              0,
+              120
+            ]
+          ],
+          "n_samples": 360
+        },
+        "exposure": {
+          "accuracy": 1.0,
+          "macro_f1": 1.0,
+          "confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "n_exposures": 30,
+          "by_platform": {
+            "3": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  10,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  10,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ]
+              ],
+              "n_samples": 30
+            }
+          }
+        }
+      }
+    },
+    "early60": {
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "round": 25,
+      "split": "early",
+      "device": "cpu",
+      "model_config": {
+        "num_classes": 3,
+        "input_dim": 6,
+        "num_clients": 3,
+        "num_phases": 1,
+        "seq_len": 100
+      },
+      "clients": {
+        "3": {
+          "loss": 3.8834818522135417,
+          "window": {
+            "accuracy": 0.5166666666666667,
+            "macro_f1": 0.43720121686223384,
+            "confusion_matrix": [
+              [
+                15,
+                2,
+                3
+              ],
+              [
+                0,
+                0,
+                20
+              ],
+              [
+                4,
+                0,
+                16
+              ]
+            ],
+            "n_samples": 60
+          },
+          "exposure": {
+            "accuracy": 0.6,
+            "macro_f1": 0.506896551724138,
+            "confusion_matrix": [
+              [
+                9,
+                1,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ],
+              [
+                1,
+                0,
+                9
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 0.6,
+                "macro_f1": 0.506896551724138,
+                "confusion_matrix": [
+                  [
+                    9,
+                    1,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ],
+                  [
+                    1,
+                    0,
+                    9
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      },
+      "global": {
+        "window": {
+          "accuracy": 0.5166666666666667,
+          "macro_f1": 0.43720121686223384,
+          "confusion_matrix": [
+            [
+              15,
+              2,
+              3
+            ],
+            [
+              0,
+              0,
+              20
+            ],
+            [
+              4,
+              0,
+              16
+            ]
+          ],
+          "n_samples": 60
+        },
+        "exposure": {
+          "accuracy": 0.6,
+          "macro_f1": 0.506896551724138,
+          "confusion_matrix": [
+            [
+              9,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ],
+            [
+              1,
+              0,
+              9
+            ]
+          ],
+          "n_exposures": 30,
+          "by_platform": {
+            "3": {
+              "accuracy": 0.6,
+              "macro_f1": 0.506896551724138,
+              "confusion_matrix": [
+                [
+                  9,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ],
+                [
+                  1,
+                  0,
+                  9
+                ]
+              ],
+              "n_samples": 30
+            }
+          }
+        }
+      }
+    },
+    "full420": {
+      "checkpoint": "/root/GAPS/results/lab_3gas_a1_full_crossboard_seed42_20260731/a1_full_p12p3_P12_to_P3_fold1_s42_r25le1/server_round_025_adapted.pth",
+      "round": 25,
+      "split": "full",
+      "device": "cpu",
+      "model_config": {
+        "num_classes": 3,
+        "input_dim": 6,
+        "num_clients": 3,
+        "num_phases": 1,
+        "seq_len": 100
+      },
+      "clients": {
+        "3": {
+          "loss": 0.7116309079762903,
+          "window": {
+            "accuracy": 0.9071428571428571,
+            "macro_f1": 0.9079724319957188,
+            "confusion_matrix": [
+              [
+                125,
+                5,
+                10
+              ],
+              [
+                0,
+                120,
+                20
+              ],
+              [
+                4,
+                0,
+                136
+              ]
+            ],
+            "n_samples": 420
+          },
+          "exposure": {
+            "accuracy": 1.0,
+            "macro_f1": 1.0,
+            "confusion_matrix": [
+              [
+                10,
+                0,
+                0
+              ],
+              [
+                0,
+                10,
+                0
+              ],
+              [
+                0,
+                0,
+                10
+              ]
+            ],
+            "n_exposures": 30,
+            "by_platform": {
+              "3": {
+                "accuracy": 1.0,
+                "macro_f1": 1.0,
+                "confusion_matrix": [
+                  [
+                    10,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    10,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    10
+                  ]
+                ],
+                "n_samples": 30
+              }
+            }
+          }
+        }
+      },
+      "global": {
+        "window": {
+          "accuracy": 0.9071428571428571,
+          "macro_f1": 0.9079724319957188,
+          "confusion_matrix": [
+            [
+              125,
+              5,
+              10
+            ],
+            [
+              0,
+              120,
+              20
+            ],
+            [
+              4,
+              0,
+              136
+            ]
+          ],
+          "n_samples": 420
+        },
+        "exposure": {
+          "accuracy": 1.0,
+          "macro_f1": 1.0,
+          "confusion_matrix": [
+            [
+              10,
+              0,
+              0
+            ],
+            [
+              0,
+              10,
+              0
+            ],
+            [
+              0,
+              0,
+              10
+            ]
+          ],
+          "n_exposures": 30,
+          "by_platform": {
+            "3": {
+              "accuracy": 1.0,
+              "macro_f1": 1.0,
+              "confusion_matrix": [
+                [
+                  10,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  10,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  10
+                ]
+              ],
+              "n_samples": 30
+            }
+          }
+        }
+      }
+    }
+  }
+}
