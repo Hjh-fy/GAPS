@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import time
+from collections import OrderedDict
 from typing import Optional
 
 import flwr as fl
@@ -12,6 +14,11 @@ import torch
 
 from gaps_flower.observability import NullObserver, load_observer
 from gaps_flower.p0i_adaptation import parameter_fingerprint
+from gaps_flower.scaffold import (
+    ScaffoldClientControlState,
+    pack_control_variates,
+    unpack_control_variates,
+)
 from gaps_flower.task import (
     CLASSIFICATION_PROFILE_FLAGS,
     canonical_profile,
@@ -47,6 +54,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
         profile: str = "smoke",
         seed: int = 42,
         proximal_mu: float = 0.0,
+        optimizer: str = "adam",
         observer=None,
     ):
         self.observer = observer or NullObserver()
@@ -54,6 +62,15 @@ class GapsFlowerClient(fl.client.NumPyClient):
         self.profile = profile
         self.canonical_profile = canonical_profile(profile)
         self.seed = int(seed)
+        self.optimizer = str(optimizer).lower()
+        if self.optimizer not in {"adam", "scaffold_sgd"}:
+            raise ValueError(f"Unsupported client optimizer: {optimizer}")
+        if self.optimizer == "scaffold_sgd" and (
+            self.canonical_profile != "ce_only" or float(proximal_mu) != 0.0
+        ):
+            raise ValueError(
+                "FAIL_CLOSED canonical SCAFFOLD requires ce_only and proximal_mu=0"
+            )
         self.config = make_config(
             device=device,
             local_epochs=local_epochs,
@@ -74,6 +91,11 @@ class GapsFlowerClient(fl.client.NumPyClient):
         self.train_samples = len(train_loader.dataset)
         self.test_samples = len(test_loader.dataset)
         self.last_server_state: Optional[dict[str, torch.Tensor]] = None
+        self.scaffold_state = (
+            ScaffoldClientControlState.from_model(self.model)
+            if self.optimizer == "scaffold_sgd"
+            else None
+        )
         logger.info(
             "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s, seed=%d, fedprox_mu=%.6g",
             client_id,
@@ -142,9 +164,65 @@ class GapsFlowerClient(fl.client.NumPyClient):
             payload={},
         )
         train_start_ns = time.perf_counter_ns()
-        arrays, num_examples, metrics = train_one_round(
-            self.gaps_client, round_idx, fit_config=config
-        )
+        optimizer_name = getattr(self, "optimizer", "adam")
+        if optimizer_name == "scaffold_sgd":
+            if self.scaffold_state is None:
+                raise RuntimeError("FAIL_CLOSED missing persistent SCAFFOLD client state")
+            packed_server_control = config.get("scaffold_server_control") if config else None
+            if not isinstance(packed_server_control, bytes):
+                raise RuntimeError("FAIL_CLOSED missing SCAFFOLD server control payload")
+            trainable_reference = OrderedDict(
+                (name, parameter.detach().cpu())
+                for name, parameter in self.model.named_parameters()
+            )
+            server_control = unpack_control_variates(
+                packed_server_control,
+                list(trainable_reference),
+                trainable_reference,
+            )
+            scaffold_result = self.scaffold_state.train(
+                self.model,
+                self.gaps_client.train_loader,
+                server_control=server_control,
+                lr=float(config.get("scaffold_lr", 5e-4)),
+                local_epochs=self.config.LOCAL_EPOCHS,
+                device=torch.device(self.config.DEVICE),
+            )
+            arrays = [
+                scaffold_result.model_state[key].numpy() for key in self.parameter_keys
+            ]
+            num_examples = int(self.train_samples)
+            metrics = {
+                "scaffold_control_delta": pack_control_variates(
+                    scaffold_result.control_delta
+                ),
+                "scaffold_local_steps": int(scaffold_result.steps),
+                "scaffold_optimizer": scaffold_result.optimizer_name,
+                "scaffold_optimizer_lr": float(scaffold_result.optimizer_lr),
+                "scaffold_adam_state_present": int(
+                    scaffold_result.adam_state_present
+                ),
+                "scaffold_client_control_before_fingerprint": scaffold_result.client_control_before_fingerprint,
+                "scaffold_client_control_after_fingerprint": scaffold_result.client_control_after_fingerprint,
+                "scaffold_ce_trajectory_json": json.dumps(
+                    scaffold_result.ce_trajectory
+                ),
+                "scaffold_grad_norms_json": json.dumps(scaffold_result.grad_norms),
+                "scaffold_parameter_norms_json": json.dumps(
+                    scaffold_result.parameter_norms
+                ),
+                "train_ce_mean": float(
+                    sum(scaffold_result.ce_trajectory)
+                    / len(scaffold_result.ce_trajectory)
+                ),
+                "train_accuracy": float(scaffold_result.train_accuracy),
+                "train_metric_examples": int(num_examples),
+                "train_ce_averaging": "sample_weighted_over_local_minibatches",
+            }
+        else:
+            arrays, num_examples, metrics = train_one_round(
+                self.gaps_client, round_idx, fit_config=config
+            )
         train_end_ns = time.perf_counter_ns()
         observer.emit(
             "client_train_end",
@@ -168,6 +246,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             "replay_distill_enabled": int(bool(self.config.USE_REPLAY_DISTILL)),
             "proto_decoupling_enabled": int(bool(self.config.USE_PROTO_DECOUPLING)),
             "fedprox_mu": float(getattr(self.config, "FEDPROX_MU", 0.0)),
+            "optimizer": optimizer_name,
             "server_parameters_fingerprint": received_server_fingerprint,
         })
         logger.info(
@@ -227,6 +306,12 @@ def main() -> None:
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
+        "--optimizer",
+        choices=("adam", "scaffold_sgd"),
+        default="adam",
+        help="adam for frozen FedAvg/FedProx/GAPS; scaffold_sgd for canonical SCAFFOLD",
+    )
+    parser.add_argument(
         "--proximal-mu",
         type=float,
         default=0.0,
@@ -266,6 +351,7 @@ def main() -> None:
             profile=args.profile,
             seed=args.seed,
             proximal_mu=args.proximal_mu,
+            optimizer=args.optimizer,
             observer=observer,
         )
         fl.client.start_numpy_client(

@@ -13,7 +13,7 @@ import flwr as fl
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, Subset, TensorDataset
-from flwr.common import EvaluateRes, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
+from flwr.common import EvaluateRes, FitIns, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
 from flwr.server.client_proxy import ClientProxy
 
 from gaps_flower.domain_adaptation_inputs import (
@@ -27,6 +27,12 @@ from gaps_flower.p0i_adaptation import (
     FeatureOnlyCalibrationDataset,
     parameter_fingerprint,
     run_frozen_u1,
+)
+from gaps_flower.scaffold import (
+    ScaffoldServerControlState,
+    control_fingerprint,
+    pack_control_variates,
+    unpack_control_variates,
 )
 from gaps_flower.task import get_parameters, set_parameters
 
@@ -339,6 +345,101 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         event["evaluate_metrics"] = dict(aggregated_metrics or {})
         self._write_history()
         return aggregated_loss, aggregated_metrics
+
+
+class ScaffoldStrategy(CheckpointFedAvg):
+    """Canonical SCAFFOLD strategy with persistent server control variate."""
+
+    def __init__(
+        self,
+        *,
+        model_template: torch.nn.Module,
+        total_clients: int,
+        scaffold_lr: float = 5e-4,
+        **kwargs,
+    ):
+        if float(scaffold_lr) != 5e-4:
+            raise ValueError("FAIL_CLOSED formal SCAFFOLD lr must equal preregistered 5e-4")
+        super().__init__(**kwargs)
+        self.scaffold_lr = float(scaffold_lr)
+        self.control_state = ScaffoldServerControlState.from_model(
+            model_template, total_clients=total_clients
+        )
+
+    def scaffold_fit_config(self, server_round: int) -> dict:
+        return {
+            "server_round": int(server_round),
+            "optimizer": "scaffold_sgd",
+            "scaffold_lr": self.scaffold_lr,
+            "scaffold_server_control": pack_control_variates(
+                self.control_state.control
+            ),
+            "scaffold_server_control_fingerprint": control_fingerprint(
+                self.control_state.control
+            ),
+        }
+
+    def configure_fit(self, server_round, parameters, client_manager):
+        instructions = super().configure_fit(server_round, parameters, client_manager)
+        scaffold_config = self.scaffold_fit_config(server_round)
+        return [
+            (
+                client,
+                FitIns(
+                    fit_ins.parameters,
+                    {**dict(fit_ins.config), **scaffold_config},
+                ),
+            )
+            for client, fit_ins in instructions
+        ]
+
+    def aggregate_fit(self, server_round, results, failures):
+        ordered_results = canonicalize_fit_results(results)
+        deltas = []
+        for _proxy, fit_res in ordered_results:
+            payload = (fit_res.metrics or {}).get("scaffold_control_delta")
+            if not isinstance(payload, bytes):
+                raise RuntimeError("FAIL_CLOSED missing SCAFFOLD client control delta")
+            deltas.append(
+                unpack_control_variates(
+                    payload,
+                    list(self.control_state.control),
+                    self.control_state.control,
+                )
+            )
+            if int((fit_res.metrics or {}).get("scaffold_adam_state_present", 1)) != 0:
+                raise RuntimeError("FAIL_CLOSED Adam state present in canonical SCAFFOLD")
+        self.control_state.update(deltas)
+        aggregated_parameters, aggregated_metrics = super().aggregate_fit(
+            server_round, ordered_results, failures
+        )
+        control_path = self.output_dir / f"scaffold_server_control_round_{server_round:03d}.pth"
+        torch.save(
+            {
+                "round": int(server_round),
+                "server_control": self.control_state.control,
+                "fingerprint": control_fingerprint(self.control_state.control),
+                "optimizer": "SGD",
+                "optimizer_lr": self.scaffold_lr,
+                "optimizer_momentum": 0.0,
+            },
+            control_path,
+        )
+        event = self._round_event(server_round)
+        event["aggregation_method"] = "scaffold"
+        event["scaffold"] = {
+            "server_control_path": str(control_path),
+            "server_control_fingerprint": control_fingerprint(
+                self.control_state.control
+            ),
+            "server_control_rounds_completed": self.control_state.rounds_completed,
+            "optimizer": "SGD",
+            "optimizer_lr": self.scaffold_lr,
+            "optimizer_note": "canonical SCAFFOLD implementation",
+            "server_model_step_size": 1.0,
+        }
+        self._write_history()
+        return aggregated_parameters, aggregated_metrics
 
 
 class P0IInterleavedFedAvg(CheckpointFedAvg):

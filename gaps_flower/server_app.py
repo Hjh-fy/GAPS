@@ -12,10 +12,10 @@ from flwr.common import ndarrays_to_parameters
 
 from gaps_flower.domain_adaptation_inputs import validate_domain_adaptation_request
 from gaps_flower.observability import load_observer
-from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, P0IInterleavedFedAvg, weighted_average
+from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, P0IInterleavedFedAvg, ScaffoldStrategy, weighted_average
 from gaps_flower.task import CLASSIFICATION_PROFILE_FLAGS, create_model, get_parameters, make_config
 
-DEFAULT_STRATEGIES = ("fedavg", "gaps", "p0i_interleaved")
+DEFAULT_STRATEGIES = ("fedavg", "gaps", "p0i_interleaved", "scaffold")
 PROFILE_CHOICES = tuple(CLASSIFICATION_PROFILE_FLAGS) + (
     "smoke",
     "gaps_cls",
@@ -104,6 +104,8 @@ def main() -> None:
                         help="是否保存 history.json 记录 (True/False)")
     parser.add_argument("--strategy", choices=DEFAULT_STRATEGIES, default="fedavg",
                         help="聚合策略: fedavg (Flower默认FedAvg) 或 gaps (GAPS自定义聚合)")
+    parser.add_argument("--scaffold-lr", type=float, default=5e-4,
+                        help="Preregistered canonical SCAFFOLD SGD learning rate; no search")
     parser.add_argument("--p0i-source-calibration-dirs", type=str)
     parser.add_argument("--p0i-target-calibration-dir", type=str)
     parser.add_argument("--p0i-uda-steps-per-round", type=int, default=100)
@@ -265,6 +267,15 @@ def main() -> None:
                 da_target_ce_class_balanced=args.da_target_ce_class_balanced,
                 da_server_opt_lr=args.da_server_opt_lr,
                 use_adapted_as_global=args.use_adapted_as_global,
+                **strategy_kwargs,
+            )
+        elif args.strategy == "scaffold":
+            if args.profile != "ce_only" or args.scaffold_lr != 5e-4:
+                parser.error("canonical SCAFFOLD requires profile=ce_only and scaffold_lr=5e-4")
+            strategy = ScaffoldStrategy(
+                model_template=model,
+                total_clients=args.min_clients,
+                scaffold_lr=args.scaffold_lr,
                 **strategy_kwargs,
             )
         else:
