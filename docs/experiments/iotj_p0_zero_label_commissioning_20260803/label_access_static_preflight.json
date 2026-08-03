@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": {
+    "u1_has_no_target_label_parameter": true,
+    "u2_has_no_target_label_parameter": true,
+    "feature_dataset_returns_tensor_only": true,
+    "threshold_predeclared_0_90": true,
+    "u2_pseudo_origin_is_teacher_argmax": true,
+    "u1_target_conditioned_losses_absent": true
+  },
+  "audited_at": "2026-08-03T09:45:46.887048+00:00"
+}
