@@ -14,6 +14,7 @@ import math
 import os
 import platform
 import subprocess
+import sys
 import threading
 import time
 from collections import defaultdict
@@ -24,6 +25,10 @@ import numpy as np
 import psutil
 import torch
 from torch.utils.data import DataLoader
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from client import Client
 from federated_dataset import GasSensorWindowDataset, create_client_test_only_loader
@@ -329,7 +334,7 @@ def main() -> None:
     parser.add_argument("--a0-checkpoint", default="")
     args = parser.parse_args()
 
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = REPO_ROOT
     data_root = (repo_root / args.data_root).resolve()
     experiment_id = EXPERIMENTS[args.experiment]
     output_dir = (repo_root / args.output_root / experiment_id).resolve()

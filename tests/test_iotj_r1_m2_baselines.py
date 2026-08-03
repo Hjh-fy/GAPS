@@ -8,6 +8,11 @@ from torch.utils.data import DataLoader, TensorDataset
 from client import Client
 from gaps_flower.task import make_config
 from scripts.run_iotj_r1_m2_local_baselines import apply_ds, fit_ds_mapping
+from scripts.run_iotj_r1_m2_distributed_baselines import (
+    add_macro_f1,
+    client_argv,
+    server_argv,
+)
 
 
 class TinyClassifier(torch.nn.Module):
@@ -61,3 +66,43 @@ def test_direct_standardization_recovers_affine_target_to_source_map() -> None:
 def test_direct_standardization_requires_mapping_with_intercept() -> None:
     with pytest.raises(ValueError):
         apply_ds(np.zeros((1, 3, 2), dtype=np.float32), np.zeros((2, 2)))
+
+
+def test_fedprox_commands_freeze_mu_and_exclude_target_adaptation() -> None:
+    client = client_argv(
+        "fedprox-source", python="python", client_id=1, data_root="data"
+    )
+    server = server_argv("fedprox-source", "/tmp/output", "/tmp/data")
+
+    assert client[client.index("--proximal-mu") + 1] == "0.01"
+    assert client[client.index("--profile") + 1] == "ce_only"
+    assert server[server.index("--strategy") + 1] == "fedavg"
+    assert "--server-calib-data" not in server
+
+
+def test_adapter_matched_commands_disable_gaps_client_and_aggregation_features() -> None:
+    client = client_argv(
+        "fedavg-same-adapter", python="python", client_id=2, data_root="data"
+    )
+    server = server_argv("fedavg-same-adapter", "/tmp/output", "/tmp/data")
+
+    assert client[client.index("--profile") + 1] == "ce_stats"
+    assert "--proximal-mu" not in client
+    assert server[server.index("--use-selective-agg") + 1] == "false"
+    assert server[server.index("--domain-adapt-steps") + 1] == "100"
+    assert server[server.index("--da-server-opt-lr") + 1] == "0.0005"
+
+
+def test_macro_f1_is_derived_from_confusion_matrix() -> None:
+    summary = {
+        "clients": [
+            {
+                "num_examples": 4,
+                "confusion_matrix": [[1, 1], [0, 2]],
+            }
+        ]
+    }
+    add_macro_f1(summary)
+
+    assert summary["clients"][0]["per_class_recall"] == {"0": 0.5, "1": 1.0}
+    assert summary["weighted_macro_f1"] == pytest.approx((2 / 3 + 4 / 5) / 2)
