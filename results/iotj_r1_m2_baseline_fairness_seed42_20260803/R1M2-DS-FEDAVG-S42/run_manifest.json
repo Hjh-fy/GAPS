@@ -1,0 +1,95 @@
+{
+  "adaptation": {
+    "a0_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\results\\iotj_classification_ablation_20260711_v2r1\\A0_ce_only_no_da_c12_to_c5_s42_r25\\server_latest.pth",
+    "a0_checkpoint_sha256": "407b628c78a7215fb20020c81ba5c3d83112801d72d38f6017194a9ac94281f7",
+    "calibration_cv_rmse": {
+      "0.0001": 0.39225607725888406,
+      "0.01": 0.38190300694521684,
+      "1.0": 0.32775060374610765,
+      "100.0": 0.28249936345467563,
+      "1e-06": 0.392439612554209
+    },
+    "mapping_shape": [
+      9,
+      8
+    ],
+    "matched_strata": 34,
+    "method": "regularized_affine_direct_standardization_target_to_source",
+    "selected_alpha": 100.0
+  },
+  "artifact": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-DS-FEDAVG-S42\\ds_mapping.npz",
+  "artifact_sha256": "0a93ba95c00424afd5025afe6872642742652078a6b878534968d407ae44bcc2",
+  "code_commit": "d6881d410c861f544091c9431ab8023aec84980e",
+  "completed_utc": "2026-08-03T04:54:20Z",
+  "cost": {
+    "communication_rounds": 0,
+    "peak_process_rss_bytes": 354324480,
+    "transmitted_bytes": 0,
+    "wall_seconds": 0.7764372999999978
+  },
+  "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "device": "cpu",
+  "experiment_id": "R1M2-DS-FEDAVG-S42",
+  "metrics": {
+    "accuracy": 0.9455882352941176,
+    "confusion_matrix": [
+      [
+        340,
+        0,
+        0,
+        0
+      ],
+      [
+        6,
+        292,
+        42,
+        0
+      ],
+      [
+        2,
+        7,
+        331,
+        0
+      ],
+      [
+        0,
+        17,
+        0,
+        323
+      ]
+    ],
+    "ece": 0.05316005445578527,
+    "macro_accuracy": 0.9455882352941176,
+    "macro_f1": 0.9453615545170247,
+    "mean_confidence": 0.996849536895752,
+    "mean_margin": 0.9937069416046143,
+    "nll": 0.6127859281483565,
+    "num_examples": 1360,
+    "per_class_accuracy": {
+      "0": 1.0,
+      "1": 0.8588235294117647,
+      "2": 0.9735294117647059,
+      "3": 0.95
+    },
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 0.8588235294117647,
+      "2": 0.9735294117647059,
+      "3": 0.95
+    }
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "protocol": {
+    "batch_size": 32,
+    "client_lr": 0.0005,
+    "local_epochs": null,
+    "rounds": null,
+    "target_optimizer_steps": null,
+    "target_test_used_for_selection": false
+  },
+  "schema_version": "iotj.r1_m2.seed42.local.v1",
+  "seed": 42,
+  "started_utc": "2026-08-03T04:54:20Z",
+  "status": "completed",
+  "training": {}
+}

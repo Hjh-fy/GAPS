@@ -1,0 +1,101 @@
+{
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-FEDPROX-SOURCE-S42\\remote_server\\server_latest.pth",
+  "checkpoint_sha256": "fea407af3b5ef3428550474a79cc8965896da0b001ac8c87b8690d9fc6f6775c",
+  "commands_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-FEDPROX-SOURCE-S42\\locked_commands.json",
+  "cost": {
+    "communication_rounds": 25,
+    "fedprox_additional_transmitted_state_bytes": 0,
+    "model_parameter_bytes_per_message": 144692,
+    "model_payload_bytes_total": 14469200,
+    "statistics_payload_note": "ce_stats prototype/statistic JSON is additional to the model-payload total and retained in round artifacts",
+    "wall_seconds": 1281.3971497000002
+  },
+  "experiment_id": "R1M2-FEDPROX-SOURCE-S42",
+  "metrics": {
+    "adaptive": false,
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-FEDPROX-SOURCE-S42\\remote_server\\server_latest.pth",
+    "clients": [
+      {
+        "accuracy": 0.325,
+        "client_id": 5,
+        "confusion_matrix": [
+          [
+            4,
+            3,
+            333,
+            0
+          ],
+          [
+            16,
+            13,
+            193,
+            118
+          ],
+          [
+            1,
+            2,
+            87,
+            250
+          ],
+          [
+            0,
+            0,
+            2,
+            338
+          ]
+        ],
+        "ece": 0.6573195514214389,
+        "macro_accuracy": 0.325,
+        "macro_f1": 0.23081420663495011,
+        "mean_confidence": 0.9799556136131287,
+        "mean_margin": 0.9637410640716553,
+        "nll": 4.829544095432057,
+        "num_examples": 1360,
+        "per_class_accuracy": {
+          "0": 0.011764705882352941,
+          "1": 0.03823529411764706,
+          "2": 0.25588235294117645,
+          "3": 0.9941176470588236
+        },
+        "per_class_recall": {
+          "0": 0.011764705882352941,
+          "1": 0.03823529411764706,
+          "2": 0.25588235294117645,
+          "3": 0.9941176470588236
+        }
+      }
+    ],
+    "device": "cpu",
+    "inference_mode": "logits",
+    "num_tensors": 80,
+    "round": 25,
+    "semantic_proto_count": 0,
+    "soft_agg_temperature": 0.35,
+    "split": "test",
+    "total_examples": 1360,
+    "weighted_accuracy": 0.325,
+    "weighted_ece": 0.6573195514214389,
+    "weighted_macro_f1": 0.23081420663495014,
+    "weighted_nll": 4.829544095432057
+  },
+  "schema_version": "iotj.r1_m2.seed42.distributed.v1",
+  "seed": 42,
+  "source_archive": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\r1m2_source_61a5d18.tar",
+  "source_archive_sha256": "4ae1a3a060a90dad4e70d818bee1b09ee7a02889bf72cf6d5cc4db45e64b24a6",
+  "status": "completed",
+  "topology": {
+    "C1": "gaps@192.168.137.172",
+    "C2": "root@114.55.171.63",
+    "server": "root@121.40.139.213",
+    "transport": "Flower over three loopback-only SSH tunnels"
+  },
+  "training": {
+    "batch_size": 32,
+    "client_lr": 0.0005,
+    "fedprox_mu": 0.01,
+    "local_epochs": 5,
+    "profile": "ce_only",
+    "rounds": 25,
+    "target_test_used_for_selection": false
+  }
+}

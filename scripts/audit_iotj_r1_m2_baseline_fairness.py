@@ -230,12 +230,19 @@ def main() -> None:
         )
     analysis += f"""
 
+## Seed42 findings
+
+- FedAvg+same target adapter exceeds B5 by {by_id['R1M2-FEDAVG-SAME-ADAPTER-S42']['macro_f1_delta_vs_b5_pp']:+.3f} Macro-F1 percentage points. The result does not support attributing the seed42 gain to GAPS client alignment/replay/decoupling or selective aggregation.
+- Target-only exceeds B5 by {by_id['R1M2-TARGET-ONLY-S42']['macro_f1_delta_vs_b5_pp']:+.3f} points, but uses a stronger fully supervised target-CE objective and is therefore an upper/reference configuration.
+- B5 exceeds DS by {-by_id['R1M2-DS-FEDAVG-S42']['macro_f1_delta_vs_b5_pp']:.3f} points and substantially exceeds both no-target source baselines.
+
 ## Interpretation boundaries
 
 - Target-only uses all 320 C5 calibration labels for 2,500 supervised CE steps. It is a strong target-supervised upper/reference configuration, not an equal-objective GAPS ablation.
 - Centralized Source-only and FedProx use no target calibration labels; their differences from GAPS combine target adaptation and method effects.
 - FedAvg+same target adapter is the closest mechanism comparator: it keeps C5 calibration and server distribution-adaptation settings while disabling client alignment/replay/decoupling and selective aggregation.
 - DS uses calibration-only ridge selection over 34 matched strata and the hash-pinned historical A0 checkpoint.
+- Communication accounting is exact for model payload bytes. The adapter-matched run also sends `ce_stats` JSON; those extra wire bytes were not instrumented and must be labeled as additional/unknown rather than folded into the exact model-byte total.
 - All conclusions are seed42-specific.
 
 ## Proposed paper table
@@ -261,6 +268,9 @@ Assess whether the five registered seed42 baselines close reviewer concern R1-M2
 | R1M2-A05 | minor | Target-only and DS executed at head d6881d4 with an as-run wrapper later captured in 61a5d18; the only wrapper change was repository import-path plumbing. | Preserve both provenance identifiers. | documented |
 | R1M2-A06 | informational | B5 commit compatibility diff changes only default-inert FedProx/profile plumbing in effective paths. | Existing B5 checkpoint remains code-compatible for this comparison. | passed |
 | R1M2-A07 | major | Only one seed was authorized. | No stability, CI, or significance claim. | constrained |
+| R1M2-A08 | blocking for the original broad claim | FedAvg+same target adapter exceeds B5 by {by_id['R1M2-FEDAVG-SAME-ADAPTER-S42']['macro_f1_delta_vs_b5_pp']:+.3f} Macro-F1 percentage points. | The seed42 evidence does not support superiority of GAPS client mechanisms/selective aggregation beyond matched target adaptation. | manuscript claim must be narrowed |
+| R1M2-A09 | minor | The FedProx result manifest retains a generic `ce_stats` statistics-payload note although its locked client profile is `ce_only`. | Numerical metrics and exact model-payload accounting are unaffected; treat FedProx as having no extra statistics payload. | documented amendment |
+| R1M2-A10 | minor | Distributed model payload bytes are exact, but adapter `ce_stats` JSON wire bytes were not instrumented. | Communication comparison is usable only with an explicit `model bytes + unmeasured small statistics payload` qualifier for the adapter row. | constrained |
 
 ## Leakage assessment
 
@@ -268,7 +278,7 @@ No manifest reports target-test use for training, calibration, selection, stoppi
 
 ## Verdict
 
-Approved for a seed42-only descriptive baseline table, subject to the two major wording constraints above. Not approved for statistical superiority or stability claims.
+The experiment set is approved for a seed42-only descriptive baseline table. The original broad superiority/attribution claim is blocked: it must be narrowed to the demonstrated value of target-assisted adaptation and to GAPS outperforming DS and no-target source baselines. Not approved for statistical superiority or stability claims.
 """
     (output_dir / "EXPERIMENT_AUDIT.md").write_text(audit, encoding="utf-8")
 
@@ -278,13 +288,15 @@ Approved for a seed42-only descriptive baseline table, subject to the two major 
         "metric_ids": [record["metric_id"] for record in metric_records],
         "comparison": "R1-M2 baseline fairness on C5 sealed test",
         "source_paths": [row["manifest"] for row in rows],
-        "audit_status": "approved_with_scope_constraints",
+        "audit_status": "approved_data_blocked_broad_claim",
         "support_strength": "descriptive_single_seed",
         "claim_ids": ["R1-M2"],
         "limitations": [
             "seed42 only; no uncertainty/significance claim",
             "target-only is a stronger supervised-target objective",
             "only the adapter-matched FedAvg row is a close mechanism comparator",
+            "adapter-matched FedAvg exceeds B5 at seed42, blocking the broad mechanism-superiority claim",
+            "adapter ce_stats JSON wire bytes were not instrumented; model payload bytes remain exact",
         ],
         "provenance": {
             "analysis_dir": output_dir.relative_to(REPO_ROOT).as_posix(),

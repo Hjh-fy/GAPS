@@ -1,0 +1,458 @@
+[
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-TARGET-ONLY-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-TARGET-ONLY-S42::accuracy",
+    "metric_name": "accuracy",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-TARGET-ONLY-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9882352941176471
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-TARGET-ONLY-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-TARGET-ONLY-S42::macro_f1",
+    "metric_name": "macro_f1",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-TARGET-ONLY-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9882511457809794
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-TARGET-ONLY-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-TARGET-ONLY-S42::nll",
+    "metric_name": "nll",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-TARGET-ONLY-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "nats_per_window",
+    "value": 0.052944322160499935
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-TARGET-ONLY-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-TARGET-ONLY-S42::ece",
+    "metric_name": "ece",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-TARGET-ONLY-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.0051922898082171695
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-CENTRAL-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-CENTRAL-SOURCE-S42::accuracy",
+    "metric_name": "accuracy",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-CENTRAL-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.32941176470588235
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-CENTRAL-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-CENTRAL-SOURCE-S42::macro_f1",
+    "metric_name": "macro_f1",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-CENTRAL-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.22884077843874734
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-CENTRAL-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-CENTRAL-SOURCE-S42::nll",
+    "metric_name": "nll",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-CENTRAL-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "nats_per_window",
+    "value": 9.731263721690459
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-CENTRAL-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-CENTRAL-SOURCE-S42::ece",
+    "metric_name": "ece",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-CENTRAL-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.6665537085164996
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-FEDPROX-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDPROX-SOURCE-S42::accuracy",
+    "metric_name": "accuracy",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDPROX-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.325
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-FEDPROX-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDPROX-SOURCE-S42::macro_f1",
+    "metric_name": "macro_f1",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDPROX-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.23081420663495011
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-FEDPROX-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDPROX-SOURCE-S42::nll",
+    "metric_name": "nll",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDPROX-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "nats_per_window",
+    "value": 4.829544095432057
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-FEDPROX-SOURCE-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDPROX-SOURCE-S42::ece",
+    "metric_name": "ece",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDPROX-SOURCE-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.6573195514214389
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-FEDAVG-SAME-ADAPTER-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDAVG-SAME-ADAPTER-S42::accuracy",
+    "metric_name": "accuracy",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDAVG-SAME-ADAPTER-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9904411764705883
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-FEDAVG-SAME-ADAPTER-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDAVG-SAME-ADAPTER-S42::macro_f1",
+    "metric_name": "macro_f1",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDAVG-SAME-ADAPTER-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9904433200368616
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-FEDAVG-SAME-ADAPTER-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDAVG-SAME-ADAPTER-S42::nll",
+    "metric_name": "nll",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDAVG-SAME-ADAPTER-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "nats_per_window",
+    "value": 0.09972593337659097
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-FEDAVG-SAME-ADAPTER-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-FEDAVG-SAME-ADAPTER-S42::ece",
+    "metric_name": "ece",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDAVG-SAME-ADAPTER-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.009647606444709408
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-DS-FEDAVG-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-DS-FEDAVG-S42::accuracy",
+    "metric_name": "accuracy",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-DS-FEDAVG-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9455882352941176
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "R1M2-DS-FEDAVG-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-DS-FEDAVG-S42::macro_f1",
+    "metric_name": "macro_f1",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-DS-FEDAVG-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9453615545170247
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-DS-FEDAVG-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-DS-FEDAVG-S42::nll",
+    "metric_name": "nll",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-DS-FEDAVG-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "nats_per_window",
+    "value": 0.6127859281483565
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "R1M2-DS-FEDAVG-S42",
+    "gas_scope": "all four classes",
+    "metric_id": "R1M2-DS-FEDAVG-S42::ece",
+    "metric_name": "ece",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-DS-FEDAVG-S42/run_manifest.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.05316005445578527
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "IOTJ-B5-S42-REFERENCE",
+    "gas_scope": "all four classes",
+    "metric_id": "IOTJ-B5-S42-REFERENCE::accuracy",
+    "metric_name": "accuracy",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "results/iotj_b5_multiseed_20260724/seed42_reference/classification_evaluation/seed42_classification_metrics.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9801470588235294
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "higher",
+    "experiment_id": "IOTJ-B5-S42-REFERENCE",
+    "gas_scope": "all four classes",
+    "metric_id": "IOTJ-B5-S42-REFERENCE::macro_f1",
+    "metric_name": "macro_f1",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "results/iotj_b5_multiseed_20260724/seed42_reference/classification_evaluation/seed42_classification_metrics.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.9802202037628274
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "IOTJ-B5-S42-REFERENCE",
+    "gas_scope": "all four classes",
+    "metric_id": "IOTJ-B5-S42-REFERENCE::nll",
+    "metric_name": "nll",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "results/iotj_b5_multiseed_20260724/seed42_reference/classification_evaluation/seed42_classification_metrics.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "nats_per_window",
+    "value": 0.15029377045915776
+  },
+  {
+    "aggregation": "single seed42 final checkpoint",
+    "calculation_status": "reported",
+    "client_scope": "C5",
+    "direction": "lower",
+    "experiment_id": "IOTJ-B5-S42-REFERENCE",
+    "gas_scope": "all four classes",
+    "metric_id": "IOTJ-B5-S42-REFERENCE::ece",
+    "metric_name": "ece",
+    "notes": "No significance or stability inference is permitted.",
+    "sample_scope": "C5 sealed test; 1360 windows",
+    "seed_set": [
+      42
+    ],
+    "source_path": "results/iotj_b5_multiseed_20260724/seed42_reference/classification_evaluation/seed42_classification_metrics.json",
+    "uncertainty": "not estimable from one seed",
+    "unit": "fraction",
+    "value": 0.019368297935408764
+  }
+]

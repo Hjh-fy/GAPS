@@ -1,0 +1,84 @@
+{
+  "adaptation": null,
+  "artifact": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-CENTRAL-SOURCE-S42\\server_latest.pth",
+  "artifact_sha256": "dc8801daf775bb27bb2c9476ddcc70acf6c90f2d933a4f6844e6fabb24764e32",
+  "code_commit": "61a5d18ae512dd827bec210a2666ef51003df1a0",
+  "completed_utc": "2026-08-03T05:21:52Z",
+  "cost": {
+    "communication_rounds": 0,
+    "peak_process_rss_bytes": 422567936,
+    "transmitted_bytes": 0,
+    "wall_seconds": 1135.7250222000002
+  },
+  "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "device": "cpu",
+  "experiment_id": "R1M2-CENTRAL-SOURCE-S42",
+  "metrics": {
+    "accuracy": 0.32941176470588235,
+    "confusion_matrix": [
+      [
+        8,
+        9,
+        323,
+        0
+      ],
+      [
+        0,
+        3,
+        162,
+        175
+      ],
+      [
+        1,
+        4,
+        115,
+        220
+      ],
+      [
+        3,
+        14,
+        1,
+        322
+      ]
+    ],
+    "ece": 0.6665537085164996,
+    "macro_accuracy": 0.32941176470588235,
+    "macro_f1": 0.22884077843874734,
+    "mean_confidence": 0.995193362236023,
+    "mean_margin": 0.9908108711242676,
+    "nll": 9.731263721690459,
+    "num_examples": 1360,
+    "per_class_accuracy": {
+      "0": 0.023529411764705882,
+      "1": 0.008823529411764706,
+      "2": 0.3382352941176471,
+      "3": 0.9470588235294117
+    },
+    "per_class_recall": {
+      "0": 0.023529411764705882,
+      "1": 0.008823529411764706,
+      "2": 0.3382352941176471,
+      "3": 0.9470588235294117
+    }
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "protocol": {
+    "batch_size": 32,
+    "client_lr": 0.0005,
+    "local_epochs": 5,
+    "rounds": 25,
+    "target_optimizer_steps": null,
+    "target_test_used_for_selection": false
+  },
+  "schema_version": "iotj.r1_m2.seed42.local.v1",
+  "seed": 42,
+  "started_utc": "2026-08-03T05:02:56Z",
+  "status": "completed",
+  "training": {
+    "local_epochs": 5,
+    "optimizer_steps": 18500,
+    "rounds": 25,
+    "samples": 4720,
+    "training_seconds": 1134.941987099999
+  }
+}

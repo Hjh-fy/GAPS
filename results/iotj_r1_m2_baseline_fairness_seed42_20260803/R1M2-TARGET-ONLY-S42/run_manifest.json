@@ -1,0 +1,84 @@
+{
+  "adaptation": null,
+  "artifact": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-TARGET-ONLY-S42\\server_latest.pth",
+  "artifact_sha256": "91650d46c87bfe5b038f4a0f9f36ea54b32ca1adc6ac029b7266b3a82c2ff8b0",
+  "code_commit": "d6881d410c861f544091c9431ab8023aec84980e",
+  "completed_utc": "2026-08-03T04:56:12Z",
+  "cost": {
+    "communication_rounds": 0,
+    "peak_process_rss_bytes": 409460736,
+    "transmitted_bytes": 0,
+    "wall_seconds": 73.75558529999944
+  },
+  "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "device": "cpu",
+  "experiment_id": "R1M2-TARGET-ONLY-S42",
+  "metrics": {
+    "accuracy": 0.9882352941176471,
+    "confusion_matrix": [
+      [
+        335,
+        5,
+        0,
+        0
+      ],
+      [
+        3,
+        337,
+        0,
+        0
+      ],
+      [
+        0,
+        3,
+        337,
+        0
+      ],
+      [
+        0,
+        0,
+        5,
+        335
+      ]
+    ],
+    "ece": 0.0051922898082171695,
+    "macro_accuracy": 0.9882352941176471,
+    "macro_f1": 0.9882511457809794,
+    "mean_confidence": 0.9885821342468262,
+    "mean_margin": 0.9822680354118347,
+    "nll": 0.052944322160499935,
+    "num_examples": 1360,
+    "per_class_accuracy": {
+      "0": 0.9852941176470589,
+      "1": 0.9911764705882353,
+      "2": 0.9911764705882353,
+      "3": 0.9852941176470589
+    },
+    "per_class_recall": {
+      "0": 0.9852941176470589,
+      "1": 0.9911764705882353,
+      "2": 0.9911764705882353,
+      "3": 0.9852941176470589
+    }
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "protocol": {
+    "batch_size": 32,
+    "client_lr": 0.0005,
+    "local_epochs": null,
+    "rounds": null,
+    "target_optimizer_steps": 2500,
+    "target_test_used_for_selection": false
+  },
+  "schema_version": "iotj.r1_m2.seed42.local.v1",
+  "seed": 42,
+  "started_utc": "2026-08-03T04:54:58Z",
+  "status": "completed",
+  "training": {
+    "local_epochs": 250,
+    "optimizer_steps": 2500,
+    "rounds": 1,
+    "samples": 320,
+    "training_seconds": 73.41481960000056
+  }
+}

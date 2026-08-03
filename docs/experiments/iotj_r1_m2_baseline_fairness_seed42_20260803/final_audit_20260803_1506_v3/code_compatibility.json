@@ -1,0 +1,31 @@
+{
+  "audited_paths": [
+    "model.py",
+    "client.py",
+    "config.py",
+    "gaps_flower/task.py",
+    "gaps_flower/strategy.py",
+    "gaps_flower/domain_adaptation.py",
+    "gaps_flower/server_app.py"
+  ],
+  "b5_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "baseline_runtime_commit": "61a5d18ae512dd827bec210a2666ef51003df1a0",
+  "changed_paths": [
+    {
+      "added": 27,
+      "deleted": 0,
+      "path": "client.py"
+    },
+    {
+      "added": 1,
+      "deleted": 0,
+      "path": "config.py"
+    },
+    {
+      "added": 14,
+      "deleted": 7,
+      "path": "gaps_flower/task.py"
+    }
+  ],
+  "interpretation": "Only FedProx/default-zero and explicit statistic-upload profile plumbing changed; model.py, strategy.py, domain_adaptation.py and server_app.py are unchanged. The existing proto_replay behavior remains semantically identical."
+}

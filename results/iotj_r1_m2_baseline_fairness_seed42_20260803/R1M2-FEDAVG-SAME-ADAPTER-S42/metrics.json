@@ -1,0 +1,67 @@
+{
+  "adaptive": true,
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_r1_m2_baseline_fairness_seed42_20260803\\R1M2-FEDAVG-SAME-ADAPTER-S42\\remote_server\\server_latest_adapted.pth",
+  "clients": [
+    {
+      "accuracy": 0.9904411764705883,
+      "client_id": 5,
+      "confusion_matrix": [
+        [
+          339,
+          1,
+          0,
+          0
+        ],
+        [
+          3,
+          334,
+          3,
+          0
+        ],
+        [
+          0,
+          4,
+          336,
+          0
+        ],
+        [
+          0,
+          1,
+          1,
+          338
+        ]
+      ],
+      "ece": 0.009647606444709408,
+      "macro_accuracy": 0.9904411764705883,
+      "macro_f1": 0.9904433200368616,
+      "mean_confidence": 0.9995695948600769,
+      "mean_margin": 0.9991796016693115,
+      "nll": 0.09972593337659097,
+      "num_examples": 1360,
+      "per_class_accuracy": {
+        "0": 0.9970588235294118,
+        "1": 0.9823529411764705,
+        "2": 0.9882352941176471,
+        "3": 0.9941176470588236
+      },
+      "per_class_recall": {
+        "0": 0.9970588235294118,
+        "1": 0.9823529411764705,
+        "2": 0.9882352941176471,
+        "3": 0.9941176470588236
+      }
+    }
+  ],
+  "device": "cpu",
+  "inference_mode": "logits",
+  "num_tensors": 80,
+  "round": 25,
+  "semantic_proto_count": 0,
+  "soft_agg_temperature": 0.35,
+  "split": "test",
+  "total_examples": 1360,
+  "weighted_accuracy": 0.9904411764705883,
+  "weighted_ece": 0.009647606444709408,
+  "weighted_macro_f1": 0.9904433200368616,
+  "weighted_nll": 0.09972593337659097
+}
