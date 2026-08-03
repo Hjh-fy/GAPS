@@ -366,7 +366,11 @@ def main() -> None:
             "model_parameter_bytes_per_message": model_bytes,
             "model_payload_bytes_total": int(4 * ROUNDS * model_bytes),
             "fedprox_additional_transmitted_state_bytes": 0,
-            "statistics_payload_note": "ce_stats prototype/statistic JSON is additional to the model-payload total and retained in round artifacts",
+            "statistics_payload_note": (
+                "none; ce_only clients upload no prototype/statistic tensors"
+                if args.experiment == "fedprox-source"
+                else "ce_stats prototype/statistic JSON is additional to the model-payload total and retained in round artifacts"
+            ),
         },
         "commands_path": str(output_dir / "locked_commands.json"),
     }
