@@ -8,6 +8,7 @@ import csv
 import hashlib
 import inspect
 import json
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +19,10 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from gaps_flower.domain_adaptation import wasserstein_feature_objective
 from gaps_flower.domain_adaptation_inputs import load_domain_adaptation_arrays
 from gaps_flower.evaluate_checkpoint import evaluate_classification, load_checkpoint_model, make_loader
@@ -25,7 +30,6 @@ from model import DomainDiscriminator
 from scripts.evaluate_iotj_p0_roundwise_routing import da_loader, enrich
 from utils import compute_mmd2, deep_coral_loss, set_random_seed
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
 SEED = 42
 STEPS = 100
 MODEL_LR = 5e-4

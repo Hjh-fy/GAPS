@@ -6,7 +6,12 @@ import argparse
 import csv
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.run_iotj_p0_zero_label_commissioning import (
     EXPECTED_CHECKPOINT_SHA256,
