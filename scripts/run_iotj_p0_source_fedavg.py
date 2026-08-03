@@ -10,6 +10,8 @@ import sys
 import time
 from pathlib import Path
 
+import torch
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -66,8 +68,20 @@ def _checkpoint_index(remote_copy: Path) -> list[dict]:
             "size_bytes": path.stat().st_size, "sha256": sha256_file(path),
         })
     latest = remote_copy / "server_latest.pth"
-    if not latest.is_file() or sha256_file(latest) != rows[-1]["sha256"]:
-        raise RuntimeError("FAIL_CLOSED server_latest.pth is not round 25")
+    if not latest.is_file():
+        raise RuntimeError("FAIL_CLOSED missing server_latest.pth")
+    latest_payload = torch.load(latest, map_location="cpu", weights_only=False)
+    round25_payload = torch.load(
+        remote_copy / "server_round_025.pth", map_location="cpu", weights_only=False
+    )
+    latest_state = latest_payload.get("model_state", {})
+    round25_state = round25_payload.get("model_state", {})
+    if (
+        int(latest_payload.get("round", -1)) != 25
+        or set(latest_state) != set(round25_state)
+        or any(not torch.equal(latest_state[key], round25_state[key]) for key in latest_state)
+    ):
+        raise RuntimeError("FAIL_CLOSED server_latest.pth is not tensor-equal to round 25")
     return rows
 
 
@@ -98,6 +112,7 @@ def main() -> None:
     parser.add_argument("--c2-host", default="root@114.55.171.63")
     parser.add_argument("--timeout-hours", type=float, default=3.0)
     parser.add_argument("--output-root", default="results/iotj_p0_routing_simplification_20260803")
+    parser.add_argument("--finalize-existing", action="store_true")
     args = parser.parse_args()
 
     archive = Path(args.source_archive).resolve()
@@ -106,6 +121,28 @@ def main() -> None:
     archive_hash = sha256_file(archive)
     short_hash = archive_hash[:12]
     output_dir = (REPO_ROOT / args.output_root / "P0A_PURE_FEDAVG_LE1_S42").resolve()
+    if args.finalize_existing:
+        if not output_dir.is_dir():
+            raise FileNotFoundError(output_dir)
+        remote_copy = output_dir / "remote_server"
+        checkpoint_index = _checkpoint_index(remote_copy)
+        client_curve = _client_curve(remote_copy)
+        (output_dir / "checkpoint_index.json").write_text(json.dumps(checkpoint_index, indent=2) + "\n", encoding="utf-8")
+        (output_dir / "client_training_curve.json").write_text(json.dumps(client_curve, indent=2) + "\n", encoding="utf-8")
+        manifest = {
+            "schema_version": "iotj.p0.source_fedavg.v1", "experiment_id": EXPERIMENT_ID,
+            "status": "completed_postflight_resumed", "seed": SEED,
+            "dataset": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+            "source_clients": ["C1", "C2"], "target_client": "C5", "target_access": "none",
+            "training": {"rounds": ROUNDS, "local_epochs": LOCAL_EPOCHS, "batch_size": BATCH_SIZE, "client_lr": CLIENT_LR, "optimizer": "Adam", "profile": "ce_only", "aggregation": "sample_weighted_FedAvg", "fedprox_mu": 0.0},
+            "instrumentation": {"train_ce_averaging": "sample_weighted_over_local_minibatches", "extra_forward_pass": False},
+            "target_test_used_for_selection": False, "formal_checkpoint_round": 25,
+            "source_archive_sha256": archive_hash, "wall_seconds": None,
+            "postflight_resume_note": "training and SCP completed; initial whole-file hash equality check for duplicate torch.save containers was replaced by round/key/tensor equality",
+            "checkpoint_index": str(output_dir / "checkpoint_index.json"),
+        }
+        (output_dir / "protocol_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(manifest, sort_keys=True)); return
     output_dir.mkdir(parents=True, exist_ok=False)
     runtimes = {
         "ecs": f"/root/GAPS/p0_runtime/{short_hash}",

@@ -49,8 +49,8 @@ def test_ce_only_pure_fedavg_contract() -> None:
 def test_roundwise_checkpoint_count(tmp_path: Path) -> None:
     for round_id in range(1, ROUNDS + 1):
         path = tmp_path / f"server_round_{round_id:03d}.pth"
-        path.write_bytes(f"round={round_id}".encode())
-    (tmp_path / "server_latest.pth").write_bytes((tmp_path / "server_round_025.pth").read_bytes())
+        torch.save({"round": round_id, "model_state": {"weight": torch.tensor([round_id])}}, path)
+    torch.save({"round": 25, "model_state": {"weight": torch.tensor([25])}}, tmp_path / "server_latest.pth")
     rows = _checkpoint_index(tmp_path)
     assert len(rows) == 25
     assert rows[-1]["round"] == 25
