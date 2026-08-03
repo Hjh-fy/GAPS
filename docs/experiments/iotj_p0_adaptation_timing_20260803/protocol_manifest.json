@@ -1,0 +1,79 @@
+{
+  "schema_version": "iotj.p0i.v1",
+  "status": "audited",
+  "I2": {
+    "schema_version": "iotj.p0i.posthoc.v1",
+    "status": "training_completed_test_unopened",
+    "seed": 42,
+    "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_p0_routing_simplification_20260803\\P0A_PURE_FEDAVG_LE1_S42\\remote_server\\server_round_025.pth",
+    "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+    "uda_steps": 2500,
+    "uda_lr": 0.0005,
+    "formal_endpoint_step": 2500,
+    "milestones": [
+      0,
+      100,
+      250,
+      500,
+      1000,
+      1500,
+      2000,
+      2500
+    ],
+    "target_calibration_api": "x_only",
+    "target_labels_loaded": false,
+    "target_test_opened_during_training": false,
+    "objective": {
+      "source_ce": 1.0,
+      "unconditional_coral": 0.5,
+      "global_mmd2": 0.5,
+      "unconditional_wasserstein_adversarial": 0.5
+    },
+    "uda_wall_seconds": 847.8891150999989,
+    "model_selection": false,
+    "early_stopping": false,
+    "hyperparameter_search": false
+  },
+  "I3": {
+    "schema_version": "iotj.p0i.interleaved.v1",
+    "status": "training_completed_test_unopened",
+    "seed": 42,
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 32,
+    "client_lr": 0.0005,
+    "total_uda_steps": 2500,
+    "uda_steps_per_round": 100,
+    "uda_lr": 0.0005,
+    "adapted_as_global": true,
+    "target_calibration_api": "x_only",
+    "target_labels_loaded": false,
+    "target_test_opened_during_training": false,
+    "formal_endpoint": "round25_post_uda",
+    "source_archive_sha256": "3b0c5e46157ccbcbac8bb41c30fb793220ed31bc6fda60ec295cab011c97c8cb",
+    "total_wall_seconds": 1045.3347374000004,
+    "lineage_status": "PASS",
+    "objective": {
+      "source_ce": 1.0,
+      "unconditional_coral": 0.5,
+      "global_mmd2": 0.5,
+      "unconditional_wasserstein_adversarial": 0.5
+    },
+    "model_selection": false,
+    "early_stopping": false,
+    "hyperparameter_search": false
+  },
+  "evaluation": {
+    "status": "completed",
+    "sealed_test_opened_after_training": true,
+    "selection_performed": false,
+    "formal_I2_step": 2500,
+    "formal_I3_endpoint": "round25_post_uda",
+    "target_rows": 50,
+    "source_retention_rows": 75,
+    "discrepancy_rows": 75
+  },
+  "label_access": "PASS",
+  "lineage": "PASS",
+  "strict_audit": "PASS"
+}
