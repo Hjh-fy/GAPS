@@ -45,6 +45,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
         batch_size: int,
         profile: str = "smoke",
         seed: int = 42,
+        proximal_mu: float = 0.0,
         observer=None,
     ):
         self.observer = observer or NullObserver()
@@ -58,6 +59,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             batch_size=batch_size,
             profile=profile,
             seed=seed,
+            proximal_mu=proximal_mu,
         )
         self.model = create_model(self.config)
         self.parameter_keys = get_parameters(self.model)[1]
@@ -72,7 +74,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
         self.test_samples = len(test_loader.dataset)
         self.last_server_state: Optional[dict[str, torch.Tensor]] = None
         logger.info(
-            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s, seed=%d",
+            "[GAPS client %d] ready: train_samples=%d, test_samples=%d, device=%s, local_epochs=%d, profile=%s, seed=%d, fedprox_mu=%.6g",
             client_id,
             self.train_samples,
             self.test_samples,
@@ -80,6 +82,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             local_epochs,
             profile,
             self.seed,
+            self.config.FEDPROX_MU,
         )
 
     def get_parameters(self, config):
@@ -162,6 +165,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             "align_enabled": int(bool(self.config.USE_ALIGN)),
             "replay_distill_enabled": int(bool(self.config.USE_REPLAY_DISTILL)),
             "proto_decoupling_enabled": int(bool(self.config.USE_PROTO_DECOUPLING)),
+            "fedprox_mu": float(self.config.FEDPROX_MU),
         })
         logger.info(
             "[GAPS client %d] fit round=%d DONE: samples=%d, seconds=%.2f",
@@ -219,6 +223,12 @@ def main() -> None:
     parser.add_argument("--local-epochs", type=int, default=1)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--proximal-mu",
+        type=float,
+        default=0.0,
+        help="FedProx proximal coefficient; 0.0 reproduces the existing local objective",
+    )
     parser.add_argument("--observer-context")
     parser.add_argument("--observer-events")
     parser.add_argument(
@@ -252,6 +262,7 @@ def main() -> None:
             batch_size=args.batch_size,
             profile=args.profile,
             seed=args.seed,
+            proximal_mu=args.proximal_mu,
             observer=observer,
         )
         fl.client.start_numpy_client(

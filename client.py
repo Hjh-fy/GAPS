@@ -561,6 +561,17 @@ class Client:
             lambda_reg = None  # 使用动态权重
             optimizer = torch.optim.Adam(self.model.parameters(), lr=config.LR_CLIENT)
 
+        fedprox_mu = float(getattr(config, "FEDPROX_MU", 0.0))
+        if fedprox_mu < 0.0:
+            raise ValueError("FEDPROX_MU must be non-negative")
+        fedprox_reference = {
+            name: parameter.detach().clone()
+            for name, parameter in self.model.named_parameters()
+            if parameter.requires_grad
+        } if fedprox_mu > 0.0 else {}
+        fedprox_penalty_sum = 0.0
+        fedprox_penalty_batches = 0
+
         # 学习率调度器：分阶段模式下停用（因为参数组动态变化）
         scheduler = None
 
@@ -607,6 +618,16 @@ class Client:
                         pos_margin=self.config.REG_CONTRASTIVE_POS_MARGIN,
                     )
                     total_loss = total_loss + self.config.LAMBDA_REG_CONTRASTIVE * loss_reg_contrast
+
+                if fedprox_reference:
+                    proximal_penalty = sum(
+                        torch.sum((parameter - fedprox_reference[name]) ** 2)
+                        for name, parameter in self.model.named_parameters()
+                        if name in fedprox_reference
+                    )
+                    total_loss = total_loss + 0.5 * fedprox_mu * proximal_penalty
+                    fedprox_penalty_sum += float(proximal_penalty.detach().item())
+                    fedprox_penalty_batches += 1
                                 
                 total_loss.backward()
                 # 梯度裁剪（提高阈值）
@@ -616,6 +637,12 @@ class Client:
             # 学习率调度
             if scheduler:
                 scheduler.step()
+
+        self.last_fedprox_penalty = (
+            fedprox_penalty_sum / fedprox_penalty_batches
+            if fedprox_penalty_batches
+            else 0.0
+        )
 
         # ========= 3. 训练后均值 + 方差 + 差分隐私噪声  =========
         if not getattr(config, "UPLOAD_PROTO_STATS", True):

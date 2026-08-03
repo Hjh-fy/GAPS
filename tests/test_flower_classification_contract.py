@@ -183,14 +183,15 @@ def test_flower_config_is_simplified_classifier_only() -> None:
 
 
 @pytest.mark.parametrize(
-    ("profile", "use_align", "use_replay", "use_decouple"),
+    ("profile", "use_align", "use_replay", "use_decouple", "upload_stats"),
     [
-        ("ce_only", False, False, False),
-        ("align_only", True, False, False),
-        ("align_replay", True, True, False),
-        ("proto_only", True, False, True),
-        ("replay_only", False, True, False),
-        ("proto_replay", True, True, True),
+        ("ce_only", False, False, False, False),
+        ("ce_stats", False, False, False, True),
+        ("align_only", True, False, False, True),
+        ("align_replay", True, True, False, True),
+        ("proto_only", True, False, True, True),
+        ("replay_only", False, True, False, False),
+        ("proto_replay", True, True, True, True),
     ],
 )
 def test_classification_ablation_profiles_have_exact_switches(
@@ -198,6 +199,7 @@ def test_classification_ablation_profiles_have_exact_switches(
     use_align: bool,
     use_replay: bool,
     use_decouple: bool,
+    upload_stats: bool,
 ) -> None:
     cfg = make_config(profile=profile, seed=47)
 
@@ -207,7 +209,14 @@ def test_classification_ablation_profiles_have_exact_switches(
     assert cfg.USE_CONTRASTIVE_ALIGN is use_align
     assert cfg.USE_REPLAY_DISTILL is use_replay
     assert cfg.USE_PROTO_DECOUPLING is use_decouple
-    assert cfg.UPLOAD_PROTO_STATS is (use_align or use_decouple)
+    assert cfg.UPLOAD_PROTO_STATS is upload_stats
+
+
+def test_fedprox_mu_is_explicit_and_non_negative() -> None:
+    cfg = make_config(profile="ce_only", proximal_mu=0.01)
+    assert cfg.FEDPROX_MU == pytest.approx(0.01)
+    with pytest.raises(ValueError, match="non-negative"):
+        make_config(profile="ce_only", proximal_mu=-0.01)
 
 
 @pytest.mark.parametrize("alias", ["smoke", "strong_cls", "gaps_cls"])
