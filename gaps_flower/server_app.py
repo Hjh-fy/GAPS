@@ -12,10 +12,10 @@ from flwr.common import ndarrays_to_parameters
 
 from gaps_flower.domain_adaptation_inputs import validate_domain_adaptation_request
 from gaps_flower.observability import load_observer
-from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, weighted_average
+from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, P0IInterleavedFedAvg, weighted_average
 from gaps_flower.task import CLASSIFICATION_PROFILE_FLAGS, create_model, get_parameters, make_config
 
-DEFAULT_STRATEGIES = ("fedavg", "gaps")
+DEFAULT_STRATEGIES = ("fedavg", "gaps", "p0i_interleaved")
 PROFILE_CHOICES = tuple(CLASSIFICATION_PROFILE_FLAGS) + (
     "smoke",
     "gaps_cls",
@@ -104,6 +104,10 @@ def main() -> None:
                         help="是否保存 history.json 记录 (True/False)")
     parser.add_argument("--strategy", choices=DEFAULT_STRATEGIES, default="fedavg",
                         help="聚合策略: fedavg (Flower默认FedAvg) 或 gaps (GAPS自定义聚合)")
+    parser.add_argument("--p0i-source-calibration-dirs", type=str)
+    parser.add_argument("--p0i-target-calibration-dir", type=str)
+    parser.add_argument("--p0i-uda-steps-per-round", type=int, default=100)
+    parser.add_argument("--p0i-uda-device", type=str, default="cpu")
     parser.add_argument("--proto-ema-alpha", type=float, default=0.8,
                         help="语义原型 EMA 平滑系数 (仅 --strategy gaps 生效)")
     parser.add_argument("--use-selective-agg", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
@@ -211,7 +215,19 @@ def main() -> None:
     )
 
     try:
-        if args.strategy == "gaps":
+        if args.strategy == "p0i_interleaved":
+            if not args.p0i_source_calibration_dirs or not args.p0i_target_calibration_dir:
+                parser.error("p0i_interleaved requires source and target calibration directories")
+            strategy = P0IInterleavedFedAvg(
+                model_template=model,
+                source_calibration_dirs=args.p0i_source_calibration_dirs,
+                target_calibration_dir=args.p0i_target_calibration_dir,
+                uda_steps_per_round=args.p0i_uda_steps_per_round,
+                uda_device=args.p0i_uda_device,
+                seed=args.seed,
+                **strategy_kwargs,
+            )
+        elif args.strategy == "gaps":
             strategy = GapsStrategy(
                 proto_ema_alpha=args.proto_ema_alpha,
                 use_selective_agg=args.use_selective_agg,

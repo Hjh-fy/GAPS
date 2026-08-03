@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import time
 from collections import OrderedDict
@@ -11,6 +12,7 @@ from typing import Dict, List, Optional, Tuple
 import flwr as fl
 import numpy as np
 import torch
+from torch.utils.data import DataLoader, Subset, TensorDataset
 from flwr.common import EvaluateRes, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
 from flwr.server.client_proxy import ClientProxy
 
@@ -20,6 +22,13 @@ from gaps_flower.domain_adaptation_inputs import (
 )
 from gaps_flower.flower_message_audit import audit_fit_ins, audit_fit_res
 from gaps_flower.observability import NullObserver
+from gaps_flower.p0i_adaptation import (
+    BATCH_SIZE as P0I_BATCH_SIZE,
+    FeatureOnlyCalibrationDataset,
+    parameter_fingerprint,
+    run_frozen_u1,
+)
+from gaps_flower.task import get_parameters, set_parameters
 
 
 def canonicalize_fit_results(
@@ -188,6 +197,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "use_align": int(metrics.get("use_align", 0)),
                 "use_replay_distill": int(metrics.get("use_replay_distill", 0)),
                 "device_residual_norm": float(metrics.get("device_residual_norm", 0.0)),
+                "server_parameters_fingerprint": str(metrics.get("server_parameters_fingerprint", "")),
             }
             if global_feature:
                 client_entry["global_feature_dim"] = len(global_feature)
@@ -329,6 +339,131 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         event["evaluate_metrics"] = dict(aggregated_metrics or {})
         self._write_history()
         return aggregated_loss, aggregated_metrics
+
+
+class P0IInterleavedFedAvg(CheckpointFedAvg):
+    """P0-I: CE-only FedAvg followed by exactly 100 x-only UDA steps per round."""
+
+    def __init__(
+        self,
+        *,
+        model_template: torch.nn.Module,
+        source_calibration_dirs: str,
+        target_calibration_dir: str,
+        uda_steps_per_round: int = 100,
+        uda_device: str = "cpu",
+        seed: int = 42,
+        **kwargs,
+    ):
+        if uda_steps_per_round != 100 or seed != 42:
+            raise ValueError("FAIL_CLOSED P0-I requires 100 UDA steps/round and seed42")
+        super().__init__(**kwargs)
+        self.model_template = model_template.cpu()
+        self.source_calibration_dirs = source_calibration_dirs
+        self.target_calibration_dir = Path(target_calibration_dir).resolve()
+        self.uda_steps_per_round = int(uda_steps_per_round)
+        self.uda_device = torch.device(uda_device)
+        self.seed = int(seed)
+        source_x, source_y, _source_phase = load_domain_adaptation_arrays(
+            source_calibration_dirs, strict=True,
+        )
+        if len(source_x) < 500:
+            raise RuntimeError("FAIL_CLOSED P0-I source calibration requires >=500 samples")
+        self._source_x = source_x; self._source_y = source_y
+        self._previous_post_fingerprint: str | None = None
+        self._lineage_rows: list[dict] = []
+        self._uda_rows: list[dict] = []
+        self._round_start: dict[int, float] = {}
+
+    def _source_loader(self) -> DataLoader:
+        dataset = TensorDataset(torch.from_numpy(self._source_x), torch.from_numpy(self._source_y))
+        indices = np.random.RandomState(self.seed).choice(len(dataset), size=500, replace=False)
+        generator = torch.Generator().manual_seed(self.seed)
+        return DataLoader(Subset(dataset, indices), batch_size=P0I_BATCH_SIZE, shuffle=True, generator=generator, num_workers=0)
+
+    def _target_loader(self) -> DataLoader:
+        dataset = FeatureOnlyCalibrationDataset(self.target_calibration_dir)
+        generator = torch.Generator().manual_seed(self.seed)
+        return DataLoader(dataset, batch_size=P0I_BATCH_SIZE, shuffle=True, generator=generator, num_workers=0)
+
+    def configure_fit(self, server_round, parameters, client_manager):
+        self._round_start[int(server_round)] = time.perf_counter()
+        configured = super().configure_fit(server_round, parameters, client_manager)
+        for _client, fit_ins in configured:
+            fit_ins.config["server_round"] = int(server_round)
+        return configured
+
+    def _validate_received_lineage(self, server_round: int, results: List[Tuple[ClientProxy, FitRes]]) -> None:
+        received = {
+            int(fit_res.metrics.get("client_id", -1)): str(fit_res.metrics.get("server_parameters_fingerprint", ""))
+            for _proxy, fit_res in results
+        }
+        if set(received) != {1, 2} or any(not value for value in received.values()):
+            raise RuntimeError(f"FAIL_CLOSED missing client lineage fingerprints in round {server_round}: {received}")
+        if server_round > 1 and any(value != self._previous_post_fingerprint for value in received.values()):
+            raise RuntimeError(
+                f"FAIL_CLOSED round {server_round} did not initialize from round {server_round - 1} POST-UDA: {received}"
+            )
+        self._lineage_rows.append({
+            "round": int(server_round), "expected_parent_post_fingerprint": self._previous_post_fingerprint,
+            "client_1_received_fingerprint": received[1], "client_2_received_fingerprint": received[2],
+            "parent_match": server_round == 1 or all(v == self._previous_post_fingerprint for v in received.values()),
+        })
+
+    def _save_role_checkpoint(self, server_round: int, role: str, arrays: NDArrays, **metadata) -> Path:
+        state = {
+            key: torch.tensor(value, dtype=self.reference_state[key].dtype)
+            for key, value in zip(self.parameter_keys, arrays)
+        }
+        path = self.output_dir / f"server_round_{server_round:03d}_{role}.pth"
+        torch.save({
+            "round": int(server_round), "role": role, "model_state": state,
+            "parameter_keys": self.parameter_keys, "run_name": self.run_name, **metadata,
+        }, path)
+        return path
+
+    def aggregate_fit(self, server_round, results, failures):
+        self._validate_received_lineage(server_round, results)
+        aggregated_parameters, aggregated_metrics = super().aggregate_fit(server_round, results, failures)
+        if aggregated_parameters is None:
+            raise RuntimeError(f"FAIL_CLOSED no FedAvg parameters in round {server_round}")
+        pre_arrays = parameters_to_ndarrays(aggregated_parameters)
+        pre_fingerprint = parameter_fingerprint(self.parameter_keys, pre_arrays)
+        pre_path = self._save_role_checkpoint(server_round, "pre_uda", pre_arrays, parameter_fingerprint=pre_fingerprint)
+        model = copy.deepcopy(self.model_template)
+        set_parameters(model, pre_arrays, self.parameter_keys)
+        adapted, diagnostics, uda_seconds = run_frozen_u1(
+            model, self._source_loader(), self._target_loader(), self.uda_device,
+            num_steps=self.uda_steps_per_round, seed=self.seed,
+        )
+        post_arrays, post_keys = get_parameters(adapted.cpu())
+        if post_keys != self.parameter_keys:
+            raise RuntimeError("FAIL_CLOSED adapted parameter keys changed")
+        post_fingerprint = parameter_fingerprint(self.parameter_keys, post_arrays)
+        post_path = self._save_role_checkpoint(
+            server_round, "post_uda", post_arrays,
+            parameter_fingerprint=post_fingerprint, parent_pre_fingerprint=pre_fingerprint,
+            adapted_as_next_global=True,
+        )
+        fit_wall = max((float(res.metrics.get("fit_seconds", 0.0)) for _proxy, res in results), default=0.0)
+        total_round = time.perf_counter() - self._round_start.pop(int(server_round), time.perf_counter())
+        for row in diagnostics:
+            self._uda_rows.append({"round": int(server_round), **row, "uda_wall_seconds_per_round": uda_seconds,
+                                   "fit_wall_seconds_per_round": fit_wall, "total_round_seconds": total_round})
+        self._previous_post_fingerprint = post_fingerprint
+        self._lineage_rows[-1].update({
+            "pre_uda_fingerprint": pre_fingerprint, "post_uda_fingerprint": post_fingerprint,
+            "pre_checkpoint": str(pre_path), "post_checkpoint": str(post_path),
+        })
+        (self.output_dir / "interleaved_lineage.json").write_text(json.dumps(self._lineage_rows, indent=2) + "\n", encoding="utf-8")
+        (self.output_dir / "interleaved_uda_diagnostics.json").write_text(json.dumps(self._uda_rows, indent=2) + "\n", encoding="utf-8")
+        event = self._round_event(server_round)
+        event.update({"pre_uda_checkpoint": str(pre_path), "post_uda_checkpoint": str(post_path),
+                      "pre_uda_fingerprint": pre_fingerprint, "post_uda_fingerprint": post_fingerprint,
+                      "returned_parameters": "post_uda", "use_adapted_as_global": True,
+                      "uda_steps": self.uda_steps_per_round, "uda_seconds": uda_seconds})
+        self._write_history()
+        return ndarrays_to_parameters(post_arrays), aggregated_metrics
 
 
 class GapsStrategy(CheckpointFedAvg):

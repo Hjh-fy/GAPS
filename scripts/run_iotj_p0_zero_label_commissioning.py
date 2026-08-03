@@ -26,6 +26,7 @@ if str(REPO_ROOT) not in sys.path:
 from gaps_flower.domain_adaptation import wasserstein_feature_objective
 from gaps_flower.domain_adaptation_inputs import load_domain_adaptation_arrays
 from gaps_flower.evaluate_checkpoint import evaluate_classification, load_checkpoint_model, make_loader
+from gaps_flower.p0i_adaptation import run_frozen_u1
 from model import DomainDiscriminator
 from scripts.evaluate_iotj_p0_roundwise_routing import da_loader, enrich
 from utils import compute_mmd2, deep_coral_loss, set_random_seed
@@ -119,48 +120,10 @@ def run_unsupervised_global_alignment(
     device: torch.device,
 ) -> tuple[torch.nn.Module, list[dict[str, Any]], float]:
     """U1 training API: target input is feature-only by contract."""
-    set_random_seed(SEED)
-    model = copy.deepcopy(source_model).to(device)
-    discriminator = DomainDiscriminator(feat_dim=64, hidden_dim=32).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=MODEL_LR)
-    critic_optimizer = torch.optim.Adam(discriminator.parameters(), lr=CRITIC_LR)
-    source_iter, target_iter = iter(source_loader), iter(target_x_loader)
-    diagnostics: list[dict[str, Any]] = []
-    started = time.perf_counter(); model.train(); discriminator.train()
-    for step in range(1, STEPS + 1):
-        source_batch, source_iter = next_cycling(source_iter, source_loader)
-        target_batch, target_iter = next_cycling(target_iter, target_x_loader)
-        x_s, y_s = source_batch[0].to(device), source_batch[1].to(device).long()
-        x_t = require_x_only(target_batch, method="U1").to(device)
-        optimizer.zero_grad(set_to_none=True)
-        logits_s, feat_s, _ = model(x_s)
-        _logits_t, feat_t, _ = model(x_t)
-        for _ in range(CRITIC_ITERS):
-            critic_optimizer.zero_grad(set_to_none=True)
-            critic_loss = -(
-                discriminator(feat_s.detach()).mean() - discriminator(feat_t.detach()).mean()
-            ) + GRADIENT_PENALTY * gradient_penalty(discriminator, feat_s.detach(), feat_t.detach())
-            critic_loss.backward(); torch.nn.utils.clip_grad_norm_(discriminator.parameters(), 1.0); critic_optimizer.step()
-        source_ce = F.cross_entropy(logits_s, y_s)
-        coral = deep_coral_loss(feat_s, feat_t)
-        global_mmd2 = compute_mmd2(feat_s, feat_t)
-        adversarial = wasserstein_feature_objective(discriminator, feat_s, feat_t)
-        weighted_coral = U1_WEIGHTS["coral"] * coral
-        weighted_mmd = U1_WEIGHTS["global_mmd2"] * global_mmd2
-        weighted_adv = U1_WEIGHTS["adversarial"] * adversarial
-        total = source_ce + weighted_coral + weighted_mmd + weighted_adv
-        total.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0); optimizer.step()
-        diagnostics.append({
-            "step": step, "source_ce": float(source_ce.detach()), "coral_loss": float(coral.detach()),
-            "global_mmd2": float(global_mmd2.detach()), "adversarial_loss": float(adversarial.detach()),
-            "weighted_coral": float(weighted_coral.detach()), "weighted_global_mmd2": float(weighted_mmd.detach()),
-            "weighted_adversarial": float(weighted_adv.detach()), "total_loss": float(total.detach()),
-            "target_batch_size": int(x_t.size(0)), "target_label_object_present": False,
-            "target_ce_status": "UNAVAILABLE", "class_conditional_coral_status": "DISABLED",
-            "class_mmd_status": "DISABLED", "stage_mmd_status": "DISABLED",
-            "target_proto_anchor_status": "UNAVAILABLE", "pseudo_label_status": "DISABLED",
-        })
-    return model, diagnostics, time.perf_counter() - started
+    return run_frozen_u1(
+        source_model, source_loader, target_x_loader, device,
+        num_steps=STEPS, seed=SEED,
+    )
 
 
 def run_pseudo_label_self_training(

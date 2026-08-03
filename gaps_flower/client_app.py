@@ -11,6 +11,7 @@ import flwr as fl
 import torch
 
 from gaps_flower.observability import NullObserver, load_observer
+from gaps_flower.p0i_adaptation import parameter_fingerprint
 from gaps_flower.task import (
     CLASSIFICATION_PROFILE_FLAGS,
     canonical_profile,
@@ -122,6 +123,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
         current_server_state = parameters_to_state_dict(
             parameters, self.parameter_keys, self.model.state_dict()
         )
+        received_server_fingerprint = parameter_fingerprint(self.parameter_keys, parameters)
         if self.config.USE_REPLAY_DISTILL:
             if self.last_server_state is not None:
                 set_prev_model_from_state(self.gaps_client, self.last_server_state)
@@ -166,6 +168,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             "replay_distill_enabled": int(bool(self.config.USE_REPLAY_DISTILL)),
             "proto_decoupling_enabled": int(bool(self.config.USE_PROTO_DECOUPLING)),
             "fedprox_mu": float(getattr(self.config, "FEDPROX_MU", 0.0)),
+            "server_parameters_fingerprint": received_server_fingerprint,
         })
         logger.info(
             "[GAPS client %d] fit round=%d DONE: samples=%d, seconds=%.2f",
