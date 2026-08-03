@@ -22,12 +22,17 @@
 - Source clients: C1;C2.
 - Target clients: C3;C4;C5.
 - Split protocol: time-aware `60_170_window_fullgrid`; source train for FL; source calibration for E2 source batches; target calibration for registered adaptation; target test sealed until fixed endpoint; target train excluded.
-- Model/checkpoint policy: common classification TCN; FedAvg/E2 reuse P0A round25 SHA-256 `4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c`; all new FL results use round25.
+- Model/checkpoint policy: common classification TCN; FedAvg/E2 reuse P0A round25; ordered state-content fingerprint defines equality and whole-file SHA-256 `4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c` is provenance only; all new FL results use round25.
 - Seeds: 42 only.
 - DA / calibration / QC controls: E1 has no DA; E2 is canonical x-only unconditional DA; E3/E4 server DA follows the locked GAPS configuration; no QC; no post-hoc calibration or threshold tuning.
 - Optimizers: FedAvg/FedProx/GAPS/E2 Adam lr 5e-4; SCAFFOLD canonical SGD lr 5e-4, no momentum/scheduler.
+- SCAFFOLD SGD5e-4 is not asserted equivalent to Adam5e-4. A discarded C1/C2-only numerical validity run must pass fixed CE/discrimination/finite/norm gates or SCAFFOLD fails closed without lr search.
 - Common training: 25 rounds, LE1, batch32; formal endpoint round25.
 - E2: 100 steps, batch32, coefficient 0.5, fixed endpoint.
+- Target information: E2 calibration x only; Full GAPS/A4-A6 calibration x/class/phase; concentration unused; A0-A3 use no target calibration during training. Target test leakage outside final evaluation is a hard failure.
+- Selective boundary: rounds1-5 FedAvg; round6 onward selective when registered semantic inputs exist.
+- E0 includes per-channel sensor-space shift statistics. E1 includes per-target source-target macro-F1 gaps.
+- A0-A6 must emit `ablation_loss_activity.csv` with configured/available/observed activity fields.
 
 ## Risks, unknowns, conflicts, and stopping rules
 

@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|---|
 | FCL-H2 | FL algorithm | FedAvg; FedProx(mu=0.01); canonical SCAFFOLD | C1+C2, model, rounds25, LE1, batch32, seed42, endpoint | mean C3/C4/C5 macro-F1 | algorithm-level baseline comparison | optimizer difference explicitly disclosed; SCAFFOLD is not optimizer-controlled | one fixed run per new method |
 | FCL-H3 | canonical UDA objective | none; global CORAL; global MMD²; unconditional DANN | exact FedAvg checkpoint, target x-only, calibration feature set, source batches, Adam lr5e-4, 100 steps, coefficient0.5 | target macro-F1 | checkpoint-controlled UDA reference | runtime label audit; no conditional GAPS losses | 9 fixed branches, no tuning |
-| FCL-H5 | cumulative GAPS components | A0-A6 | C5, rounds25, LE1, batch32, Adam lr5e-4, seed42, round25 | C5 macro-F1 | hierarchical marginal deltas | reuse A0/A6 only after exact config audit | finish A1-A5 once; no factorial expansion |
+| FCL-H5 | cumulative GAPS components | A0-A6 | C5, rounds25, LE1, batch32, Adam lr5e-4, seed42, round25 | C5 macro-F1 | hierarchical marginal deltas plus observed loss activity | reuse A0/A6 only after exact config and loss-activity audit | finish A1-A5 once; no factorial expansion |
 
 ## Required baselines
 
@@ -29,4 +29,6 @@ Budget: 10 new full 25-round FL runs and 9 new 100-step adaptations, seed42 only
 
 - No unresolved hyperparameter field: SCAFFOLD lr5e-4 and E2 coefficient0.5 are preregistered before formal execution.
 - Excluded conflicts: historical FedProx LE5; historical GAPS selective warmup3.
-- Source checkpoint physical location differs across worktrees; semantic identity is fixed by SHA-256 and tensor audit.
+- Source checkpoint physical location differs across worktrees; semantic identity is fixed by ordered state-content fingerprint; whole-file SHA is provenance only.
+- A1-A3 consume no target calibration; A4-A6 consume target calibration x/class/phase and not concentration.
+- Selective warmup5 means rounds1-5 FedAvg and round6+ selective.
