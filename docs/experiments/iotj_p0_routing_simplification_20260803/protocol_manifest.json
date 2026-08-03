@@ -1,0 +1,21 @@
+{
+  "schema_version": "iotj.p0.routing_simplification.final.v1",
+  "status": "audited",
+  "seed": 42,
+  "dataset": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "source_clients": ["C1", "C2"],
+  "target_client": "C5",
+  "global_rounds": 25,
+  "local_epochs": 1,
+  "formal_comparison_round": 25,
+  "methods": ["source_only", "simple_target_ce", "full_target_adapter"],
+  "commissioning_steps": 100,
+  "commissioning_lr": 0.0005,
+  "target_test_role": "post_hoc_evaluation_only",
+  "target_test_used_for_selection": false,
+  "source_training_commit": "245076c",
+  "postflight_fix_commit": "6946964",
+  "source_archive_sha256": "d5702b8a4ff6c184ba8815e75e9f99918af1cdd453ad74bf22df74dc9f9290a5",
+  "audit_status": "PASS",
+  "limitations": ["seed42 only", "round-wise target curves are diagnostic only", "historical B5 excluded"]
+}

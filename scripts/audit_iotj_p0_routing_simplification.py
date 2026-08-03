@@ -46,6 +46,8 @@ def main() -> None:
     curve = json.loads((source / "client_training_curve.json").read_text(encoding="utf-8"))
     require(len(curve) == 50 and {(row["round"], row["client_id"]) for row in curve} == {(r, c) for r in range(1, 26) for c in ("C1", "C2")}, "client curve completeness")
     require(all(row["local_epochs"] == 1 and row["train_ce_averaging"] == "sample_weighted_over_local_minibatches" for row in curve), "training instrumentation convention")
+    curve_csv = rows(source / "client_training_curve.csv")
+    require(len(curve_csv) == 50, "client training CSV completeness")
     require(commission_manifest["source_checkpoint_count"] == 25 and set(commission_manifest["methods"]) == EXPECTED_METHODS, "commissioning methods")
     require(commission_manifest["commissioning_steps"] == 100 and commission_manifest["commissioning_lr"] == 5e-4, "commissioning budget")
     require(commission_manifest["formal_comparison_round"] == 25 and not commission_manifest["adapted_checkpoint_inheritance"], "round25/no inheritance")
@@ -64,7 +66,7 @@ def main() -> None:
     formal = rows(commission / "round25_routing_comparison.csv"); require(len(formal) == 3 and {row["method"] for row in formal} == EXPECTED_METHODS, "fixed round25 comparison")
 
     output = args.output_dir.resolve(); output.mkdir(parents=True, exist_ok=False)
-    main_files = [source / "protocol_manifest.json", source / "checkpoint_index.json", source / "client_training_curve.json", commission / "protocol_manifest.json", commission / "roundwise_routing_metrics.csv", commission / "round25_routing_comparison.csv", commission / "simple_ce_commissioning_diagnostics.csv", commission / "full_da_commissioning_diagnostics.csv", commission / "server_loss_activity_summary.csv"]
+    main_files = [source / "protocol_manifest.json", source / "checkpoint_index.json", source / "client_training_curve.json", source / "client_training_curve.csv", commission / "protocol_manifest.json", commission / "roundwise_routing_metrics.csv", commission / "round25_routing_comparison.csv", commission / "simple_ce_commissioning_diagnostics.csv", commission / "full_da_commissioning_diagnostics.csv", commission / "server_loss_activity_summary.csv"]
     hashes = [{"path": str(path), "size_bytes": path.stat().st_size, "sha256": sha256(path)} for path in main_files]
     (output / "sha256_index.json").write_text(json.dumps(hashes, indent=2) + "\n", encoding="utf-8")
     report = """# P0 Routing Simplification Experiment Audit\n\n## Verdict: approved for seed42 descriptive evidence\n\nAll 20 frozen contract checks passed: dataset/client roles, seed, 25xLE1 CE-only FedAvg, target isolation, 25 checkpoint hashes, independent commissioning, locked 100-step/5e-4 settings, inactive-statistics disclosure, sealed test role, and fixed round-25 comparison.\n\n## Limitations\n\nRound-wise C5 curves are retrospective diagnostics only. Seed42 cannot support uncertainty, significance, or stability claims. This new LE1 protocol is not a single-factor ablation against historical B5.\n"""
