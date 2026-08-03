@@ -139,6 +139,18 @@ def main() -> None:
         "dataset_checked": True, "residual_flower_processes": False,
     }
     (output_dir / "preflight.json").write_text(json.dumps(preflight, indent=2) + "\n", encoding="utf-8")
+    (output_dir / "PREFLIGHT_REPORT.md").write_text(
+        "# P0 Three-host Preflight\n\n"
+        "Status: **PASS**\n\n"
+        f"- Git commit: `{preflight['git_commit']}`\n"
+        f"- Source archive SHA-256: `{archive_hash}`\n"
+        "- Server ECS, C1 Raspberry Pi, and C2 ECS reachable.\n"
+        "- No residual Flower server/client process detected.\n"
+        "- Required C1/C2/C5 dataset directories verified for their assigned roles.\n"
+        "- The same immutable source archive was deployed/verified on all three hosts.\n"
+        "- Formal output paths were absent before execution.\n",
+        encoding="utf-8",
+    )
 
     processes: list[subprocess.Popen] = []
     tunnels: list[subprocess.Popen] = []
