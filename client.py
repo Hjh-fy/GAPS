@@ -571,6 +571,12 @@ class Client:
         } if fedprox_mu > 0.0 else {}
         fedprox_penalty_sum = 0.0
         fedprox_penalty_batches = 0
+        # Read-only training instrumentation.  These scalars are accumulated
+        # from the forward pass already required for optimization; no extra
+        # model pass, optimizer update, or state mutation is introduced.
+        train_ce_sum = 0.0
+        train_correct = 0
+        train_examples = 0
 
         # 学习率调度器：分阶段模式下停用（因为参数组动态变化）
         scheduler = None
@@ -601,6 +607,14 @@ class Client:
 
                 # 计算各部分损失
                 loss_cls = self._compute_classification_loss(logits, y_cls)
+                batch_examples = int(y_cls.numel())
+                train_ce_sum += float(
+                    F.cross_entropy(logits.detach(), y_cls, reduction="sum").item()
+                )
+                train_correct += int(
+                    (logits.detach().argmax(dim=1) == y_cls).sum().item()
+                )
+                train_examples += batch_examples
                 loss_align = self._compute_align_loss(cls_feat, y_cls, y_p, global_protos)
                 loss_distill = self._compute_distill_loss(x, cls_feat)
                 loss_reg = self._compute_regression_loss(reg_feat, y_cls, y_reg, semantic_protos, y_p, current_round)
@@ -643,6 +657,14 @@ class Client:
             if fedprox_penalty_batches
             else 0.0
         )
+        self.last_train_ce_mean = (
+            train_ce_sum / train_examples if train_examples else 0.0
+        )
+        self.last_train_accuracy = (
+            train_correct / train_examples if train_examples else 0.0
+        )
+        self.last_train_metric_examples = int(train_examples)
+        self.last_train_ce_averaging = "sample_weighted_over_local_minibatches"
 
         # ========= 3. 训练后均值 + 方差 + 差分隐私噪声  =========
         if not getattr(config, "UPLOAD_PROTO_STATS", True):

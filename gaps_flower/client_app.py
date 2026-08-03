@@ -82,7 +82,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             local_epochs,
             profile,
             self.seed,
-            self.config.FEDPROX_MU,
+            float(getattr(self.config, "FEDPROX_MU", 0.0)),
         )
 
     def get_parameters(self, config):
@@ -165,7 +165,7 @@ class GapsFlowerClient(fl.client.NumPyClient):
             "align_enabled": int(bool(self.config.USE_ALIGN)),
             "replay_distill_enabled": int(bool(self.config.USE_REPLAY_DISTILL)),
             "proto_decoupling_enabled": int(bool(self.config.USE_PROTO_DECOUPLING)),
-            "fedprox_mu": float(self.config.FEDPROX_MU),
+            "fedprox_mu": float(getattr(self.config, "FEDPROX_MU", 0.0)),
         })
         logger.info(
             "[GAPS client %d] fit round=%d DONE: samples=%d, seconds=%.2f",

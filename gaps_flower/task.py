@@ -311,6 +311,18 @@ def train_one_round(
         "proto_stats_uploaded": int(bool(gaps_client.config.UPLOAD_PROTO_STATS)),
         "fedprox_mu": float(getattr(gaps_client.config, "FEDPROX_MU", 0.0)),
         "fedprox_penalty_mean": float(getattr(gaps_client, "last_fedprox_penalty", 0.0)),
+        "train_ce_mean": float(getattr(gaps_client, "last_train_ce_mean", 0.0)),
+        "train_accuracy": float(getattr(gaps_client, "last_train_accuracy", 0.0)),
+        "train_metric_examples": int(
+            getattr(gaps_client, "last_train_metric_examples", num_examples)
+        ),
+        "train_ce_averaging": str(
+            getattr(
+                gaps_client,
+                "last_train_ce_averaging",
+                "sample_weighted_over_local_minibatches",
+            )
+        ),
     }
     if gaps_client.config.UPLOAD_PROTO_STATS:
         metrics.update({

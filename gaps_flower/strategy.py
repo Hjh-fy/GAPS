@@ -167,6 +167,17 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "proto_examples": int(metrics.get("proto_examples", 0)),
                 "local_epochs": int(metrics.get("local_epochs", 0)),
                 "fit_seconds": float(metrics.get("fit_seconds", 0.0)),
+                "train_ce_mean": float(metrics.get("train_ce_mean", 0.0)),
+                "train_accuracy": float(metrics.get("train_accuracy", 0.0)),
+                "train_metric_examples": int(
+                    metrics.get("train_metric_examples", num_examples)
+                ),
+                "train_ce_averaging": str(
+                    metrics.get(
+                        "train_ce_averaging",
+                        "sample_weighted_over_local_minibatches",
+                    )
+                ),
                 "feature_norm": float(metrics.get("feature_norm", 0.0)),
                 "feature_mean": float(metrics.get("feature_mean", 0.0)),
                 "feature_std": float(metrics.get("feature_std", 0.0)),

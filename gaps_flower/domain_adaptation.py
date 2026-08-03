@@ -762,6 +762,10 @@ class ServerDomainAdaptation:
         )
         summary["device_residual_count"] = int(len(self.device_residuals))
         summary["client_proto_groups"] = int(sum(1 for m in self.client_mus if m))
+        if bool(self.hp.get("RETURN_STEP_DIAGNOSTICS", False)):
+            # Observability-only opt-in used by the P0 post-hoc commissioning
+            # study.  The optimization path above is unchanged.
+            summary["step_diagnostics"] = diagnostics
 
         self.logger.info(
             f"[DA] Adaptation done: val_loss={summary['val_loss']:.4f}, "
