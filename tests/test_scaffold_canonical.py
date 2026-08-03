@@ -90,6 +90,33 @@ def test_scaffold_gradient_contains_control_variate_correction() -> None:
     assert result.control_correction_applied_steps == 1
 
 
+def test_scaffold_treats_unused_parameter_data_gradient_as_zero() -> None:
+    from gaps_flower.scaffold import scaffold_train_one_round
+
+    class BranchedClassifier(TinyClassifier):
+        def __init__(self) -> None:
+            super().__init__()
+            self.unused = torch.nn.Parameter(torch.tensor([0.4]))
+
+    model = BranchedClassifier()
+    server_control = _zeros(model)
+    client_control = _zeros(model)
+    server_control["unused"] = torch.tensor([0.3])
+    client_control["unused"] = torch.tensor([0.1])
+
+    result = scaffold_train_one_round(
+        model,
+        _loader(),
+        server_control=server_control,
+        client_control=client_control,
+        lr=0.1,
+        local_epochs=1,
+        device=torch.device("cpu"),
+    )
+
+    assert result.model_state["unused"] == pytest.approx(torch.tensor([0.38]))
+
+
 def test_scaffold_client_control_variate_persists() -> None:
     from gaps_flower.scaffold import ScaffoldClientControlState
 

@@ -54,6 +54,23 @@ def policy_for(method: str) -> TargetInformationPolicy:
     return _POLICIES[key]
 
 
+def authorize_gaps_target_calibration(
+    *, method: str, ledger: "TargetAccessLedger"
+) -> None:
+    method_key = str(method).strip().lower()
+    if method_key not in {"gaps", "a4", "a5", "a6"}:
+        raise TargetInformationPolicyError(
+            f"GAPS calibration authorization requires gaps/a4/a5/a6, got {method}"
+        )
+    ledger.authorize(
+        method=method_key,
+        stage="adaptation",
+        split="calibration",
+        fields={"x", "class", "phase"},
+        purpose="registered_global_class_phase_server_domain_adaptation",
+    )
+
+
 class TargetAccessLedger:
     def __init__(self, path: str | Path):
         self.path = Path(path)

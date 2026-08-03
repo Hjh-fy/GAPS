@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Optional, List, Any
 from torch.utils.data import DataLoader
 from model import FedGasModel
 from config import FLConfig
+from gaps_flower.loss_activity import LossActivityAccumulator
 from utils import get_lambda_reg, apply_sensor_aug
 
 
@@ -571,6 +572,10 @@ class Client:
         } if fedprox_mu > 0.0 else {}
         fedprox_penalty_sum = 0.0
         fedprox_penalty_batches = 0
+        loss_activity = LossActivityAccumulator(
+            scope="client",
+            variant=str(getattr(self, "loss_activity_variant", "unspecified")),
+        )
         # Read-only training instrumentation.  These scalars are accumulated
         # from the forward pass already required for optimization; no extra
         # model pass, optimizer update, or state mutation is introduced.
@@ -623,6 +628,83 @@ class Client:
                 if lambda_reg is None:
                     lambda_reg = get_lambda_reg(current_round, self.config.GLOBAL_ROUNDS)
                 total_loss = loss_cls + loss_align + loss_distill + lambda_reg * loss_reg
+                loss_activity.record(
+                    loss_name="source_ce",
+                    configured_weight=1.0,
+                    input_available=True,
+                    raw_loss=float(loss_cls.detach().item()),
+                    active=True,
+                    inactive_reason="",
+                )
+                align_weight = float(getattr(config, "LAMBDA_ALIGN", 0.0))
+                align_inputs = bool(global_protos)
+                align_active = bool(config.USE_ALIGN and align_inputs and align_weight != 0.0)
+                loss_activity.record(
+                    loss_name="semantic_alignment",
+                    configured_weight=align_weight,
+                    input_available=align_inputs,
+                    raw_loss=(
+                        float(loss_align.detach().item()) / align_weight
+                        if align_active
+                        else None
+                    ),
+                    active=align_active,
+                    inactive_reason=(
+                        ""
+                        if align_active
+                        else (
+                            "module_disabled"
+                            if not config.USE_ALIGN
+                            else "global_prototypes_unavailable"
+                            if not align_inputs
+                            else "configured_weight_zero"
+                        )
+                    ),
+                )
+                replay_weight = float(getattr(config, "LAMBDA_REPLAY_DISTILL", 0.0))
+                replay_inputs = self.prev_model is not None
+                replay_active = bool(
+                    config.USE_REPLAY_DISTILL and replay_inputs and replay_weight != 0.0
+                )
+                loss_activity.record(
+                    loss_name="replay_distillation",
+                    configured_weight=replay_weight,
+                    input_available=replay_inputs,
+                    raw_loss=(
+                        float(loss_distill.detach().item()) / replay_weight
+                        if replay_active
+                        else None
+                    ),
+                    active=replay_active,
+                    inactive_reason=(
+                        ""
+                        if replay_active
+                        else (
+                            "module_disabled"
+                            if not config.USE_REPLAY_DISTILL
+                            else "previous_model_unavailable"
+                            if not replay_inputs
+                            else "configured_weight_zero"
+                        )
+                    ),
+                )
+                reg_weight = float(lambda_reg)
+                reg_enabled = bool(getattr(config, "USE_REG_LOSS", False))
+                reg_active = bool(reg_enabled and reg_weight != 0.0)
+                loss_activity.record(
+                    loss_name="regression",
+                    configured_weight=reg_weight,
+                    input_available=True,
+                    raw_loss=float(loss_reg.detach().item()) if reg_active else None,
+                    active=reg_active,
+                    inactive_reason=(
+                        ""
+                        if reg_active
+                        else "regression_disabled"
+                        if not reg_enabled
+                        else "configured_weight_zero"
+                    ),
+                )
                 # 回归对比损失
                 if getattr(self.config, 'USE_REG_CONTRASTIVE', False):
                     from utils import regression_contrastive_loss
@@ -665,6 +747,7 @@ class Client:
         )
         self.last_train_metric_examples = int(train_examples)
         self.last_train_ce_averaging = "sample_weighted_over_local_minibatches"
+        self.last_loss_activity = loss_activity.rows()
 
         # ========= 3. 训练后均值 + 方差 + 差分隐私噪声  =========
         if not getattr(config, "UPLOAD_PROTO_STATS", True):

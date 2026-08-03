@@ -148,7 +148,9 @@ def scaffold_train_one_round(
             squared_grad = torch.zeros((), device=device)
             for name, parameter in model.named_parameters():
                 if parameter.grad is None:
-                    raise RuntimeError(f"FAIL_CLOSED SCAFFOLD missing gradient for {name}")
+                    # A parameter outside the active forward branch has a zero
+                    # data gradient.  Canonical SCAFFOLD must still apply c-c_i.
+                    parameter.grad = torch.zeros_like(parameter)
                 correction = server[name].to(device) - client_before[name].to(device)
                 parameter.grad.add_(correction)
                 if not torch.isfinite(parameter.grad).all():

@@ -29,9 +29,43 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from model import DomainDiscriminator, GradientReversalLayer
+from gaps_flower.loss_activity import server_da_activity_rows
 from utils import compute_mmd, compute_mmd2, deep_coral_loss, deep_coral_loss_class_conditional
 
 logger = logging.getLogger('gaps.server')
+
+
+def build_server_da_loss_activity(
+    *,
+    variant: str,
+    diagnostics: Dict[str, List[float]],
+    hyperparams: dict,
+    availability: dict[str, bool],
+) -> list[dict]:
+    """Build observed server-DA activity without another model forward pass."""
+    configured_weights = {
+        "source_ce": 1.0,
+        "coral": float(hyperparams.get("LAMBDA_DEEP_CORAL", 0.1)),
+        "global_mmd": float(hyperparams.get("LAMBDA_GLOBAL_MMD", 0.5)),
+        "class_mmd": float(hyperparams.get("LAMBDA_CLASS_MMD", 0.5)),
+        "adversarial": float(hyperparams.get("LAMBDA_ADV_DOMAIN", 0.1)),
+        "proto_anchor": float(hyperparams.get("LAMBDA_PROTO_ANCHOR", 0.3)),
+        "target_ce": float(hyperparams.get("LAMBDA_TARGET_CE", 0.0)),
+        "proto_loss": float(hyperparams.get("LAMBDA_PROTO", 0.05)),
+        "consistency": float(hyperparams.get("LAMBDA_CONSISTENCY", 2.0)),
+        "device_residual": float(hyperparams.get("LAMBDA_RES", 0.1)),
+        "proto_mmd": float(hyperparams.get("LAMBDA_PROTO_MMD", 0.2)),
+        "stage_mmd": float(hyperparams.get("LAMBDA_STAGE_MMD", 0.2)),
+        "align_reg_legacy": float(
+            hyperparams.get("LAMBDA_ALIGN_REG_LEGACY", 0.05)
+        ),
+    }
+    return server_da_activity_rows(
+        variant=variant,
+        step_diagnostics=diagnostics,
+        configured_weights=configured_weights,
+        availability=availability,
+    )
 
 
 def cross_domain_same_class_phase_mmd2(
@@ -762,6 +796,27 @@ class ServerDomainAdaptation:
         )
         summary["device_residual_count"] = int(len(self.device_residuals))
         summary["client_proto_groups"] = int(sum(1 for m in self.client_mus if m))
+        summary["loss_activity"] = build_server_da_loss_activity(
+            variant=str(self.hp.get("ABLATION_VARIANT", "unspecified")),
+            diagnostics=diagnostics,
+            hyperparams=self.hp,
+            availability={
+                "source_x_class_phase": self.val_loader is not None,
+                "target_x": self.calib_loader is not None,
+                "target_class": self.calib_loader is not None,
+                "target_phase": self.calib_loader is not None,
+                "semantic_prototypes": bool(len(self.semantic_protos)),
+                "client_prototypes": any(bool(item) for item in self.client_mus),
+                "two_client_prototypes": sum(bool(item) for item in self.client_mus) >= 2,
+                "client_residuals": any(
+                    item is not None for item in self.client_residual_targets
+                ),
+                "domain_discriminator": self.domain_discriminator is not None,
+                "align_reg_legacy_enabled": bool(
+                    self.hp.get("USE_ALIGN_REG_LEGACY", False)
+                ),
+            },
+        )
         if bool(self.hp.get("RETURN_STEP_DIAGNOSTICS", False)):
             # Observability-only opt-in used by the P0 post-hoc commissioning
             # study.  The optimization path above is unchanged.

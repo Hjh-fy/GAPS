@@ -95,6 +95,17 @@ def main() -> None:
     parser.add_argument("--min-clients", type=int, default=1)
     parser.add_argument("--output-dir", default="results/flower_server")
     parser.add_argument("--run-name", default="flower_smoke")
+    parser.add_argument(
+        "--ablation-variant",
+        default="",
+        help="Frozen A0-A6 variant identifier written into loss-activity audit records",
+    )
+    parser.add_argument(
+        "--target-information-method",
+        choices=("gaps", "a4", "a5", "a6"),
+        default="gaps",
+        help="Method-specific calibration field policy recorded by GAPS DA",
+    )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--observer-context")
     parser.add_argument("--observer-events")
@@ -116,6 +127,12 @@ def main() -> None:
                         help="是否启用选择性聚合 (仅 --strategy gaps 生效)")
     parser.add_argument("--selective-warmup", type=int, default=3,
                         help="选择性聚合预热轮数，前 N 轮使用标准 FedAvg")
+    parser.add_argument(
+        "--require-selective-after-warmup",
+        type=lambda v: v.lower() in ("true", "1", "yes"),
+        default=False,
+        help="Fail closed if semantic prototypes are missing after warm-up",
+    )
     parser.add_argument("--selective-min-scale", type=float, default=0.3,
                         help="选择性聚合最小缩放因子，防止权重归零")
     parser.add_argument("--use-proto-mmd", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
@@ -267,6 +284,9 @@ def main() -> None:
                 da_target_ce_class_balanced=args.da_target_ce_class_balanced,
                 da_server_opt_lr=args.da_server_opt_lr,
                 use_adapted_as_global=args.use_adapted_as_global,
+                ablation_variant=args.ablation_variant,
+                require_selective_after_warmup=args.require_selective_after_warmup,
+                target_information_method=args.target_information_method,
                 **strategy_kwargs,
             )
         elif args.strategy == "scaffold":

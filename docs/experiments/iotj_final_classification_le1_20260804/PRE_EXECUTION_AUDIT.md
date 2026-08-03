@@ -1,48 +1,40 @@
-# Experiment Audit
+# Pre-execution Experiment Audit
 
-## Audit scope and intended claim
+## Scope
 
-Pre-execution audit of the planned seed42 classification comparison. The intended future claim is an algorithm-level comparison of standard FL baselines, canonical x-only UDA references, and Full GAPS under the registered source/target split and fixed endpoints. This document approves only execution readiness, not result Evidence.
-
-## Compared experiments
-
-| Experiment ID | Split | Model | Checkpoint | DA | Calibration | QC | Seeds | Provenance |
-|---|---|---|---|---|---|---|---|---|
-| FCL-E1-* | timeaware fullgrid | classification TCN | round25 | none | none | none | 42 | approved design; P0A manifest or new run manifest |
-| FCL-E2-* | same | same | exact P0A SHA-256 | canonical global CORAL/MMD/DANN | target x only | none | 42 | approved E2 amendment |
-| FCL-E3-* | same | same | round25 | locked Full GAPS | registered target calibration | none | 42 | approved design |
-| FCL-E4-* | same | same | round25 | registered per A0-A6 | registered per A0-A6 | none | 42 | approved hierarchical plan |
+This audit covers readiness of the frozen seed42 classification comparison: standard FL baselines, canonical x-only UDA references, Full GAPS across C3/C4/C5, and the C5 A0-A6 hierarchy. It authorizes execution only and is not result evidence.
 
 ## Findings
 
-| Finding ID | Severity | Check | Evidence | Impact | Required action | Status |
-|---|---|---|---|---|---|---|
-| PRE-01 | blocking | P0A physical input absent from new worktree | source file exists in old audited worktree; SHA-256 `4313c...751c` | E1 reuse/E2 cannot run until imported | copy read-only input; verify ordered state-content fingerprint; retain whole-file SHA as provenance | open until implementation preflight |
-| PRE-02 | informational | historical FedProx comparability | historical formal run used LE5 | cannot reuse | run new LE1 with frozen mu0.01 | resolved by plan |
-| PRE-03 | informational | historical GAPS comparability | historical run used selective warmup3 | cannot reuse | run new warmup5 | resolved by plan |
-| PRE-04 | major | optimizer parity | canonical SCAFFOLD uses SGD; other main algorithms use Adam | comparison is not optimizer-controlled | add optimizer fields and mandatory analysis limitation | resolved by plan; verify output |
-| PRE-05 | blocking | E2 target label isolation | code not yet implemented/tested | leakage would invalidate E2 | API-level x-only contract and runtime audit | open until tests pass |
-| PRE-06 | blocking | sealed target test | execution runner not yet implemented | selection leakage risk | staged unlock only after fixed endpoints and audit log | open until tests and run audit pass |
-| PRE-07 | major | seed coverage | seed42 only by explicit user decision | no stability inference | label all Evidence descriptive seed42 | resolved by plan; verify prose |
-| PRE-08 | blocking | SCAFFOLD numerical validity | canonical SGD5e-4 implementation not yet source-gated | invalid optimization would make baseline uninterpretable | pass fixed C1/C2-only loss/discrimination/finite/norm gate or fail closed without search | open until gate artifact passes |
-| PRE-09 | blocking | target information semantics | method-specific x/class/phase/concentration ledger not yet implemented | ambiguous calibration use or test leakage | enforce policy table and HARD FAIL target-test leakage | open until tests pass |
-| PRE-10 | blocking | ablation loss activity | A0-A6 observed loss activity not yet recorded | configured modules may be inactive | produce audited schema and A4/A5 active-input checks | open until tests pass |
-| PRE-11 | blocking | selective warm-up boundary | implicit comparison exists but boundary test/log contract absent | round interpretation may diverge | prove rounds1-5 FedAvg and round6+ selective in code/tests/logs | open until tests pass |
+| Finding ID | Severity | Check | Evidence | Status |
+|---|---|---|---|---|
+| PRE-01 | blocking | P0A immutable import | round25 imported read-only; ordered state-content fingerprint `c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769`; whole-file SHA retained only for provenance | PASS |
+| PRE-02 | informational | historical FedProx comparability | historical LE5 excluded; new LE1 run registered with mu0.01 | PASS |
+| PRE-03 | informational | historical GAPS comparability | historical warmup3 excluded; new warmup5 runs registered | PASS |
+| PRE-04 | major | optimizer disclosure | `PROTOCOL.md` contains optimizer, optimizer_lr and optimizer_note; canonical SCAFFOLD SGD is explicitly not optimizer-controlled against Adam methods | PASS with disclosed limitation |
+| PRE-05 | blocking | E2 target isolation | target loader returns x tensor only; adaptation API has no target class/phase/concentration argument; all nine specs use fixed step100 | PASS |
+| PRE-06 | blocking | target-test seal | hard-fail policy and one-use fixed-endpoint unlock implemented and tested; generated training/adaptation commands contain no target-test path | PASS pre-run |
+| PRE-07 | major | seed coverage | seed42 only by explicit decision; protocol prohibits stability/generalization claims from seed variation | PASS with scope limitation |
+| PRE-08 | blocking | SCAFFOLD numerical validity | C1/C2-only gate passed loss decrease, source discrimination, finite, gradient norm and parameter norm checks; no LR search and no target information | PASS |
+| PRE-09 | blocking | method-specific target fields | calibration fields are separately registered for E0/E1/E2/E3/E4; target-test leakage is absolute HARD FAIL | PASS |
+| PRE-10 | blocking | ablation loss activity | exact requested schema is wired into client and server paths; A4/A5 actual-input activity tests pass | PASS pre-run |
+| PRE-11 | blocking | selective warm-up boundary | one helper drives code/logs; tests prove rounds1-5 complete FedAvg and round6+ selective; formal runs fail closed if semantic inputs are absent after warm-up | PASS |
 
-## Leakage assessment
+## Verification evidence
 
-The planned protocol makes target-test information access outside final fixed-endpoint evaluation an absolute hard failure. E2 uses target calibration x only. Full GAPS and A4-A6 use target calibration x/class/phase for declared server-DA mechanisms and do not use concentration; A0-A3 use no target calibration during training. Runtime enforcement remains blocking until implemented and tested.
+- Focused protocol suite: 57 passed.
+- Relevant Flower/DA/baseline regression suite: 89 passed.
+- `compileall`: passed.
+- Immutable checkpoint import: passed.
+- C1/C2-only SCAFFOLD numerical gate: passed all seven checks.
+- Strict pre-run audit: 11/11 checks passed with zero blocking failures.
 
-## Baseline, completeness, and reproducibility assessment
+## Leakage and reproducibility assessment
 
-Baseline coverage is complete at plan level: FedAvg, FedProx, canonical SCAFFOLD, canonical CORAL/MMD/DANN, and Full GAPS. Fixed endpoints, optimizer differences, reuse rules, dataset, seed and target budgets are explicit. Reproducibility remains pending implementation manifests, checkpoint hashes, commands, logs and completed artifacts.
+E2 consumes target calibration x only. Full GAPS and A4-A6 consume target calibration x/class/phase and not concentration; target CE is fixed at zero. A0-A3 and E1 consume no target calibration in training. Target test remains sealed until the exact method-target fixed endpoint has an immutable completion marker, after which only a one-use final-evaluation token can expose x/class.
 
-## Verdict: blocked
+Pre-run reproducibility inputs are complete: fixed matrix and protocol hash, ordered checkpoint provenance, generated three-host commands, source numerical gate, target policy, endpoint locks and strict audit. Training logs, round checkpoints, runtime access ledgers, metrics, predictions, cost tables and SHA index remain post-run requirements.
 
-Execution Evidence remains blocked until PRE-01, PRE-05 and PRE-06 pass. The design itself is ready for user review and implementation planning.
+## Verdict: PASS for formal execution
 
-## Unknowns and handoff
-
-- No unknown hyperparameter remains.
-- Handoff from `experiment-planner` to `experiment-registry`: the plan, matrix and ablation plan in this directory are the inputs; existing P0 assets remain read-only.
-- Handoff requested next action: user reviews this written specification; after approval, create the implementation plan and implement preflight/tests before any formal training.
+Formal execution may start from the pre-run freeze commit. After `formal_training_started.lock` is written, no tuning, matrix mutation, target-test selection, learning-rate search, new seed or automatic method optimization is permitted.

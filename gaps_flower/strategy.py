@@ -34,7 +34,22 @@ from gaps_flower.scaffold import (
     pack_control_variates,
     unpack_control_variates,
 )
+from gaps_flower.target_information import (
+    TargetAccessLedger,
+    authorize_gaps_target_calibration,
+)
 from gaps_flower.task import get_parameters, set_parameters
+
+
+def selective_aggregation_phase(server_round: int, *, warmup: int) -> str:
+    """Return the preregistered phase for complete-round FedAvg warm-up."""
+    round_idx = int(server_round)
+    warmup_rounds = int(warmup)
+    if round_idx < 1:
+        raise ValueError("server_round must be >= 1")
+    if warmup_rounds < 0:
+        raise ValueError("warmup must be >= 0")
+    return "fedavg_warmup" if round_idx <= warmup_rounds else "selective"
 
 
 def canonicalize_fit_results(
@@ -175,6 +190,9 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             global_feature = self._parse_json_metric(metrics.get("global_feature_json"), [])
             prototypes = self._parse_json_metric(metrics.get("prototype_json"), {})
             proto_vars = self._parse_json_metric(metrics.get("prototype_var_json"), {})
+            client_loss_activity = self._parse_json_metric(
+                metrics.get("client_loss_activity_json"), []
+            )
 
             client_entry = {
                 "client_id": client_id,
@@ -204,6 +222,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "use_replay_distill": int(metrics.get("use_replay_distill", 0)),
                 "device_residual_norm": float(metrics.get("device_residual_norm", 0.0)),
                 "server_parameters_fingerprint": str(metrics.get("server_parameters_fingerprint", "")),
+                "loss_activity": client_loss_activity,
             }
             if global_feature:
                 client_entry["global_feature_dim"] = len(global_feature)
@@ -629,6 +648,9 @@ class GapsStrategy(CheckpointFedAvg):
         da_target_ce_class_balanced: bool = False,
         da_server_opt_lr: float = 1e-4,
         use_adapted_as_global: bool = False,
+        ablation_variant: str = "",
+        require_selective_after_warmup: bool = False,
+        target_information_method: str = "gaps",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -671,6 +693,12 @@ class GapsStrategy(CheckpointFedAvg):
         self.da_target_ce_class_balanced = da_target_ce_class_balanced
         self.da_server_opt_lr = da_server_opt_lr
         self.use_adapted_as_global = use_adapted_as_global
+        self.ablation_variant = str(ablation_variant or "unspecified")
+        self.require_selective_after_warmup = bool(require_selective_after_warmup)
+        self.target_information_method = str(target_information_method).lower()
+        self.target_access_ledger = TargetAccessLedger(
+            self.output_dir / "target_access_ledger.jsonl"
+        )
         self._da_trainer = None
         self._val_loader = None
         self._calib_loader = None
@@ -724,6 +752,7 @@ class GapsStrategy(CheckpointFedAvg):
         proto_payload = self._semantic_protos_json() if self.semantic_protos else ""
         for _client, fit_ins in configured:
             fit_ins.config["server_round"] = int(server_round)
+            fit_ins.config["ablation_variant"] = self.ablation_variant
             fit_ins.config["semantic_proto_ready"] = bool(proto_payload)
             if proto_payload:
                 fit_ins.config["semantic_protos_json"] = proto_payload
@@ -854,19 +883,64 @@ class GapsStrategy(CheckpointFedAvg):
         )
 
         # ── 阶段 4.2: 选择性聚合权重调整 ──
-        selective_info: dict = {"selective_active": False}
-        if self.use_selective_agg and self.semantic_protos and server_round > self.selective_warmup:
+        client_ids = [
+            int((fit_res.metrics or {}).get("client_id", -1))
+            for _proxy, fit_res in results
+        ]
+        phase = selective_aggregation_phase(
+            server_round, warmup=self.selective_warmup
+        )
+        selective_info: dict = {
+            "selective_active": False,
+            "phase": phase if self.use_selective_agg else "disabled",
+            "round": int(server_round),
+            "warmup": int(self.selective_warmup),
+            "base_weights": {
+                str(cid): float(weight)
+                for cid, weight in zip(client_ids, base_weights.tolist())
+            },
+        }
+        if self.use_selective_agg and phase == "selective" and self.semantic_protos:
             selective_weights, selective_info = self._compute_selective_weights(
                 results, base_weights, server_round
+            )
+            authorize_gaps_target_calibration(
+                method=self.target_information_method,
+                ledger=self.target_access_ledger,
+            )
+            selective_info.update(
+                {
+                    "phase": phase,
+                    "base_weights": {
+                        str(cid): float(weight)
+                        for cid, weight in zip(client_ids, base_weights.tolist())
+                    },
+                    "final_weights": {
+                        str(cid): float(weight)
+                        for cid, weight in zip(client_ids, selective_weights.tolist())
+                    },
+                }
             )
             weights = selective_weights
         else:
             weights = base_weights
             if self.use_selective_agg:
-                selective_info = {
-                    "selective_active": False,
-                    "reason": f"warmup (round {server_round} ≤ {self.selective_warmup})" if self.semantic_protos else "no semantic_protos yet",
-                }
+                if phase == "selective" and not self.semantic_protos:
+                    if self.require_selective_after_warmup:
+                        raise RuntimeError(
+                            "FAIL_CLOSED selective aggregation inputs unavailable "
+                            f"at round {server_round} after {self.selective_warmup} "
+                            "complete FedAvg warm-up rounds"
+                        )
+                    selective_info["reason"] = "semantic_prototypes_unavailable"
+                else:
+                    selective_info["reason"] = (
+                        f"complete FedAvg warm-up round {server_round}/"
+                        f"{self.selective_warmup}"
+                    )
+            else:
+                selective_info["reason"] = "selective_aggregation_disabled"
+            selective_info["final_weights"] = dict(selective_info["base_weights"])
 
         # ── 3. GAPS 加权参数聚合 ──
         aggregated_state = self._aggregate_params_gaps(
@@ -1414,6 +1488,7 @@ class GapsStrategy(CheckpointFedAvg):
                 "ADV_CLASS_CONDITIONAL": True,
                 "CORAL_CLASS_CONDITIONAL": self.da_coral_class_conditional,
                 "DA_LEARN_SEMANTIC_PROTOS": True,
+                "ABLATION_VARIANT": self.ablation_variant,
             }
             self._da_trainer = ServerDomainAdaptation(
                 model=da_model,

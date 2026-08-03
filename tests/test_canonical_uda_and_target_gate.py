@@ -45,6 +45,26 @@ def test_method_specific_target_information_policy() -> None:
         assert policy_for(method).calibration_fields == frozenset()
 
 
+@pytest.mark.parametrize("method", ["gaps", "a4", "a5", "a6"])
+def test_gaps_runtime_authorization_records_exact_calibration_fields(
+    tmp_path: Path, method: str
+) -> None:
+    from gaps_flower.target_information import (
+        TargetAccessLedger,
+        authorize_gaps_target_calibration,
+    )
+
+    ledger = TargetAccessLedger(tmp_path / f"{method}.jsonl")
+    authorize_gaps_target_calibration(method=method, ledger=ledger)
+
+    event = ledger.events[-1]
+    assert event["stage"] == "adaptation"
+    assert event["split"] == "calibration"
+    assert event["fields"] == ["class", "phase", "x"]
+    assert "concentration" not in event["fields"]
+    assert event["allowed"] is True
+
+
 def test_target_test_access_is_hard_fail_before_final_evaluation(tmp_path: Path) -> None:
     from gaps_flower.target_information import TargetAccessLedger, TargetTestLeakageError
 

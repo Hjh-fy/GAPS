@@ -283,6 +283,9 @@ def train_one_round(
     fit_config: Optional[dict] = None,
 ) -> Tuple[NDArrays, int, dict]:
     fit_config = fit_config or {}
+    gaps_client.loss_activity_variant = str(
+        fit_config.get("ablation_variant", "unspecified")
+    )
     proto_payload = fit_config.get("semantic_protos_json") or fit_config.get("global_protos_json")
     global_protos = deserialize_tensor_dict(
         proto_payload, device=gaps_client.config.DEVICE, key_style="tuple"
@@ -322,6 +325,12 @@ def train_one_round(
                 "last_train_ce_averaging",
                 "sample_weighted_over_local_minibatches",
             )
+        ),
+        "client_loss_activity_json": json.dumps(
+            getattr(gaps_client, "last_loss_activity", []),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
         ),
     }
     if gaps_client.config.UPLOAD_PROTO_STATS:
