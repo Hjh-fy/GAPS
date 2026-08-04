@@ -75,3 +75,64 @@ def test_classification_metrics_have_fixed_four_class_order_and_15_bin_ece() -> 
     assert metrics["confusion_matrix"] == np.eye(4, dtype=int).tolist()
     assert metrics["ece_bins"] == 15
     assert metrics["nll"] == pytest.approx(-np.log(0.925))
+
+
+def test_registered_final_evaluation_jobs_cover_main_and_c5_ablation() -> None:
+    from scripts.finalize_iotj_final_classification_le1 import evaluation_jobs
+
+    jobs = evaluation_jobs()
+    assert len(jobs) == 26
+    assert len({(job["experiment_id"], job["target_id"]) for job in jobs}) == 26
+    assert sum(job["experiment_id"].startswith("FCL-E2-") for job in jobs) == 9
+    assert sum(job["experiment_id"].startswith("FCL-E3-") for job in jobs) == 3
+    assert sum(job["experiment_id"].startswith("FCL-E4-") for job in jobs) == 5
+    for method in ("FCL-E1-FEDAVG", "FCL-E1-FEDPROX", "FCL-E1-SCAFFOLD"):
+        assert {job["target_id"] for job in jobs if job["experiment_id"] == method} == {
+            "C3",
+            "C4",
+            "C5",
+        }
+
+
+def test_loss_activity_aggregation_uses_active_step_weighted_means() -> None:
+    from scripts.finalize_iotj_final_classification_le1 import aggregate_loss_activity
+
+    rows = aggregate_loss_activity(
+        [
+            {
+                "variant": "A5",
+                "scope": "server_da",
+                "loss_name": "coral",
+                "configured_weight": 0.5,
+                "input_available": True,
+                "active_steps": 2,
+                "mean_raw_loss": 1.0,
+                "mean_weighted_loss": 0.5,
+                "inactive_reason": "",
+            },
+            {
+                "variant": "A5",
+                "scope": "server_da",
+                "loss_name": "coral",
+                "configured_weight": 0.5,
+                "input_available": True,
+                "active_steps": 1,
+                "mean_raw_loss": 4.0,
+                "mean_weighted_loss": 2.0,
+                "inactive_reason": "",
+            },
+        ]
+    )
+    assert rows[0]["active_steps"] == 3
+    assert rows[0]["mean_raw_loss"] == pytest.approx(2.0)
+    assert rows[0]["mean_weighted_loss"] == pytest.approx(1.0)
+
+
+def test_final_figure_registry_is_fixed_to_nine_publication_figures() -> None:
+    from scripts.finalize_iotj_final_classification_le1 import figure_names
+
+    names = figure_names()
+    assert len(names) == 9
+    assert len(set(names)) == 9
+    assert names[0] == "fig01_sensor_shift"
+    assert names[-1] == "fig09_gaps_c5_confusion"

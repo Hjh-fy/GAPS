@@ -1,0 +1,53 @@
+{
+  "run_name": "FCL-E1-SCAFFOLD",
+  "round": 1,
+  "clients": [
+    {
+      "client_id": 1,
+      "num_examples": 2360,
+      "proto_examples": 0,
+      "local_epochs": 1,
+      "fit_seconds": 6.597573988954537,
+      "train_ce_mean": 1.3270388954394572,
+      "train_accuracy": 0.4423728813559322,
+      "train_metric_examples": 2360,
+      "train_ce_averaging": "sample_weighted_over_local_minibatches",
+      "feature_norm": 0.0,
+      "feature_mean": 0.0,
+      "feature_std": 0.0,
+      "class_phase_counts": {},
+      "prototype_count": 0,
+      "prototype_var_count": 0,
+      "received_global_prototypes": 0,
+      "use_align": 0,
+      "use_replay_distill": 0,
+      "device_residual_norm": 0.0,
+      "server_parameters_fingerprint": "18b7fe2717abf2cd32aefbaa7742aec38f6f935952eda5b27f2107a34f42a3b3",
+      "loss_activity": []
+    },
+    {
+      "client_id": 2,
+      "num_examples": 2360,
+      "proto_examples": 0,
+      "local_epochs": 1,
+      "fit_seconds": 10.912815081886947,
+      "train_ce_mean": 1.3266486026145317,
+      "train_accuracy": 0.41991525423728815,
+      "train_metric_examples": 2360,
+      "train_ce_averaging": "sample_weighted_over_local_minibatches",
+      "feature_norm": 0.0,
+      "feature_mean": 0.0,
+      "feature_std": 0.0,
+      "class_phase_counts": {},
+      "prototype_count": 0,
+      "prototype_var_count": 0,
+      "received_global_prototypes": 0,
+      "use_align": 0,
+      "use_replay_distill": 0,
+      "device_residual_norm": 0.0,
+      "server_parameters_fingerprint": "18b7fe2717abf2cd32aefbaa7742aec38f6f935952eda5b27f2107a34f42a3b3",
+      "loss_activity": []
+    }
+  ],
+  "global_summary": {}
+}

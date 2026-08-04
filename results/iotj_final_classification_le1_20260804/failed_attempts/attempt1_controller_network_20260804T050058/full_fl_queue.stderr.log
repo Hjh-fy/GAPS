@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\A Python learning\Federated Learning\TRAE SOLO\.worktrees\iotj-final-classification-le1\scripts\run_iotj_final_classification_le1.py", line 930, in <module>
+    main()
+  File "D:\A Python learning\Federated Learning\TRAE SOLO\.worktrees\iotj-final-classification-le1\scripts\run_iotj_final_classification_le1.py", line 896, in main
+    marker = execute_full_fl(
+             ^^^^^^^^^^^^^^^^
+  File "D:\A Python learning\Federated Learning\TRAE SOLO\.worktrees\iotj-final-classification-le1\scripts\run_iotj_final_classification_le1.py", line 512, in execute_full_fl
+    raise RuntimeError(f"{role} failed with rc={process.returncode}")
+RuntimeError: client_c1 failed with rc=1
+Frozen experiment failed: FCL-E3-GAPS-C4 (exit=1)
+ËùÔÚÎ»ÖÃ D:\A Python learning\Federated Learning\TRAE SOLO\.worktrees\iotj-final-classification-le1\results\iotj_final_clas
+sification_le1_20260804\run_full_fl_queue.ps1:20 ×Ö·û: 9
++         throw "Frozen experiment failed: $experimentId (exit=$LASTEXI ...
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Frozen experime...APS-C4 (exit=1):String) [], RuntimeException
+    + FullyQualifiedErrorId : Frozen experiment failed: FCL-E3-GAPS-C4 (exit=1)
+ 
