@@ -1,0 +1,67 @@
+{
+  "schema_version": "iotj.gaps_cross_target_regression_router.v1",
+  "status": "COMPLETE_NO_FIT",
+  "input_result_baseline": "ceb6c78",
+  "input_code_base_commit": "904dfbc",
+  "execution_script": "scripts/analyze_gaps_cross_target_regression.py",
+  "execution_script_sha256": "08b98a43dbb318d676b006b7e5d46aeaaceaee57f6462e6090e1408ad1fe5679",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "targets": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "seed": 42,
+  "router": "target-matched frozen GAPS round-25 adapted endpoint",
+  "regression": "same frozen Federated-H1 per-gas source Ridge for all targets",
+  "h1_manifest": "results/iotj_h1_federated_ridge_equivalence_20260724/federated_h1_manifest.json",
+  "h1_manifest_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+  "route_source": "results/iotj_final_classification_le1_20260804/per_window_predictions.csv",
+  "route_source_sha256": "73be4b4f4976085dd1f87eca79cead5849ab5b65e7d6dbd1f3922863f7c9a316",
+  "target_calibration_accessed": false,
+  "target_regression_fit": false,
+  "hyperparameter_search": false,
+  "target_test_role": "fixed_endpoint_descriptive_evaluation_only",
+  "oracle_route_role": "post_hoc_diagnostic_only",
+  "provenance": [
+    {
+      "target": "C3",
+      "classification_experiment_id": "FCL-E3-GAPS-C3",
+      "classifier_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\remote_server\\server_latest_adapted.pth",
+      "classifier_checkpoint_sha256": "9c5c85657ae9f9be2214b5bcbf9caf4252f6a407ab65c9a931a9f16a3330c0ec",
+      "test_N": 680,
+      "test_features_sha256": "ec5a824bb2ab2833f5e6984efc267a2b136e02a527ab66231688c31ec86b771f",
+      "test_classification_labels_sha256": "a6867f8f6ba8c84d4bf0bb0352125bc89b6deef02f11f4443f60021e58647f5e",
+      "test_regression_labels_sha256": "11457fe6656d80c24ece71c89d773d59bf8ca1232308c6c8352d1957749f871b",
+      "test_phase_labels_sha256": "037714d4b19815ae51b69355baaa0c90236a57cadbf20cf0cb80ea6a284ac769",
+      "test_metadata_sha256": "6a799a55a9a324e0da4444fced70d1f55e8c96b5fb5262467fd34cfc6a6a177e"
+    },
+    {
+      "target": "C4",
+      "classification_experiment_id": "FCL-E3-GAPS-C4",
+      "classifier_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C4\\remote_server\\server_latest_adapted.pth",
+      "classifier_checkpoint_sha256": "ea8199e91bb55121926a30716a142fd789a8a7485a4b4d764c3a6e1e44f8a0b6",
+      "test_N": 320,
+      "test_features_sha256": "038e604fd53f6077f42da6f545c6fb7dc4920a4ab2ebabcab87212937abb0ff0",
+      "test_classification_labels_sha256": "a6b4862ac8281aae1bd0f96890139e992957d6c48d063b1cd7cd0abd2e9a766a",
+      "test_regression_labels_sha256": "cff507d3c1885432efb793e381f1f367631478701065c85fcdc9db6bb3ac16d1",
+      "test_phase_labels_sha256": "211236157abcd01b0966bf2914c758ab5c589877b695e717ece0a72587847fec",
+      "test_metadata_sha256": "673f4a4d5afb1a5d4a4e67a45a6c132efe7ef82caa4c81ffe61f88ba92b3348b"
+    },
+    {
+      "target": "C5",
+      "classification_experiment_id": "FCL-E3-GAPS-C5",
+      "classifier_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C5\\remote_server\\server_latest_adapted.pth",
+      "classifier_checkpoint_sha256": "15ccde0cf274dabd84d007caea94fb11c0e7f59e2b5537425795b7d636aa4bf3",
+      "test_N": 1360,
+      "test_features_sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+      "test_classification_labels_sha256": "e1485405cd2249e3f05446939ace84c67b0ec824cd1a7fd330870a5a1218f456",
+      "test_regression_labels_sha256": "1d0d42364e3efb4fca2f88760b5c2a54e2834fd8d0460eb0030a704239061021",
+      "test_phase_labels_sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+      "test_metadata_sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf"
+    }
+  ]
+}
