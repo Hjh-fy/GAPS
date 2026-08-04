@@ -1,0 +1,116 @@
+{
+  "schema_version": "iotj.gaps_cross_target_r84_full.v1",
+  "status": "COMPLETE",
+  "experiment_id": "XTR-R84-GAPS-C3",
+  "target": "C3",
+  "seed": 42,
+  "classifier_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\remote_server\\server_latest_adapted.pth",
+  "classifier_checkpoint_sha256": "9c5c85657ae9f9be2214b5bcbf9caf4252f6a407ab65c9a931a9f16a3330c0ec",
+  "classifier_checkpoint_provenance": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\remote_server\\server_latest_adapted.pth",
+    "size_bytes": 185431,
+    "formal_round": 25,
+    "ordered_state_content_fingerprint": "b388aa9e2429f14b5630ff5edfcb94efcb1f9802de2c930c67d8dcd5f9252a6b",
+    "whole_file_sha256": "9c5c85657ae9f9be2214b5bcbf9caf4252f6a407ab65c9a931a9f16a3330c0ec",
+    "equality_basis": "ordered_state_content_fingerprint",
+    "whole_file_sha256_role": "provenance_only",
+    "state_tensor_count": 80
+  },
+  "calibration_N": 320,
+  "test_N": 680,
+  "calibration_classification": {
+    "N": 320,
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "nll": 0.0005529968047163931,
+    "ece": 0.0005526229739188926,
+    "mean_confidence": 0.9994473770260811,
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_f1": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "confusion_matrix": [
+      [
+        80,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        80,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        80,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        80
+      ]
+    ]
+  },
+  "test_classification": {
+    "N": 680,
+    "accuracy": 0.9897058823529412,
+    "macro_f1": 0.9896925893091547,
+    "nll": 0.052045883460351966,
+    "ece": 0.007588130410979742,
+    "mean_confidence": 0.9972940127639209,
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 0.9764705882352941,
+      "2": 0.9823529411764705,
+      "3": 1.0
+    },
+    "per_class_f1": {
+      "0": 0.9912536443148687,
+      "1": 0.9793510324483775,
+      "2": 0.9881656804733727,
+      "3": 1.0
+    },
+    "confusion_matrix": [
+      [
+        170,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        166,
+        1,
+        0
+      ],
+      [
+        0,
+        3,
+        167,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        170
+      ]
+    ]
+  },
+  "calibration_lock": "calibration_selection_lock.json",
+  "calibration_lock_sha256": "3c5cbd5072ea8da08da1dd807db044dc8bdccb1ddc39301b82a12280873c9aee",
+  "target_test_used_for_selection": false
+}
