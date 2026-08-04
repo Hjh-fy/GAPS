@@ -29,7 +29,7 @@ Window records include client/sample identity, true and predicted gas, route cor
 
 ## Phase 3: final QC
 
-Use `R84_FED_H1` as the proposed regression output. Define one fixed label-free risk score before test evaluation as the maximum of normalized classifier uncertainty, normalized 83-D versus 84-D prediction disagreement, and normalized H1/H2/H3 source-prior disagreement. Calibration labels may evaluate the risk score but do not change its formula.
+Use `R84_FED_H1` as the proposed regression output. The initial maximum-component formulation failed closed during the calibration-only audit because clipped source-prior outputs produced tied empirical quantiles. It is retained as a non-formal diagnostic attempt. The final fixed label-free score normalizes classifier uncertainty, 83-D versus 84-D prediction disagreement, and H1/H2/H3 source-prior disagreement by their respective calibration-only 95th percentiles, clips each normalized component to [0,1], and takes their equal mean. This formula and its component scales are sealed before the test curve is generated. Calibration labels do not enter either the formula or threshold selection.
 
 For coverages 70%, 72.5%, ..., 100%, derive per-client risk quantiles from calibration only and apply them unchanged to test. At every coverage, compare QC risk-ranked retention with 1,000 random selections using fixed seed 20260804. Report accepted RMSE/NRMSE/MAE and the capture rates for misroutes, errors at least 40 ppm, and the top 10% largest errors. HC90 and HC95 are reliability operating points targeting auto-output coverage, not classification accuracy.
 
@@ -53,4 +53,3 @@ All figures use IEEE double-column width, vector PDF plus 600-DPI PNG, sans-seri
 - Reject non-finite predictions, duplicate/misaligned sample IDs, or missing class probabilities.
 - Reject any QC threshold or method selection that reads test labels.
 - Preserve all blocked/unknown provenance rather than substituting a convenient historical result.
-

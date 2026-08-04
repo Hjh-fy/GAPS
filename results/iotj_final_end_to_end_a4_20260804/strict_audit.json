@@ -1,0 +1,19 @@
+{
+  "schema_version": "iotj.final_a4.strict_audit.v1",
+  "status": "PASS_WITH_DECLARED_BOUNDARIES",
+  "checks": {
+    "classifier_retrained": false,
+    "source_flower_retrained": false,
+    "checkpoint_identity_basis_ordered_state_content": true,
+    "calibration_lock_precedes_test_open": true,
+    "target_test_used_for_model_selection": false,
+    "target_test_used_for_qc_threshold_selection": false,
+    "c3_c4_same_protocol_a4_blocked": true,
+    "qc_attempt1_degenerate_excluded": true,
+    "communication_evidence_types_distinguished": true,
+    "required_artifacts_present": true
+  },
+  "seed": 42,
+  "qc_random_seed": 20260804,
+  "qc_random_repeats": 1000
+}

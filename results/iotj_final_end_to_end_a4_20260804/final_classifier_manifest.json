@@ -1,0 +1,53 @@
+{
+  "schema_version": "iotj.final_a4_end_to_end.v1",
+  "status": "partial_complete_c5_only",
+  "protocol": {
+    "method": "server-centric A4",
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 32,
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "target_ce_weight": 0.0,
+    "selective_aggregation": false,
+    "fixed_endpoint_only": true
+  },
+  "targets": {
+    "C3": {
+      "status": "blocked",
+      "checkpoint": null,
+      "reason": "No immutable same-protocol server-centric A4 round-25 endpoint was found in the local result root or audited server result root; a full-GAPS endpoint is not an A4 substitute."
+    },
+    "C4": {
+      "status": "blocked",
+      "checkpoint": null,
+      "reason": "No immutable same-protocol server-centric A4 round-25 endpoint was found in the local result root or audited server result root; a full-GAPS endpoint is not an A4 substitute."
+    },
+    "C5": {
+      "status": "complete",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\remote_server\\server_round_025_adapted.pth",
+      "checkpoint_identity": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\remote_server\\server_round_025_adapted.pth",
+        "size_bytes": 185801,
+        "formal_round": 25,
+        "ordered_state_content_fingerprint": "06beed28358797b772efca2929fde4dc7dbf0fa734a77a6b68bba573779e33a9",
+        "whole_file_sha256": "5cefe8093d276fcf71f3b3e2800e9896d9967d9e4a9b40994e59bbb49d6009e9",
+        "equality_basis": "ordered_state_content_fingerprint",
+        "whole_file_sha256_role": "provenance_only",
+        "parameter_count": 80
+      },
+      "accuracy": 0.9933823529411765,
+      "macro_f1": 0.9933898239049185,
+      "nll": 0.05438417410666987,
+      "ece": 0.006405640132455269,
+      "num_examples": 1360,
+      "selection_role": "none_fixed_endpoint_only"
+    }
+  },
+  "classification_retrained": false,
+  "full_gaps_endpoint_substituted_for_a4": false,
+  "source_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804"
+}

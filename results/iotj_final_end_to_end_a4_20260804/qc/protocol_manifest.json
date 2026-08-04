@@ -1,0 +1,28 @@
+{
+  "schema_version": "iotj.final_a4_qc.v1",
+  "status": "complete",
+  "prediction": "pred_84d_h1_ppm",
+  "risk_formula": "equal_mean_of_calibration_p95_normalized_components",
+  "risk_normalization": "component-wise C5 calibration p95, clipped to [0,1], then equal mean",
+  "risk_inputs_are_label_free": true,
+  "threshold_selection": "C5 calibration risk empirical quantile",
+  "coverage_targets": [
+    0.7,
+    0.725,
+    0.75,
+    0.775,
+    0.8,
+    0.825,
+    0.85,
+    0.875,
+    0.9,
+    0.925,
+    0.95,
+    0.975,
+    1.0
+  ],
+  "target_test_used_for_threshold_selection": false,
+  "random_reference_repeats": 1000,
+  "random_reference_seed": 20260804,
+  "hc90_hc95_meaning": "calibration-targeted retained coverage, not accuracy"
+}
