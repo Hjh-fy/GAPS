@@ -74,5 +74,18 @@ def checkpoint_provenance(path: str | Path) -> dict[str, Any]:
         "whole_file_sha256": whole_file_sha256(checkpoint_path),
         "equality_basis": "ordered_state_content_fingerprint",
         "whole_file_sha256_role": "provenance_only",
-        "parameter_count": len(state),
+        "state_tensor_count": len(state),
+    }
+
+
+def model_parameter_inventory(model: torch.nn.Module) -> dict[str, int]:
+    """Return unambiguous parameter counts for deployment manifests."""
+    total = int(sum(parameter.numel() for parameter in model.parameters()))
+    trainable = int(
+        sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+    )
+    return {
+        "total_parameter_count": total,
+        "trainable_parameter_count": trainable,
+        "fp32_model_bytes": total * 4,
     }

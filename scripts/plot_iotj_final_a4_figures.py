@@ -341,11 +341,18 @@ def plot_fig8(system_csv: Path, physical_csv: Path, output: Path) -> tuple[Path,
     axes[0, 0].grid(axis="y", color="#D9D9D9", linewidth=0.5, alpha=0.8)
     axes[0, 0].set_axisbelow(True)
 
-    runtime_labels = ["V4 full", "V5 core", "V5 QC2"][: len(runtimes)]
+    runtime_label_map = {
+        "RUNTIME_V4_FULL": "V4 full",
+        "RUNTIME_V5_REGRESSION_CORE": "V5 core",
+        "RUNTIME_V5_QC2_CANDIDATE": "V5 QC2",
+        "FINAL_DEPLOYED_RUNTIME": "Final deployed",
+    }
+    runtime_labels = [runtime_label_map.get(row["label"], row["label"]) for row in runtimes]
     rx = np.arange(len(runtimes), dtype=float)
-    width = 0.34
+    has_p99 = all(row.get("pi_p99_ms", "") not in (None, "") for row in runtimes)
+    width = 0.24 if has_p99 else 0.34
     axes[0, 1].bar(
-        rx - width / 2,
+        rx - width if has_p99 else rx - width / 2,
         [float(row["pi_p50_ms"]) for row in runtimes],
         width,
         label="p50",
@@ -354,7 +361,7 @@ def plot_fig8(system_csv: Path, physical_csv: Path, output: Path) -> tuple[Path,
         linewidth=0.45,
     )
     axes[0, 1].bar(
-        rx + width / 2,
+        rx if has_p99 else rx + width / 2,
         [float(row["pi_p95_ms"]) for row in runtimes],
         width,
         label="p95",
@@ -363,10 +370,21 @@ def plot_fig8(system_csv: Path, physical_csv: Path, output: Path) -> tuple[Path,
         edgecolor="black",
         linewidth=0.45,
     )
+    if has_p99:
+        axes[0, 1].bar(
+            rx + width,
+            [float(row["pi_p99_ms"]) for row in runtimes],
+            width,
+            label="p99",
+            color="#E69F00",
+            hatch="//",
+            edgecolor="black",
+            linewidth=0.45,
+        )
     axes[0, 1].set_xticks(rx, runtime_labels)
     axes[0, 1].set_ylabel("Pi 5 latency (ms/window)")
     axes[0, 1].set_title("(b) Raspberry Pi 5 latency", loc="left", fontweight="bold")
-    axes[0, 1].legend(frameon=False, ncol=2, loc="upper center")
+    axes[0, 1].legend(frameon=False, ncol=3 if has_p99 else 2, loc="upper center")
     axes[0, 1].grid(axis="y", color="#D9D9D9", linewidth=0.5, alpha=0.8)
     axes[0, 1].set_axisbelow(True)
 
@@ -376,7 +394,7 @@ def plot_fig8(system_csv: Path, physical_csv: Path, output: Path) -> tuple[Path,
         color="#56B4E9",
         edgecolor="black",
         linewidth=0.45,
-        width=0.55,
+        width=0.42,
         label="Throughput",
     )
     axes[1, 0].set_xticks(rx, runtime_labels)
