@@ -1,3 +1,7 @@
+from pathlib import Path
+import subprocess
+import sys
+
 from scripts.run_iotj_roleaware_gaps_classification import (
     build_roleaware_commands,
     validate_local_split,
@@ -47,3 +51,27 @@ def test_local_roleaware_manifest_matches_registered_counts():
     assert observed["C4"]["test"] == 1360
     assert observed["C5"]["calibration"] == 320
     assert observed["C5"]["test"] == 1360
+
+
+def test_roleaware_controller_is_directly_executable():
+    root = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [sys.executable, "scripts/run_iotj_roleaware_gaps_classification.py", "--help"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--output" in completed.stdout
+
+    regression = subprocess.run(
+        [sys.executable, "scripts/run_gaps_roleaware_r84_full.py", "--help"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert regression.returncode == 0, regression.stderr
+    assert "--study-root" in regression.stdout

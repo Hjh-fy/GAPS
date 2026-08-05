@@ -7,12 +7,16 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import sys
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts import run_iotj_final_classification_le1 as frozen
 
 
-ROOT = Path(__file__).resolve().parents[1]
 STUDY_ID = "iotj_gaps_roleaware_r84_full_20260805"
 DOC_ROOT = ROOT / "docs/experiments" / STUDY_ID
 DEFAULT_OUTPUT = ROOT / "results" / STUDY_ID / "classification"

@@ -6,17 +6,21 @@ import argparse
 import json
 import math
 from pathlib import Path
+import sys
 from typing import Any, Mapping, Sequence
 
 import numpy as np
 import torch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from gaps_flower.state_fingerprint import checkpoint_provenance
 from run_regression_head_ablation import CLASS_NAMES, build_oracle_rows, fit_ridge
 from scripts import run_gaps_cross_target_r84_full as common
 
 
-ROOT = Path(__file__).resolve().parents[1]
 STUDY_ID = "iotj_gaps_roleaware_r84_full_20260805"
 DATA_ROOT = (
     ROOT.parents[1]
