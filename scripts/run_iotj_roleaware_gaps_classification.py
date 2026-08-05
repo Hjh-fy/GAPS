@@ -18,6 +18,7 @@ from scripts import run_iotj_final_classification_le1 as frozen
 
 
 STUDY_ID = "iotj_gaps_roleaware_r84_full_20260805"
+_FROZEN_COMMAND_BUILDER = frozen.build_flower_commands
 DOC_ROOT = ROOT / "docs/experiments" / STUDY_ID
 DEFAULT_OUTPUT = ROOT / "results" / STUDY_ID / "classification"
 DATASET_NAME = "client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid"
@@ -65,7 +66,7 @@ def build_roleaware_commands(target: str) -> dict[str, Any]:
         raise ValueError(f"unknown target: {target}")
     legacy_id = f"FCL-E3-GAPS-{target}"
     formal_id = f"FCL-RW-GAPS-{target}"
-    commands = frozen.build_flower_commands(legacy_id)
+    commands = _FROZEN_COMMAND_BUILDER(legacy_id)
     replacements = (
         (frozen.REMOTE_DATA_ROOT, REMOTE_DATA_ROOT),
         (frozen.PI_DATA_ROOT, PI_DATA_ROOT),

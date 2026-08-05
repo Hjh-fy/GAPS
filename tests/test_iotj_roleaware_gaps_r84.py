@@ -4,6 +4,7 @@ import sys
 
 from scripts.run_iotj_roleaware_gaps_classification import (
     build_roleaware_commands,
+    execute_target,
     validate_local_split,
 )
 from scripts.run_gaps_roleaware_r84_full import expected_calibration_counts
@@ -75,3 +76,29 @@ def test_roleaware_controller_is_directly_executable():
     )
     assert regression.returncode == 0, regression.stderr
     assert "--study-root" in regression.stdout
+
+
+def test_execute_target_can_build_commands_without_recursive_patch(tmp_path, monkeypatch):
+    from scripts import run_iotj_final_classification_le1 as frozen
+
+    observed = {}
+
+    def fake_execute(experiment_id, **kwargs):
+        commands = frozen.build_flower_commands(experiment_id)
+        observed["experiment_id"] = experiment_id
+        observed["server"] = commands["server"]
+
+    monkeypatch.setattr(frozen, "execute_full_fl", fake_execute)
+    execute_target(
+        "C3",
+        tmp_path,
+        "a" * 40,
+        "protocol-hash",
+        "ecs",
+        "pi",
+        "c2",
+        1.0,
+    )
+
+    assert observed["experiment_id"] == "FCL-RW-GAPS-C3"
+    assert "client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid" in " ".join(observed["server"])
