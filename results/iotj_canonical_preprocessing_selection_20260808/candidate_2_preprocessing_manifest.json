@@ -1,0 +1,14 @@
+{
+  "candidate_id": "HZ2_MEAN_W10S",
+  "sampling_rate": 2,
+  "aggregation": "mean",
+  "window_duration_s": 10,
+  "usable_window_ratio": 1.0,
+  "target_calibration_validation_RMSE": 10.780532544677287,
+  "source_validation_RMSE": 11.908960418757987,
+  "ranking_eligible": true,
+  "selection_status": "screened",
+  "baseline": "raw_observation_mean",
+  "gap_policy": "short_gap_only",
+  "frozen_before_target_test": true
+}
