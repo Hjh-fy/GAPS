@@ -1,0 +1,37 @@
+{
+  "schema_version": "iotj.c5_legacy_exact_replay.v1",
+  "status": "COMPLETE",
+  "experiment_id": "DIAG-C5-LEGACY-REPLAY-20260807",
+  "classifier_retrained": false,
+  "regression_refit_on_legacy_calibration": true,
+  "target_test_used_for_selection": false,
+  "source_result_reference": "results/iotj_gaps_cross_target_r84_full_20260805/C5",
+  "result": [
+    {
+      "experiment_id": "XTR-R84-GAPS-C5",
+      "target": "C5",
+      "variant": "R84_FED_H1",
+      "input_dimension": 84,
+      "seed": 42,
+      "evaluation_scope": "S_ALL",
+      "N": 1360,
+      "RMSE": 16.092837293535016,
+      "MAE": 7.6996150157438,
+      "R2": 0.9411984660647583,
+      "NRMSE": 0.11836919459118267
+    },
+    {
+      "experiment_id": "XTR-R84-GAPS-C5",
+      "target": "C5",
+      "variant": "R84_FED_H1",
+      "input_dimension": 84,
+      "seed": 42,
+      "evaluation_scope": "S_CC",
+      "N": 1339,
+      "RMSE": 11.796538964862096,
+      "MAE": 6.816436856953597,
+      "R2": 0.9684422307845357,
+      "NRMSE": 0.0671191406817032
+    }
+  ]
+}

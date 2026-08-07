@@ -1,0 +1,124 @@
+{
+  "schema_version": "iotj.c5_split_swap_diagnostic.v1",
+  "status": "COMPLETE_DIAGNOSTIC_ONLY",
+  "experiment_id": "DIAG-C5-SPLIT-SWAP-20260807",
+  "seed": 42,
+  "checkpoint_and_models": {
+    "checkpoint": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_gaps_roleaware_r84_full_20260805\\classification\\FCL-RW-GAPS-C5\\remote_server\\server_latest_adapted.pth",
+      "size_bytes": 183275,
+      "formal_round": 25,
+      "ordered_state_content_fingerprint": "fafcf04510a715f9579aa832909bc7a6dc9e605b488d1f3a3eec2d279e7eb0cc",
+      "whole_file_sha256": "9752188f6b59da4066746646829b543d49d91fd6b98a6b06fe63e61432972c8a",
+      "equality_basis": "ordered_state_content_fingerprint",
+      "whole_file_sha256_role": "provenance_only",
+      "state_tensor_count": 80
+    },
+    "target_manifest_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_gaps_roleaware_r84_full_20260805\\regression\\C5\\target_manifest.json",
+    "target_manifest_sha256": "4cd126e7a7f6060c5d00c26c512b09e98002f4edabe0dfa44ce4c46150f87a89",
+    "regression_models_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_gaps_roleaware_r84_full_20260805\\regression\\C5\\regression_models.json",
+    "regression_models_sha256": "04de0d0e1fafddb99a3d87d8b26eee58287c54641b4d74b92045841f987f5794"
+  },
+  "prediction_data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "roleaware_normalization_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c12src_c345tgt_2080_timeaware_60_170_window_fullgrid",
+  "legacy_test_N": 1360,
+  "training_or_refit_performed": false,
+  "alpha_or_checkpoint_selection_performed": false,
+  "target_test_used_for_selection": false,
+  "classification": {
+    "legacy_native_norm": {
+      "N": 1360,
+      "accuracy": 0.9735294117647059,
+      "macro_f1": 0.9737456863972348,
+      "nll": 0.28958739228661295,
+      "ece": 0.025807408637860293,
+      "mean_confidence": 0.9981062875951038,
+      "per_class_recall": {
+        "0": 0.9764705882352941,
+        "1": 1.0,
+        "2": 0.9705882352941176,
+        "3": 0.9470588235294117
+      },
+      "per_class_f1": {
+        "0": 0.988095238095238,
+        "1": 0.9577464788732395,
+        "2": 0.9763313609467456,
+        "3": 0.972809667673716
+      },
+      "confusion_matrix": [
+        [
+          332,
+          2,
+          6,
+          0
+        ],
+        [
+          0,
+          340,
+          0,
+          0
+        ],
+        [
+          0,
+          10,
+          330,
+          0
+        ],
+        [
+          0,
+          18,
+          0,
+          322
+        ]
+      ]
+    },
+    "roleaware_checkpoint_norm": {
+      "N": 1360,
+      "accuracy": 0.9735294117647059,
+      "macro_f1": 0.9737456863972348,
+      "nll": 0.28958739228661295,
+      "ece": 0.025807408637860293,
+      "mean_confidence": 0.9981062875951038,
+      "per_class_recall": {
+        "0": 0.9764705882352941,
+        "1": 1.0,
+        "2": 0.9705882352941176,
+        "3": 0.9470588235294117
+      },
+      "per_class_f1": {
+        "0": 0.988095238095238,
+        "1": 0.9577464788732395,
+        "2": 0.9763313609467456,
+        "3": 0.972809667673716
+      },
+      "confusion_matrix": [
+        [
+          332,
+          2,
+          6,
+          0
+        ],
+        [
+          0,
+          340,
+          0,
+          0
+        ],
+        [
+          0,
+          10,
+          330,
+          0
+        ],
+        [
+          0,
+          18,
+          0,
+          322
+        ]
+      ]
+    }
+  },
+  "interpretation_status": "LEAKAGE_RISK_DIAGNOSTIC_ONLY",
+  "leakage_risk": "The role-aware checkpoint used the role-aware C5 calibration split; legacy test membership is not disjoint from that calibration split."
+}
