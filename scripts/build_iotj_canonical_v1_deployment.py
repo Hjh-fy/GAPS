@@ -50,7 +50,6 @@ def runtime_source_files() -> tuple[Path, ...]:
         Path("scripts/benchmark_iotj_canonical_v1_pi5.py"),
     ]
     files.extend([
-        Path("gaps_deploy/__init__.py"),
         Path("gaps_deploy/canonical_serialized.py"),
         Path("gaps_deploy/canonical_v1_runtime.py"),
     ])
@@ -152,6 +151,17 @@ def build_package(study_root: Path, output: Path) -> Path:
         runtime_sources.append(
             _relative_asset(output, source, f"runtime/{relative.as_posix()}")
         )
+    portable_init = output / "runtime/gaps_deploy/__init__.py"
+    portable_init.write_text(
+        '"""Self-contained canonical-v1 deployment runtime."""\n', encoding="utf-8"
+    )
+    runtime_sources.append({
+        "path": "runtime/gaps_deploy/__init__.py",
+        "bytes": portable_init.stat().st_size,
+        "sha256": sha256(portable_init),
+        "source_path": "generated:canonical-v1-portable-init",
+        "source_sha256": None,
+    })
 
     r83_all = read_json(closure / "fedridge_ablation" / "r83_models.json")
     targets: dict[str, Any] = {}
