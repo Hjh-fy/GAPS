@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 from typing import Any
 
@@ -39,6 +40,26 @@ def model_size_stats(model: torch.nn.Module) -> dict[str, int]:
         "trainable_parameter_count": int(trainable),
         "fp32_model_bytes": int(total * 4),
     }
+
+
+def runtime_source_files() -> tuple[Path, ...]:
+    """Return repository-relative sources required by the portable runtime."""
+    files = [
+        Path("model.py"),
+        Path("run_regression_head_ablation.py"),
+        Path("scripts/benchmark_iotj_canonical_v1_pi5.py"),
+    ]
+    files.extend(
+        path.relative_to(ROOT)
+        for path in sorted((ROOT / "gaps_deploy").glob("*.py"))
+    )
+    return tuple(files)
+
+
+def runtime_source_commit() -> str:
+    return subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip()
 
 
 def _copy(source: Path, destination: Path) -> dict[str, Any]:
@@ -124,6 +145,12 @@ def build_package(study_root: Path, output: Path) -> Path:
         "qc_search": False,
     }
     write_json(output / "runtime_config.json", runtime_config)
+    runtime_sources = []
+    for relative in runtime_source_files():
+        source = ROOT / relative
+        runtime_sources.append(
+            _relative_asset(output, source, f"runtime/{relative.as_posix()}")
+        )
 
     r83_all = read_json(closure / "fedridge_ablation" / "r83_models.json")
     targets: dict[str, Any] = {}
@@ -181,7 +208,9 @@ def build_package(study_root: Path, output: Path) -> Path:
         "classifier_router": "A4",
         "regression": "R84_FED_H1",
         "qc": "frozen_equal_mean",
+        "runtime_source_commit": runtime_source_commit(),
         "assets": assets,
+        "runtime_sources": runtime_sources,
         "targets": targets,
         "forbidden_contamination": {
             "legacy_classifier_checkpoint": False,
@@ -217,6 +246,7 @@ def preflight_package(package: Path) -> dict[str, Any]:
     if manifest.get("classifier_router") != "A4" or manifest.get("regression") != "R84_FED_H1":
         failures.append("pipeline identity")
     items = list(manifest["assets"].values())
+    items.extend(manifest.get("runtime_sources", []))
     for target in TARGETS:
         items.extend(manifest["targets"][target].values())
     for item in items:

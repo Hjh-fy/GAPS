@@ -14,7 +14,6 @@ import torch
 
 from model import FedGasBaseModel
 from run_regression_head_ablation import CLASS_RANGES, rich_feature_dict
-from scripts.evaluate_iotj_feature_metadata_ablation import profile_feature_dict
 from .c5_h8_runtime import FixedH8Policy, SerializedRidge
 
 
@@ -111,7 +110,11 @@ class CanonicalV1Runtime:
         shared = dict(full)
         shared["route_class"] = route
         h3 = self.h23.shared_mlp.predict(shared)
-        sensor = profile_feature_dict(full, "M83_SENSOR")
+        sensor = {name: full[name] for name in self.r83[route].feature_names}
+        if len(sensor) != 83:
+            raise RuntimeError(
+                f"canonical R83 contract requires 83 features, got {len(sensor)}"
+            )
         pred83 = self.r83[route].predict(sensor)
         augmented = dict(sensor)
         augmented["srcpred_H1_federated_source_ridge_ppm"] = h1
