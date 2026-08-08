@@ -34,9 +34,15 @@ def preprocess_canonical_window(window: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(values, dtype=np.float32)
 
 
+def load_serialized_models_payload(payload: Mapping[str, Any]) -> dict[int, SerializedRidge]:
+    if "models" in payload:
+        payload = payload["models"]
+    return {int(key): SerializedRidge.from_json(value) for key, value in payload.items()}
+
+
 def _serialized_models(path: Path) -> dict[int, SerializedRidge]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return {int(key): SerializedRidge.from_json(value) for key, value in payload.items()}
+    return load_serialized_models_payload(payload)
 
 
 class CanonicalV1Runtime:
@@ -190,4 +196,3 @@ class CanonicalV1Runtime:
         self, window: np.ndarray, metadata: Mapping[str, Any], phase: int
     ) -> dict[str, Any]:
         return self.infer_one_timed(window, metadata, phase)[0]
-
