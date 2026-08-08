@@ -1,0 +1,36 @@
+{
+  "schema_version": "iotj.canonical_v1.final_experiment_state.v1",
+  "status": "FORMAL_EVALUATION_AND_DERIVED_EVIDENCE_COMPLETE",
+  "training_complete": true,
+  "canonical_dataset_frozen": true,
+  "sealed_test_opened_once": true,
+  "sealed_test_evaluated": true,
+  "test_selection_performed": false,
+  "post_test_training_performed": false,
+  "post_test_hyperparameter_tuning": false,
+  "classification_progress_json_role": "historical_pre_test_snapshot",
+  "classification_progress_evaluation_conflict": false,
+  "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "classification_checkpoint_hashes": {
+    "C3": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414",
+    "C4": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+    "C5": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93"
+  },
+  "adapted_checkpoint_hashes": {
+    "C3": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414",
+    "C4": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+    "C5": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93"
+  },
+  "r84_artifact_hashes": {
+    "protocol_manifest": "69510112cef08e6c24c4915bd2e68ae5d704c7be63cf43714cec63542dcb3f5a",
+    "sha256_index": "b3cf4c695b86171081350c15f493e8fa0194e4c0e5f5cfeea7961194aa61d90c",
+    "C3_models": "562ae2e4d2baf2cb7a9ffd232e9bdea79ce14b2aaeda2f5ceb49ad7a6ce767d2",
+    "C4_models": "4afd3fd8209013ac41f2d3ddce477d649d2870918ccb91f64c387c2b7aecfebf",
+    "C5_models": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729"
+  },
+  "code_commit": "e7c942fec03d8ccd5d1a8c8b0d75e0cc81868258",
+  "branch": "codex/iotj-final-classification-le1",
+  "evaluation_timestamp": 1786187114.2291656,
+  "regression_status": "COMPLETE",
+  "separate_preregistered_a0t_baseline_is_not_post_test_a4_training": true
+}

@@ -1,0 +1,35 @@
+{
+  "schema_version": "iotj.canonical_preprocessing.v1",
+  "candidate_id": "HZ5_MEAN_W10S",
+  "sampling_rate_hz": 5,
+  "bin_width_s": 0.2,
+  "aggregation": "mean",
+  "baseline": "raw_observation_mean_G0_20_50s",
+  "timestamp_sort": "stable",
+  "duplicate_timestamp_merge": "mean",
+  "gap_policy": "short_gap_only_max_1_bin",
+  "long_gap_continuous_interpolation": false,
+  "physical_crop_s": [
+    60.0,
+    170.0
+  ],
+  "window_duration_s": 10.0,
+  "stride_s": 5.0,
+  "points_per_window": 50,
+  "source_clients": [
+    1,
+    2
+  ],
+  "target_clients": [
+    3,
+    4,
+    5
+  ],
+  "target_train_ratio": 0.0,
+  "target_calibration_ratio": 0.2,
+  "target_test_ratio": 0.8,
+  "split_source": "frozen_physical_identity_reuse",
+  "seed": 42,
+  "reuse_historical_checkpoint": false,
+  "code_commit": "c01dde371caa4d85232d1c9895c65e25111ce489"
+}
