@@ -1,0 +1,68 @@
+{
+  "schema_version": "iotj.canonical_v1.evidence_closure.freeze.v1",
+  "status": "FROZEN_BEFORE_DERIVED_EVIDENCE",
+  "study_id": "iotj_canonical_v1_final_20260808",
+  "seed": 42,
+  "immutable_inputs": {
+    "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "classifier_router": "A4",
+    "rounds": 25,
+    "local_epochs": 1,
+    "preprocessing": "HZ5_MEAN_W10S",
+    "window_shape": [50, 8],
+    "regression": "R84_FED_H1"
+  },
+  "qc": {
+    "risk_components": [
+      "classification_uncertainty_risk",
+      "regression_disagreement_risk",
+      "source_prior_disagreement_risk"
+    ],
+    "risk_formula": "equal_mean_of_calibration_p95_normalized_components",
+    "normalization": "target-specific canonical calibration p95; component clipping to [0,1]",
+    "coverage_grid": [0.7, 0.725, 0.75, 0.775, 0.8, 0.825, 0.85, 0.875, 0.9, 0.925, 0.95, 0.975, 1.0],
+    "workpoints": {
+      "HC90": {"accept_quantile": 0.9, "review_upper_quantile": 0.95},
+      "HC95": {"accept_quantile": 0.95, "review_upper_quantile": 0.975}
+    },
+    "random_reference_repeats": 1000,
+    "random_reference_seed": 20260804,
+    "target_test_used_for_threshold_selection": false,
+    "search_enabled": false
+  },
+  "quality_strata": {
+    "Q0": "observed=1, empty=0, max_missing_run=0, interpolated=0",
+    "Q1": "observed>=0.98, empty<=0.02, max_missing_run<=1, interpolated<=0.02",
+    "Q2": "observed>=0.90, empty<=0.10, max_missing_run<=3, interpolated<=0.10",
+    "Q3": "otherwise",
+    "threshold_selected_from_test_error": false
+  },
+  "fedridge_ablation": {
+    "variants": ["R83_TARGET_ONLY", "R84_FED_H1"],
+    "ridge_alpha_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+    "calibration_internal_validation_fraction": 0.25,
+    "target_test_used_for_selection": false
+  },
+  "a0t": {
+    "required_if_strict_canonical_match_absent": true,
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 32,
+    "seed": 42,
+    "target_ce_weight": 1.0,
+    "target_ce_steps_per_round": 100,
+    "target_ce_optimizer": "Adam",
+    "target_ce_lr": 0.0005,
+    "all_non_ce_target_adaptation_losses": 0.0,
+    "target_test_selection": false,
+    "hyperparameter_search": false
+  },
+  "forbidden": [
+    "preprocessing_search",
+    "A4_retraining",
+    "R84_tuning",
+    "QC_threshold_search_on_target_test",
+    "outlier_deletion",
+    "legacy_classifier_checkpoint_in_deployment"
+  ]
+}
