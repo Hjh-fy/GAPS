@@ -1,0 +1,20 @@
+{
+  "schema_version": "iotj.canonical_v1.classification.protocol_audit.v1",
+  "status": "PASS",
+  "all_targets_fixed": true,
+  "checkpoint_reuse_tokens_present": false,
+  "test_arrays_referenced_by_training_commands": false,
+  "targets": ["C3", "C4", "C5"],
+  "rounds": 25,
+  "local_epochs": 5,
+  "batch_size": 32,
+  "seed": 42,
+  "fixed_endpoint": "round25",
+  "checkpoint_reuse": false,
+  "target_test_selection": false,
+  "adaptation_target_split": "calibration",
+  "target_calibration_fields": ["x", "class", "phase"],
+  "target_concentration_used_for_classification": false,
+  "hyperparameter_search": false,
+  "selective_aggregation_boundary": "rounds1-5_full_FedAvg_warmup_round6_selective"
+}
