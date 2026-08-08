@@ -1,0 +1,10 @@
+figure,panel,content,status,source_csv,source_json,checkpoint_hash,script,caption
+Fig.1,all,cloud-edge-sensor architecture,LEGACY_ONLY,N/A,deployment_package/package_manifest.json,N/A,MISSING,"Must be checked against canonical 5 Hz, 50x8, LE1 protocol."
+Fig.2,all,device-domain shift,NEEDS_REGEN,canonical sensor-shift evidence not bundled,01_dataset_manifest.json,N/A,MISSING,Regenerate from canonical-v1 only.
+Fig.3,all,cross-target classification,NEEDS_REGEN,03_classification_final.csv,02_final_experiment_state.json,C3/C4/C5 in state manifest,MISSING,"A4, LE1, round25, seed42."
+Fig.4,all,C5 classification and A0-A6,LEGACY_ONLY,canonical A4 exists; canonical ablation table absent,02_final_experiment_state.json,C5:3965ec86...,MISSING,Do not relabel historical ablation as canonical.
+Fig.5,all,concentration/per-gas,NEEDS_REGEN,04_regression_final.csv + regression/cross_target_r84_per_gas.csv,regression/protocol_manifest.json,C3/C4/C5 in state manifest,MISSING,Canonical A4+R84_FED_H1.
+Fig.6,all,83D/84D plus calibration budget,NEEDS_REGEN,10_fedridge_83d_84d.csv,CALIBRATION_BUDGET_GAP.md,C3/C4/C5 in state manifest,MISSING,Budget panel is not yet supported by canonical evidence.
+Fig.7,all,QC curve/random/HC90/HC95,NEEDS_REGEN,05_qc_final.csv + qc_random_reference.csv,qc/protocol_manifest.json,C3/C4/C5 in state manifest,MISSING,Frozen equal-mean QC; same-budget random seed 20260804.
+Fig.8,all,communication/Pi5/physical validation,NEEDS_REGEN,07_pi5_benchmark.csv + 06_quality_robustness.csv,08_model_size.json,C5:3965ec86...,MISSING,Pi5 formal package f3d1577; communication must not infer 50% reduction.
+Main table,classification/regression/QC,formal numerical results,READY,FINAL_RESULT_MASTER_TABLE.csv,12_reproducibility_manifest.json,manifested,N/A,Canonical values only.
