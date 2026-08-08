@@ -11,6 +11,7 @@
 - Federated endpoint: 25 rounds, 5 local epochs per round, batch size 32, seed 42.
 - Selective aggregation warm-up: rounds 1--5 are complete FedAvg warm-up rounds; selective aggregation starts at round 6.
 - Server adaptation: fixed 100 steps, target-specific calibration split only.
+- DA input contract: explicit temporal window length 50 and sensor dimension 8. The historical default remains 100; this declaration changes only input-shape validation and does not alter the model or losses.
 
 Each target run starts from a fresh seed-42 random initialization. Historical source or adapted checkpoints are unavailable to the execution API, and no `checkpoint` or `resume` argument appears in the formal commands.
 

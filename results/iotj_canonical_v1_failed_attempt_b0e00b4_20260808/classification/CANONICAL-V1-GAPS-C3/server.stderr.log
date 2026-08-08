@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/root/GAPS/iotj_final_runtime/301ee47021b3/gaps_flower/server_app.py", line 314, in <module>
+    main()
+  File "/root/GAPS/iotj_final_runtime/301ee47021b3/gaps_flower/server_app.py", line 250, in main
+    strategy = GapsStrategy(
+  File "/root/GAPS/iotj_final_runtime/301ee47021b3/gaps_flower/strategy.py", line 718, in __init__
+    self._da_source_arrays = load_domain_adaptation_arrays(
+  File "/root/GAPS/iotj_final_runtime/301ee47021b3/gaps_flower/domain_adaptation_inputs.py", line 128, in load_domain_adaptation_arrays
+    raise ValueError(
+ValueError: Domain adaptation feature shape must be (N, 100, 8), got (320, 50, 8): /root/GAPS/dataset/iotj_canonical_v1/client_1/calibration_features.npy

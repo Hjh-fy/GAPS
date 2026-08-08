@@ -13,6 +13,7 @@
   "checkpoint_reuse": false,
   "target_test_selection": false,
   "adaptation_target_split": "calibration",
+  "da_window_shape": [50, 8],
   "target_calibration_fields": ["x", "class", "phase"],
   "target_concentration_used_for_classification": false,
   "hyperparameter_search": false,

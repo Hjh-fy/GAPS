@@ -620,6 +620,7 @@ class GapsStrategy(CheckpointFedAvg):
         use_domain_adapt: bool = False,
         server_val_data: Optional[str] = None,
         server_calib_data: Optional[str] = None,
+        da_expected_window_shape: tuple[int, int] = (100, 8),
         domain_adapt_steps: int = 30,
         domain_adapt_warmup: int = 3,
         da_use_coral: bool = True,
@@ -665,6 +666,11 @@ class GapsStrategy(CheckpointFedAvg):
         self.use_domain_adapt = use_domain_adapt
         self.server_val_data = server_val_data
         self.server_calib_data = server_calib_data
+        self.da_expected_window_shape = tuple(int(value) for value in da_expected_window_shape)
+        if len(self.da_expected_window_shape) != 2 or any(
+            value <= 0 for value in self.da_expected_window_shape
+        ):
+            raise ValueError("DA expected window shape must contain two positive dimensions")
         self.domain_adapt_steps = domain_adapt_steps
         self.domain_adapt_warmup = domain_adapt_warmup
         self.da_use_coral = da_use_coral
@@ -718,10 +724,12 @@ class GapsStrategy(CheckpointFedAvg):
             self._da_source_arrays = load_domain_adaptation_arrays(
                 source_dirs,
                 strict=True,
+                expected_window_shape=self.da_expected_window_shape,
             )
             self._da_target_arrays = load_domain_adaptation_arrays(
                 target_dirs,
                 strict=True,
+                expected_window_shape=self.da_expected_window_shape,
             )
 
     def _semantic_protos_json(self) -> str:

@@ -139,6 +139,20 @@ def test_valid_da_directories_are_merged_with_exact_row_counts(tmp_path) -> None
     assert phases.shape == (5,)
 
 
+def test_da_arrays_accept_explicit_canonical_50x8_window_shape(tmp_path) -> None:
+    canonical = _write_da_split(tmp_path / "canonical", rows=3, feature_shape=(50, 8))
+
+    features, labels, phases = load_domain_adaptation_arrays(
+        str(canonical),
+        strict=True,
+        expected_window_shape=(50, 8),
+    )
+
+    assert features.shape == (3, 50, 8)
+    assert labels.shape == (3,)
+    assert phases.shape == (3,)
+
+
 def test_production_da_rejects_non_strict_calibration_split(tmp_path) -> None:
     cfg = make_config(device="cpu", local_epochs=1, batch_size=4)
     model = create_model(cfg)

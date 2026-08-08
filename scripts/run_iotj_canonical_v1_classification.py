@@ -43,6 +43,7 @@ def canonical_classification_config() -> dict[str, Any]:
         "checkpoint_selection": "fixed_round_25",
         "hyperparameter_search": False,
         "adaptation_target_split": "calibration",
+        "da_window_shape": [50, 8],
         "target_test_selection": False,
     }
 
@@ -77,6 +78,7 @@ def build_canonical_commands(target: str) -> dict[str, Any]:
         commands[role] = values
     _set_option(commands["client_c1"], "--local-epochs", "5")
     _set_option(commands["client_c2"], "--local-epochs", "5")
+    commands["server"].extend(["--da-window-length", "50"])
     commands["protocol"].update(canonical_classification_config())
     commands["protocol"].update(
         {
@@ -168,6 +170,7 @@ def audit_protocol() -> dict[str, Any]:
         warmup_ok = server[server.index("--selective-warmup") + 1] == "5"
         strict_cal_ok = server[server.index("--strict-calibration-split") + 1] == "true"
         target_ce_zero = server[server.index("--da-lambda-target-ce") + 1] == "0.0"
+        da_window_shape_ok = server[server.index("--da-window-length") + 1] == "50"
         findings.append(
             {
                 "target": target,
@@ -176,6 +179,7 @@ def audit_protocol() -> dict[str, Any]:
                 "selective_rounds_1_to_5_warmup": warmup_ok,
                 "strict_calibration_split": strict_cal_ok,
                 "target_ce_weight_zero": target_ce_zero,
+                "da_window_shape_50x8": da_window_shape_ok,
                 "local_epochs": commands["protocol"]["local_epochs"],
                 "checkpoint_reuse": commands["protocol"]["checkpoint_reuse"],
             }
@@ -186,6 +190,7 @@ def audit_protocol() -> dict[str, Any]:
         and row["selective_rounds_1_to_5_warmup"]
         and row["strict_calibration_split"]
         and row["target_ce_weight_zero"]
+        and row["da_window_shape_50x8"]
         and row["local_epochs"] == 5
         and row["checkpoint_reuse"] is False
         for row in findings

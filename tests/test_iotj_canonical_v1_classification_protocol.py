@@ -36,6 +36,7 @@ def test_canonical_commands_use_only_canonical_v1_and_calibration_for_adaptation
     assert "client_data_c1234src_c5tgt" not in flattened
     assert "--local-epochs 5" in " ".join(commands["client_c1"])
     assert "--local-epochs 5" in " ".join(commands["client_c2"])
+    assert "--da-window-length 50" in " ".join(commands["server"])
     assert commands["protocol"]["target"] == target
     assert commands["protocol"]["adaptation_target_split"] == "calibration"
     assert commands["protocol"]["target_test_selection"] is False

@@ -145,6 +145,12 @@ def main() -> None:
                         help="源域验证集目录: 源域 training client 的 calibration_features.npy (如 client_1,client_2)")
     parser.add_argument("--server-calib-data", type=str, default=None,
                         help="目标域校准集目录: 目标域 test client 的 calibration_features.npy (如 client_3)")
+    parser.add_argument(
+        "--da-window-length",
+        type=int,
+        default=100,
+        help="Expected temporal length for server DA arrays; sensor dimension remains 8",
+    )
     parser.add_argument("--domain-adapt-steps", type=int, default=30,
                         help="域适应优化步数 K")
     parser.add_argument("--domain-adapt-warmup", type=int, default=3,
@@ -256,6 +262,7 @@ def main() -> None:
                 use_domain_adapt=args.use_domain_adapt,
                 server_val_data=args.server_val_data,
                 server_calib_data=args.server_calib_data,
+                da_expected_window_shape=(args.da_window_length, 8),
                 domain_adapt_steps=args.domain_adapt_steps,
                 domain_adapt_warmup=args.domain_adapt_warmup,
                 da_use_coral=args.da_use_coral,
