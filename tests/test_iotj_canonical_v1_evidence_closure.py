@@ -3,12 +3,17 @@ from __future__ import annotations
 import math
 
 import pytest
+from gaps_deploy.c5_h8_runtime import SerializedRidge
+import numpy as np
 
 from scripts.finalize_iotj_canonical_v1_evidence import (
     assign_quality_stratum,
     classify_qc_decision,
+    combined_equal_mean_risk,
     engineering_claims,
     interval_overlap_seconds,
+    merged_interval_length,
+    predict_serialized_ridge,
     summarize_error_scope,
 )
 
@@ -48,6 +53,20 @@ def test_qc_three_way_rule_preserves_frozen_accept_threshold() -> None:
         classify_qc_decision(0.2, accept_threshold=0.4, review_threshold=0.3)
 
 
+def test_equal_mean_risk_clips_each_calibration_normalized_component() -> None:
+    row = {
+        "classification_uncertainty_risk": 0.5,
+        "regression_disagreement_risk": 4.0,
+        "source_prior_disagreement_risk": 0.0,
+    }
+    scales = {
+        "classification_uncertainty_risk": 1.0,
+        "regression_disagreement_risk": 2.0,
+        "source_prior_disagreement_risk": 1.0,
+    }
+    assert combined_equal_mean_risk(row, scales) == pytest.approx((0.5 + 1.0 + 0.0) / 3.0)
+
+
 def test_error_summary_reports_required_submission_metrics() -> None:
     rows = [
         {"true_ppm": 0.0, "pred_84d_h1_ppm": 1.0, "true_class": 0},
@@ -62,10 +81,23 @@ def test_error_summary_reports_required_submission_metrics() -> None:
     assert "NRMSE_range" in summary
 
 
+def test_serialized_ridge_prediction_uses_flat_runtime_features() -> None:
+    model = SerializedRidge(
+        feature_names=("x",),
+        mean=np.asarray([0.0]),
+        scale=np.asarray([1.0]),
+        coef=np.asarray([0.0, 2.0]),
+        clip_min=-100.0,
+        clip_max=100.0,
+    )
+    assert predict_serialized_ridge(model, {"x": 3.0}) == pytest.approx(6.0)
+
+
 def test_raw_time_overlap_uses_physical_interval_intersection() -> None:
     assert interval_overlap_seconds(60.0, 70.0, 65.0, 75.0) == pytest.approx(5.0)
     assert interval_overlap_seconds(60.0, 70.0, 70.0, 80.0) == 0.0
     assert interval_overlap_seconds(60.0, 70.0, 55.0, 65.0) == pytest.approx(5.0)
+    assert merged_interval_length([(60.0, 70.0), (65.0, 75.0), (90.0, 100.0)]) == pytest.approx(25.0)
 
 
 def test_engineering_claims_separate_input_and_parameter_payload() -> None:
@@ -74,4 +106,3 @@ def test_engineering_claims_separate_input_and_parameter_payload() -> None:
     assert row["canonical_input_tensor_bytes_fp32"] == 1600
     assert row["temporal_input_reduction"] == pytest.approx(0.5)
     assert row["parameter_communication_reduction"] == 0.0
-
