@@ -15,7 +15,7 @@ Raw files, labels, code provenance, and output hashes are recorded in the canoni
 ## Execution architecture
 
 1. Build dataset and run preflight/hash reproducibility validation.
-2. Train a new 25-round, local-epoch-5 GAPS classifier from scratch; all checkpoint reuse flags are false. Adapt only using target calibration; test remains sealed.
+2. Train a new 25-round, local-epoch-1 GAPS classifier from scratch; all checkpoint reuse flags are false. This preserves the prior frozen training protocol so preprocessing is the main changed factor. Adapt only using target calibration; test remains sealed.
 3. Run fixed R84_FED_H1 from canonical representations with frozen Ridge candidates and calibration internal split, then evaluate test once in S_ALL, S_CC, and oracle-route scopes.
 4. Run the frozen QC policy and engineering measurements without tuning QC thresholds or model settings.
 

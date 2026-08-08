@@ -10,10 +10,10 @@ from scripts.run_iotj_canonical_v1_classification import (
 )
 
 
-def test_canonical_classification_is_from_scratch_le5_fixed_endpoint() -> None:
+def test_canonical_classification_is_from_scratch_le1_fixed_endpoint() -> None:
     config = canonical_classification_config()
     assert config["rounds"] == 25
-    assert config["local_epochs"] == 5
+    assert config["local_epochs"] == 1
     assert config["batch_size"] == 32
     assert config["seed"] == 42
     assert config["checkpoint_reuse"] is False
@@ -34,8 +34,8 @@ def test_canonical_commands_use_only_canonical_v1_and_calibration_for_adaptation
     assert "iotj_canonical_v1" in flattened
     assert "client_data_c12src_c345tgt" not in flattened
     assert "client_data_c1234src_c5tgt" not in flattened
-    assert "--local-epochs 5" in " ".join(commands["client_c1"])
-    assert "--local-epochs 5" in " ".join(commands["client_c2"])
+    assert "--local-epochs 1" in " ".join(commands["client_c1"])
+    assert "--local-epochs 1" in " ".join(commands["client_c2"])
     assert "--da-window-length 50" in " ".join(commands["server"])
     assert commands["protocol"]["target"] == target
     assert commands["protocol"]["adaptation_target_split"] == "calibration"

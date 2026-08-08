@@ -8,12 +8,14 @@
 - Dataset: `dataset/iotj_canonical_v1/`, aggregate SHA256 `2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6`.
 - Model and algorithm: the already frozen GAPS TCN-attention architecture, selective aggregation, semantic/replay profile, and server adaptation configuration.
 - Optimizer: Adam, learning rate `5e-4`.
-- Federated endpoint: 25 rounds, 5 local epochs per round, batch size 32, seed 42.
+- Federated endpoint: 25 rounds, 1 local epoch per round, batch size 32, seed 42.
 - Selective aggregation warm-up: rounds 1--5 are complete FedAvg warm-up rounds; selective aggregation starts at round 6.
 - Server adaptation: fixed 100 steps, target-specific calibration split only.
 - DA input contract: explicit temporal window length 50 and sensor dimension 8. The historical default remains 100; this declaration changes only input-shape validation and does not alter the model or losses.
 
 Each target run starts from a fresh seed-42 random initialization. Historical source or adapted checkpoints are unavailable to the execution API, and no `checkpoint` or `resume` argument appears in the formal commands.
+
+The local-epoch setting remains 1 to preserve the preceding frozen GAPS training configuration. The canonical rerun is intended to isolate the preprocessing change; no training-budget expansion is part of the formal comparison.
 
 ## Target information gate
 

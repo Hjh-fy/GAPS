@@ -34,7 +34,7 @@ def canonical_classification_config() -> dict[str, Any]:
         "study_id": STUDY_ID,
         "dataset": DATASET_NAME,
         "rounds": 25,
-        "local_epochs": 5,
+        "local_epochs": 1,
         "batch_size": 32,
         "seed": 42,
         "optimizer": "Adam",
@@ -76,8 +76,8 @@ def build_canonical_commands(target: str) -> dict[str, Any]:
         for old, new in replacements:
             values = _replace(values, old, new)
         commands[role] = values
-    _set_option(commands["client_c1"], "--local-epochs", "5")
-    _set_option(commands["client_c2"], "--local-epochs", "5")
+    _set_option(commands["client_c1"], "--local-epochs", "1")
+    _set_option(commands["client_c2"], "--local-epochs", "1")
     commands["server"].extend(["--da-window-length", "50"])
     commands["protocol"].update(canonical_classification_config())
     commands["protocol"].update(
@@ -191,7 +191,7 @@ def audit_protocol() -> dict[str, Any]:
         and row["strict_calibration_split"]
         and row["target_ce_weight_zero"]
         and row["da_window_shape_50x8"]
-        and row["local_epochs"] == 5
+        and row["local_epochs"] == 1
         and row["checkpoint_reuse"] is False
         for row in findings
     )

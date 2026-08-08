@@ -14,7 +14,7 @@
 - Source clients are C1/C2; target clients are C3/C4/C5 with 0% train, 20% calibration, 80% sealed test.
 - Each target client/class/concentration uses an independent deterministic RNG stream; client order cannot change identities.
 - C5 Methane 225 ppm repeat 1 remains included with acquisition-quality metadata.
-- Formal classification is 25 rounds, local epochs 5, seed 42, frozen GAPS architecture/optimizer/aggregation/semantic/server adaptation protocol.
+- Formal classification is 25 rounds, local epochs 1, seed 42, frozen GAPS architecture/optimizer/aggregation/semantic/server adaptation protocol.
 - Historical checkpoints cannot be reused; all checkpoint-reuse flags must be false.
 - Target test cannot select preprocessing, model, endpoint, Ridge alpha, QC threshold, or checkpoint.
 - R84_FED_H1, Ridge alpha candidates, internal calibration split, QC policy, and model structures remain frozen.
@@ -138,7 +138,7 @@ git commit -m "data: freeze canonical v1 dataset"
 ```python
 def test_formal_run_is_from_scratch():
     cfg = canonical_classification_config()
-    assert cfg.rounds == 25 and cfg.local_epochs == 5 and cfg.seed == 42
+    assert cfg.rounds == 25 and cfg.local_epochs == 1 and cfg.seed == 42
     assert cfg.reuse_checkpoint is False
 
 def test_target_test_is_not_an_adaptation_input():
@@ -153,7 +153,7 @@ Expected: FAIL because canonical run config/guard does not exist.
 
 - [ ] **Step 3: Implement wrapper and guards**
 
-Require preflight PASS, an empty formal run directory, explicit `reuse_checkpoint=False`, and canonical data paths. Configure C1/C2 source clients, C3/C4/C5 calibration adaptation, 25 rounds, local epochs 5, seed 42, frozen optimizer/profile/DA, and pre/post checkpoint SHA256 logging.
+Require preflight PASS, an empty formal run directory, explicit `reuse_checkpoint=False`, and canonical data paths. Configure C1/C2 source clients, C3/C4/C5 calibration adaptation, 25 rounds, local epochs 1, seed 42, frozen optimizer/profile/DA, and pre/post checkpoint SHA256 logging.
 
 - [ ] **Step 4: Run GREEN protocol tests**
 
