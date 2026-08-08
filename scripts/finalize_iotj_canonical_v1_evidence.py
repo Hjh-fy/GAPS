@@ -13,9 +13,14 @@ import json
 import math
 from pathlib import Path
 import subprocess
+import sys
 from typing import Any, Mapping, Sequence
 
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from gaps_deploy.c5_h8_runtime import FixedH8Policy, SerializedRidge
 from run_regression_head_ablation import (
@@ -41,7 +46,7 @@ RISK_COMPONENTS = (
     "regression_disagreement_risk",
     "source_prior_disagreement_risk",
 )
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = REPO_ROOT
 STUDY_ROOT = ROOT / "results" / "iotj_canonical_v1_final_20260808"
 DATASET_ROOT = ROOT / "dataset" / "iotj_canonical_v1"
 H1_PATH = ROOT / "results" / "iotj_h1_federated_ridge_equivalence_20260724" / "federated_h1_manifest.json"

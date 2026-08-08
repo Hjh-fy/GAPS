@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 from gaps_deploy.c5_h8_runtime import SerializedRidge
@@ -106,3 +109,15 @@ def test_engineering_claims_separate_input_and_parameter_payload() -> None:
     assert row["canonical_input_tensor_bytes_fp32"] == 1600
     assert row["temporal_input_reduction"] == pytest.approx(0.5)
     assert row["parameter_communication_reduction"] == 0.0
+
+
+def test_evidence_script_is_directly_executable_from_repository_root() -> None:
+    root = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [sys.executable, "scripts/finalize_iotj_canonical_v1_evidence.py", "--help"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert completed.returncode == 0, completed.stderr
