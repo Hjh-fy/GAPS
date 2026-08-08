@@ -14,7 +14,7 @@
 - Source clients are C1/C2; target clients are C3/C4/C5 with 0% train, 20% calibration, 80% sealed test.
 - Each target client/class/concentration uses an independent deterministic RNG stream; client order cannot change identities.
 - C5 Methane 225 ppm repeat 1 remains included with acquisition-quality metadata.
-- Formal classification is 25 rounds, local epochs 1, seed 42, frozen GAPS architecture/optimizer/aggregation/semantic/server adaptation protocol.
+- Formal classification is the final A4 router: 25 rounds, local epochs 1, seed 42, `ce_stats`, no client semantic/replay, no selective aggregation, and frozen A4 server adaptation.
 - Historical checkpoints cannot be reused; all checkpoint-reuse flags must be false.
 - Target test cannot select preprocessing, model, endpoint, Ridge alpha, QC threshold, or checkpoint.
 - R84_FED_H1, Ridge alpha candidates, internal calibration split, QC policy, and model structures remain frozen.

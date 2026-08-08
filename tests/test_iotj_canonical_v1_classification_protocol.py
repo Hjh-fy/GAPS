@@ -51,6 +51,23 @@ def test_each_target_has_distinct_from_scratch_run_identity() -> None:
     assert all("CANONICAL-V1" in identity for identity in identities)
 
 
+@pytest.mark.parametrize("target", TARGETS)
+def test_canonical_classifier_preserves_final_a4_router_settings(target: str) -> None:
+    commands = build_canonical_commands(target)
+    server = commands["server"]
+    client_c1 = commands["client_c1"]
+    assert server[server.index("--profile") + 1] == "ce_stats"
+    assert client_c1[client_c1.index("--profile") + 1] == "ce_stats"
+    assert server[server.index("--ablation-variant") + 1] == "A4"
+    assert server[server.index("--target-information-method") + 1] == "a4"
+    assert server[server.index("--use-selective-agg") + 1] == "false"
+    assert server[server.index("--require-selective-after-warmup") + 1] == "false"
+    assert server[server.index("--use-domain-adapt") + 1] == "true"
+    assert server[server.index("--domain-adapt-steps") + 1] == "100"
+    assert "proto_replay" not in " ".join(commands["client_c1"])
+    assert commands["protocol"]["classifier_router"] == "A4"
+
+
 def test_canonical_dataset_freeze_is_present() -> None:
     root = Path(__file__).resolve().parents[1]
     assert (root / "dataset/iotj_canonical_v1/dataset_sha256.json").is_file()

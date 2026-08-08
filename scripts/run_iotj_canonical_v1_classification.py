@@ -62,8 +62,8 @@ def build_canonical_commands(target: str) -> dict[str, Any]:
     target = target.upper()
     if target not in TARGETS:
         raise ValueError(f"unknown canonical target: {target}")
-    legacy_id = f"FCL-E3-GAPS-{target}"
-    experiment_id = f"CANONICAL-V1-GAPS-{target}"
+    legacy_id = "FCL-E4-A4"
+    experiment_id = f"CANONICAL-V1-A4-{target}"
     commands = _FROZEN_BUILDER(legacy_id)
     replacements = (
         (frozen.REMOTE_DATA_ROOT, REMOTE_DATA_ROOT),
@@ -76,6 +76,11 @@ def build_canonical_commands(target: str) -> dict[str, Any]:
         for old, new in replacements:
             values = _replace(values, old, new)
         commands[role] = values
+    commands["server"] = _replace(
+        commands["server"],
+        f"{REMOTE_DATA_ROOT}/client_5",
+        f"{REMOTE_DATA_ROOT}/client_{target[1:]}",
+    )
     _set_option(commands["client_c1"], "--local-epochs", "1")
     _set_option(commands["client_c2"], "--local-epochs", "1")
     commands["server"].extend(["--da-window-length", "50"])
@@ -83,6 +88,8 @@ def build_canonical_commands(target: str) -> dict[str, Any]:
     commands["protocol"].update(
         {
             "experiment_id": experiment_id,
+            "classifier_router": "A4",
+            "frozen_base_experiment": "FCL-E4-A4",
             "target": target,
             "initialization": "fresh_seed42_random_initialization",
             "source_clients": ["C1", "C2"],
@@ -167,7 +174,10 @@ def audit_protocol() -> dict[str, Any]:
         server_val = server[server.index("--server-val-data") + 1]
         target_ok = server_calib == f"{REMOTE_DATA_ROOT}/client_{target[1:]}"
         source_ok = server_val == f"{REMOTE_DATA_ROOT}/client_1,{REMOTE_DATA_ROOT}/client_2"
-        warmup_ok = server[server.index("--selective-warmup") + 1] == "5"
+        a4_profile_ok = server[server.index("--profile") + 1] == "ce_stats"
+        a4_variant_ok = server[server.index("--ablation-variant") + 1] == "A4"
+        a4_method_ok = server[server.index("--target-information-method") + 1] == "a4"
+        selective_disabled = server[server.index("--use-selective-agg") + 1] == "false"
         strict_cal_ok = server[server.index("--strict-calibration-split") + 1] == "true"
         target_ce_zero = server[server.index("--da-lambda-target-ce") + 1] == "0.0"
         da_window_shape_ok = server[server.index("--da-window-length") + 1] == "50"
@@ -176,7 +186,10 @@ def audit_protocol() -> dict[str, Any]:
                 "target": target,
                 "canonical_target_calibration_root": target_ok,
                 "canonical_source_validation_roots": source_ok,
-                "selective_rounds_1_to_5_warmup": warmup_ok,
+                "a4_ce_stats_profile": a4_profile_ok,
+                "a4_ablation_variant": a4_variant_ok,
+                "a4_target_information_method": a4_method_ok,
+                "selective_aggregation_disabled": selective_disabled,
                 "strict_calibration_split": strict_cal_ok,
                 "target_ce_weight_zero": target_ce_zero,
                 "da_window_shape_50x8": da_window_shape_ok,
@@ -187,7 +200,10 @@ def audit_protocol() -> dict[str, Any]:
     all_targets_fixed = all(
         row["canonical_target_calibration_root"]
         and row["canonical_source_validation_roots"]
-        and row["selective_rounds_1_to_5_warmup"]
+        and row["a4_ce_stats_profile"]
+        and row["a4_ablation_variant"]
+        and row["a4_target_information_method"]
+        and row["selective_aggregation_disabled"]
         and row["strict_calibration_split"]
         and row["target_ce_weight_zero"]
         and row["da_window_shape_50x8"]
@@ -213,7 +229,7 @@ def execute_target(
     digest: str,
     args: argparse.Namespace,
 ) -> None:
-    experiment_id = f"CANONICAL-V1-GAPS-{target}"
+    experiment_id = f"CANONICAL-V1-A4-{target}"
     run_dir = output / experiment_id
     if (run_dir / "fixed_endpoint_complete.json").is_file():
         return

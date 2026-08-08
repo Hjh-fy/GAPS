@@ -5,6 +5,10 @@
   "checkpoint_reuse_tokens_present": false,
   "test_arrays_referenced_by_training_commands": false,
   "targets": ["C3", "C4", "C5"],
+  "classifier_router": "A4",
+  "client_profile": "ce_stats",
+  "client_semantic_replay": false,
+  "selective_aggregation": false,
   "rounds": 25,
   "local_epochs": 1,
   "batch_size": 32,
@@ -17,5 +21,5 @@
   "target_calibration_fields": ["x", "class", "phase"],
   "target_concentration_used_for_classification": false,
   "hyperparameter_search": false,
-  "selective_aggregation_boundary": "rounds1-5_full_FedAvg_warmup_round6_selective"
+  "aggregation": "FedAvg_all_rounds_A4_selective_disabled"
 }
