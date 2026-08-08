@@ -1,0 +1,4 @@
+experiment_id,source_clients,target_clients,split_protocol,model,checkpoint,DA,calibration,QC,seed,result_path,status,notes
+CAN-V1-GAPS,C1;C2,C3;C4;C5,source_frozen_7_1_2__target_0_2_8,TCN_attention_GAPS,new_from_scratch,formal_frozen_server_DA,target_calibration_only,none,42,results/iotj_canonical_v1/classification,registered,"25 rounds; local epochs 5; no checkpoint reuse"
+CAN-V1-R84,C1;C2,C3;C4;C5,canonical_v1_frozen,R84_FED_H1,CAN-V1-GAPS_post_adaptation,none,target_calibration_internal,R84_no_QC,42,results/iotj_canonical_v1/r84,registered,"S_ALL/S_CC/oracle; test once"
+CAN-V1-QC,C1;C2,C3;C4;C5,canonical_v1_frozen,R84_FED_H1,CAN-V1-GAPS_post_adaptation,none,target_calibration_internal,final_equal_mean_frozen,42,results/iotj_canonical_v1,registered,"no QC search"
