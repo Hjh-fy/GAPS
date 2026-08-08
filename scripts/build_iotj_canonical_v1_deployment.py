@@ -49,10 +49,11 @@ def runtime_source_files() -> tuple[Path, ...]:
         Path("run_regression_head_ablation.py"),
         Path("scripts/benchmark_iotj_canonical_v1_pi5.py"),
     ]
-    files.extend(
-        path.relative_to(ROOT)
-        for path in sorted((ROOT / "gaps_deploy").glob("*.py"))
-    )
+    files.extend([
+        Path("gaps_deploy/__init__.py"),
+        Path("gaps_deploy/canonical_serialized.py"),
+        Path("gaps_deploy/canonical_v1_runtime.py"),
+    ])
     return tuple(files)
 
 

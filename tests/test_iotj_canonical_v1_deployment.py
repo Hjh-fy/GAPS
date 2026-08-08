@@ -58,5 +58,5 @@ def test_deployment_package_declares_portable_runtime_sources() -> None:
     assert "model.py" in relative
     assert "run_regression_head_ablation.py" in relative
     assert "gaps_deploy/canonical_v1_runtime.py" in relative
-    assert "gaps_deploy/c5_h8_runtime.py" in relative
+    assert "gaps_deploy/canonical_serialized.py" in relative
     assert "scripts/benchmark_iotj_canonical_v1_pi5.py" in relative

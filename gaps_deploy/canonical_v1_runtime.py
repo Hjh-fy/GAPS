@@ -14,7 +14,7 @@ import torch
 
 from model import FedGasBaseModel
 from run_regression_head_ablation import CLASS_RANGES, rich_feature_dict
-from .c5_h8_runtime import FixedH8Policy, SerializedRidge
+from .canonical_serialized import FixedH8Policy, SerializedRidge
 
 
 RISK_COMPONENTS = (
