@@ -189,7 +189,7 @@ def special_slices(target: str, records: Sequence[Mapping[str, Any]]) -> list[di
     if target == "C5":
         selected = [
             row for row in records
-            if int(row["true_class"]) == 2 and math.isclose(float(row["true_ppm"]), 225.0)
+            if str(row.get("gas")) == "methane" and math.isclose(float(row["true_ppm"]), 225.0)
             and int(row.get("repeat_id") or -1) == 1
         ]
         if not selected:
