@@ -70,3 +70,13 @@ def test_matching_comparator_freeze_survives_later_analysis_commits(tmp_path, mo
     second = runner.write_or_validate_freeze(path)
     assert first == second
     assert second["freeze_commit"] == "training-code-commit"
+
+
+def test_source_command_builder_survives_execution_monkeypatch(monkeypatch):
+    monkeypatch.setattr(
+        runner.frozen,
+        "build_flower_commands",
+        lambda _experiment_id: runner.build_source_fl_commands("FedAvg"),
+    )
+    commands = runner.build_source_fl_commands("FedAvg")
+    assert commands["protocol"]["method"] == "FedAvg"

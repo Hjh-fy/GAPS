@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
 from scripts import run_iotj_final_classification_le1 as frozen
 
 
+_FROZEN_BUILDER = frozen.build_flower_commands
 METHODS = ("FedAvg", "FedProx", "SCAFFOLD")
 TARGETS = ("C3", "C4", "C5")
 DATASET_NAME = "iotj_canonical_v1"
@@ -57,7 +58,7 @@ def build_source_fl_commands(method: str) -> dict[str, Any]:
         raise ValueError(f"unknown canonical comparator: {method}")
     historical_id = "FCL-E1-SCAFFOLD" if method == "SCAFFOLD" else "FCL-E1-FEDPROX"
     experiment_id = f"CAN-V1-CMP-{method.upper()}"
-    commands = frozen.build_flower_commands(historical_id)
+    commands = _FROZEN_BUILDER(historical_id)
     replacements = (
         (frozen.REMOTE_DATA_ROOT, REMOTE_DATA_ROOT),
         (frozen.PI_DATA_ROOT, PI_DATA_ROOT),
