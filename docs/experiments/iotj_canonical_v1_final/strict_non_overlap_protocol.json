@@ -1,0 +1,132 @@
+{
+  "assignment": "C3/C4 cycle calibration repeat by ordered class-concentration cell; C5 uses highest repeat; remaining repeats are test files",
+  "audit": {
+    "audit_basis": "client_id + raw filename + [window_start_s, window_end_s)",
+    "exact_window_overlap_count": 0,
+    "raw_file_overlap_count": 0,
+    "raw_time_overlap_seconds": 0.0
+  },
+  "c5_methane_225_repeat1": "retained_in_test_by_highest-repeat calibration rule",
+  "calibration_subsampling": "deterministic midpoint-quantile windows within calibration-only raw files",
+  "coverage": {
+    "C3": {
+      "available_phases": [
+        0,
+        1,
+        2
+      ],
+      "calibration": {
+        "N": 678,
+        "class_concentration_cell_count": 40,
+        "classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "phases": [
+          0,
+          1,
+          2
+        ]
+      },
+      "excluded_N": 162,
+      "test": {
+        "N": 2515,
+        "class_concentration_cell_count": 40,
+        "classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "phases": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    "C4": {
+      "available_phases": [
+        0,
+        1
+      ],
+      "calibration": {
+        "N": 320,
+        "class_concentration_cell_count": 40,
+        "classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "phases": [
+          0,
+          1
+        ]
+      },
+      "excluded_N": 520,
+      "test": {
+        "N": 840,
+        "class_concentration_cell_count": 40,
+        "classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "phases": [
+          0,
+          1
+        ]
+      }
+    },
+    "C5": {
+      "available_phases": [
+        2
+      ],
+      "calibration": {
+        "N": 320,
+        "class_concentration_cell_count": 40,
+        "classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "phases": [
+          2
+        ]
+      },
+      "excluded_N": 520,
+      "test": {
+        "N": 840,
+        "class_concentration_cell_count": 40,
+        "classes": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "phases": [
+          2
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "C4/C5 test N is reduced because two-repeat raw-file grouping cannot realize an 80% raw-file-disjoint test split"
+  ],
+  "parent_dataset_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "preprocessing": "HZ5_MEAN_W10S_UNCHANGED",
+  "schema_version": "iotj.canonical_v1.strict_nonoverlap.protocol.v1",
+  "split_seed": null,
+  "status": "FROZEN",
+  "target_calibration_N": {
+    "C3": 678,
+    "C4": 320,
+    "C5": 320
+  },
+  "target_test_used_for_split_selection": false
+}
