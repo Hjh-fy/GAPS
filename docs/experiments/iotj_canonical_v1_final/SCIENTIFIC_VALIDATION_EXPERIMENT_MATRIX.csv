@@ -1,0 +1,13 @@
+dataset_hash,source_clients,rounds,local_epochs,batch_size,seed,target_test_selection,hyperparameter_search,experiment_id,method,targets,target_fields,execution
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-CMP-FEDAVG,FedAvg,C3;C4;C5,none,one_source_FL_then_three_fixed_evaluations
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-CMP-FEDPROX,FedProx,C3;C4;C5,none,one_source_FL_then_three_fixed_evaluations
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-CMP-SCAFFOLD,SCAFFOLD,C3;C4;C5,none,one_source_FL_then_three_fixed_evaluations
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-CMP-MMD-C3,MMD,C3,calibration_x_only,fixed_100_step_posthoc_from_canonical_FedAvg_round25
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CANONICAL-V1-A0T-C3,A0T,C3,calibration_x_class,target_CE_only_100_steps_per_round
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-STRICT-A4-R84-C3,STRICT_A4_R84,C3,strict_calibration_x_class_phase,strict_split_A4_then_R84_fixed_protocol
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-CMP-MMD-C4,MMD,C4,calibration_x_only,fixed_100_step_posthoc_from_canonical_FedAvg_round25
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CANONICAL-V1-A0T-C4,A0T,C4,calibration_x_class,target_CE_only_100_steps_per_round
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-STRICT-A4-R84-C4,STRICT_A4_R84,C4,strict_calibration_x_class_phase,strict_split_A4_then_R84_fixed_protocol
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-CMP-MMD-C5,MMD,C5,calibration_x_only,fixed_100_step_posthoc_from_canonical_FedAvg_round25
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CANONICAL-V1-A0T-C5,A0T,C5,calibration_x_class,target_CE_only_100_steps_per_round
+2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6,C1;C2,25,1,32,42,False,False,CAN-V1-STRICT-A4-R84-C5,STRICT_A4_R84,C5,strict_calibration_x_class_phase,strict_split_A4_then_R84_fixed_protocol
