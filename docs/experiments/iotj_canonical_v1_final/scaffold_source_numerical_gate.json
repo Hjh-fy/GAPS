@@ -1,0 +1,62 @@
+{
+  "action": "PROCEED_FIXED_CONFIGURATION",
+  "checks": {
+    "all_finite": true,
+    "ce_decreased": true,
+    "gradient_norm_valid": true,
+    "no_lr_search": true,
+    "parameter_norm_valid": true,
+    "source_discrimination": true,
+    "source_only": true
+  },
+  "clients": [
+    {
+      "adam_state_present": false,
+      "client_id": 1,
+      "examples": 2360,
+      "optimizer": "SGD",
+      "optimizer_lr": 0.0005,
+      "steps": 74,
+      "train_accuracy": 0.3902542372881356
+    },
+    {
+      "adam_state_present": false,
+      "client_id": 2,
+      "examples": 2360,
+      "optimizer": "SGD",
+      "optimizer_lr": 0.0005,
+      "steps": 74,
+      "train_accuracy": 0.4745762711864407
+    }
+  ],
+  "diagnostics": {
+    "client_count": 2,
+    "client_final_quarter_ce": [
+      1.3265562653541565,
+      1.3106697003046672
+    ],
+    "client_first_quarter_ce": [
+      1.354694214132097,
+      1.3375173873371549
+    ],
+    "majority_class_prior": 0.25,
+    "max_gradient_norm": 2.198650598526001,
+    "max_parameter_norm": 34.61368179321289,
+    "source_accuracy": 0.43241525423728816
+  },
+  "lr_search_performed": false,
+  "passed": true,
+  "protocol": {
+    "batch_size": 32,
+    "clients": [
+      "C1",
+      "C2"
+    ],
+    "local_epochs": 1,
+    "optimizer": "SGD",
+    "optimizer_lr": 0.0005,
+    "seed": 42
+  },
+  "schema_version": "iotj.final_classification.scaffold_source_gate.v1",
+  "target_information_accessed": false
+}
