@@ -2,8 +2,8 @@
 
 Status: **EVIDENCE CLOSURE COMPLETE WITH BLOCKERS**.
 
-Passed: frozen dataset hash; target-specific A4 checkpoint hashes; no target-test selection; R84 and QC provenance; 1,000-repeat same-budget random QC; no quality-based deletion; portable package preflight; exact Pi 5 package SHA; parameter-count semantics corrected; canonical 83D/84D comparison.
+Passed: frozen dataset hash; target-specific A4 checkpoint hashes; no target-test selection; R84 and QC provenance; 1,000-repeat same-budget random QC; no quality-based deletion; portable package preflight; exact Pi 5 package SHA; parameter-count semantics corrected; canonical 83D/84D comparison; complete FedAvg/FedProx/SCAFFOLD/MMD/A0T/GAPS comparator matrix; canonical SCAFFOLD sanity audit; completed strict raw-file-disjoint sensitivity.
 
-Blockers: (1) canonical equal-label A0T has no executed result; (2) calibration/test raw-time overlap is C3, C4, C5 and a strict grouped non-overlap robustness run is absent; (3) canonical figures need regeneration; (4) the requested manuscript v7 source was not available in the repository or discovered manuscript directories, so a six-way manuscript consistency PASS cannot be issued; (5) canonical calibration-budget evidence is absent.
+Blockers/limitations: (1) strict non-overlap C5 loses 0.3005 Macro-F1 and adds 54.461 ppm S_ALL RMSE, triggering both preregistered collapse flags; (2) A4 versus equal-label A0T has mixed-sign, near-zero per-target Macro-F1 deltas at seed42, so no material classification-superiority claim is supported beyond label access; (3) canonical figures still need regeneration; (4) the requested manuscript v7 source was not available, so a six-way manuscript consistency PASS cannot be issued; (5) canonical calibration-budget sensitivity is absent.
 
 The C5 methane 225 ppm repeat1 anomaly is retained: S_ALL RMSE 70.969 ppm versus 20.851 ppm for repeat2. No sample was deleted.

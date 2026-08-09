@@ -1,0 +1,19 @@
+{
+  "status": "PASS_WITH_LIMITATION",
+  "checks": {
+    "source_only_numerical_gate": true,
+    "rounds_1_to_25": true,
+    "two_clients_every_round": true,
+    "zero_fit_evaluate_failures": true,
+    "canonical_sgd": true,
+    "fixed_lr_5e_4": true,
+    "local_epochs_1": true,
+    "positive_local_steps": true,
+    "no_adam_state": true,
+    "server_control_updates": true,
+    "finite_round_metrics": true
+  },
+  "round_count": 25,
+  "parameter_alignment": true,
+  "client_control_runtime_evidence": "implementation_tests_plus_continuous_client_process; string fingerprints unavailable in aggregate history"
+}

@@ -134,12 +134,16 @@ def evaluate_checkpoint_stream(
     split: str,
     device: torch.device,
     batch_size: int,
+    expected_endpoint: tuple[str, int] = ("round", FINAL_ROUND),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     model, config, checkpoint = load_checkpoint_model(
         str(checkpoint_path), device, batch_size
     )
-    if int(checkpoint.get("round", -1)) != FINAL_ROUND:
-        raise ValueError(f"expected round {FINAL_ROUND}: {checkpoint_path}")
+    endpoint_name, endpoint_value = expected_endpoint
+    if int(checkpoint.get(endpoint_name, -1)) != int(endpoint_value):
+        raise ValueError(
+            f"expected {endpoint_name} {endpoint_value}: {checkpoint_path}"
+        )
     loader = make_loader(data_root, target_client, split, config.BATCH_SIZE)
     rows: list[dict[str, Any]] = []
     all_true: list[int] = []

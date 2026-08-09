@@ -133,12 +133,13 @@ def run(output: Path, device: torch.device) -> dict[str, Any]:
     prediction_rows: list[dict[str, Any]] = []
     for method in method_contracts():
         all_rows: list[dict[str, Any]] = []
+        expected_endpoint = ("step", 100) if method == "MMD" else ("round", 25)
         for target in TARGETS:
             item = gate[method][target]
-            target_rows, _ = evaluate_checkpoint_stream(item["checkpoint"], data_root=DATA_ROOT, target_client=int(target[1:]), split="test", device=device, batch_size=32)
+            target_rows, _ = evaluate_checkpoint_stream(item["checkpoint"], data_root=DATA_ROOT, target_client=int(target[1:]), split="test", device=device, batch_size=32, expected_endpoint=expected_endpoint)
             source_rows: list[dict[str, Any]] = []
             for client in (1, 2):
-                rows, _ = evaluate_checkpoint_stream(item["checkpoint"], data_root=DATA_ROOT, target_client=client, split="test", device=device, batch_size=32)
+                rows, _ = evaluate_checkpoint_stream(item["checkpoint"], data_root=DATA_ROOT, target_client=client, split="test", device=device, batch_size=32, expected_endpoint=expected_endpoint)
                 source_rows.extend(rows)
             source_metrics = classification_metrics([int(row["true_class"]) for row in source_rows], _probabilities(source_rows))
             metric_rows.append(_metric_row(method, target, target_rows, float(source_metrics["macro_f1"]), item["checkpoint_sha256"]))

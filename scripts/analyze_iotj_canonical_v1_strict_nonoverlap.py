@@ -49,6 +49,26 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writeheader(); writer.writerows({key: row.get(key, "") for key in fields} for row in rows)
 
 
+def apply_serialized_r84_models(
+    rows: list[dict[str, Any]], models: dict[int, SerializedRidge]
+) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        item = common.r84_row(row)
+        pred_class = int(item["pred_class"])
+        prediction = float(models[pred_class].predict(item["feature_dict"]))
+        truth = float(item["true_ppm"])
+        output.append({
+            **{key: value for key, value in item.items() if key != "feature_dict"},
+            "route_correct": int(int(item["true_class"]) == pred_class),
+            "pred_84d_h1_ppm": prediction,
+            "pred_ppm": prediction,
+            "abs_error": abs(prediction - truth),
+            "squared_error": (prediction - truth) ** 2,
+        })
+    return output
+
+
 def strict_oracle_metrics(target: str) -> dict[str, Any]:
     models_payload = json.loads((STRICT_RUN / f"regression/{target}/regression_models.json").read_text(encoding="utf-8"))
     models = {int(key): SerializedRidge.from_json(value) for key, value in models_payload.items()}
@@ -65,7 +85,7 @@ def strict_oracle_metrics(target: str) -> dict[str, Any]:
         item = {**row, "pred_class": true_class}
         item["H1_federated_source_ridge_ppm"] = h1[true_class].predict(row["feature_dict"])
         oracle.append(item)
-    records = common.apply_r84_models(oracle, models)
+    records = apply_serialized_r84_models(oracle, models)
     return common.metrics(records)
 
 

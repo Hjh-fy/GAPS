@@ -1,4 +1,4 @@
-target,status,reason,accuracy,macro_f1,nll,ece,canonical,test_opened
-C3,BLOCKED_NOT_RUN,"preregistered canonical equal-label run exists, but execution authorization was not granted",,,,,False,False
-C4,BLOCKED_NOT_RUN,"preregistered canonical equal-label run exists, but execution authorization was not granted",,,,,False,False
-C5,BLOCKED_NOT_RUN,"preregistered canonical equal-label run exists, but execution authorization was not granted",,,,,False,False
+target,status,accuracy,macro_f1,nll,ece,canonical,test_opened
+C3,COMPLETE,0.9985057900635039,0.9985054988522586,0.01633926242089398,0.0012927219900658992,True,True
+C4,COMPLETE,0.9948529411764706,0.9948570130406309,0.04889979796492138,0.005027200632235634,True,True
+C5,COMPLETE,0.9941176470588236,0.9941388070612982,0.05018156535506536,0.005821397856754396,True,True
