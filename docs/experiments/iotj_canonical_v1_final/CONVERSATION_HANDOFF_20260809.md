@@ -1,7 +1,9 @@
 # GAPS IoT-J canonical-v1 conversation handoff
 
-Date: 2026-08-09 (Asia/Shanghai)  
-From skill: `experiment-registry`  
+Date: 2026-08-09 (Asia/Shanghai)
+
+From skill: `experiment-registry`
+
 Suggested receiving skill: `gaps-research-orchestrator`, followed by `number-consistency-audit` when the v7 manuscript is supplied.
 
 ## 1. New-dialog starting point
