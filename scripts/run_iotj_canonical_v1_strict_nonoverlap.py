@@ -94,10 +94,9 @@ def git_head() -> str:
 
 def write_or_validate_freeze(path: Path) -> dict[str, Any]:
     preflight = run_preflight(DATA_ROOT, PARENT_DATA_ROOT)
-    payload = {
+    invariant = {
         "schema_version": "iotj.canonical_v1.strict_nonoverlap.run_freeze.v1",
         "status": "FROZEN",
-        "freeze_commit": git_head(),
         "protocol_hash": protocol_hash(),
         "config": strict_run_config(),
         "preflight": preflight,
@@ -106,9 +105,13 @@ def write_or_validate_freeze(path: Path) -> dict[str, Any]:
     }
     if path.exists():
         observed = json.loads(path.read_text(encoding="utf-8"))
-        if observed != payload:
-            raise RuntimeError("FAIL_CLOSED strict run freeze differs")
+        for key, value in invariant.items():
+            if observed.get(key) != value:
+                raise RuntimeError(f"FAIL_CLOSED strict run freeze differs: {key}")
+        if not observed.get("freeze_commit"):
+            raise RuntimeError("FAIL_CLOSED strict run freeze has no commit")
         return observed
+    payload = {**invariant, "freeze_commit": git_head()}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return payload

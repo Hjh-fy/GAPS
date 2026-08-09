@@ -1,3 +1,5 @@
+import scripts.run_iotj_canonical_v1_comparators as runner
+
 from scripts.run_iotj_canonical_v1_comparators import (
     METHODS,
     build_source_fl_commands,
@@ -58,3 +60,13 @@ def test_matrix_has_only_minimal_registered_comparators():
     assert config["source_fl_methods"] == list(METHODS)
     assert config["posthoc_da_methods"] == ["MMD"]
     assert config["hyperparameter_search"] is False
+
+
+def test_matching_comparator_freeze_survives_later_analysis_commits(tmp_path, monkeypatch):
+    path = tmp_path / "freeze.json"
+    monkeypatch.setattr(runner, "git_head", lambda: "training-code-commit")
+    first = runner.write_or_validate_freeze(path)
+    monkeypatch.setattr(runner, "git_head", lambda: "later-analysis-commit")
+    second = runner.write_or_validate_freeze(path)
+    assert first == second
+    assert second["freeze_commit"] == "training-code-commit"

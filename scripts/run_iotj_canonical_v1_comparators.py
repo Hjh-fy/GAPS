@@ -133,10 +133,9 @@ def git_head() -> str:
 
 
 def write_or_validate_freeze(path: Path) -> dict[str, Any]:
-    payload = {
+    invariant = {
         "schema_version": "iotj.canonical_v1.comparator.pre_run.v1",
         "status": "FROZEN",
-        "freeze_commit": git_head(),
         "protocol_hash": protocol_hash(),
         "config": canonical_comparator_config(),
         "source_fl": {method: build_source_fl_commands(method)["protocol"] for method in METHODS},
@@ -145,9 +144,13 @@ def write_or_validate_freeze(path: Path) -> dict[str, Any]:
     }
     if path.exists():
         observed = json.loads(path.read_text(encoding="utf-8"))
-        if observed != payload:
-            raise RuntimeError("FAIL_CLOSED canonical comparator freeze differs")
+        for key, value in invariant.items():
+            if observed.get(key) != value:
+                raise RuntimeError(f"FAIL_CLOSED canonical comparator freeze differs: {key}")
+        if not observed.get("freeze_commit"):
+            raise RuntimeError("FAIL_CLOSED canonical comparator freeze has no commit")
         return observed
+    payload = {**invariant, "freeze_commit": git_head()}
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return payload
