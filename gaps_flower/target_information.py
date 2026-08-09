@@ -199,7 +199,8 @@ def load_target_calibration_x(
     )
     feature_path = Path(client_dir) / "calibration_features.npy"
     features = np.load(feature_path, allow_pickle=False)
-    if features.ndim != 3 or tuple(features.shape[1:]) != (100, 8):
+    allowed_window_shapes = {(50, 8), (100, 8)}
+    if features.ndim != 3 or tuple(features.shape[1:]) not in allowed_window_shapes:
         raise RuntimeError(f"FAIL_CLOSED target calibration feature shape: {features.shape}")
     if not np.issubdtype(features.dtype, np.number) or not np.all(np.isfinite(features)):
         raise RuntimeError("FAIL_CLOSED invalid target calibration features")

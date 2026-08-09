@@ -125,6 +125,19 @@ def test_calibration_x_loader_does_not_load_label_files(
     assert ledger.events[-1]["fields"] == ["x"]
 
 
+def test_calibration_x_loader_accepts_canonical_v1_50x8_windows(tmp_path: Path) -> None:
+    from gaps_flower.target_information import TargetAccessLedger, load_target_calibration_x
+
+    client = tmp_path / "client_3"
+    client.mkdir()
+    np.save(client / "calibration_features.npy", np.zeros((3, 50, 8), dtype=np.float32))
+    ledger = TargetAccessLedger(tmp_path / "ledger.jsonl")
+
+    batch = next(iter(load_target_calibration_x(client, method="mmd", ledger=ledger)))
+
+    assert tuple(batch.shape) == (3, 50, 8)
+
+
 @pytest.mark.parametrize("method", ["coral", "mmd", "dann"])
 def test_canonical_uda_runs_exactly_one_unconditional_objective(method: str) -> None:
     from gaps_flower.canonical_uda import run_canonical_uda
