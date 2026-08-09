@@ -29,6 +29,9 @@ TARGETS = ("C3", "C4", "C5")
 DATA_ROOT = ROOT / "dataset" / "iotj_canonical_v1"
 DEFAULT_STUDY_ROOT = ROOT / "results" / STUDY_ID
 RIDGE_ALPHAS = common.RIDGE_ALPHAS
+CLASSIFICATION_EXPERIMENT_PREFIX = "CANONICAL-V1-A4"
+REGRESSION_EXPERIMENT_PREFIX = "CAN-V1-R84-A4"
+SPLIT_PROTOCOL = "canonical_v1_target_20_80"
 
 
 def expected_counts(target: str) -> dict[str, Any]:
@@ -45,11 +48,11 @@ def expected_counts(target: str) -> dict[str, Any]:
 
 
 def checkpoint_for(classification_root: Path, target: str) -> tuple[Path, dict[str, Any]]:
-    run_dir = classification_root / f"CANONICAL-V1-A4-{target}"
+    run_dir = classification_root / f"{CLASSIFICATION_EXPERIMENT_PREFIX}-{target}"
     marker = json.loads((run_dir / "fixed_endpoint_complete.json").read_text(encoding="utf-8"))
     manifest = json.loads((run_dir / "run_manifest.json").read_text(encoding="utf-8"))
     checkpoint = Path(manifest["checkpoint"])
-    if marker.get("experiment_id") != f"CANONICAL-V1-A4-{target}":
+    if marker.get("experiment_id") != f"{CLASSIFICATION_EXPERIMENT_PREFIX}-{target}":
         raise RuntimeError(f"FAIL_CLOSED {target} completion identity differs")
     protocol = manifest.get("protocol", {})
     if protocol.get("classifier_router") != "A4" or protocol.get("local_epochs") != 1:
@@ -156,7 +159,7 @@ def fit_models(
         models[class_id] = fit_ridge(class_rows, feature_names, best_alpha)
         selection.append(
             {
-                "experiment_id": f"CAN-V1-R84-A4-{target}",
+                "experiment_id": f"{REGRESSION_EXPERIMENT_PREFIX}-{target}",
                 "target": target,
                 "class_id": class_id,
                 "gas": gas,
@@ -178,9 +181,9 @@ def summarize(target: str, records: Sequence[Mapping[str, Any]]) -> dict[str, li
     main, per_gas, route, per_concentration = common.summarize(target, records)
     for rows in (main, per_gas, route, per_concentration):
         for row in rows:
-            row["experiment_id"] = f"CAN-V1-R84-A4-{target}"
+            row["experiment_id"] = f"{REGRESSION_EXPERIMENT_PREFIX}-{target}"
             row["classifier_router"] = "A4"
-            row["split_protocol"] = "canonical_v1_target_20_80"
+            row["split_protocol"] = SPLIT_PROTOCOL
     return {"main": main, "per_gas": per_gas, "route": route, "per_concentration": per_concentration}
 
 
