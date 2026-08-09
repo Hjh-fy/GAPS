@@ -169,3 +169,10 @@ def test_strict_audit_summary_fails_closed_on_any_blocking_finding() -> None:
     )
     assert summary["status"] == "FAIL"
     assert summary["blocking_failures"] == ["B"]
+
+
+def test_remote_training_ssh_closes_stdin() -> None:
+    from scripts.run_iotj_final_classification_le1 import _process_command
+
+    command = _process_command("example-host", "/runtime", ["python", "-m", "client"])
+    assert command[:3] == ["ssh", "-n", "-o"]

@@ -417,7 +417,7 @@ def _deploy_archive(host: str, archive: Path, runtime: str) -> None:
 
 def _process_command(host: str, runtime: str, argv: list[str]) -> list[str]:
     remote = f"cd {shlex.quote(runtime)} && exec {shlex.join(argv)}"
-    return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20", host, remote]
+    return ["ssh", "-n", "-o", "BatchMode=yes", "-o", "ConnectTimeout=20", host, remote]
 
 
 def _ensure_idle(hosts: list[str]) -> None:
