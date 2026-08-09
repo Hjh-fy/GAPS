@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+
 from scripts.run_iotj_canonical_v1_a0t import (
     TARGETS,
     build_a0t_commands,
     canonical_a0t_config,
+    load_or_create_freeze,
 )
 
 
@@ -61,3 +64,19 @@ def test_a0t_training_commands_never_reference_target_test_arrays() -> None:
     assert "test_labels" not in joined
     assert "test_classification" not in joined
 
+
+def test_a0t_reuses_matching_preregistered_freeze_commit(tmp_path) -> None:
+    path = tmp_path / "freeze.json"
+    existing = {
+        "schema_version": "iotj.canonical_v1.a0t.pre_run.v1",
+        "status": "FROZEN",
+        "freeze_commit": "old-preregistered-commit",
+        "protocol_hash": "same-hash",
+        "config": canonical_a0t_config(),
+        "targets": list(TARGETS),
+        "canonical_match_audit": "no fully matched canonical-v1 A0T artifact existed",
+        "test_open_policy": "only after all three fixed round25 endpoints complete",
+    }
+    path.write_text(json.dumps(existing), encoding="utf-8")
+    observed = load_or_create_freeze(path, "new-head", "same-hash")
+    assert observed["freeze_commit"] == "old-preregistered-commit"

@@ -121,6 +121,30 @@ def git_head() -> str:
     ).stdout.strip()
 
 
+def load_or_create_freeze(lock_path: Path, current_head: str, digest: str) -> dict[str, Any]:
+    invariant = {
+        "schema_version": "iotj.canonical_v1.a0t.pre_run.v1",
+        "status": "FROZEN",
+        "protocol_hash": digest,
+        "config": canonical_a0t_config(),
+        "targets": list(TARGETS),
+        "canonical_match_audit": "no fully matched canonical-v1 A0T artifact existed",
+        "test_open_policy": "only after all three fixed round25 endpoints complete",
+    }
+    if lock_path.exists():
+        observed = json.loads(lock_path.read_text(encoding="utf-8"))
+        for key, value in invariant.items():
+            if observed.get(key) != value:
+                raise RuntimeError(f"FAIL_CLOSED A0T pre-run freeze differs: {key}")
+        if not observed.get("freeze_commit"):
+            raise RuntimeError("FAIL_CLOSED A0T pre-run freeze has no commit")
+        return observed
+    payload = {**invariant, "freeze_commit": current_head}
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return payload
+
+
 def execute_target(
     target: str,
     output: Path,
@@ -158,23 +182,9 @@ def run(args: argparse.Namespace) -> None:
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     digest = protocol_hash()
-    freeze_commit = git_head()
-    lock = {
-        "schema_version": "iotj.canonical_v1.a0t.pre_run.v1",
-        "status": "FROZEN",
-        "freeze_commit": freeze_commit,
-        "protocol_hash": digest,
-        "config": canonical_a0t_config(),
-        "targets": list(TARGETS),
-        "canonical_match_audit": "no fully matched canonical-v1 A0T artifact existed",
-        "test_open_policy": "only after all three fixed round25 endpoints complete",
-    }
     lock_path = output.parent / "A0T_PRE_RUN_FREEZE.json"
-    if lock_path.exists():
-        if json.loads(lock_path.read_text(encoding="utf-8")) != lock:
-            raise RuntimeError("FAIL_CLOSED A0T pre-run freeze differs")
-    else:
-        lock_path.write_text(json.dumps(lock, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    lock = load_or_create_freeze(lock_path, git_head(), digest)
+    freeze_commit = str(lock["freeze_commit"])
     for target in TARGETS:
         execute_target(target, output, freeze_commit, digest, args)
 
