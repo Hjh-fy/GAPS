@@ -8,11 +8,14 @@ import json
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tarfile
 from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 STUDY_ROOT = ROOT / "results/iotj_canonical_v1_c5_budget_20260810"
 RUN_ROOT = STUDY_ROOT / "classification"
 BUDGET_DATA = STUDY_ROOT / "budget_data"
@@ -347,7 +350,12 @@ def main() -> None:
     parser.add_argument("--pi-host", default="gaps@192.168.137.172")
     parser.add_argument("--c2-host", default="root@114.55.171.63")
     parser.add_argument("--timeout-hours", type=float, default=12.0)
-    execute(parser.parse_args())
+    parser.add_argument("--audit-only", action="store_true")
+    args = parser.parse_args()
+    if args.audit_only:
+        print(json.dumps(preflight(), indent=2))
+        return
+    execute(args)
 
 
 if __name__ == "__main__":

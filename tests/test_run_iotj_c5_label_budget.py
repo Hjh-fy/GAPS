@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import pytest
 
@@ -103,3 +105,16 @@ def test_pre_run_freeze_is_immutable(tmp_path: Path) -> None:
     assert load_or_create_freeze(path, payload) == payload
     with pytest.raises(RuntimeError, match="differs"):
         load_or_create_freeze(path, {**payload, "protocol_hash": "changed"})
+
+
+def test_direct_script_entry_can_run_preflight_imports() -> None:
+    root = Path(__file__).resolve().parents[1]
+    completed = subprocess.run(
+        [sys.executable, str(root / "scripts/run_iotj_c5_label_budget.py"), "--audit-only"],
+        cwd=root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)["status"] == "PASS"
