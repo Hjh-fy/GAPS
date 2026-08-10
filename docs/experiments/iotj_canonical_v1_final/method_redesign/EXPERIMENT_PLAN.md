@@ -35,6 +35,18 @@
 - `SOURCE_DG_SUPPORTED` requires GAPS-DG-P to improve C5 zero-shot Macro-F1 over the same canonical FedAvg reference by at least 0.01 while reducing merged C1+C2 Macro-F1 by no more than 0.01.
 - Otherwise the decision is `SOURCE_DG_NOT_SUPPORTED`; lambda, warm-up, prototype key, and training budget remain unchanged and no additional prototype-DG run is allowed.
 
+### Frozen Gate-3 protocol and decision thresholds
+
+- All final endpoints independently reload the Gate-1 canonical source-only FedAvg round25 state and perform exactly 100 Adam updates at 5e-4, batch size 32, seed42.
+- `A0T-5L` uses only the frozen 80 labeled identities. `MME-compatible-5L15U` and `GAPS-SSDA-5L15U` additionally receive an X+identity-only loader for the fixed 240-identity complement.
+- The MME comparator retains the registered biased linear head and applies the minimax entropy gradient direction with fixed weight 0.1. It is explicitly an MME-compatible implementation, not an exact reproduction of the paper's temperature-scaled cosine classifier.
+- GAPS-SSDA uses EMA alpha 0.99 and class-only frozen C1/C2 prototypes with lambda 0.05. Target phase and concentration are unavailable to the adaptation API.
+- Only GAPS-SSDA selects `tau` in {0.90, 0.95} and `lambda_u` in {0.25, 0.5, 1.0}. Selection uses the pre-registered deterministic two-fold split of the 80 labeled samples (one train and one validation identity per stratum), mean validation Macro-F1 descending, mean validation NLL ascending, then grid declaration order. The target test is unavailable.
+- `SSDA_COMPONENT_SUPPORTED` requires GAPS-SSDA to exceed A0T-5L by at least 0.005 Macro-F1 and be no more than 0.005 below MME-compatible.
+- `MME_DOMINATES` is assigned when MME-compatible exceeds GAPS-SSDA by at least 0.005, unless neither SSDA method improves A0T-5L by 0.005.
+- `NO_SSDA_SPACE` is assigned when neither SSDA endpoint improves A0T-5L by 0.005. All other outcomes are `SSDA_COMPONENT_NOT_SUPPORTED`.
+- The 240 hidden labels may open only after selection and all three final endpoints are locked, solely for a labeled `POST_HOC_DIAGNOSTIC_ONLY` pseudo-label audit.
+
 ## Leakage controls
 
 - Adaptation code receives calibration-only manifests and rejects any test-role identity.

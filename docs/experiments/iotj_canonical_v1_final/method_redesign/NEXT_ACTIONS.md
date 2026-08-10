@@ -1,8 +1,6 @@
 # Next Actions
 
-1. Finish Gate 0 audit and post-hoc API safety tests.
-2. Run and analyze Gate 1, then commit and push.
-3. If G1 is not a hard lifecycle failure, run Gate 2 once, decide, commit and push.
-4. Run Gate 3 using the frozen 80L/240U identity allocation and bounded labeled-fold selection, decide, commit and push.
-5. Write the cross-Gate Story A/B/C/D decision and stop before G4/G5.
-
+1. Commit and push the Gate-3 protocol/code/test freeze before target-test access.
+2. Execute the six-config deterministic labeled-fold selection, freeze its result, and train the three final step100 endpoints.
+3. Verify endpoint/source hashes, then open C5 test once and run the post-hoc hidden-label diagnostic.
+4. Write the Gate-3 and cross-Gate Story B/D decisions, verify, commit, push, and stop before G4/G5.
