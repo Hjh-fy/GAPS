@@ -112,14 +112,14 @@
 - Consumes: Gate-1 source checkpoint; 80 labeled identities (2/stratum); disjoint 240 unlabeled identities (6/stratum); frozen source prototypes; fixed test identities.
 - Produces: A0T-5L, MME-5L15U, and GAPS-SSDA-5L15U endpoints plus selection/audit diagnostics.
 
-- [ ] Write failing tests proving the unlabeled training batch type has no `y_true` field, labeled/unlabeled/test identity sets are pairwise disjoint, and evaluation labels cannot reach training or selection functions.
-- [ ] Freeze deterministic two-fold labeled-calibration selection and the maximum six-item grid `tau in {0.90,0.95}`, `lambda_u in {0.25,0.5,1.0}`; fix EMA alpha 0.99 and prototype weight 0.05.
-- [ ] Audit MME feasibility and implement either exact MME or explicitly named MME-compatible head with identical source checkpoint, identities, backbone, and adaptation budget.
-- [ ] Run bounded selection using only the labeled folds; lock the selected configuration before final training.
-- [ ] Independently reload the same source checkpoint for all three final methods and train on the complete 80L/240U calibration allocation.
-- [ ] Verify all endpoint hashes, then open target test once and evaluate Accuracy, Macro-F1, NLL, ECE, per-class Precision/Recall/F1.
-- [ ] Compute pseudo-label acceptance, hidden-label accuracy only post hoc, per-class coverage, and confidence distribution.
-- [ ] Emit the G3 decision without expanding search; run verification, commit, and push.
+- [x] Write failing tests proving the unlabeled training batch type has no `y_true` field, labeled/unlabeled/test identity sets are pairwise disjoint, and evaluation labels cannot reach training or selection functions.
+- [x] Freeze deterministic two-fold labeled-calibration selection and the maximum six-item grid `tau in {0.90,0.95}`, `lambda_u in {0.25,0.5,1.0}`; fix EMA alpha 0.99 and prototype weight 0.05.
+- [x] Audit MME feasibility and implement either exact MME or explicitly named MME-compatible head with identical source checkpoint, identities, backbone, and adaptation budget.
+- [x] Run bounded selection using only the labeled folds; lock the selected configuration before final training.
+- [x] Independently reload the same source checkpoint for all three final methods and train on the complete 80L/240U calibration allocation.
+- [x] Verify all endpoint hashes, then open target test once and evaluate Accuracy, Macro-F1, NLL, ECE, per-class Precision/Recall/F1.
+- [x] Compute pseudo-label acceptance, hidden-label accuracy only post hoc, per-class coverage, and confidence distribution.
+- [x] Emit the G3 decision without expanding search; run verification, commit, and push.
 
 ### Task 6: Cross-Gate scientific handoff and stop
 
@@ -127,7 +127,6 @@
 - Create: `docs/experiments/iotj_canonical_v1_final/method_redesign/GAPS_METHOD_REDESIGN_DECISION.md`
 - Update: `PROJECT_STATUS.md`, `NEXT_ACTIONS.md`
 
-- [ ] Select the permitted Story A/B/C/D only from audited G1/G2/G3 results.
-- [ ] Preserve the strict non-overlap limitation and avoid experiment-independent generalization claims.
-- [ ] Record G4/G5 as not started and stop without launching them.
-
+- [x] Select the permitted Story A/B/C/D only from audited G1/G2/G3 results.
+- [x] Preserve the strict non-overlap limitation and avoid experiment-independent generalization claims.
+- [x] Record G4/G5 as not started and stop without launching them.

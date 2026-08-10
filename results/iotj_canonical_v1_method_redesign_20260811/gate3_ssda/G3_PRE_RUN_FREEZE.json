@@ -1,0 +1,54 @@
+{
+  "status": "FROZEN_BEFORE_TARGET_TEST_ACCESS",
+  "gate": "G3",
+  "dataset": "canonical-v1",
+  "target": "C5",
+  "producer_commit": "2ca8049a6c201fb16c5b639299ef25fbd3370b7d",
+  "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\comparators\\source_fl\\CAN-V1-CMP-FEDAVG\\remote_server\\server_latest.pth",
+  "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+  "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+  "labeled_count": 80,
+  "unlabeled_count": 240,
+  "target_test_count": 1360,
+  "steps_per_training_endpoint": 100,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "batch_size": 32,
+  "seed": 42,
+  "gaps_grid": [
+    {
+      "tau": 0.9,
+      "lambda_u": 0.25
+    },
+    {
+      "tau": 0.9,
+      "lambda_u": 0.5
+    },
+    {
+      "tau": 0.9,
+      "lambda_u": 1.0
+    },
+    {
+      "tau": 0.95,
+      "lambda_u": 0.25
+    },
+    {
+      "tau": 0.95,
+      "lambda_u": 0.5
+    },
+    {
+      "tau": 0.95,
+      "lambda_u": 1.0
+    }
+  ],
+  "gaps_validation": "deterministic two-fold; one labeled window per stratum train and one validation",
+  "lambda_proto": 0.05,
+  "ema_alpha": 0.99,
+  "mme_lambda": 0.1,
+  "mme_identity": "MME-compatible existing linear head; not exact paper reproduction",
+  "selection_primary": "mean validation Macro-F1 descending",
+  "selection_secondary": "mean validation NLL ascending",
+  "selection_tie_break": "grid declaration order",
+  "target_test_selection": false,
+  "decision_threshold_macro_f1": 0.005
+}
