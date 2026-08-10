@@ -1,0 +1,21 @@
+{
+  "method": "target_head",
+  "steps": 100,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "seed": 42,
+  "trainable_parameter_names": [
+    "feat_proj.weight",
+    "feat_proj.bias",
+    "classifier.weight",
+    "classifier.bias"
+  ],
+  "trainable_parameters": 3396,
+  "total_parameters": 22765,
+  "trainable_parameter_ratio": 0.14917636723039754,
+  "adaptation_seconds": 0.7742290999740362,
+  "relative_parameter_displacement": 0.019147722237408318,
+  "peak_rss_bytes": 415784960,
+  "checkpoint_bytes": 109954,
+  "checkpoint_sha256": "8af3a4a011d212c7002dade55e594afce9f82acab46145b33c68e381da44d3bf"
+}
