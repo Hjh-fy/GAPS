@@ -1,0 +1,464 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.protocol.v1",
+  "status": "FIXED_ENDPOINTS_COMPLETE",
+  "endpoint_count": 6,
+  "seed": 42,
+  "dataset": {
+    "status": "PASS",
+    "aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "checked_files": 71,
+    "bad_files": []
+  },
+  "target_test_opened_after_all_calibration_locks": true,
+  "target_test_used_for_selection": false,
+  "classifier_training_performed": false,
+  "alpha_selection_performed": false,
+  "frozen_alphas": {
+    "C3": {
+      "0": 100.0,
+      "1": 0.0,
+      "2": 0.1,
+      "3": 0.1
+    },
+    "C4": {
+      "0": 1.0,
+      "1": 10.0,
+      "2": 0.1,
+      "3": 10.0
+    },
+    "C5": {
+      "0": 1.0,
+      "1": 0.01,
+      "2": 10.0,
+      "3": 0.1
+    }
+  },
+  "endpoint_manifests": {
+    "CAN-V1-REG-A0T-C3-S42": {
+      "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+      "status": "COMPLETE",
+      "experiment_id": "CAN-V1-REG-A0T-C3-S42",
+      "method": "A0T",
+      "target": "C3",
+      "seed": 42,
+      "calibration_lock_sha256": "0bcd6889c6a04efa7599f2d8fcd2c561e88a94be82b43421e2b071a23fa33dd7",
+      "checkpoint_sha256": "4894be9a943876dc46e219ffcb68d1d7ce0fdb3981ae9255b0aba2ce4e6b5728",
+      "prediction_sha256": {
+        "S_ALL": "5275b7a6a09eb59d3b350845b8f9b67d0b2f45f552a00249ad6e5f54ce6bc6b7",
+        "S_CC": "1361828b981d9b9cf5ef2ededdd362381e37079f4ffc6d5cb00ab4ebd78febc0",
+        "Oracle_ALL": "bc5b912114a240648ff1a0baf8525e9b857ac9590e99ef1584181b3d3e64b419",
+        "Oracle_CC": "ac17d6978d5c6cb0f837bc6b539b8a0b76f9d4c782594697388cde460b3ac62b"
+      },
+      "test_manifest_sha256": {
+        "test_features.npy": "58217d09670a269552880a6e242218f82eb0dccae92addb570ca0f4cdd358e0b",
+        "test_classification_labels.npy": "f1e267e26fd88427650c5d77d1d8ca0768c11cebda9d091e9e32153f5062abc8",
+        "test_regression_labels.npy": "0b0a3785967c3b935716c1b95fcba57c2da06b6c2a1e0cff1d75c64a5cce7753",
+        "test_phase_labels.npy": "eb4b4cf6a8ee45cdec4a4807fc4b4f842120b266313d779e02c791f07b724e21",
+        "test_experiment_info.json": "fb9226479073c9885f4cb4e8ed9ce55c6393928727cabfccfa7b004a67918db3"
+      },
+      "test_classification": {
+        "N": 2677,
+        "accuracy": 0.9985057900635039,
+        "macro_f1": 0.9985054988522586,
+        "nll": 0.01633926242089398,
+        "ece": 0.0012927219900658992,
+        "mean_confidence": 0.999643709550921,
+        "per_class_recall": {
+          "0": 1.0,
+          "1": 0.9970014992503748,
+          "2": 0.9970149253731343,
+          "3": 1.0
+        },
+        "per_class_f1": {
+          "0": 0.9985096870342772,
+          "1": 0.9984984984984985,
+          "2": 0.9977595220313668,
+          "3": 0.9992542878448918
+        },
+        "confusion_matrix": [
+          [
+            670,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            665,
+            1,
+            0
+          ],
+          [
+            1,
+            0,
+            668,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            670
+          ]
+        ]
+      },
+      "target_test_used_for_selection": false,
+      "alpha_selection_performed": false
+    },
+    "CAN-V1-REG-A0T-C4-S42": {
+      "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+      "status": "COMPLETE",
+      "experiment_id": "CAN-V1-REG-A0T-C4-S42",
+      "method": "A0T",
+      "target": "C4",
+      "seed": 42,
+      "calibration_lock_sha256": "1b8452fab5d4dc3032295b2d4aaf91536fa4e66b365e48ca855891c4a9483ba3",
+      "checkpoint_sha256": "eee28075336170682abc4fb7e17fd01f481776ea06d175c2cf0decada85ec609",
+      "prediction_sha256": {
+        "S_ALL": "e66134e21bf6d1394089a534d566636c1ef3fa7705a8b41ab13c236e976a24e8",
+        "S_CC": "fc8dbe6f066c391624f9beb09f496b1426188ebbb55be5643df32000da194136",
+        "Oracle_ALL": "541e6366f98d0c323309116d6556f62b397192f84487b270da3676347c704b87",
+        "Oracle_CC": "fa38ec5809732c0ce0055d2925b8287d2ca281c256e9aea646a2d812bac73769"
+      },
+      "test_manifest_sha256": {
+        "test_features.npy": "1878b2336b81c0b73d2a9308ad8f1ec9403eebdcfa702526512f278123ade350",
+        "test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+        "test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+        "test_phase_labels.npy": "2d2b1c333c38ba56ec98ed2d26c7593476d59278294044b9e777968a114c3449",
+        "test_experiment_info.json": "0c27f14d7690a1b7d1e1c8121a9b5f5ce28f4ce567fea5d43a0d38341478f52d"
+      },
+      "test_classification": {
+        "N": 1360,
+        "accuracy": 0.9948529411764706,
+        "macro_f1": 0.9948570130406309,
+        "nll": 0.04889979796492138,
+        "ece": 0.005027200632235634,
+        "mean_confidence": 0.9998801418087062,
+        "per_class_recall": {
+          "0": 0.9941176470588236,
+          "1": 0.9852941176470589,
+          "2": 1.0,
+          "3": 1.0
+        },
+        "per_class_f1": {
+          "0": 0.9970501474926253,
+          "1": 0.9911242603550295,
+          "2": 0.9912536443148687,
+          "3": 1.0
+        },
+        "confusion_matrix": [
+          [
+            338,
+            1,
+            1,
+            0
+          ],
+          [
+            0,
+            335,
+            5,
+            0
+          ],
+          [
+            0,
+            0,
+            340,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            340
+          ]
+        ]
+      },
+      "target_test_used_for_selection": false,
+      "alpha_selection_performed": false
+    },
+    "CAN-V1-REG-A0T-C5-S42": {
+      "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+      "status": "COMPLETE",
+      "experiment_id": "CAN-V1-REG-A0T-C5-S42",
+      "method": "A0T",
+      "target": "C5",
+      "seed": 42,
+      "calibration_lock_sha256": "716c66650d8e97dbe5fc540703443b3105d3f7d825ddac90fb2f25a27e5e02a1",
+      "checkpoint_sha256": "b46d1f5fe9df53b425d207df965af2656ca4290e1fe0cb6f723cdd8f0e007fa5",
+      "prediction_sha256": {
+        "S_ALL": "b0d53ffd99a4af3ab985be1571aa7ade81176e52332f0225f43e5659b5a0ba84",
+        "S_CC": "480e4619969086222ffa7c0962fc6be7421469cef07222bad07a3f0b909ca956",
+        "Oracle_ALL": "8e03dacbb2983fec700d65f92b5840d05f4afe11d02f17cb0a4d216dc3d8440a",
+        "Oracle_CC": "4ca9f9769f206f8d05d3990dfa023a6feb169d5377a5de8b012fc4e4a291939d"
+      },
+      "test_manifest_sha256": {
+        "test_features.npy": "b337dead1e0d6d27198cb6455b5d90372ff87c668a71c6177e0560df3584dd9d",
+        "test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+        "test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+        "test_phase_labels.npy": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+        "test_experiment_info.json": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95"
+      },
+      "test_classification": {
+        "N": 1360,
+        "accuracy": 0.9941176470588236,
+        "macro_f1": 0.9941388070612982,
+        "nll": 0.05018156535506536,
+        "ece": 0.005821397856754396,
+        "mean_confidence": 0.999939044915578,
+        "per_class_recall": {
+          "0": 0.9882352941176471,
+          "1": 1.0,
+          "2": 0.9941176470588236,
+          "3": 0.9941176470588236
+        },
+        "per_class_f1": {
+          "0": 0.9940828402366864,
+          "1": 0.9883720930232558,
+          "2": 0.9970501474926253,
+          "3": 0.9970501474926253
+        },
+        "confusion_matrix": [
+          [
+            336,
+            4,
+            0,
+            0
+          ],
+          [
+            0,
+            340,
+            0,
+            0
+          ],
+          [
+            0,
+            2,
+            338,
+            0
+          ],
+          [
+            0,
+            2,
+            0,
+            338
+          ]
+        ]
+      },
+      "target_test_used_for_selection": false,
+      "alpha_selection_performed": false
+    },
+    "CAN-V1-REG-A4-C3-S42": {
+      "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+      "status": "COMPLETE",
+      "experiment_id": "CAN-V1-REG-A4-C3-S42",
+      "method": "A4",
+      "target": "C3",
+      "seed": 42,
+      "calibration_lock_sha256": "20bd2c366d7e624a70262a85cbec6db04c339c01e0aa8a035be0761944c9e72b",
+      "checkpoint_sha256": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414",
+      "prediction_sha256": {
+        "S_ALL": "472a561960a084cbadbcfbba49529f1ae6a0ed34cd0ac337695ea6b447fbe253",
+        "S_CC": "b2b4652afc9a5ee05ae80b7ef7464a5f824a20c4fdcf6d807061c2d1b1a18cd5",
+        "Oracle_ALL": "bc5b912114a240648ff1a0baf8525e9b857ac9590e99ef1584181b3d3e64b419",
+        "Oracle_CC": "ebfc0d5d6f8c34ea9b53914920b6add48e02d3e0bbe0eb465ef0891f635b0eb6"
+      },
+      "test_manifest_sha256": {
+        "test_features.npy": "58217d09670a269552880a6e242218f82eb0dccae92addb570ca0f4cdd358e0b",
+        "test_classification_labels.npy": "f1e267e26fd88427650c5d77d1d8ca0768c11cebda9d091e9e32153f5062abc8",
+        "test_regression_labels.npy": "0b0a3785967c3b935716c1b95fcba57c2da06b6c2a1e0cff1d75c64a5cce7753",
+        "test_phase_labels.npy": "eb4b4cf6a8ee45cdec4a4807fc4b4f842120b266313d779e02c791f07b724e21",
+        "test_experiment_info.json": "fb9226479073c9885f4cb4e8ed9ce55c6393928727cabfccfa7b004a67918db3"
+      },
+      "test_classification": {
+        "N": 2677,
+        "accuracy": 0.9985057900635039,
+        "macro_f1": 0.9985068849278491,
+        "nll": 0.015451274150844118,
+        "ece": 0.0013429038240519906,
+        "mean_confidence": 0.9998486938875559,
+        "per_class_recall": {
+          "0": 1.0,
+          "1": 0.9970014992503748,
+          "2": 0.9970149253731343,
+          "3": 1.0
+        },
+        "per_class_f1": {
+          "0": 1.0,
+          "1": 0.9984984984984985,
+          "2": 0.9985052316890882,
+          "3": 0.9970238095238095
+        },
+        "confusion_matrix": [
+          [
+            670,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            665,
+            0,
+            2
+          ],
+          [
+            0,
+            0,
+            668,
+            2
+          ],
+          [
+            0,
+            0,
+            0,
+            670
+          ]
+        ]
+      },
+      "target_test_used_for_selection": false,
+      "alpha_selection_performed": false
+    },
+    "CAN-V1-REG-A4-C4-S42": {
+      "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+      "status": "COMPLETE",
+      "experiment_id": "CAN-V1-REG-A4-C4-S42",
+      "method": "A4",
+      "target": "C4",
+      "seed": 42,
+      "calibration_lock_sha256": "5c1aefde2c9950c1f05874fa16ae59b605816e95b1e8dd35050476586deb0093",
+      "checkpoint_sha256": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+      "prediction_sha256": {
+        "S_ALL": "38378da8e1d137542cd1755ab3b3f80890f45d894feb2562f58cbd88f5875af8",
+        "S_CC": "f15df8421b33789d2b1af6044a7883f7ec61d86924566e5e6276d533f2215284",
+        "Oracle_ALL": "541e6366f98d0c323309116d6556f62b397192f84487b270da3676347c704b87",
+        "Oracle_CC": "df3cdd39b2457a1461ca00cc0a2e6157733b50f58a99fba8c508a60b58a156e4"
+      },
+      "test_manifest_sha256": {
+        "test_features.npy": "1878b2336b81c0b73d2a9308ad8f1ec9403eebdcfa702526512f278123ade350",
+        "test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+        "test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+        "test_phase_labels.npy": "2d2b1c333c38ba56ec98ed2d26c7593476d59278294044b9e777968a114c3449",
+        "test_experiment_info.json": "0c27f14d7690a1b7d1e1c8121a9b5f5ce28f4ce567fea5d43a0d38341478f52d"
+      },
+      "test_classification": {
+        "N": 1360,
+        "accuracy": 0.9977941176470588,
+        "macro_f1": 0.9977941081200143,
+        "nll": 0.01844602208131202,
+        "ece": 0.0019527335815570017,
+        "mean_confidence": 0.9995970240848906,
+        "per_class_recall": {
+          "0": 0.9970588235294118,
+          "1": 0.9941176470588236,
+          "2": 1.0,
+          "3": 1.0
+        },
+        "per_class_f1": {
+          "0": 0.9985272459499264,
+          "1": 0.995581737849779,
+          "2": 0.9970674486803519,
+          "3": 1.0
+        },
+        "confusion_matrix": [
+          [
+            339,
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            338,
+            2,
+            0
+          ],
+          [
+            0,
+            0,
+            340,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            340
+          ]
+        ]
+      },
+      "target_test_used_for_selection": false,
+      "alpha_selection_performed": false
+    },
+    "CAN-V1-REG-A4-C5-S42": {
+      "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+      "status": "COMPLETE",
+      "experiment_id": "CAN-V1-REG-A4-C5-S42",
+      "method": "A4",
+      "target": "C5",
+      "seed": 42,
+      "calibration_lock_sha256": "49e508c5da4682768ec34109089ea247d1bf9abfd29665d894df1b185ec7056a",
+      "checkpoint_sha256": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93",
+      "prediction_sha256": {
+        "S_ALL": "6a84a30e6483a3ce2fa276003dbf5eeefd8bf9e7caf555b22591debc387d02d7",
+        "S_CC": "73a68d2beaf4a297e4cfc773284845b8375a0e360aeb269a51f55b3184657ea8",
+        "Oracle_ALL": "8e03dacbb2983fec700d65f92b5840d05f4afe11d02f17cb0a4d216dc3d8440a",
+        "Oracle_CC": "c7058c1e3cdf2fed609b8ceee8cf2eaeb1fe7452a09f9631cebfbbdee46f0362"
+      },
+      "test_manifest_sha256": {
+        "test_features.npy": "b337dead1e0d6d27198cb6455b5d90372ff87c668a71c6177e0560df3584dd9d",
+        "test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+        "test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+        "test_phase_labels.npy": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+        "test_experiment_info.json": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95"
+      },
+      "test_classification": {
+        "N": 1360,
+        "accuracy": 0.9941176470588236,
+        "macro_f1": 0.99412609063164,
+        "nll": 0.0659403512622192,
+        "ece": 0.006260940301067694,
+        "mean_confidence": 0.9995930084849105,
+        "per_class_recall": {
+          "0": 0.9911764705882353,
+          "1": 0.9941176470588236,
+          "2": 1.0,
+          "3": 0.9911764705882353
+        },
+        "per_class_f1": {
+          "0": 0.9941002949852508,
+          "1": 0.995581737849779,
+          "2": 0.9912536443148687,
+          "3": 0.9955686853766618
+        },
+        "confusion_matrix": [
+          [
+            337,
+            0,
+            3,
+            0
+          ],
+          [
+            1,
+            338,
+            1,
+            0
+          ],
+          [
+            0,
+            0,
+            340,
+            0
+          ],
+          [
+            0,
+            1,
+            2,
+            337
+          ]
+        ]
+      },
+      "target_test_used_for_selection": false,
+      "alpha_selection_performed": false
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.lock.v1",
+  "status": "SEALED_BEFORE_TARGET_TEST",
+  "experiment_id": "CAN-V1-REG-A0T-C3-S42",
+  "method": "A0T",
+  "target": "C3",
+  "target_test_opened": false,
+  "alpha_selection_performed": false,
+  "fixed_alphas": {
+    "0": 100.0,
+    "1": 0.0,
+    "2": 0.1,
+    "3": 0.1
+  },
+  "calibration_N": 678,
+  "classification_metrics": {
+    "N": 678,
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "nll": 1.8567112565617234e-07,
+    "ece": 1.8567110582345947e-07,
+    "mean_confidence": 0.9999998143288942,
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_f1": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "confusion_matrix": [
+      [
+        170,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        168,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        170,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        170
+      ]
+    ]
+  },
+  "checkpoint": {
+    "experiment_id": "CAN-V1-REG-A0T-C3-S42",
+    "classification_experiment_id": "CANONICAL-V1-A0T-C3",
+    "method": "A0T",
+    "target": "C3",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\a0t_equal_label\\classification\\CANONICAL-V1-A0T-C3\\remote_server\\server_latest_adapted.pth",
+    "checkpoint_sha256": "4894be9a943876dc46e219ffcb68d1d7ce0fdb3981ae9255b0aba2ce4e6b5728",
+    "ordered_state_content_fingerprint": "26c5c08b8167eed9ec029382205fd6f4db9d622eb6c5dc2bda833bbdbb755854",
+    "formal_round": 25,
+    "classification_manifest_sha256": "b450dc71d72e764b479d110700339dd904834df1fdfb0783a674db1579be1ce4",
+    "completion_marker_sha256": "64b5d4c941af0637f97ceb0a0a041670f03add748c3ccb38be351020cfcac393"
+  },
+  "r84_models_sha256": "562ae2e4d2baf2cb7a9ffd232e9bdea79ce14b2aaeda2f5ceb49ad7a6ce767d2"
+}
