@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
 import torch
 
 from client import Client
@@ -57,3 +62,49 @@ def test_g2_round_one_has_no_prototype_broadcast() -> None:
     assert g2_round_contract(2) == "CE_PLUS_GLOBAL_PROTOTYPE_ALIGNMENT"
     assert g2_round_contract(25) == "CE_PLUS_GLOBAL_PROTOTYPE_ALIGNMENT"
 
+
+def test_g2_preserves_and_retries_exact_lock_only_preflight_failure(tmp_path: Path) -> None:
+    from scripts.run_iotj_source_dg_g2 import prepare_lock_only_retry
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    commands = {"server": ["fixed"], "protocol": {"seed": 42}}
+    (run_dir / "locked_run_spec.json").write_text(json.dumps(commands), encoding="utf-8")
+    archived = prepare_lock_only_retry(run_dir, commands)
+    assert not run_dir.exists()
+    assert archived.name.startswith("preflight_failure_lock_only")
+    assert json.loads((archived / "locked_run_spec.json").read_text(encoding="utf-8")) == commands
+
+
+def test_g2_refuses_retry_if_partial_run_has_any_execution_artifact(tmp_path: Path) -> None:
+    from scripts.run_iotj_source_dg_g2 import prepare_lock_only_retry
+
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    commands = {"server": ["fixed"], "protocol": {"seed": 42}}
+    (run_dir / "locked_run_spec.json").write_text(json.dumps(commands), encoding="utf-8")
+    (run_dir / "server.stderr.log").write_text("started", encoding="utf-8")
+    with pytest.raises(FileExistsError, match="execution artifacts"):
+        prepare_lock_only_retry(run_dir, commands)
+
+
+def test_g2_ssh_transport_retries_only_return_code_255() -> None:
+    from scripts.run_iotj_source_dg_g2 import ssh_with_transport_retry
+
+    calls = []
+
+    def transient(_host: str, _command: str, *, timeout: float = 120.0) -> str:
+        calls.append(timeout)
+        if len(calls) < 3:
+            raise subprocess.CalledProcessError(255, ["ssh"])
+        return "OK"
+
+    assert ssh_with_transport_retry(transient, "host", "command", attempts=3) == "OK"
+    assert len(calls) == 3
+
+    def remote_failure(_host: str, _command: str, *, timeout: float = 120.0) -> str:
+        raise subprocess.CalledProcessError(1, ["ssh"])
+
+    with pytest.raises(subprocess.CalledProcessError) as exc:
+        ssh_with_transport_retry(remote_failure, "host", "command", attempts=3)
+    assert exc.value.returncode == 1

@@ -1,0 +1,2105 @@
+{
+  "run_name": "CAN-V1-MR-G2-DGP",
+  "rounds": [
+    {
+      "round": 1,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00010043417569249868,
+        "feature_norm": 0.47250013053417206,
+        "feature_std": 0.05906186252832413,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 8.5590370275022,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.8144067796610169,
+        "train_ce_mean": 1.0158200397329815,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 1,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_001.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_001.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.4682523625432596,
+        "global_feature_mean": -0.00010043464959608173,
+        "global_feature_std": 0.058531459149618104
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 16.517844150957554,
+        "prototype_norm_min": 2.942368709471528,
+        "prototype_norm_max": 32.6654688678291,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.3379958512808898,
+        "prototype_var_mean_min": 0.03386356292005586,
+        "prototype_var_mean_max": 3.9167700754028973
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_001.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_001.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.7641039192676544,
+      "evaluate_metrics": {
+        "accuracy": 0.9058823529411765,
+        "evaluate_seconds": 0.41122767300112173,
+        "nll": 0.76410391330719,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 2,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00012027740012854338,
+        "feature_norm": 0.20588503032922745,
+        "feature_std": 0.02573482133448124,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.8979797700594645,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9563559322033899,
+        "train_ce_mean": 0.6222474166902445,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 2,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_002.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_002.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.20446228993028615,
+        "global_feature_mean": -0.00012027736488562368,
+        "global_feature_std": 0.02555750322137811
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 16.605136574548197,
+        "prototype_norm_min": 2.286144436429433,
+        "prototype_norm_max": 34.79056098545948,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.2786224741770529,
+        "prototype_var_mean_min": 0.02626387469227688,
+        "prototype_var_mean_max": 4.262546018986352
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_002.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_002.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.4989357590675354,
+      "evaluate_metrics": {
+        "accuracy": 0.9566176470588236,
+        "evaluate_seconds": 0.40633898857049644,
+        "nll": 0.4989357432898353,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 3,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.00011479490785859525,
+        "feature_norm": 0.09930030629038811,
+        "feature_std": 0.012411754578351974,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.905761727481149,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9851694915254238,
+        "train_ce_mean": 0.4147576033058813,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 3,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_003.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_003.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.09826798044944468,
+        "global_feature_mean": 0.00011479481739229414,
+        "global_feature_std": 0.012282961139830833
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 17.306178199076097,
+        "prototype_norm_min": 2.690247166825301,
+        "prototype_norm_max": 36.28764790382684,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.2710150837445986,
+        "prototype_var_mean_min": 0.034193413518686815,
+        "prototype_var_mean_max": 4.297814289490082
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_003.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_003.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.34959864616394043,
+      "evaluate_metrics": {
+        "accuracy": 0.9801470588235294,
+        "evaluate_seconds": 0.4082059864886105,
+        "nll": 0.34959864099236093,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 4,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0009785505826584995,
+        "feature_norm": 0.07839403674006462,
+        "feature_std": 0.009732052683830261,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.936704708990874,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9932203389830508,
+        "train_ce_mean": 0.30291643900386356,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 4,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_004.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_004.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.0743219868159533,
+        "global_feature_mean": -0.0009785505176509446,
+        "global_feature_std": 0.00923856879208762
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 17.881649683917043,
+        "prototype_norm_min": 2.6792938204630623,
+        "prototype_norm_max": 36.981787664450955,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.2580449311609854,
+        "prototype_var_mean_min": 0.032023082094869565,
+        "prototype_var_mean_max": 4.086606522675218
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_004.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_004.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.2591619938611984,
+      "evaluate_metrics": {
+        "accuracy": 0.9875,
+        "evaluate_seconds": 0.4063900714972988,
+        "nll": 0.259161993422929,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 5,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0012581207265611738,
+        "feature_norm": 0.06765217706561089,
+        "feature_std": 0.008348309434950352,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.902166835468961,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9938559322033899,
+        "train_ce_mean": 0.2291526885355933,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 5,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_005.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_005.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.0645864321802738,
+        "global_feature_mean": -0.0012581207413973061,
+        "global_feature_std": 0.007974670528638358
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 18.872745807871052,
+        "prototype_norm_min": 2.9494750423237477,
+        "prototype_norm_max": 37.69908084927296,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.4289489981782177,
+        "prototype_var_mean_min": 0.054712604085041285,
+        "prototype_var_mean_max": 4.929519583239895
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_005.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_005.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.20045439898967743,
+      "evaluate_metrics": {
+        "accuracy": 0.9875,
+        "evaluate_seconds": 0.40974555202410556,
+        "nll": 0.20045439460698297,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 6,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0008502801356371492,
+        "feature_norm": 0.05564809404313564,
+        "feature_std": 0.006901763845235109,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 7.416299020929728,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.997457627118644,
+        "train_ce_mean": 0.16752720848988678,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 6,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_006.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_006.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.05495059443764681,
+        "global_feature_mean": -0.000850280136322823,
+        "global_feature_std": 0.006815993766039746
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 19.770040348580075,
+        "prototype_norm_min": 3.872630943190788,
+        "prototype_norm_max": 38.23681463719137,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.4744810317603747,
+        "prototype_var_mean_min": 0.05564596206238877,
+        "prototype_var_mean_max": 4.7163254831371635
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_006.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_006.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.13648342341184616,
+      "evaluate_metrics": {
+        "accuracy": 0.9941176470588236,
+        "evaluate_seconds": 0.40681299194693565,
+        "nll": 0.13648342700565563,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 7,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0006687765126116574,
+        "feature_norm": 0.04839998483657837,
+        "feature_std": 0.00601206230930984,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.9194863500015344,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9978813559322034,
+        "train_ce_mean": 0.1254779917708898,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 7,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_007.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_007.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.047605905345615276,
+        "global_feature_mean": -0.0006687765689221692,
+        "global_feature_std": 0.005913038360044327
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 20.266120721948255,
+        "prototype_norm_min": 4.088314198936601,
+        "prototype_norm_max": 38.49288038547671,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.7087586828276964,
+        "prototype_var_mean_min": 0.056764103429128035,
+        "prototype_var_mean_max": 5.594975938233707
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_007.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_007.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.10495460405945778,
+      "evaluate_metrics": {
+        "accuracy": 0.9933823529411765,
+        "evaluate_seconds": 0.4146585854468867,
+        "nll": 0.10495460230637998,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 8,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0008839286747388542,
+        "feature_norm": 0.05063221976161003,
+        "feature_std": 0.006265592761337757,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.9370650189812295,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9970338983050847,
+        "train_ce_mean": 0.09846951256869203,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 8,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_008.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_008.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.04905064134391243,
+        "global_feature_mean": -0.0008839286352326781,
+        "global_feature_std": 0.0060672794394776635
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 20.8042924063476,
+        "prototype_norm_min": 4.58062859880108,
+        "prototype_norm_max": 38.73264861822737,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.6771313430995132,
+        "prototype_var_mean_min": 0.07543444999926038,
+        "prototype_var_mean_max": 5.3007163524756145
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_008.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_008.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.10331559181213379,
+      "evaluate_metrics": {
+        "accuracy": 0.9897058823529412,
+        "evaluate_seconds": 0.40982537099625915,
+        "nll": 0.10331559262293226,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 9,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0009415606036782265,
+        "feature_norm": 0.056883856654167175,
+        "feature_std": 0.00703363586217165,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.882695642008912,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.997457627118644,
+        "train_ce_mean": 0.07438497846409425,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 9,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_009.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_009.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.055147518094675024,
+        "global_feature_mean": -0.000941560640747241,
+        "global_feature_std": 0.006828834110581016
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 21.272407207569252,
+        "prototype_norm_min": 4.733621521473927,
+        "prototype_norm_max": 38.924442913712774,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.8734166213187715,
+        "prototype_var_mean_min": 0.07325735081158079,
+        "prototype_var_mean_max": 5.9317075924690945
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_009.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_009.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.07110369019210339,
+      "evaluate_metrics": {
+        "accuracy": 0.9941176470588236,
+        "evaluate_seconds": 0.40823276597075164,
+        "nll": 0.07110369043315158,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 10,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00019860330212395638,
+        "feature_norm": 0.04880296438932419,
+        "feature_std": 0.0060969863552600145,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.897297104937024,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.996822033898305,
+        "train_ce_mean": 0.05995691054958408,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 10,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_010.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_010.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.047908091186529035,
+        "global_feature_mean": -0.0001986033688012867,
+        "global_feature_std": 0.0059852172449847635
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 21.703059325385457,
+        "prototype_norm_min": 5.340155275377197,
+        "prototype_norm_max": 39.16433242301033,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.7074210745686489,
+        "prototype_var_mean_min": 0.08166855129772146,
+        "prototype_var_mean_max": 5.185388449245485
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_010.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_010.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.05213942378759384,
+      "evaluate_metrics": {
+        "accuracy": 0.9955882352941177,
+        "evaluate_seconds": 0.4095277474843897,
+        "nll": 0.05213942430256044,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 11,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00013884532381780446,
+        "feature_norm": 0.04954746551811695,
+        "feature_std": 0.006178901065140963,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.912657577981008,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9987288135593221,
+        "train_ce_mean": 0.0421538765400143,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 11,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_011.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_011.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.04837452930725171,
+        "global_feature_mean": -0.00013884535658093,
+        "global_feature_std": 0.006045221888482636
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 22.045091230153606,
+        "prototype_norm_min": 5.514639038874713,
+        "prototype_norm_max": 39.35856617511073,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.7510155108313665,
+        "prototype_var_mean_min": 0.08449527533646603,
+        "prototype_var_mean_max": 5.376347183795839
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_011.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_011.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.041773878037929535,
+      "evaluate_metrics": {
+        "accuracy": 0.9948529411764706,
+        "evaluate_seconds": 0.4123023559805006,
+        "nll": 0.04177387942943503,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 12,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0006056053243810311,
+        "feature_norm": 0.06705358624458313,
+        "feature_std": 0.008335868129506707,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.88770352397114,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.997457627118644,
+        "train_ce_mean": 0.03595265696867038,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 12,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_012.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_012.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.06304403430391048,
+        "global_feature_mean": -0.0006056052706640003,
+        "global_feature_std": 0.007857199888583338
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 22.339324740890074,
+        "prototype_norm_min": 5.618373530720757,
+        "prototype_norm_max": 39.522604107253215,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.8020702030511997,
+        "prototype_var_mean_min": 0.08026342251306173,
+        "prototype_var_mean_max": 5.461934139990602
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_012.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_012.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.02900705672800541,
+      "evaluate_metrics": {
+        "accuracy": 0.9970588235294118,
+        "evaluate_seconds": 0.4119595669908449,
+        "nll": 0.029007057604544303,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 13,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.0004181309268460609,
+        "feature_norm": 0.06057840771973133,
+        "feature_std": 0.007556671043857932,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.880111990001751,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9985169491525424,
+        "train_ce_mean": 0.026647346763540122,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 13,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_013.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_013.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.05936906869083052,
+        "global_feature_mean": -0.00041813086397723964,
+        "global_feature_std": 0.00740934479472364
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 22.680594218991306,
+        "prototype_norm_min": 5.688076914464413,
+        "prototype_norm_max": 39.60129349182961,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.8137034899299262,
+        "prototype_var_mean_min": 0.0758119888163176,
+        "prototype_var_mean_max": 5.501796150772735
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_013.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_013.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.02859979122877121,
+      "evaluate_metrics": {
+        "accuracy": 0.9963235294117647,
+        "evaluate_seconds": 0.4143627690791618,
+        "nll": 0.028599791212336106,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 14,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.00012958877778146416,
+        "feature_norm": 0.0642010010778904,
+        "feature_std": 0.008011146914213896,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.904580689501017,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9976694915254237,
+        "train_ce_mean": 0.024789322274973838,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 14,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_014.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_014.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.061925173072567945,
+        "global_feature_mean": 0.00012958879437974247,
+        "global_feature_std": 0.007739561813043798
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 22.876292166094956,
+        "prototype_norm_min": 6.189560260211886,
+        "prototype_norm_max": 39.698499487333585,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.9173522507400882,
+        "prototype_var_mean_min": 0.08320236851018906,
+        "prototype_var_mean_max": 5.78244172134276
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_014.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_014.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.014464693143963814,
+      "evaluate_metrics": {
+        "accuracy": 0.9992647058823529,
+        "evaluate_seconds": 0.41279076840146445,
+        "nll": 0.014464692859088673,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 15,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.0003966691147070378,
+        "feature_norm": 0.07022056728601456,
+        "feature_std": 0.008768086787313223,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.927129004092421,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9985169491525424,
+        "train_ce_mean": 0.017000434509778426,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 15,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_015.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_015.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.06854676592785891,
+        "global_feature_mean": 0.0003966690969718911,
+        "global_feature_std": 0.00855915897530348
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.178117942131404,
+        "prototype_norm_min": 6.510889971371566,
+        "prototype_norm_max": 39.83965915744328,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.214196509868438,
+        "prototype_var_mean_min": 0.08998776709853791,
+        "prototype_var_mean_max": 6.530538557829528
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_015.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_015.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.04470850247889757,
+      "evaluate_metrics": {
+        "accuracy": 0.9919117647058824,
+        "evaluate_seconds": 0.41037081804824993,
+        "nll": 0.04470850347322138,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 16,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.0003222597879357636,
+        "feature_norm": 0.07549527660012245,
+        "feature_std": 0.009431349113583565,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.922602509963326,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9991525423728813,
+        "train_ce_mean": 0.012046398285586955,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 16,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_016.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_016.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.07457794787790571,
+        "global_feature_mean": 0.00032225970369381685,
+        "global_feature_std": 0.00931667173791796
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.466683997744145,
+        "prototype_norm_min": 6.595890402726372,
+        "prototype_norm_max": 39.930594584767455,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.9700071803940808,
+        "prototype_var_mean_min": 0.09400907490946422,
+        "prototype_var_mean_max": 5.913721801905797
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_016.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_016.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.030508306110277772,
+      "evaluate_metrics": {
+        "accuracy": 0.9955882352941177,
+        "evaluate_seconds": 0.40859346199431457,
+        "nll": 0.03050830606097246,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 17,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00011384108802303672,
+        "feature_norm": 0.08410893008112907,
+        "feature_std": 0.010510647669434547,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.894514847546816,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9976694915254237,
+        "train_ce_mean": 0.015702560970212442,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 17,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_017.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_017.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.08325993169182948,
+        "global_feature_mean": -0.00011384108813672356,
+        "global_feature_std": 0.010406868824358442
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.517329688825885,
+        "prototype_norm_min": 6.3752429699083395,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 1.979875404080971,
+        "prototype_var_mean_min": 0.08602279191629293,
+        "prototype_var_mean_max": 5.574823897460412
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_017.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_017.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.017393760150298476,
+      "evaluate_metrics": {
+        "accuracy": 0.9970588235294118,
+        "evaluate_seconds": 0.40720631746808067,
+        "nll": 0.017393760202342973,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 18,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00033254839945584536,
+        "feature_norm": 0.09243392944335938,
+        "feature_std": 0.011519502848386765,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.902403003477957,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9976694915254237,
+        "train_ce_mean": 0.014985441948460826,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 18,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_018.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_018.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.08979192774550014,
+        "global_feature_mean": -0.00033254837907814583,
+        "global_feature_std": 0.011219063455989872
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.697623446541513,
+        "prototype_norm_min": 6.4631891146546225,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.1413996971855944,
+        "prototype_var_mean_min": 0.0797326973322333,
+        "prototype_var_mean_max": 5.885044583369946
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_018.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_018.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.012488342355936766,
+      "evaluate_metrics": {
+        "accuracy": 0.9985294117647059,
+        "evaluate_seconds": 0.4142338839592412,
+        "nll": 0.01248834236552391,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 19,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.0004221813287585974,
+        "feature_norm": 0.09149494767189026,
+        "feature_std": 0.011429048143327236,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.900271432008594,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9985169491525424,
+        "train_ce_mean": 0.010547220601179337,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 19,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_019.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_019.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.09109277518408684,
+        "global_feature_mean": 0.0004221813019569254,
+        "global_feature_std": 0.011378767589948765
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.841288145744443,
+        "prototype_norm_min": 6.638048635226032,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.1316924219470494,
+        "prototype_var_mean_min": 0.0926605955554216,
+        "prototype_var_mean_max": 5.568480868997245
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_019.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_019.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.024361034855246544,
+      "evaluate_metrics": {
+        "accuracy": 0.9963235294117647,
+        "evaluate_seconds": 0.4085054914467037,
+        "nll": 0.024361035641392366,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 20,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.00010497187031432986,
+        "feature_norm": 0.1016397476196289,
+        "feature_std": 0.012699532322585583,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.8934724494756665,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9966101694915255,
+        "train_ce_mean": 0.01744679150061082,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 20,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_020.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_020.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.10045110511334435,
+        "global_feature_mean": 0.00010497188480940167,
+        "global_feature_std": 0.012555949347016317
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.98731012715005,
+        "prototype_norm_min": 7.094289662279333,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.254325455907552,
+        "prototype_var_mean_min": 0.10522340569605756,
+        "prototype_var_mean_max": 5.696759711462876
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_020.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_020.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.025177239906042814,
+      "evaluate_metrics": {
+        "accuracy": 0.9955882352941177,
+        "evaluate_seconds": 0.4134742919704877,
+        "nll": 0.02517724012312315,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 21,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": -0.00015856139361858368,
+        "feature_norm": 0.10411060228943825,
+        "feature_std": 0.013000496197491884,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.9371520610002335,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9991525423728813,
+        "train_ce_mean": 0.005576483445968164,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 21,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_021.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_021.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.10284429027777443,
+        "global_feature_mean": -0.00015856138276149068,
+        "global_feature_std": 0.01285455839209172
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 23.9944927711077,
+        "prototype_norm_min": 6.677393355882077,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.1480612660412715,
+        "prototype_var_mean_min": 0.08497704796281483,
+        "prototype_var_mean_max": 5.720454620492869
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_021.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_021.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.01665608724579215,
+      "evaluate_metrics": {
+        "accuracy": 0.9963235294117647,
+        "evaluate_seconds": 0.40875779592897743,
+        "nll": 0.016656087399186458,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 22,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.00040738735697232187,
+        "feature_norm": 0.10123007744550705,
+        "feature_std": 0.012646725866943598,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.935571393434657,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9995762711864407,
+        "train_ce_mean": 0.0031954816132152486,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 22,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_022.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_022.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.10109427432594113,
+        "global_feature_mean": 0.0004073873931815797,
+        "global_feature_std": 0.012630215862076025
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 24.26696412732113,
+        "prototype_norm_min": 7.4196422460952505,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.1987355923745397,
+        "prototype_var_mean_min": 0.11010275716620616,
+        "prototype_var_mean_max": 6.2122700913199065
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_022.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_022.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.010086900379974395,
+      "evaluate_metrics": {
+        "accuracy": 0.9977941176470588,
+        "evaluate_seconds": 0.4095537385146599,
+        "nll": 0.010086900244384784,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 23,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.00026171599893132225,
+        "feature_norm": 0.10919901356101036,
+        "feature_std": 0.01364722615107894,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.924432176456321,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9997881355932203,
+        "train_ce_mean": 0.0028589660589883135,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 23,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_023.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_023.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.10859108960564078,
+        "global_feature_mean": 0.00026171597721713624,
+        "global_feature_std": 0.01357136291375931
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 24.262571160426997,
+        "prototype_norm_min": 7.068006818706967,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.23515997383087,
+        "prototype_var_mean_min": 0.10572000647058091,
+        "prototype_var_mean_max": 6.1629409124111305
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_023.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_023.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.006374010001309216,
+      "evaluate_metrics": {
+        "accuracy": 0.9992647058823529,
+        "evaluate_seconds": 0.4076242939918302,
+        "nll": 0.006374010173193015,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 24,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.0002969911802210845,
+        "feature_norm": 0.11606541648507118,
+        "feature_std": 0.01450501848012209,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.919371985422913,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9983050847457627,
+        "train_ce_mean": 0.01014580290243661,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 24,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_024.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_024.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.11573346314269402,
+        "global_feature_mean": 0.0002969911997752206,
+        "global_feature_std": 0.014463634057495777
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 24.439050846192128,
+        "prototype_norm_min": 7.620449950759051,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.2702152684784926,
+        "prototype_var_mean_min": 0.09257681488436968,
+        "prototype_var_mean_max": 5.977941253267485
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_024.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_024.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.01140759838744998,
+      "evaluate_metrics": {
+        "accuracy": 0.9963235294117647,
+        "evaluate_seconds": 0.40817926402087323,
+        "nll": 0.011407598657944404,
+        "num_examples": 680.0
+      }
+    },
+    {
+      "round": 25,
+      "run_name": "CAN-V1-MR-G2-DGP",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 1.0,
+        "feature_mean": 0.0003448156057856977,
+        "feature_norm": 0.11646737158298492,
+        "feature_std": 0.014554208144545555,
+        "fedprox_mu": 0.0,
+        "fedprox_penalty_mean": 0.0,
+        "fit_seconds": 6.90839923749445,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 2360.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_examples": 2360.0,
+        "proto_stats_uploaded": 1.0,
+        "prototype_count": 12.0,
+        "prototype_var_count": 12.0,
+        "received_global_prototypes": 12.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_accuracy": 0.9978813559322034,
+        "train_ce_mean": 0.012111854722518158,
+        "train_metric_examples": 2360.0,
+        "train_samples": 2360.0,
+        "use_align": 1.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "gaps",
+      "selective_agg": {
+        "selective_active": false,
+        "phase": "disabled",
+        "round": 25,
+        "warmup": 5,
+        "base_weights": {
+          "1": 0.5,
+          "2": 0.5
+        },
+        "reason": "selective_aggregation_disabled",
+        "final_weights": {
+          "1": 0.5,
+          "2": 0.5
+        }
+      },
+      "client_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/client_stats_round_025.json",
+      "prototype_stats": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/prototype_stats_round_025.json",
+      "global_feature_summary": {
+        "global_feature_dim": 64,
+        "global_feature_norm": 0.1158248033843404,
+        "global_feature_mean": 0.0003448157142997843,
+        "global_feature_std": 0.014473993712271564
+      },
+      "prototype_summary": {
+        "num_global_prototypes": 12,
+        "prototype_dims": [
+          64
+        ],
+        "prototype_norm_mean": 24.61053888352136,
+        "prototype_norm_min": 7.902241979616769,
+        "prototype_norm_max": 40.0,
+        "num_global_proto_vars": 12,
+        "prototype_var_dims": [
+          64
+        ],
+        "prototype_var_mean_mean": 2.352369880588143,
+        "prototype_var_mean_min": 0.10917559902096594,
+        "prototype_var_mean_max": 6.367264420410683
+      },
+      "semantic_protos": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/semantic_protos_round_025.json",
+      "checkpoint": "/root/GAPS/iotj_final_classification_le1_20260804/CAN-V1-MR-G2-DGP/server_round_025.pth",
+      "evaluate_clients": 2,
+      "evaluate_failures": 0,
+      "evaluate_loss": 0.005955136351985857,
+      "evaluate_metrics": {
+        "accuracy": 0.9992647058823529,
+        "evaluate_seconds": 0.4082240409916267,
+        "nll": 0.005955136157674989,
+        "num_examples": 680.0
+      }
+    }
+  ]
+}

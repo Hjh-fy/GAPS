@@ -8,6 +8,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -156,16 +157,81 @@ def write_freeze(output: Path) -> dict[str, Any]:
     return payload
 
 
+def prepare_lock_only_retry(
+    run_dir: Path, expected_commands: dict[str, Any]
+) -> Path:
+    """Preserve a pre-execution lock-only directory and free the run ID.
+
+    ``execute_full_fl`` writes its lock before checking remote connectivity. A
+    connectivity failure can therefore leave one file even though no process
+    or round started. Only that exact state is safe to archive and retry.
+    """
+    run_dir = run_dir.resolve()
+    entries = list(run_dir.iterdir())
+    lock_path = run_dir / "locked_run_spec.json"
+    if len(entries) != 1 or entries[0].name != lock_path.name:
+        raise FileExistsError(
+            f"FAIL_CLOSED partial G2 run has execution artifacts: {run_dir}"
+        )
+    observed = json.loads(lock_path.read_text(encoding="utf-8"))
+    if observed != expected_commands:
+        raise RuntimeError("FAIL_CLOSED lock-only G2 spec differs from frozen commands")
+    parent = run_dir.parent.resolve()
+    if run_dir.parent.resolve() != parent or run_dir == parent:
+        raise RuntimeError("FAIL_CLOSED invalid lock-only archive path")
+    index = 1
+    while True:
+        archive = parent / f"preflight_failure_lock_only_{index:03d}"
+        if not archive.exists():
+            break
+        index += 1
+    run_dir.rename(archive)
+    return archive
+
+
+def ssh_with_transport_retry(
+    ssh_function,
+    host: str,
+    command: str,
+    *,
+    timeout: float = 120.0,
+    attempts: int = 3,
+    delay_seconds: float = 0.0,
+) -> str:
+    """Retry only SSH transport failure 255; preserve all remote failures."""
+    if attempts < 1:
+        raise ValueError("SSH retry attempts must be positive")
+    for attempt in range(1, attempts + 1):
+        try:
+            return ssh_function(host, command, timeout=timeout)
+        except subprocess.CalledProcessError as exc:
+            if exc.returncode != 255 or attempt == attempts:
+                raise
+            if delay_seconds > 0:
+                time.sleep(delay_seconds)
+    raise RuntimeError("unreachable SSH retry state")
+
+
 def execute_fl(output: Path, freeze: dict[str, Any], args: argparse.Namespace) -> None:
     run_dir = output / EXPERIMENT_ID
     if (run_dir / "fixed_endpoint_complete.json").is_file():
         return
     if run_dir.exists():
-        raise FileExistsError(f"FAIL_CLOSED partial G2 run exists: {run_dir}")
-    original_root, original_builder = frozen.RESULT_ROOT, frozen.build_flower_commands
+        prepare_lock_only_retry(run_dir, build_g2_commands())
+    original_root = frozen.RESULT_ROOT
+    original_builder = frozen.build_flower_commands
+    original_ssh = frozen._ssh
     try:
         frozen.RESULT_ROOT = output
         frozen.build_flower_commands = lambda _experiment_id: build_g2_commands()
+        frozen._ssh = lambda host, command, timeout=120.0: ssh_with_transport_retry(
+            original_ssh,
+            host,
+            command,
+            timeout=timeout,
+            attempts=3,
+            delay_seconds=2.0,
+        )
         frozen.execute_full_fl(
             EXPERIMENT_ID,
             protocol_hash=freeze["protocol_hash"],
@@ -178,6 +244,7 @@ def execute_fl(output: Path, freeze: dict[str, Any], args: argparse.Namespace) -
     finally:
         frozen.RESULT_ROOT = original_root
         frozen.build_flower_commands = original_builder
+        frozen._ssh = original_ssh
 
 
 def _probabilities(rows: list[dict[str, Any]]) -> np.ndarray:
