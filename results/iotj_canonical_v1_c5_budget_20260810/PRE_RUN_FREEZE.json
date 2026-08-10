@@ -1,0 +1,115 @@
+{
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "freeze_commit": "b2ebf32812a5a3696b105e0eca7f56aabb8e0bbc",
+  "preflight": {
+    "budget_manifest_sha256": "76586b31a08f6121c75c649f4f41c669746d3ab6c1fc47300cfd50530327ae4d",
+    "calibration_audit_sha256": "258035b1aee1226948f1b3b34a19e465044529541c516645c81fef4417726f59",
+    "command_audit": {
+      "checkpoint_reuse_referenced": false,
+      "run_count": 6,
+      "runs": [
+        {
+          "budget_path": true,
+          "budget_pct": 15,
+          "experiment_id": "CAN-V1-C5-LB-A0T-B15-S42",
+          "fixed_endpoint": true,
+          "fresh_initialization": true,
+          "local_epochs_1": true,
+          "method": "A0T",
+          "method_surface": true,
+          "rounds_25": true,
+          "seed_42": true,
+          "server_lr_5e_4": true,
+          "steps_100": true
+        },
+        {
+          "budget_path": true,
+          "budget_pct": 10,
+          "experiment_id": "CAN-V1-C5-LB-A0T-B10-S42",
+          "fixed_endpoint": true,
+          "fresh_initialization": true,
+          "local_epochs_1": true,
+          "method": "A0T",
+          "method_surface": true,
+          "rounds_25": true,
+          "seed_42": true,
+          "server_lr_5e_4": true,
+          "steps_100": true
+        },
+        {
+          "budget_path": true,
+          "budget_pct": 5,
+          "experiment_id": "CAN-V1-C5-LB-A0T-B05-S42",
+          "fixed_endpoint": true,
+          "fresh_initialization": true,
+          "local_epochs_1": true,
+          "method": "A0T",
+          "method_surface": true,
+          "rounds_25": true,
+          "seed_42": true,
+          "server_lr_5e_4": true,
+          "steps_100": true
+        },
+        {
+          "budget_path": true,
+          "budget_pct": 15,
+          "experiment_id": "CAN-V1-C5-LB-A4-B15-S42",
+          "fixed_endpoint": true,
+          "fresh_initialization": true,
+          "local_epochs_1": true,
+          "method": "A4",
+          "method_surface": true,
+          "rounds_25": true,
+          "seed_42": true,
+          "server_lr_5e_4": true,
+          "steps_100": true
+        },
+        {
+          "budget_path": true,
+          "budget_pct": 10,
+          "experiment_id": "CAN-V1-C5-LB-A4-B10-S42",
+          "fixed_endpoint": true,
+          "fresh_initialization": true,
+          "local_epochs_1": true,
+          "method": "A4",
+          "method_surface": true,
+          "rounds_25": true,
+          "seed_42": true,
+          "server_lr_5e_4": true,
+          "steps_100": true
+        },
+        {
+          "budget_path": true,
+          "budget_pct": 5,
+          "experiment_id": "CAN-V1-C5-LB-A4-B05-S42",
+          "fixed_endpoint": true,
+          "fresh_initialization": true,
+          "local_epochs_1": true,
+          "method": "A4",
+          "method_surface": true,
+          "rounds_25": true,
+          "seed_42": true,
+          "server_lr_5e_4": true,
+          "steps_100": true
+        }
+      ],
+      "schema_version": "gaps.iotj.c5_label_budget.command_audit.v1",
+      "status": "PASS",
+      "target_test_referenced": false
+    },
+    "status": "PASS"
+  },
+  "protocol_hash": "a0a17a9962d96a728a3c675ec842c8e7656498903b8a5025d16db94eb08de625",
+  "run_order": [
+    "CAN-V1-C5-LB-A0T-B15-S42",
+    "CAN-V1-C5-LB-A0T-B10-S42",
+    "CAN-V1-C5-LB-A0T-B05-S42",
+    "CAN-V1-C5-LB-A4-B15-S42",
+    "CAN-V1-C5-LB-A4-B10-S42",
+    "CAN-V1-C5-LB-A4-B05-S42"
+  ],
+  "schema_version": "gaps.iotj.c5_label_budget.pre_run.v1",
+  "status": "FROZEN",
+  "stop_rule": "stop after unified C5 evaluation; no C3/C4, multi-seed, lower budget, R84, or QC",
+  "test_open_policy": "only after all six fixed round25 endpoints complete"
+}

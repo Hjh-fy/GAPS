@@ -1,0 +1,35 @@
+{
+  "schema_version": "gaps.iotj.canonical_v1.c5_label_budget.audit.v1",
+  "status": "PASS",
+  "source": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\iotj_canonical_v1\\client_5",
+  "source_file_sha256": {
+    "calibration_classification_labels.npy": "38933a1740dbd8e2bf583a999c926632c890a223be664633aeaedf1a388c3ce9",
+    "calibration_experiment_info.json": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+    "calibration_features.npy": "2b70fda6a0250b7f7709b1e57b3fd819301775430aedb92fa490a794fefee645",
+    "calibration_phase_labels.npy": "fc459637354518e2d4eeb26b89648b2735797555e88bdd7bacc482179c7608fd",
+    "calibration_regression_labels.npy": "a9414e1b1a7789178f68b6440172bf95639d39c5300c27885b0cb7d4543d991c"
+  },
+  "counts": {
+    "20": 320,
+    "15": 240,
+    "10": 160,
+    "5": 80
+  },
+  "strata": 40,
+  "stratum_min_n_20pct": 8,
+  "stratum_max_n_20pct": 8,
+  "class_counts": {
+    "0": 80,
+    "1": 80,
+    "2": 80,
+    "3": 80
+  },
+  "raw_file_count": 80,
+  "repeat_counts": {
+    "1": 154,
+    "2": 166
+  },
+  "nested": true,
+  "calibration_test_exact_identity_overlap": 0,
+  "test_arrays_copied_to_budget_directories": false
+}

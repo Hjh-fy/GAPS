@@ -1,0 +1,70 @@
+{
+  "method": "A4",
+  "budget_pct": 15,
+  "class_names": [
+    "ethanol",
+    "carbon_monoxide",
+    "ethylene",
+    "methane"
+  ],
+  "confusion_matrix": [
+    [
+      332,
+      5,
+      3,
+      0
+    ],
+    [
+      0,
+      339,
+      0,
+      1
+    ],
+    [
+      0,
+      5,
+      333,
+      2
+    ],
+    [
+      0,
+      1,
+      1,
+      338
+    ]
+  ],
+  "per_class": [
+    {
+      "class_id": 0,
+      "class_name": "ethanol",
+      "precision": 1.0,
+      "recall": 0.9764705882352941,
+      "f1": 0.988095238095238,
+      "support": 340
+    },
+    {
+      "class_id": 1,
+      "class_name": "carbon_monoxide",
+      "precision": 0.9685714285714285,
+      "recall": 0.9970588235294118,
+      "f1": 0.9826086956521739,
+      "support": 340
+    },
+    {
+      "class_id": 2,
+      "class_name": "ethylene",
+      "precision": 0.9881305637982196,
+      "recall": 0.9794117647058823,
+      "f1": 0.983751846381093,
+      "support": 340
+    },
+    {
+      "class_id": 3,
+      "class_name": "methane",
+      "precision": 0.9912023460410557,
+      "recall": 0.9941176470588236,
+      "f1": 0.9926578560939794,
+      "support": 340
+    }
+  ]
+}

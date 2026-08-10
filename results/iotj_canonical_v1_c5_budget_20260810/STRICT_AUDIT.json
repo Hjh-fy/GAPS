@@ -1,0 +1,46 @@
+{
+  "schema_version": "gaps.iotj.c5_label_budget.strict_audit.v1",
+  "audited_at": "2026-08-10T11:42:17.9614336+08:00",
+  "status": "PASS",
+  "freeze_commit": "b2ebf32812a5a3696b105e0eca7f56aabb8e0bbc",
+  "protocol_hash": "a0a17a9962d96a728a3c675ec842c8e7656498903b8a5025d16db94eb08de625",
+  "dataset": {
+    "status": "PASS",
+    "checked_files": 71,
+    "bad_files": [],
+    "aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6"
+  },
+  "completion_gate": {
+    "fixed_round25_markers": 6,
+    "checkpoint_hashes_verified": 6,
+    "target_test_opened_before_all_endpoints": false,
+    "selection_performed": false,
+    "hyperparameter_search": false
+  },
+  "sealed_evaluation": {
+    "status": "PASS",
+    "runs": 6,
+    "prediction_rows": 8160,
+    "prediction_groups": 6,
+    "rows_per_group": 1360
+  },
+  "verification": {
+    "required_scoped_pytest": "21 passed",
+    "compileall": "PASS",
+    "evidence_files_verified": 7,
+    "evidence_index_sha256": "81094520eadaeb88f0b8aacf62a27ee5740a4e4e7c3c7278e9fd47ff2895fcd7"
+  },
+  "repository_wide_test_context": {
+    "status": "NON_BLOCKING_HISTORICAL_FAILURES_OUTSIDE_STUDY_SCOPE",
+    "summary": "1129 passed, 32 failed, 9 errors, 4 skipped",
+    "diagnosis": [
+      "Historical portable runtime bundle_candidate asset is absent in both the worktree and main checkout.",
+      "Historical frozen protocol hashes and inputs are already missing or mismatched.",
+      "Tracked-only checkout tests hit Windows path-length limits under the nested pytest base directory.",
+      "The current task has no tracked source diff against freeze commit b2ebf32812a5a3696b105e0eca7f56aabb8e0bbc before evidence publication."
+    ]
+  },
+  "scientific_decision": "LABEL_EFFICIENCY_NOT_SUPPORTED",
+  "multi_seed_recommendation": "NO",
+  "scope_stop": "No C3/C4, multi-seed, lower budget, R84, QC, or algorithm search was launched."
+}
