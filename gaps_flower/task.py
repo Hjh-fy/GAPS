@@ -31,6 +31,13 @@ CLASSIFICATION_PROFILE_FLAGS = {
     "proto_only": {"align": True, "replay": False, "decouple": True, "upload_stats": True},
     "replay_only": {"align": False, "replay": True, "decouple": False, "upload_stats": False},
     "proto_replay": {"align": True, "replay": True, "decouple": True, "upload_stats": True},
+    "dg_proto": {
+        "align": True,
+        "contrastive": False,
+        "replay": False,
+        "decouple": False,
+        "upload_stats": True,
+    },
 }
 
 CLASSIFICATION_PROFILE_ALIASES = {
@@ -131,7 +138,7 @@ def make_config(
     profile_key = canonical_profile(profile)
     flags = CLASSIFICATION_PROFILE_FLAGS[profile_key]
     config.USE_ALIGN = flags["align"]
-    config.USE_CONTRASTIVE_ALIGN = flags["align"]
+    config.USE_CONTRASTIVE_ALIGN = flags.get("contrastive", flags["align"])
     config.USE_REPLAY_DISTILL = flags["replay"]
     config.USE_PROTO_DECOUPLING = flags["decouple"]
     config.UPLOAD_PROTO_STATS = bool(flags["upload_stats"])

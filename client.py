@@ -873,8 +873,15 @@ class Client:
                     # 批量获取对应的原型
                     selected_protos = proto_tensor[y_cls, y_p]
                     
-                    # 计算批量损失
-                    align_terms = torch.norm(feats - selected_protos, p=2, dim=1).pow(2)
+                    # GAPS-DG-P uses squared distance in the normalized
+                    # semantic space for both local features and server
+                    # prototypes.  Existing contrastive profiles use the
+                    # branch above and are unaffected.
+                    normalized_feats = F.normalize(feats, dim=1, p=2)
+                    normalized_protos = F.normalize(selected_protos, dim=1, p=2)
+                    align_terms = torch.norm(
+                        normalized_feats - normalized_protos, p=2, dim=1
+                    ).pow(2)
                     loss_align = align_terms.mean()
             loss_align *= self.config.LAMBDA_ALIGN
         return loss_align

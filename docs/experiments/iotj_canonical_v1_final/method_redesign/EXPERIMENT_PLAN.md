@@ -30,6 +30,11 @@
 - Target-head is `PROMISING` only if it is within 0.005 of A0T-full on C5 while using fewer trainable parameters, retaining source performance at least as well on average, and adapting faster. Otherwise it is `NOT_COMPETITIVE`.
 - `INTERLEAVED_DEPENDENCY_RISK` is raised when each comparable 100-step post-hoc endpoint is more than 0.05 below its historical interleaved reference. No update-budget experiment is launched automatically.
 
+### Pre-registered Gate-2 decision threshold
+
+- `SOURCE_DG_SUPPORTED` requires GAPS-DG-P to improve C5 zero-shot Macro-F1 over the same canonical FedAvg reference by at least 0.01 while reducing merged C1+C2 Macro-F1 by no more than 0.01.
+- Otherwise the decision is `SOURCE_DG_NOT_SUPPORTED`; lambda, warm-up, prototype key, and training budget remain unchanged and no additional prototype-DG run is allowed.
+
 ## Leakage controls
 
 - Adaptation code receives calibration-only manifests and rejects any test-role identity.
