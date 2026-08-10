@@ -2,18 +2,28 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 from dataclasses import asdict, dataclass
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
-
-from gaps_flower.state_fingerprint import checkpoint_provenance
-from tools.verify_iotj_canonical_v1_hashes import verify as verify_dataset
-
+import sys
+from typing import Any, Mapping, Sequence
+from collections.abc import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from gaps_flower.state_fingerprint import checkpoint_provenance
+import numpy as np
+import torch
+from run_regression_head_ablation import CLASS_NAMES, CLASS_RANGES, fit_ridge
+from scripts import run_gaps_cross_target_r84_full as r84_common
+from scripts.run_iotj_canonical_v1_r84 import expected_counts, prepare_rows, route_rows
+from tools.verify_iotj_canonical_v1_hashes import verify as verify_dataset
+
 DATA_ROOT = ROOT / "dataset" / "iotj_canonical_v1"
 H1_MANIFEST = (
     ROOT
@@ -26,6 +36,7 @@ EXPECTED_H1_SHA256 = "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007
 SPLIT_PROTOCOL = "canonical_v1_target_20_80"
 REGRESSION_PROFILE = "R84_FED_H1_fixed_alpha"
 SEED = 42
+DEFAULT_OUTPUT = ROOT / "results" / "iotj_canonical_v1_final" / "a0t_vs_a4_regression"
 CANONICAL_A4_REGRESSION = ROOT / "results" / "iotj_canonical_v1_final_20260808" / "regression"
 CANONICAL_QC_ROOT = (
     ROOT
@@ -262,3 +273,400 @@ def audit_inputs(output: Path) -> dict[str, Any]:
     )
     _write_registry(output / "experiment_registry.csv", checkpoints)
     return result
+
+
+def fit_fixed_alpha_models(
+    target: str, oracle_rows: Sequence[Mapping[str, Any]]
+) -> dict[int, Any]:
+    if target not in FROZEN_ALPHAS:
+        raise ValueError(f"unsupported target: {target}")
+    if not oracle_rows:
+        raise RuntimeError("FAIL_CLOSED empty calibration rows")
+    models: dict[int, Any] = {}
+    for class_id in range(4):
+        rows = [dict(row) for row in oracle_rows if int(row["true_class"]) == class_id]
+        if not rows:
+            raise RuntimeError(f"FAIL_CLOSED empty calibration class: {target}/{class_id}")
+        feature_names = sorted(str(name) for name in rows[0]["feature_dict"])
+        if any(sorted(str(name) for name in row["feature_dict"]) != feature_names for row in rows):
+            raise RuntimeError(f"FAIL_CLOSED feature ordering differs: {target}/{class_id}")
+        models[class_id] = fit_ridge(rows, feature_names, FROZEN_ALPHAS[target][class_id])
+    return models
+
+
+def apply_scope_models(
+    rows: Sequence[Mapping[str, Any]], models: Mapping[int, Any]
+) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        route = int(item["pred_class"])
+        prediction = float(models[route].predict([item])[0])
+        truth = float(item["true_ppm"])
+        item.update(
+            {
+                "route_correct": int(route == int(item["true_class"])),
+                "pred_84d_h1_ppm": prediction,
+                "pred_ppm": prediction,
+                "abs_error": abs(prediction - truth),
+                "squared_error": (prediction - truth) ** 2,
+            }
+        )
+        output.append(item)
+    return output
+
+
+def build_four_scopes(
+    deployment_rows: Sequence[Mapping[str, Any]],
+    oracle_rows: Sequence[Mapping[str, Any]],
+    models: Mapping[int, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    if len(deployment_rows) != len(oracle_rows):
+        raise RuntimeError("FAIL_CLOSED deployment/oracle row count differs")
+    deployment_ids = [int(row["sample_index"]) for row in deployment_rows]
+    oracle_ids = [int(row["sample_index"]) for row in oracle_rows]
+    if deployment_ids != oracle_ids:
+        raise RuntimeError("FAIL_CLOSED deployment/oracle row order differs")
+    s_all = apply_scope_models(deployment_rows, models)
+    s_cc = [row for row in s_all if int(row["route_correct"]) == 1]
+    forced_oracle = [
+        {**dict(row), "pred_class": int(row["true_class"])} for row in oracle_rows
+    ]
+    oracle_all = apply_scope_models(forced_oracle, models)
+    correct_ids = {int(row["sample_index"]) for row in s_cc}
+    oracle_cc = [row for row in oracle_all if int(row["sample_index"]) in correct_ids]
+    if [int(row["sample_index"]) for row in oracle_cc] != [int(row["sample_index"]) for row in s_cc]:
+        raise RuntimeError("FAIL_CLOSED Oracle_CC/S_CC indices differ")
+    return {"S_ALL": s_all, "S_CC": s_cc, "Oracle_ALL": oracle_all, "Oracle_CC": oracle_cc}
+
+
+def summarize_scope(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        raise RuntimeError("FAIL_CLOSED empty regression scope")
+    truth = np.asarray([float(row["true_ppm"]) for row in rows], dtype=np.float64)
+    pred = np.asarray([float(row["pred_ppm"]) for row in rows], dtype=np.float64)
+    classes = np.asarray([int(row["true_class"]) for row in rows], dtype=np.int64)
+    if not np.isfinite(truth).all() or not np.isfinite(pred).all():
+        raise RuntimeError("FAIL_CLOSED non-finite regression scope")
+    error = pred - truth
+    ranges = np.asarray([float(CLASS_RANGES[int(value)]) for value in classes])
+    centered = truth - float(np.mean(truth))
+    total = float(np.sum(centered**2))
+    return {
+        "N": int(len(rows)),
+        "RMSE": float(np.sqrt(np.mean(error**2))),
+        "MAE": float(np.mean(np.abs(error))),
+        "NRMSE_range": float(np.sqrt(np.mean((error / ranges) ** 2))),
+        "R2": float(1.0 - np.sum(error**2) / total) if total > 0 else float("nan"),
+        "Bias": float(np.mean(error)),
+    }
+
+
+def orchestrate_sealed_run(
+    specs: Sequence[EndpointSpec],
+    output: Path,
+    fit_stage: Callable[[EndpointSpec, Path], Path],
+    test_stage: Callable[[EndpointSpec, Path], Any],
+) -> None:
+    endpoint_root = output / "endpoints"
+    locks: list[Path] = []
+    for spec in specs:
+        locks.append(fit_stage(spec, endpoint_root / spec.experiment_id))
+    if len(locks) != 6 or any(not lock.is_file() for lock in locks):
+        raise RuntimeError("FAIL_CLOSED all six calibration locks must exist before target test")
+    for lock in locks:
+        payload = json.loads(lock.read_text(encoding="utf-8"))
+        if payload.get("status") != "SEALED_BEFORE_TARGET_TEST":
+            raise RuntimeError(f"FAIL_CLOSED invalid calibration lock: {lock}")
+    for spec in specs:
+        test_stage(spec, endpoint_root / spec.experiment_id)
+
+
+def special_slice_rows(
+    target: str, rows: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    if target != "C5":
+        return []
+    selected = [
+        dict(row)
+        for row in rows
+        if str(row.get("gas", "")).lower() == "methane"
+        and abs(float(row["true_ppm"]) - 225.0) <= 1e-9
+        and int(row.get("repeat_id", -1)) == 1
+    ]
+    if not selected:
+        raise RuntimeError("FAIL_CLOSED C5 Methane 225 ppm repeat1 slice missing")
+    return selected
+
+
+def _without_features(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    return [{key: value for key, value in row.items() if key != "feature_dict"} for row in rows]
+
+
+def _model_manifest(models: Mapping[int, Any]) -> dict[str, Any]:
+    return {str(class_id): model.to_json() for class_id, model in sorted(models.items())}
+
+
+def _scope_summary_rows(spec: EndpointSpec, scopes: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "experiment_id": spec.experiment_id,
+            "method": spec.method,
+            "target": spec.target,
+            "scope": scope,
+            "seed": SEED,
+            **summarize_scope(rows),
+        }
+        for scope, rows in scopes.items()
+    ]
+
+
+def _per_gas_rows(spec: EndpointSpec, scopes: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for scope, rows in scopes.items():
+        for class_id, gas in CLASS_NAMES.items():
+            selected = [row for row in rows if int(row["true_class"]) == class_id]
+            output.append(
+                {
+                    "experiment_id": spec.experiment_id,
+                    "method": spec.method,
+                    "target": spec.target,
+                    "scope": scope,
+                    "class_id": class_id,
+                    "gas": gas,
+                    "seed": SEED,
+                    **summarize_scope(selected),
+                }
+            )
+    return output
+
+
+def _per_concentration_rows(
+    spec: EndpointSpec, scopes: Mapping[str, Sequence[Mapping[str, Any]]]
+) -> list[dict[str, Any]]:
+    output: list[dict[str, Any]] = []
+    for scope, rows in scopes.items():
+        groups = sorted({(int(row["true_class"]), float(row["true_ppm"])) for row in rows})
+        for class_id, concentration in groups:
+            selected = [
+                row
+                for row in rows
+                if int(row["true_class"]) == class_id
+                and abs(float(row["true_ppm"]) - concentration) <= 1e-9
+            ]
+            output.append(
+                {
+                    "experiment_id": spec.experiment_id,
+                    "method": spec.method,
+                    "target": spec.target,
+                    "scope": scope,
+                    "class_id": class_id,
+                    "gas": CLASS_NAMES[class_id],
+                    "true_ppm": concentration,
+                    "seed": SEED,
+                    **summarize_scope(selected),
+                }
+            )
+    return output
+
+
+def _test_manifest_hashes(target: str) -> dict[str, str]:
+    directory = DATA_ROOT / f"client_{target[1:]}"
+    names = (
+        "test_features.npy",
+        "test_classification_labels.npy",
+        "test_regression_labels.npy",
+        "test_phase_labels.npy",
+        "test_experiment_info.json",
+    )
+    missing = [name for name in names if not (directory / name).is_file()]
+    if missing:
+        raise RuntimeError(f"FAIL_CLOSED target test manifest inputs missing: {target}/{missing}")
+    return {name: sha256(directory / name) for name in names}
+
+
+def _fit_endpoint_calibration(
+    spec: EndpointSpec,
+    endpoint_dir: Path,
+    h1: Mapping[int, Any],
+    device: torch.device,
+    batch_size: int,
+    model_cache: dict[str, dict[int, Any]],
+) -> Path:
+    endpoint_dir.mkdir(parents=True)
+    provenance = audit_checkpoint(spec)
+    routes, classification = route_rows(
+        spec.checkpoint, spec.target, "calibration", device, batch_size
+    )
+    counts = expected_counts(spec.target)
+    if len(routes) != int(counts["calibration"]):
+        raise RuntimeError(f"FAIL_CLOSED calibration count differs: {spec.experiment_id}")
+    oracle, deployment = prepare_rows(spec.target, "calibration", routes, h1)
+    oracle_r84 = [r84_common.r84_row(row) for row in oracle]
+    deployment_r84 = [r84_common.r84_row(row) for row in deployment]
+    models = fit_fixed_alpha_models(spec.target, oracle_r84)
+    model_cache[spec.experiment_id] = models
+    model_path = endpoint_dir / "r84_models.json"
+    r84_common.write_json(model_path, _model_manifest(models))
+    calibration_scopes = build_four_scopes(deployment_r84, oracle_r84, models)
+    r84_common.write_csv(
+        endpoint_dir / "calibration_s_all.csv", _without_features(calibration_scopes["S_ALL"])
+    )
+    lock_path = endpoint_dir / "calibration_lock.json"
+    r84_common.write_json(
+        lock_path,
+        {
+            "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.lock.v1",
+            "status": "SEALED_BEFORE_TARGET_TEST",
+            "experiment_id": spec.experiment_id,
+            "method": spec.method,
+            "target": spec.target,
+            "target_test_opened": False,
+            "alpha_selection_performed": False,
+            "fixed_alphas": FROZEN_ALPHAS[spec.target],
+            "calibration_N": len(routes),
+            "classification_metrics": classification,
+            "checkpoint": provenance,
+            "r84_models_sha256": sha256(model_path),
+        },
+    )
+    return lock_path
+
+
+def _evaluate_endpoint_test(
+    spec: EndpointSpec,
+    endpoint_dir: Path,
+    h1: Mapping[int, Any],
+    device: torch.device,
+    batch_size: int,
+    model_cache: Mapping[str, Mapping[int, Any]],
+) -> dict[str, Any]:
+    lock_path = endpoint_dir / "calibration_lock.json"
+    lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    if lock.get("status") != "SEALED_BEFORE_TARGET_TEST" or lock.get("target_test_opened") is not False:
+        raise RuntimeError(f"FAIL_CLOSED invalid calibration lock: {spec.experiment_id}")
+    routes, classification = route_rows(spec.checkpoint, spec.target, "test", device, batch_size)
+    counts = expected_counts(spec.target)
+    if len(routes) != int(counts["test"]):
+        raise RuntimeError(f"FAIL_CLOSED test count differs: {spec.experiment_id}")
+    oracle, deployment = prepare_rows(spec.target, "test", routes, h1)
+    oracle_r84 = [r84_common.r84_row(row) for row in oracle]
+    deployment_r84 = [r84_common.r84_row(row) for row in deployment]
+    scopes = build_four_scopes(deployment_r84, oracle_r84, model_cache[spec.experiment_id])
+    prediction_hashes: dict[str, str] = {}
+    for scope, rows in scopes.items():
+        path = endpoint_dir / f"test_{scope.lower()}.csv"
+        r84_common.write_csv(path, _without_features(rows))
+        prediction_hashes[scope] = sha256(path)
+    summary = _scope_summary_rows(spec, scopes)
+    per_gas = _per_gas_rows(spec, scopes)
+    per_concentration = _per_concentration_rows(spec, scopes)
+    r84_common.write_csv(endpoint_dir / "scope_summary.csv", summary)
+    r84_common.write_csv(endpoint_dir / "per_gas.csv", per_gas)
+    r84_common.write_csv(endpoint_dir / "per_concentration.csv", per_concentration)
+    special_rows = special_slice_rows(spec.target, scopes["S_ALL"])
+    if special_rows:
+        special = {
+            "experiment_id": spec.experiment_id,
+            "method": spec.method,
+            "target": spec.target,
+            "slice": "methane_225ppm_repeat1",
+            **summarize_scope(special_rows),
+        }
+        r84_common.write_csv(endpoint_dir / "special_slices.csv", [special])
+    manifest = {
+        "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+        "status": "COMPLETE",
+        "experiment_id": spec.experiment_id,
+        "method": spec.method,
+        "target": spec.target,
+        "seed": SEED,
+        "calibration_lock_sha256": sha256(lock_path),
+        "checkpoint_sha256": spec.checkpoint_sha256,
+        "prediction_sha256": prediction_hashes,
+        "test_manifest_sha256": _test_manifest_hashes(spec.target),
+        "test_classification": classification,
+        "target_test_used_for_selection": False,
+        "alpha_selection_performed": False,
+    }
+    r84_common.write_json(endpoint_dir / "endpoint_manifest.json", manifest)
+    return {"summary": summary, "per_gas": per_gas, "per_concentration": per_concentration, "manifest": manifest}
+
+
+def execute_study(output: Path, device_text: str, batch_size: int) -> dict[str, Any]:
+    output = output.resolve()
+    freeze_path = output / "PRE_RUN_FREEZE.json"
+    if not freeze_path.is_file():
+        raise RuntimeError("FAIL_CLOSED PRE_RUN_FREEZE.json is required")
+    freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+    if freeze.get("status") != "PASS" or freeze.get("target_test_state") != "SEALED":
+        raise RuntimeError("FAIL_CLOSED PRE_RUN_FREEZE is invalid")
+    if (output / "endpoints").exists():
+        raise FileExistsError("FAIL_CLOSED regression endpoints already exist")
+    dataset_before = verify_dataset(DATA_ROOT)
+    if dataset_before.get("aggregate_sha256") != EXPECTED_DATASET_SHA256:
+        raise RuntimeError("FAIL_CLOSED canonical dataset changed after freeze")
+    h1 = r84_common.load_h1()
+    specs = endpoint_specs()
+    model_cache: dict[str, dict[int, Any]] = {}
+    results: dict[str, dict[str, Any]] = {}
+    device = torch.device(device_text)
+
+    def fit_stage(spec: EndpointSpec, endpoint_dir: Path) -> Path:
+        return _fit_endpoint_calibration(spec, endpoint_dir, h1, device, batch_size, model_cache)
+
+    def test_stage(spec: EndpointSpec, endpoint_dir: Path) -> None:
+        results[spec.experiment_id] = _evaluate_endpoint_test(
+            spec, endpoint_dir, h1, device, batch_size, model_cache
+        )
+
+    orchestrate_sealed_run(specs, output, fit_stage, test_stage)
+    dataset_after = verify_dataset(DATA_ROOT)
+    if dataset_after != dataset_before:
+        raise RuntimeError("FAIL_CLOSED canonical dataset changed during evaluation")
+    all_summary = [row for spec in specs for row in results[spec.experiment_id]["summary"]]
+    all_per_gas = [row for spec in specs for row in results[spec.experiment_id]["per_gas"]]
+    all_per_concentration = [
+        row for spec in specs for row in results[spec.experiment_id]["per_concentration"]
+    ]
+    r84_common.write_csv(output / "scope_metrics_raw.csv", all_summary)
+    r84_common.write_csv(output / "per_gas_metrics_raw.csv", all_per_gas)
+    r84_common.write_csv(output / "per_concentration_metrics_raw.csv", all_per_concentration)
+    manifest = {
+        "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.protocol.v1",
+        "status": "FIXED_ENDPOINTS_COMPLETE",
+        "endpoint_count": 6,
+        "seed": SEED,
+        "dataset": dataset_after,
+        "target_test_opened_after_all_calibration_locks": True,
+        "target_test_used_for_selection": False,
+        "classifier_training_performed": False,
+        "alpha_selection_performed": False,
+        "frozen_alphas": FROZEN_ALPHAS,
+        "endpoint_manifests": {
+            spec.experiment_id: results[spec.experiment_id]["manifest"] for spec in specs
+        },
+    }
+    r84_common.write_json(output / "protocol_manifest.json", manifest)
+    return manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--audit-only", action="store_true")
+    action.add_argument("--execute", action="store_true")
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--batch-size", type=int, default=32)
+    args = parser.parse_args()
+    result = (
+        audit_inputs(args.output)
+        if args.audit_only
+        else execute_study(args.output, args.device, args.batch_size)
+    )
+    print(json.dumps({"status": result["status"]}, indent=2))
+
+
+if __name__ == "__main__":
+    main()
