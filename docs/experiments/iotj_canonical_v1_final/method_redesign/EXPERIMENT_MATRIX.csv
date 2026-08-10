@@ -1,0 +1,10 @@
+experiment_id,gate,method,source_clients,target_clients,split_protocol,model,checkpoint,DA,calibration,QC,seed,status,target_x_train,target_y_train,target_phase_train,notes
+CAN-V1-MR-G1-SOURCE,G1,Source-only,C1;C2,C5,canonical-v1 role-aware 20:80,canonical TCN,canonical FedAvg round25,none,none,none,42,registered,false,false,false,immutable reused endpoint
+CAN-V1-MR-G1-A0T-FULL,G1,Posthoc A0T-full,C1;C2,C5,canonical-v1 role-aware 20:80,canonical TCN,canonical FedAvg round25,target CE,full 320 labels,none,42,registered,true,true,false,100 posthoc steps
+CAN-V1-MR-G1-A4,G1,Posthoc A4,C1;C2,C5,canonical-v1 role-aware 20:80,canonical TCN,canonical FedAvg round25,registered A4,full 320 class+phase,none,42,registered,true,true,true,100 posthoc steps; unavailable interleaved statistics audited
+CAN-V1-MR-G1-HEAD,G1,Posthoc Target-head,C1;C2,C5,canonical-v1 role-aware 20:80,canonical TCN,canonical FedAvg round25,target CE,full 320 labels,none,42,registered,true,true,false,feat_proj+classifier only
+CAN-V1-MR-G2-DGP,G2,GAPS-DG-P,C1;C2,C5,canonical-v1 role-aware source train and sealed target test,canonical TCN,fresh seed42,source prototype alignment,none,none,42,registered,false,false,false,25 rounds LE1 lambda=0.05
+CAN-V1-MR-G3-A0T5L,G3,A0T-5L,C1;C2,C5,80L+240U+frozen test,canonical TCN,canonical FedAvg round25,target CE,80 labeled,none,42,registered,true,true,false,unlabeled pool not used
+CAN-V1-MR-G3-MME,G3,MME-5L15U,C1;C2,C5,80L+240U+frozen test,canonical TCN,canonical FedAvg round25,SSDA,80 labeled+240 unlabeled,none,42,registered,true,masked,false,feasibility audit required
+CAN-V1-MR-G3-GAPS,G3,GAPS-SSDA-5L15U,C1;C2,C5,80L+240U+frozen test,canonical TCN,canonical FedAvg round25,EMA pseudo-label+frozen source prototype,80 labeled+240 unlabeled,none,42,registered,true,masked,conditional on observability,bounded labeled-fold selection
+
