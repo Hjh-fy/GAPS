@@ -6,6 +6,7 @@ import argparse
 import csv
 import io
 import json
+import shutil
 import subprocess
 import sys
 import time
@@ -106,6 +107,8 @@ def decide_gate_b(
     sufficient: dict[str, bool] = {}
     for method, row in candidates.items():
         sufficient[method] = bool(
+            row.get("eligible_for_decision", True)
+            and
             full_f1 - float(row["macro_f1"]) <= 0.005
             and int(row["trainable_parameters"]) <= 0.25 * int(full_trainable_parameters)
         )
@@ -121,6 +124,20 @@ def decide_gate_b(
         "decision": "LIGHTWEIGHT_PERSONALIZATION_SUPPORTED",
         "selected_method": selected,
         "sufficient": sufficient,
+    }
+
+
+def projection_activity_audit(
+    *, active_projection: str, trainable_names: list[str]
+) -> dict[str, Any]:
+    prefix = f"{active_projection}."
+    active_trained = any(name.startswith(prefix) for name in trainable_names)
+    return {
+        "active_projection": active_projection,
+        "trainable_parameter_names": trainable_names,
+        "active_projection_trained": active_trained,
+        "status": "PASS" if active_trained else "INVALID_INACTIVE_PROJECTION",
+        "eligible_for_decision": bool(active_trained),
     }
 
 
@@ -359,6 +376,19 @@ def _evaluate_and_analyze(output: Path, freeze: dict[str, Any], device: torch.de
         "classifier_only": dict(new["classifier_only"]["system_metrics"]),
         "rank4_adapter": dict(new["rank4_adapter"]["system_metrics"]),
     }
+    source_model, _source_config, _source_container = load_checkpoint_model(
+        str(SOURCE_CHECKPOINT), torch.device("cpu"), BATCH_SIZE
+    )
+    active_projection = (
+        "cls_proj"
+        if bool(getattr(source_model, "use_cls_proj", False))
+        and getattr(source_model, "cls_proj", None) is not None
+        else "feat_proj"
+    )
+    projection_audit = projection_activity_audit(
+        active_projection=active_projection,
+        trainable_names=list(systems["projection_head"].get("trainable_parameter_names", [])),
+    )
     systems["a0t_full"]["checkpoint_delta_bytes"] = _serialized_delta_bytes(
         checkpoints["a0t_full"], ()
     )
@@ -391,6 +421,9 @@ def _evaluate_and_analyze(output: Path, freeze: dict[str, Any], device: torch.de
                 "checkpoint_delta_bytes": system.get("checkpoint_delta_bytes", 0),
                 "peak_rss_bytes": system.get("peak_rss_bytes", ""),
                 "checkpoint_sha256": sha256_file(checkpoints[method]),
+                "eligible_for_decision": (
+                    projection_audit["eligible_for_decision"] if method == "projection_head" else True
+                ),
             }
         )
     _write_csv(output / "GATE_B_LIGHTWEIGHT_COMPARISON.csv", rows)
@@ -401,6 +434,7 @@ def _evaluate_and_analyze(output: Path, freeze: dict[str, Any], device: torch.de
             method: {
                 "macro_f1": float(by_key[method]["C5_macro_f1"]),
                 "trainable_parameters": int(by_key[method]["trainable_parameters"]),
+                "eligible_for_decision": bool(by_key[method]["eligible_for_decision"]),
             }
             for method in ("classifier_only", "projection_head", "rank4_adapter")
         },
@@ -427,7 +461,7 @@ All methods use the immutable canonical S2 round25 source checkpoint and the sam
 
 ## [Negative Result / Limitation]
 
-This is seed42 on C5 with a fixed 100-step budget. Source-retention scores describe the hypothetical adapted checkpoint; the operational global source checkpoint remains immutable.
+This is seed42 on C5 with a fixed 100-step budget. Source-retention scores describe the hypothetical adapted checkpoint; the operational global source checkpoint remains immutable. The reused historical B3 endpoint trained `feat_proj`, but this source checkpoint routes classification through `cls_proj`; B3 is therefore non-diagnostic and excluded from the decision. It was not repaired after C5 test opening.
 
 ## [Leakage Audit]
 
@@ -452,6 +486,7 @@ Proceed to the already frozen read-only Gate C routing-cost audit. Do not start 
 
 - B2/B4 independently reloaded the same ordered source state.
 - B1/B3 checkpoint, calibration, fixed-step, and source fingerprints were audited before reuse.
+- B3 failed the activity audit because its nominal projection was inactive in the classifier forward path; it is excluded from the decision and was not rerun after test opening.
 - C5 test opened only after all endpoint locks; no target-test selection occurred.
 - No rank, learning-rate, step-count, or method search was performed.
 """
@@ -467,6 +502,7 @@ Proceed to the already frozen read-only Gate C routing-cost audit. Do not start 
             "calibration_manifest_sha256": freeze["calibration_manifest_sha256"],
             "target_test_manifest_sha256": sha256_file(test_manifest),
             "target_test_selection": False,
+            "projection_activity_audit": projection_audit,
             "decision": decision,
         },
     )
@@ -487,13 +523,46 @@ def run(output: Path, device: torch.device) -> dict[str, Any]:
     return {"status": "PASS", "output": str(output), **decision}
 
 
+def reanalyze_existing(output: Path, device: torch.device) -> dict[str, Any]:
+    """Apply a fail-closed activity audit without retraining any endpoint."""
+    output = output.resolve()
+    freeze_path = output / "PRE_RUN_FREEZE.json"
+    if not freeze_path.is_file():
+        raise RuntimeError("missing Gate B pre-run freeze")
+    archive = output / "_pre_activity_audit"
+    if archive.exists():
+        raise FileExistsError(f"activity-audit archive already exists: {archive}")
+    archive.mkdir()
+    for name in (
+        "GATE_B_LIGHTWEIGHT_COMPARISON.csv",
+        "GATE_B_DECISION.json",
+        "GATE_B_REPORT.md",
+        "EXPERIMENT_AUDIT.md",
+        "protocol_manifest.json",
+        "SEALED_TEST_OPEN.json",
+        "sha256_index.json",
+    ):
+        source = output / name
+        if source.is_file():
+            shutil.copy2(source, archive / name)
+    freeze = json.loads(freeze_path.read_text(encoding="utf-8"))
+    decision = _evaluate_and_analyze(output, freeze, device)
+    return {"status": "PASS_WITH_ACTIVITY_EXCLUSION", "output": str(output), **decision}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Gate B lightweight post-hoc personalization")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--reanalyze-existing", action="store_true")
     args = parser.parse_args()
     device = torch.device(args.device if not args.device.startswith("cuda") or torch.cuda.is_available() else "cpu")
-    print(json.dumps(run(args.output, device), indent=2))
+    result = (
+        reanalyze_existing(args.output, device)
+        if args.reanalyze_existing
+        else run(args.output, device)
+    )
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

@@ -106,6 +106,37 @@ def test_gate_b_decision_requires_full_when_no_localized_path_is_close() -> None
     assert result["selected_method"] == "a0t_full"
 
 
+def test_gate_b_inactive_projection_endpoint_is_fail_closed() -> None:
+    from scripts.run_iotj_method_breakthrough_gate_b import projection_activity_audit
+
+    audit = projection_activity_audit(
+        active_projection="cls_proj",
+        trainable_names=["feat_proj.weight", "feat_proj.bias", "classifier.weight", "classifier.bias"],
+    )
+    assert audit["status"] == "INVALID_INACTIVE_PROJECTION"
+    assert audit["eligible_for_decision"] is False
+
+
+def test_gate_b_decision_excludes_invalid_candidate_even_if_metric_is_high() -> None:
+    from scripts.run_iotj_method_breakthrough_gate_b import decide_gate_b
+
+    result = decide_gate_b(
+        full_f1=0.980,
+        candidates={
+            "classifier_only": {"macro_f1": 0.90, "trainable_parameters": 260},
+            "projection_head": {
+                "macro_f1": 0.980,
+                "trainable_parameters": 3396,
+                "eligible_for_decision": False,
+            },
+            "rank4_adapter": {"macro_f1": 0.92, "trainable_parameters": 772},
+        },
+        full_trainable_parameters=22765,
+    )
+    assert result["sufficient"]["projection_head"] is False
+    assert result["decision"] == "FULL_ADAPTATION_REQUIRED"
+
+
 def test_gate_b_runner_is_directly_executable() -> None:
     result = subprocess.run(
         [sys.executable, "scripts/run_iotj_method_breakthrough_gate_b.py", "--help"],
