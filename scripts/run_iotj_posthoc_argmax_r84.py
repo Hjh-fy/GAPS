@@ -174,7 +174,14 @@ def fit_calibration(output: Path, freeze: dict[str, Any], device: torch.device, 
     endpoint.mkdir(parents=True)
     spec = _spec(freeze["classifier"])
     h1 = r84_common.load_h1()
-    routes, classification = route_rows(spec.checkpoint, "C5", "calibration", device, batch_size)
+    routes, classification = route_rows(
+        spec.checkpoint,
+        "C5",
+        "calibration",
+        device,
+        batch_size,
+        expected_endpoint=("step", STEPS),
+    )
     if len(routes) != 320:
         raise RuntimeError("FAIL_CLOSED Phase-3 calibration count differs")
     oracle, deployment = prepare_rows("C5", "calibration", routes, h1)
@@ -195,7 +202,15 @@ def evaluate(output: Path, freeze: dict[str, Any], spec: EndpointSpec, models: d
     endpoint = Path(output) / "endpoint"
     lock = verify_calibration_lock(endpoint / "calibration_lock.json", endpoint / "r84_models.json")
     _json(Path(output) / "SEALED_TEST_OPEN.json", {"status": "OPENED_AFTER_PHASE3_CALIBRATION_LOCK", "opened_at_utc": datetime.now(timezone.utc).isoformat(), "calibration_lock_sha256": lock["lock_sha256"], "target_test_selection": False})
-    result = _evaluate_endpoint_test(spec, endpoint, r84_common.load_h1(), device, batch_size, {EXPERIMENT_ID: models})
+    result = _evaluate_endpoint_test(
+        spec,
+        endpoint,
+        r84_common.load_h1(),
+        device,
+        batch_size,
+        {EXPERIMENT_ID: models},
+        expected_classifier_endpoint=("step", STEPS),
+    )
     r84_common.write_csv(Path(output) / "POSTHOC_ARGMAX_BASELINE.csv", result["summary"])
     r84_common.write_csv(Path(output) / "POSTHOC_ARGMAX_PER_GAS.csv", result["per_gas"])
     r84_common.write_csv(Path(output) / "POSTHOC_ARGMAX_PER_CONCENTRATION.csv", result["per_concentration"])

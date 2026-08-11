@@ -76,3 +76,25 @@ def test_phase3_calibration_lock_rejects_test_open(tmp_path: Path) -> None:
     lock.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(RuntimeError, match="calibration lock"):
         verify_calibration_lock(lock, model)
+
+
+def test_route_rows_forwards_explicit_posthoc_endpoint(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    from scripts import run_iotj_canonical_v1_r84 as module
+
+    observed = {}
+
+    def fake_evaluate(_checkpoint, **kwargs):
+        observed.update(kwargs)
+        return ([{"sample_index": 0}], {"accuracy": 1.0})
+
+    monkeypatch.setattr(module, "evaluate_checkpoint_stream", fake_evaluate)
+    rows, _metrics = module.route_rows(
+        tmp_path / "posthoc.pth",
+        "C5",
+        "calibration",
+        __import__("torch").device("cpu"),
+        32,
+        expected_endpoint=("step", 100),
+    )
+    assert rows == [{"sample_index": 0}]
+    assert observed["expected_endpoint"] == ("step", 100)

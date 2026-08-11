@@ -68,7 +68,13 @@ def checkpoint_for(classification_root: Path, target: str) -> tuple[Path, dict[s
 
 
 def route_rows(
-    checkpoint: Path, target: str, split: str, device: torch.device, batch_size: int
+    checkpoint: Path,
+    target: str,
+    split: str,
+    device: torch.device,
+    batch_size: int,
+    *,
+    expected_endpoint: tuple[str, int] = ("round", 25),
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     rows, metrics = evaluate_checkpoint_stream(
         checkpoint,
@@ -77,6 +83,7 @@ def route_rows(
         split=split,
         device=device,
         batch_size=batch_size,
+        expected_endpoint=expected_endpoint,
     )
     if [int(row["sample_index"]) for row in rows] != list(range(len(rows))):
         raise RuntimeError(f"FAIL_CLOSED {target}/{split} route order differs")

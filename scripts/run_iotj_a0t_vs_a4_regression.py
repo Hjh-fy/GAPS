@@ -540,12 +540,20 @@ def _evaluate_endpoint_test(
     device: torch.device,
     batch_size: int,
     model_cache: Mapping[str, Mapping[int, Any]],
+    expected_classifier_endpoint: tuple[str, int] = ("round", 25),
 ) -> dict[str, Any]:
     lock_path = endpoint_dir / "calibration_lock.json"
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
     if lock.get("status") != "SEALED_BEFORE_TARGET_TEST" or lock.get("target_test_opened") is not False:
         raise RuntimeError(f"FAIL_CLOSED invalid calibration lock: {spec.experiment_id}")
-    routes, classification = route_rows(spec.checkpoint, spec.target, "test", device, batch_size)
+    routes, classification = route_rows(
+        spec.checkpoint,
+        spec.target,
+        "test",
+        device,
+        batch_size,
+        expected_endpoint=expected_classifier_endpoint,
+    )
     counts = expected_counts(spec.target)
     if len(routes) != int(counts["test"]):
         raise RuntimeError(f"FAIL_CLOSED test count differs: {spec.experiment_id}")
