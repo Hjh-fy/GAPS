@@ -1,0 +1,71 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+  "status": "COMPLETE",
+  "experiment_id": "CAN-V1-MB-P3-POSTHOC-R84-S42",
+  "method": "Posthoc-A0T",
+  "target": "C5",
+  "seed": 42,
+  "calibration_lock_sha256": "e49d64994ebc0e16376af9edbfbd09f41daf1957d4f6b9f33ea75910768d6f8d",
+  "checkpoint_sha256": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
+  "prediction_sha256": {
+    "S_ALL": "04956d7164ddd149f5618a9a01410c9b6018842a0bac89c278e80f901c88f3bc",
+    "S_CC": "d0cefeff04bef5f71ddc4f35b57d104363f8e3b6ca5d6db284a69f42d2761bd9",
+    "Oracle_ALL": "8e03dacbb2983fec700d65f92b5840d05f4afe11d02f17cb0a4d216dc3d8440a",
+    "Oracle_CC": "a613e71ff3ca34ea684ee66b6b1d37d640d1a182ba823a34a508fa0a45cb2203"
+  },
+  "test_manifest_sha256": {
+    "test_features.npy": "b337dead1e0d6d27198cb6455b5d90372ff87c668a71c6177e0560df3584dd9d",
+    "test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+    "test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+    "test_phase_labels.npy": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "test_experiment_info.json": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95"
+  },
+  "test_classification": {
+    "N": 1360,
+    "accuracy": 0.9764705882352941,
+    "macro_f1": 0.9765440505346443,
+    "nll": 0.07129153653030822,
+    "ece": 0.010052415575174703,
+    "mean_confidence": 0.9836070519378957,
+    "per_class_recall": {
+      "0": 0.9911764705882353,
+      "1": 0.9705882352941176,
+      "2": 0.9705882352941176,
+      "3": 0.9735294117647059
+    },
+    "per_class_f1": {
+      "0": 0.9926362297496317,
+      "1": 0.9579100145137881,
+      "2": 0.9748892171344166,
+      "3": 0.9807407407407408
+    },
+    "confusion_matrix": [
+      [
+        337,
+        3,
+        0,
+        0
+      ],
+      [
+        1,
+        330,
+        6,
+        3
+      ],
+      [
+        0,
+        9,
+        330,
+        1
+      ],
+      [
+        1,
+        7,
+        1,
+        331
+      ]
+    ]
+  },
+  "target_test_used_for_selection": false,
+  "alpha_selection_performed": false
+}
