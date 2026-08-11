@@ -15,6 +15,19 @@ SCALE_FLOOR = 1e-9
 CLIENT_ORDER = ("C1", "C2")
 CANONICAL_FEATURE_DIMENSIONS = 104
 RIDGE_ALPHAS = (0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
+R0_V2_PASS = "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED"
+R0_V2_FAIL = "R0_V2_FAILED"
+
+
+@dataclass(frozen=True)
+class NumericalTolerancesV2:
+    epsilon: float
+    n_max: int
+    feature_dimensions: int
+    design_dimensions: int
+    tau_moment: float
+    tau_residual: float
+    tau_functional_ppm: float
 
 
 @dataclass(frozen=True)
@@ -1018,3 +1031,746 @@ def select_pooled_alpha_v2(
             best_rmse = row["source_calibration_RMSE"]
             best_alpha = alpha
     return float(best_alpha), audit
+
+
+def registered_tolerances_v2() -> NumericalTolerancesV2:
+    """Return the frozen, formula-derived float64 R0-v2 tolerances."""
+    epsilon = np.float64(np.finfo(np.float64).eps)
+
+    def gamma(m: int) -> np.float64:
+        product = np.float64(m) * epsilon
+        return product / (np.float64(1.0) - product)
+
+    return NumericalTolerancesV2(
+        epsilon=float(epsilon),
+        n_max=1340,
+        feature_dimensions=CANONICAL_FEATURE_DIMENSIONS,
+        design_dimensions=CANONICAL_FEATURE_DIMENSIONS + 1,
+        tau_moment=float(np.float64(64.0) * gamma(1340)),
+        tau_residual=float(np.float64(128.0) * gamma(105)),
+        tau_functional_ppm=1e-6,
+    )
+
+
+def _diagnostic_gas_id(record: Any) -> int:
+    gas_id = getattr(record, "gas_id", -1)
+    if type(gas_id) is int:
+        return gas_id
+    if isinstance(gas_id, np.integer) and not isinstance(gas_id, np.bool_):
+        return int(gas_id)
+    return -1
+
+
+def _nan_scaler_diagnostic(gas_id: int) -> dict[str, Any]:
+    nan = float("nan")
+    return {
+        "gas_id": gas_id,
+        "mean_absolute_mean_error": nan,
+        "max_abs_mean_error": nan,
+        "mean_absolute_scale_error": nan,
+        "max_abs_scale_error": nan,
+        "coordinate_scale_max": nan,
+        "max_normalized_mean_error": nan,
+        "max_normalized_scale_error": nan,
+        "mean_pass": False,
+        "scale_pass": False,
+        "safe_scale_mask_equal": False,
+        "scaler_pass": False,
+        "finite_pass": False,
+    }
+
+
+def scaler_diagnostics_v2(
+    federated: StableGlobalScalerV2,
+    pooled: StableGlobalScalerV2,
+) -> dict[str, Any]:
+    """Evaluate coordinate-scaled mean/scale and exact mask parity."""
+    gas_id = _diagnostic_gas_id(federated)
+    failure = _nan_scaler_diagnostic(gas_id)
+    if (
+        type(federated) is not StableGlobalScalerV2
+        or type(pooled) is not StableGlobalScalerV2
+    ):
+        return failure
+    try:
+        fed_mean = np.asarray(federated.mean, dtype=np.float64)
+        fed_scale = np.asarray(federated.scale, dtype=np.float64)
+        pool_mean = np.asarray(pooled.mean, dtype=np.float64)
+        pool_scale = np.asarray(pooled.scale, dtype=np.float64)
+        pool_minimum = np.asarray(pooled.minimum, dtype=np.float64)
+        pool_maximum = np.asarray(pooled.maximum, dtype=np.float64)
+        fed_minimum = np.asarray(federated.minimum, dtype=np.float64)
+        fed_maximum = np.asarray(federated.maximum, dtype=np.float64)
+        fed_variance = np.asarray(federated.variance, dtype=np.float64)
+        pool_variance = np.asarray(pooled.variance, dtype=np.float64)
+        fed_raw_scale = np.asarray(federated.raw_scale, dtype=np.float64)
+        pool_raw_scale = np.asarray(pooled.raw_scale, dtype=np.float64)
+        fed_mask = np.asarray(federated.safe_scale_mask, dtype=np.bool_)
+        pool_mask = np.asarray(pooled.safe_scale_mask, dtype=np.bool_)
+    except (TypeError, ValueError, OverflowError):
+        return failure
+
+    shape = pool_mean.shape
+    arrays = (
+        fed_mean,
+        fed_scale,
+        pool_mean,
+        pool_scale,
+        pool_minimum,
+        pool_maximum,
+        fed_minimum,
+        fed_maximum,
+        fed_variance,
+        pool_variance,
+        fed_raw_scale,
+        pool_raw_scale,
+    )
+    valid_shape = (
+        pool_mean.ndim == 1
+        and pool_mean.size > 0
+        and all(values.ndim == 1 and values.shape == shape for values in arrays)
+        and fed_mask.ndim == 1
+        and fed_mask.shape == shape
+        and pool_mask.ndim == 1
+        and pool_mask.shape == shape
+    )
+    metadata_equal = (
+        federated.gas_id == pooled.gas_id
+        and federated.role == pooled.role
+        and federated.n == pooled.n
+    )
+    input_finite = valid_shape and all(np.isfinite(values).all() for values in arrays)
+    input_valid = (
+        input_finite
+        and np.all(fed_scale > 0.0)
+        and np.all(pool_scale > 0.0)
+        and np.all(fed_variance >= 0.0)
+        and np.all(pool_variance >= 0.0)
+        and np.all(fed_raw_scale >= 0.0)
+        and np.all(pool_raw_scale >= 0.0)
+        and np.all(fed_minimum <= fed_maximum)
+        and np.all(pool_minimum <= pool_maximum)
+    )
+    if not input_valid:
+        return failure
+
+    tolerances = registered_tolerances_v2()
+    with np.errstate(over="ignore", invalid="ignore"):
+        max_abs = np.maximum(np.abs(pool_minimum), np.abs(pool_maximum))
+        dynamic_range = pool_maximum - pool_minimum
+        coordinate_scale = np.maximum.reduce(
+            (
+                np.ones(shape, dtype=np.float64),
+                max_abs,
+                dynamic_range,
+                np.abs(pool_mean),
+                pool_scale,
+            )
+        )
+        mean_error = np.abs(fed_mean - pool_mean)
+        scale_error = np.abs(fed_scale - pool_scale)
+        mean_limit = np.float64(tolerances.tau_moment) * coordinate_scale
+        scale_limit = np.float64(tolerances.tau_moment) * coordinate_scale
+        normalized_mean = mean_error / coordinate_scale
+        normalized_scale = scale_error / coordinate_scale
+    diagnostics_finite = all(
+        np.isfinite(values).all()
+        for values in (
+            coordinate_scale,
+            mean_error,
+            scale_error,
+            mean_limit,
+            scale_limit,
+            normalized_mean,
+            normalized_scale,
+        )
+    )
+    mask_equal = bool(np.array_equal(fed_mask, pool_mask))
+    mean_pass = bool(
+        diagnostics_finite and metadata_equal and np.all(mean_error <= mean_limit)
+    )
+    scale_pass = bool(
+        diagnostics_finite and metadata_equal and np.all(scale_error <= scale_limit)
+    )
+    finite_pass = bool(diagnostics_finite and metadata_equal)
+    scaler_pass = bool(mean_pass and scale_pass and mask_equal and finite_pass)
+    return {
+        "gas_id": gas_id,
+        "mean_absolute_mean_error": float(np.mean(mean_error, dtype=np.float64)),
+        "max_abs_mean_error": float(np.max(mean_error)),
+        "mean_absolute_scale_error": float(np.mean(scale_error, dtype=np.float64)),
+        "max_abs_scale_error": float(np.max(scale_error)),
+        "coordinate_scale_max": float(np.max(coordinate_scale)),
+        "max_normalized_mean_error": float(np.max(normalized_mean)),
+        "max_normalized_scale_error": float(np.max(normalized_scale)),
+        "mean_pass": mean_pass,
+        "scale_pass": scale_pass,
+        "safe_scale_mask_equal": mask_equal,
+        "scaler_pass": scaler_pass,
+        "finite_pass": finite_pass,
+    }
+
+
+def _nan_normal_equation_diagnostic(gas_id: int) -> dict[str, Any]:
+    nan = float("nan")
+    return {
+        "gas_id": gas_id,
+        "absolute_a_discrepancy": nan,
+        "a_denominator": nan,
+        "relative_a_discrepancy": nan,
+        "absolute_b_discrepancy": nan,
+        "b_denominator": nan,
+        "relative_b_discrepancy": nan,
+        "a_denominator_positive": False,
+        "b_denominator_positive": False,
+        "a_pass": False,
+        "b_pass": False,
+        "normal_equations_pass": False,
+        "finite_pass": False,
+    }
+
+
+def normal_equation_diagnostics_v2(
+    federated: AggregatedNormalEquationsV2,
+    pooled: AggregatedNormalEquationsV2,
+) -> dict[str, Any]:
+    """Evaluate preregistered Frobenius-A and L2-b relative discrepancies."""
+    gas_id = _diagnostic_gas_id(federated)
+    failure = _nan_normal_equation_diagnostic(gas_id)
+    if (
+        type(federated) is not AggregatedNormalEquationsV2
+        or type(pooled) is not AggregatedNormalEquationsV2
+    ):
+        return failure
+    try:
+        fed_a = np.asarray(federated.a, dtype=np.float64)
+        pool_a = np.asarray(pooled.a, dtype=np.float64)
+        fed_b = np.asarray(federated.b, dtype=np.float64)
+        pool_b = np.asarray(pooled.b, dtype=np.float64)
+    except (TypeError, ValueError, OverflowError):
+        return failure
+    valid_shape = (
+        fed_a.ndim == 2
+        and pool_a.ndim == 2
+        and fed_a.shape == pool_a.shape
+        and fed_a.shape[0] == fed_a.shape[1]
+        and fed_a.shape[0] > 0
+        and fed_b.ndim == 1
+        and pool_b.ndim == 1
+        and fed_b.shape == pool_b.shape == (fed_a.shape[0],)
+    )
+    metadata_equal = (
+        federated.gas_id == pooled.gas_id
+        and federated.role == pooled.role
+        and federated.n == pooled.n
+    )
+    target_summaries = (
+        federated.y_y,
+        federated.y_min,
+        federated.y_max,
+        pooled.y_y,
+        pooled.y_min,
+        pooled.y_max,
+    )
+    target_summaries_valid = (
+        not any(isinstance(value, (bool, np.bool_)) for value in target_summaries)
+        and np.isfinite(np.asarray(target_summaries, dtype=np.float64)).all()
+        and federated.y_y >= 0.0
+        and pooled.y_y >= 0.0
+        and federated.y_min <= federated.y_max
+        and pooled.y_min <= pooled.y_max
+    )
+    input_finite = valid_shape and all(
+        np.isfinite(values).all() for values in (fed_a, pool_a, fed_b, pool_b)
+    ) and target_summaries_valid
+    if not input_finite:
+        return failure
+
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        absolute_a = np.linalg.norm(fed_a - pool_a, ord="fro")
+        a_denominator = np.linalg.norm(pool_a, ord="fro")
+        relative_a = np.divide(absolute_a, a_denominator)
+        absolute_b = np.linalg.norm(fed_b - pool_b, ord=2)
+        b_denominator = np.linalg.norm(pool_b, ord=2)
+        relative_b = np.divide(absolute_b, b_denominator)
+    a_positive = bool(np.isfinite(a_denominator) and a_denominator > 0.0)
+    b_positive = bool(np.isfinite(b_denominator) and b_denominator > 0.0)
+    diagnostics_finite = bool(
+        np.isfinite(
+            np.asarray(
+                (
+                    absolute_a,
+                    a_denominator,
+                    relative_a,
+                    absolute_b,
+                    b_denominator,
+                    relative_b,
+                ),
+                dtype=np.float64,
+            )
+        ).all()
+    )
+    finite_pass = bool(
+        metadata_equal and diagnostics_finite and a_positive and b_positive
+    )
+    tolerance = np.float64(registered_tolerances_v2().tau_moment)
+    a_pass = bool(finite_pass and relative_a <= tolerance)
+    b_pass = bool(finite_pass and relative_b <= tolerance)
+    return {
+        "gas_id": gas_id,
+        "absolute_a_discrepancy": float(absolute_a),
+        "a_denominator": float(a_denominator),
+        "relative_a_discrepancy": float(relative_a),
+        "absolute_b_discrepancy": float(absolute_b),
+        "b_denominator": float(b_denominator),
+        "relative_b_discrepancy": float(relative_b),
+        "a_denominator_positive": a_positive,
+        "b_denominator_positive": b_positive,
+        "a_pass": a_pass,
+        "b_pass": b_pass,
+        "normal_equations_pass": bool(a_pass and b_pass),
+        "finite_pass": finite_pass,
+    }
+
+
+def _nan_system_diagnostic(gas_id: int) -> dict[str, Any]:
+    nan = float("nan")
+    return {
+        "gas_id": gas_id,
+        "federated_alpha": nan,
+        "pooled_alpha": nan,
+        "alpha_equal": False,
+        "federated_condition_number": nan,
+        "pooled_condition_number": nan,
+        "kappa": nan,
+        "condition_pass": False,
+        "fed_residual_norm": nan,
+        "fed_residual_denominator": nan,
+        "fed_relative_residual": nan,
+        "fed_residual_denominator_positive": False,
+        "fed_residual_pass": False,
+        "pooled_residual_norm": nan,
+        "pooled_residual_denominator": nan,
+        "pooled_relative_residual": nan,
+        "pooled_residual_denominator_positive": False,
+        "pooled_residual_pass": False,
+        "max_abs_beta_difference": nan,
+        "beta_denominator": nan,
+        "relative_beta_difference": nan,
+        "beta_denominator_positive": False,
+        "beta_forward_envelope": nan,
+        "beta_within_forward_envelope": False,
+        "finite_pass": False,
+    }
+
+
+def _system_residual_diagnostic(
+    system: np.ndarray, beta: np.ndarray, b: np.ndarray
+) -> tuple[np.float64, np.float64, np.float64]:
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        numerator = np.linalg.norm(system @ beta - b, ord=2)
+        denominator = (
+            np.linalg.norm(system, ord=2) * np.linalg.norm(beta, ord=2)
+            + np.linalg.norm(b, ord=2)
+        )
+        relative = np.divide(numerator, denominator)
+    return numerator, denominator, relative
+
+
+def system_diagnostics_v2(
+    federated_equations: AggregatedNormalEquationsV2,
+    pooled_equations: AggregatedNormalEquationsV2,
+    federated_model: CanonicalRidgeModelV2,
+    pooled_model: CanonicalRidgeModelV2,
+) -> dict[str, Any]:
+    """Evaluate alpha, conditioning, residuals, and diagnostic beta envelope."""
+    gas_id = _diagnostic_gas_id(federated_equations)
+    failure = _nan_system_diagnostic(gas_id)
+    if (
+        type(federated_equations) is not AggregatedNormalEquationsV2
+        or type(pooled_equations) is not AggregatedNormalEquationsV2
+        or type(federated_model) is not CanonicalRidgeModelV2
+        or type(pooled_model) is not CanonicalRidgeModelV2
+    ):
+        return failure
+    try:
+        fed_a = np.asarray(federated_equations.a, dtype=np.float64)
+        fed_b = np.asarray(federated_equations.b, dtype=np.float64)
+        pool_a = np.asarray(pooled_equations.a, dtype=np.float64)
+        pool_b = np.asarray(pooled_equations.b, dtype=np.float64)
+        fed_beta = np.asarray(federated_model.coef, dtype=np.float64)
+        pool_beta = np.asarray(pooled_model.coef, dtype=np.float64)
+        fed_alpha = np.float64(federated_model.alpha)
+        pool_alpha = np.float64(pooled_model.alpha)
+    except (TypeError, ValueError, OverflowError):
+        return failure
+
+    shape = fed_a.shape
+    valid_shape = (
+        fed_a.ndim == 2
+        and fed_a.shape[0] == fed_a.shape[1]
+        and fed_a.shape[0] > 0
+        and pool_a.ndim == 2
+        and pool_a.shape == shape
+        and fed_b.ndim == 1
+        and pool_b.ndim == 1
+        and fed_beta.ndim == 1
+        and pool_beta.ndim == 1
+        and fed_b.shape == pool_b.shape == fed_beta.shape == pool_beta.shape
+        == (shape[0],)
+    )
+    metadata_equal = (
+        federated_equations.gas_id
+        == pooled_equations.gas_id
+        == federated_model.gas_id
+        == pooled_model.gas_id
+        and federated_equations.role
+        == pooled_equations.role
+        == federated_model.role
+        == pooled_model.role
+        and federated_equations.n == pooled_equations.n
+    )
+    alpha_finite = bool(np.isfinite(fed_alpha) and np.isfinite(pool_alpha))
+    input_finite = valid_shape and alpha_finite and all(
+        np.isfinite(values).all()
+        for values in (fed_a, fed_b, pool_a, pool_b, fed_beta, pool_beta)
+    )
+    if not input_finite:
+        return failure
+
+    regularizer = np.eye(shape[0], dtype=np.float64)
+    regularizer[0, 0] = 0.0
+    with np.errstate(over="ignore", invalid="ignore"):
+        fed_system = fed_a + fed_alpha * regularizer
+        pool_system = pool_a + pool_alpha * regularizer
+    if not np.isfinite(fed_system).all() or not np.isfinite(pool_system).all():
+        return failure
+    try:
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            fed_condition = np.linalg.cond(fed_system, p=2)
+            pool_condition = np.linalg.cond(pool_system, p=2)
+    except np.linalg.LinAlgError:
+        return failure
+    kappa = np.maximum(fed_condition, pool_condition)
+    fed_residual, fed_denominator, fed_relative = _system_residual_diagnostic(
+        fed_system, fed_beta, fed_b
+    )
+    pool_residual, pool_denominator, pool_relative = _system_residual_diagnostic(
+        pool_system, pool_beta, pool_b
+    )
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        beta_difference = np.abs(fed_beta - pool_beta)
+        max_abs_beta = np.max(beta_difference)
+        beta_denominator = np.linalg.norm(pool_beta, ord=2)
+        relative_beta = np.divide(
+            np.linalg.norm(fed_beta - pool_beta, ord=2), beta_denominator
+        )
+        tolerances = registered_tolerances_v2()
+        beta_envelope = kappa * np.float64(
+            2.0 * tolerances.tau_moment + tolerances.tau_residual
+        )
+
+    fed_denominator_positive = bool(
+        np.isfinite(fed_denominator) and fed_denominator > 0.0
+    )
+    pool_denominator_positive = bool(
+        np.isfinite(pool_denominator) and pool_denominator > 0.0
+    )
+    beta_denominator_positive = bool(
+        np.isfinite(beta_denominator) and beta_denominator > 0.0
+    )
+    diagnostic_values = np.asarray(
+        (
+            fed_condition,
+            pool_condition,
+            kappa,
+            fed_residual,
+            fed_denominator,
+            fed_relative,
+            pool_residual,
+            pool_denominator,
+            pool_relative,
+            max_abs_beta,
+            beta_denominator,
+            relative_beta,
+            beta_envelope,
+        ),
+        dtype=np.float64,
+    )
+    diagnostics_finite = bool(np.isfinite(diagnostic_values).all())
+    finite_pass = bool(
+        metadata_equal
+        and diagnostics_finite
+        and fed_denominator_positive
+        and pool_denominator_positive
+        and beta_denominator_positive
+    )
+    epsilon = np.float64(tolerances.epsilon)
+    condition_pass = bool(
+        np.isfinite(fed_condition)
+        and np.isfinite(pool_condition)
+        and fed_condition * epsilon < 1.0
+        and pool_condition * epsilon < 1.0
+    )
+    residual_tolerance = np.float64(tolerances.tau_residual)
+    fed_residual_pass = bool(
+        finite_pass and fed_relative <= residual_tolerance
+    )
+    pool_residual_pass = bool(
+        finite_pass and pool_relative <= residual_tolerance
+    )
+    alpha_equal = bool(fed_alpha == pool_alpha)
+    beta_within = bool(
+        diagnostics_finite
+        and beta_denominator_positive
+        and relative_beta <= beta_envelope
+    )
+    return {
+        "gas_id": gas_id,
+        "federated_alpha": float(fed_alpha),
+        "pooled_alpha": float(pool_alpha),
+        "alpha_equal": alpha_equal,
+        "federated_condition_number": float(fed_condition),
+        "pooled_condition_number": float(pool_condition),
+        "kappa": float(kappa),
+        "condition_pass": condition_pass,
+        "fed_residual_norm": float(fed_residual),
+        "fed_residual_denominator": float(fed_denominator),
+        "fed_relative_residual": float(fed_relative),
+        "fed_residual_denominator_positive": fed_denominator_positive,
+        "fed_residual_pass": fed_residual_pass,
+        "pooled_residual_norm": float(pool_residual),
+        "pooled_residual_denominator": float(pool_denominator),
+        "pooled_relative_residual": float(pool_relative),
+        "pooled_residual_denominator_positive": pool_denominator_positive,
+        "pooled_residual_pass": pool_residual_pass,
+        "max_abs_beta_difference": float(max_abs_beta),
+        "beta_denominator": float(beta_denominator),
+        "relative_beta_difference": float(relative_beta),
+        "beta_denominator_positive": beta_denominator_positive,
+        "beta_forward_envelope": float(beta_envelope),
+        "beta_within_forward_envelope": beta_within,
+        "finite_pass": finite_pass,
+    }
+
+
+def _nan_functional_diagnostic(gas_id: int) -> dict[str, Any]:
+    nan = float("nan")
+    return {
+        "gas_id": gas_id,
+        "max_abs_raw_prediction_difference": nan,
+        "max_abs_clipped_prediction_difference": nan,
+        "federated_clipped_rmse": nan,
+        "pooled_clipped_rmse": nan,
+        "clipped_rmse_difference": nan,
+        "federated_clipped_mae": nan,
+        "pooled_clipped_mae": nan,
+        "clipped_mae_difference": nan,
+        "raw_prediction_pass": False,
+        "clipped_prediction_pass": False,
+        "rmse_parity_pass": False,
+        "mae_parity_pass": False,
+        "finite_pass": False,
+    }
+
+
+def functional_diagnostics_v2(
+    federated_model: CanonicalRidgeModelV2,
+    pooled_model: CanonicalRidgeModelV2,
+    source_test_values: np.ndarray,
+    source_test_targets: np.ndarray,
+) -> dict[str, Any]:
+    """Evaluate prediction and clipped metric parity on one shared row set."""
+    gas_id = _diagnostic_gas_id(federated_model)
+    failure = _nan_functional_diagnostic(gas_id)
+    if (
+        type(federated_model) is not CanonicalRidgeModelV2
+        or type(pooled_model) is not CanonicalRidgeModelV2
+    ):
+        return failure
+    try:
+        values = _finite_matrix(source_test_values)
+        targets = _finite_vector(
+            source_test_targets, len(values), "source-test targets"
+        )
+        if (
+            federated_model.gas_id != pooled_model.gas_id
+            or federated_model.role != pooled_model.role
+            or federated_model.feature_names != pooled_model.feature_names
+            or values.shape[1] != len(federated_model.feature_names)
+        ):
+            return failure
+        fed_raw = federated_model.predict_matrix(values, clip=False)
+        pool_raw = pooled_model.predict_matrix(values, clip=False)
+        fed_clipped = federated_model.predict_matrix(values, clip=True)
+        pool_clipped = pooled_model.predict_matrix(values, clip=True)
+    except (TypeError, ValueError, OverflowError, np.linalg.LinAlgError):
+        return failure
+
+    with np.errstate(over="ignore", invalid="ignore"):
+        max_raw = np.max(np.abs(fed_raw - pool_raw))
+        max_clipped = np.max(np.abs(fed_clipped - pool_clipped))
+        fed_error = fed_clipped - targets
+        pool_error = pool_clipped - targets
+        fed_rmse = np.sqrt(np.mean(fed_error * fed_error, dtype=np.float64))
+        pool_rmse = np.sqrt(np.mean(pool_error * pool_error, dtype=np.float64))
+        rmse_difference = np.abs(fed_rmse - pool_rmse)
+        fed_mae = np.mean(np.abs(fed_error), dtype=np.float64)
+        pool_mae = np.mean(np.abs(pool_error), dtype=np.float64)
+        mae_difference = np.abs(fed_mae - pool_mae)
+    diagnostic_values = np.asarray(
+        (
+            max_raw,
+            max_clipped,
+            fed_rmse,
+            pool_rmse,
+            rmse_difference,
+            fed_mae,
+            pool_mae,
+            mae_difference,
+        ),
+        dtype=np.float64,
+    )
+    finite_pass = bool(np.isfinite(diagnostic_values).all())
+    tolerance = np.float64(registered_tolerances_v2().tau_functional_ppm)
+    return {
+        "gas_id": gas_id,
+        "max_abs_raw_prediction_difference": float(max_raw),
+        "max_abs_clipped_prediction_difference": float(max_clipped),
+        "federated_clipped_rmse": float(fed_rmse),
+        "pooled_clipped_rmse": float(pool_rmse),
+        "clipped_rmse_difference": float(rmse_difference),
+        "federated_clipped_mae": float(fed_mae),
+        "pooled_clipped_mae": float(pool_mae),
+        "clipped_mae_difference": float(mae_difference),
+        "raw_prediction_pass": bool(finite_pass and max_raw <= tolerance),
+        "clipped_prediction_pass": bool(
+            finite_pass and max_clipped <= tolerance
+        ),
+        "rmse_parity_pass": bool(
+            finite_pass and rmse_difference <= tolerance
+        ),
+        "mae_parity_pass": bool(
+            finite_pass and mae_difference <= tolerance
+        ),
+        "finite_pass": finite_pass,
+    }
+
+
+_R0_V2_HARD_GATES = (
+    "alpha_equal",
+    "scaler_pass",
+    "safe_scale_mask_equal",
+    "normal_equations_pass",
+    "condition_pass",
+    "fed_residual_pass",
+    "pooled_residual_pass",
+    "raw_prediction_pass",
+    "clipped_prediction_pass",
+    "rmse_parity_pass",
+    "mae_parity_pass",
+    "finite_pass",
+)
+
+
+def _diagnostic_value_is_finite(value: Any) -> bool:
+    if isinstance(value, (bool, np.bool_)):
+        return True
+    if isinstance(value, Mapping):
+        return all(_diagnostic_value_is_finite(item) for item in value.values())
+    if isinstance(value, (tuple, list)):
+        return all(_diagnostic_value_is_finite(item) for item in value)
+    if isinstance(value, np.ndarray):
+        if np.issubdtype(value.dtype, np.number):
+            return bool(np.isfinite(value).all())
+        return True
+    if isinstance(value, (int, float, complex, np.number)):
+        try:
+            return bool(np.isfinite(value))
+        except TypeError:
+            return False
+    return True
+
+
+def _exact_true(row: Mapping[str, Any], field: str) -> bool:
+    return type(row.get(field)) is bool and row[field] is True
+
+
+def decide_gas_equivalence_v2(
+    scaler_row: Mapping[str, Any],
+    normal_equation_row: Mapping[str, Any],
+    system_row: Mapping[str, Any],
+    functional_row: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Combine the four diagnostic families into one registered gas row."""
+    rows = (scaler_row, normal_equation_row, system_row, functional_row)
+    if any(not isinstance(row, Mapping) for row in rows):
+        return {
+            **{field: False for field in _R0_V2_HARD_GATES},
+            "gas_id": -1,
+            "relative_beta_difference": float("nan"),
+        }
+    gas_ids = tuple(row.get("gas_id") for row in rows)
+    valid_gas = (
+        all(type(gas_id) is int for gas_id in gas_ids)
+        and len(set(gas_ids)) == 1
+    )
+    gas_id = gas_ids[0] if valid_gas else -1
+    relative_beta = system_row.get("relative_beta_difference", float("nan"))
+    if not isinstance(relative_beta, (int, float, np.number)) or isinstance(
+        relative_beta, (bool, np.bool_)
+    ):
+        relative_beta = float("nan")
+    all_values_finite = all(_diagnostic_value_is_finite(row) for row in rows)
+    combined = {
+        "gas_id": gas_id,
+        "alpha_equal": _exact_true(system_row, "alpha_equal"),
+        "scaler_pass": _exact_true(scaler_row, "scaler_pass"),
+        "safe_scale_mask_equal": _exact_true(
+            scaler_row, "safe_scale_mask_equal"
+        ),
+        "normal_equations_pass": _exact_true(
+            normal_equation_row, "normal_equations_pass"
+        ),
+        "condition_pass": _exact_true(system_row, "condition_pass"),
+        "fed_residual_pass": _exact_true(system_row, "fed_residual_pass"),
+        "pooled_residual_pass": _exact_true(
+            system_row, "pooled_residual_pass"
+        ),
+        "raw_prediction_pass": _exact_true(
+            functional_row, "raw_prediction_pass"
+        ),
+        "clipped_prediction_pass": _exact_true(
+            functional_row, "clipped_prediction_pass"
+        ),
+        "rmse_parity_pass": _exact_true(functional_row, "rmse_parity_pass"),
+        "mae_parity_pass": _exact_true(functional_row, "mae_parity_pass"),
+        "finite_pass": bool(
+            valid_gas
+            and all_values_finite
+            and all(_exact_true(row, "finite_pass") for row in rows)
+        ),
+        "relative_beta_difference": float(relative_beta),
+    }
+    return combined
+
+
+def decide_r0_v2(gas_rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Return only the preregistered PASS/FAIL vocabulary for four gases."""
+    try:
+        rows = list(gas_rows)
+    except TypeError:
+        return {"decision": R0_V2_FAIL}
+    gas_ids = [row.get("gas_id") for row in rows if isinstance(row, Mapping)]
+    exact_gas_set = (
+        len(rows) == 4
+        and len(gas_ids) == 4
+        and all(type(gas_id) is int for gas_id in gas_ids)
+        and sorted(gas_ids) == [0, 1, 2, 3]
+    )
+    rows_pass = exact_gas_set and all(
+        all(_exact_true(row, field) for field in _R0_V2_HARD_GATES)
+        and _diagnostic_value_is_finite(row)
+        for row in rows
+    )
+    return {"decision": R0_V2_PASS if rows_pass else R0_V2_FAIL}

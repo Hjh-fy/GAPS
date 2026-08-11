@@ -5,20 +5,29 @@ import numpy as np
 import pytest
 
 from gaps_flower.canonical_fedridge_v2 import (
+    AggregatedNormalEquationsV2,
+    CanonicalRidgeModelV2,
     RIDGE_ALPHAS,
     LocalCentralMomentsV2,
     LocalNormalEquationsV2,
     SCALE_FLOOR,
     StableGlobalScalerV2,
     aggregate_normal_equations_v2,
+    decide_gas_equivalence_v2,
+    decide_r0_v2,
     feature_numerical_audit_rows,
+    functional_diagnostics_v2,
     local_central_moments,
     local_normal_equations_v2,
     merge_central_moments,
+    normal_equation_diagnostics_v2,
     pooled_reference_fit_v2,
+    registered_tolerances_v2,
     reconstruct_ridge_v2,
+    scaler_diagnostics_v2,
     select_pooled_alpha_v2,
     select_source_alpha_v2,
+    system_diagnostics_v2,
 )
 from gaps_flower.canonical_quantitative_features import validate_cache_manifest
 
@@ -725,3 +734,490 @@ def test_v2_alpha_contract_rejects_nonexact_role_and_boolean_grid() -> None:
                 feature_names=("x0", "x1"),
                 alphas=None,  # type: ignore[arg-type]
             )
+
+
+def diagnostic_scaler(
+    *,
+    mean: tuple[float, ...] = (0.0,),
+    scale: tuple[float, ...] = (1.0,),
+    minimum: tuple[float, ...] = (-1.0,),
+    maximum: tuple[float, ...] = (1.0,),
+    safe_scale_mask: tuple[bool, ...] = (False,),
+) -> StableGlobalScalerV2:
+    """Build a complete real scaler record for Task 4 diagnostic tests."""
+    scale_array = np.asarray(scale, dtype=np.float64)
+    return StableGlobalScalerV2(
+        gas_id=0,
+        role="source_refit",
+        n=8,
+        mean=np.asarray(mean, dtype=np.float64),
+        variance=scale_array * scale_array,
+        raw_scale=scale_array,
+        scale=scale_array,
+        safe_scale_mask=np.asarray(safe_scale_mask, dtype=np.bool_),
+        minimum=np.asarray(minimum, dtype=np.float64),
+        maximum=np.asarray(maximum, dtype=np.float64),
+        aggregation_order=("C1", "C2"),
+    )
+
+
+def diagnostic_equations(
+    *,
+    a: np.ndarray | None = None,
+    b: np.ndarray | None = None,
+) -> AggregatedNormalEquationsV2:
+    """Build a complete equation record; malformed numerics remain observable."""
+    matrix = np.diag([4.0, 2.0]) if a is None else a
+    vector = np.array([2.0, 1.0], dtype=np.float64) if b is None else b
+    return AggregatedNormalEquationsV2(
+        gas_id=0,
+        role="source_refit",
+        n=8,
+        a=matrix,
+        b=vector,
+        y_y=5.0,
+        y_min=0.0,
+        y_max=10.0,
+        aggregation_order=("C1", "C2"),
+    )
+
+
+def diagnostic_model(
+    *,
+    alpha: float = 0.0,
+    coef: tuple[float, float] = (0.5, 0.5),
+    clip_min: float = 0.0,
+    clip_max: float = 10.0,
+) -> CanonicalRidgeModelV2:
+    return CanonicalRidgeModelV2(
+        gas_id=0,
+        role="source_refit",
+        alpha=alpha,
+        feature_names=("x0",),
+        mean=np.array([0.0], dtype=np.float64),
+        scale=np.array([1.0], dtype=np.float64),
+        coef=np.asarray(coef, dtype=np.float64),
+        clip_min=clip_min,
+        clip_max=clip_max,
+    )
+
+
+def passing_gas_diagnostic(
+    gas_id: int = 0,
+    **overrides: object,
+) -> dict[str, object]:
+    row: dict[str, object] = {
+        "gas_id": gas_id,
+        "alpha_equal": True,
+        "scaler_pass": True,
+        "safe_scale_mask_equal": True,
+        "normal_equations_pass": True,
+        "condition_pass": True,
+        "fed_residual_pass": True,
+        "pooled_residual_pass": True,
+        "raw_prediction_pass": True,
+        "clipped_prediction_pass": True,
+        "rmse_parity_pass": True,
+        "mae_parity_pass": True,
+        "finite_pass": True,
+        "relative_beta_difference": 0.0,
+    }
+    row.update(overrides)
+    return row
+
+
+def test_v2_tolerances_are_formula_derived_and_frozen() -> None:
+    """Catches literal or result-tuned replacements for registered formulas."""
+    tolerances = registered_tolerances_v2()
+    epsilon = np.finfo(np.float64).eps
+
+    def gamma(m: int) -> float:
+        return (m * epsilon) / (1.0 - m * epsilon)
+
+    assert tolerances.epsilon == epsilon
+    assert tolerances.n_max == 1340
+    assert tolerances.feature_dimensions == 104
+    assert tolerances.design_dimensions == 105
+    assert tolerances.tau_moment == pytest.approx(
+        64.0 * gamma(1340), rel=0, abs=0
+    )
+    assert tolerances.tau_residual == pytest.approx(
+        128.0 * gamma(105), rel=0, abs=0
+    )
+    assert tolerances.tau_functional_ppm == 1e-6
+
+
+def test_v2_scaler_diagnostic_uses_registered_coordinate_scale() -> None:
+    """Catches using only pooled mean/scale instead of the full S_j formula."""
+    tolerances = registered_tolerances_v2()
+    pooled = diagnostic_scaler(
+        mean=(1.0,),
+        scale=(2.0,),
+        minimum=(-1e12,),
+        maximum=(1e12,),
+    )
+    coordinate_scale = 2e12
+    passing = diagnostic_scaler(
+        mean=(1.0 + 0.5 * tolerances.tau_moment * coordinate_scale,),
+        scale=(2.0 + 0.5 * tolerances.tau_moment * coordinate_scale,),
+        minimum=(-1e12,),
+        maximum=(1e12,),
+    )
+    failing = diagnostic_scaler(
+        mean=(1.0 + 2.0 * tolerances.tau_moment * coordinate_scale,),
+        scale=(2.0,),
+        minimum=(-1e12,),
+        maximum=(1e12,),
+    )
+
+    passing_row = scaler_diagnostics_v2(passing, pooled)
+    failing_row = scaler_diagnostics_v2(failing, pooled)
+
+    assert passing_row["coordinate_scale_max"] == coordinate_scale
+    assert passing_row["mean_pass"] is True
+    assert passing_row["scale_pass"] is True
+    assert passing_row["scaler_pass"] is True
+    assert failing_row["mean_pass"] is False
+    assert failing_row["scaler_pass"] is False
+
+
+def test_v2_scaler_diagnostic_requires_exact_safe_scale_mask_identity() -> None:
+    """Catches tolerating a safe-scale-mask mismatch despite close scales."""
+    pooled = diagnostic_scaler()
+    federated = diagnostic_scaler(safe_scale_mask=(True,))
+
+    row = scaler_diagnostics_v2(federated, pooled)
+
+    assert row["safe_scale_mask_equal"] is False
+    assert row["scaler_pass"] is False
+
+
+def test_v2_normal_equation_diagnostic_uses_frobenius_and_l2_ratios() -> None:
+    """Catches elementwise norms or a shared denominator for A and b."""
+    pooled_a = np.array([[3.0, 1.0], [1.0, 2.0]], dtype=np.float64)
+    fed_a = pooled_a + np.array([[0.5, 0.0], [0.0, -0.25]])
+    pooled_b = np.array([2.0, -1.0], dtype=np.float64)
+    fed_b = pooled_b + np.array([0.25, 0.5])
+
+    row = normal_equation_diagnostics_v2(
+        diagnostic_equations(a=fed_a, b=fed_b),
+        diagnostic_equations(a=pooled_a, b=pooled_b),
+    )
+
+    assert row["relative_a_discrepancy"] == pytest.approx(
+        np.linalg.norm(fed_a - pooled_a, ord="fro")
+        / np.linalg.norm(pooled_a, ord="fro")
+    )
+    assert row["relative_b_discrepancy"] == pytest.approx(
+        np.linalg.norm(fed_b - pooled_b) / np.linalg.norm(pooled_b)
+    )
+    assert row["normal_equations_pass"] is False
+
+
+@pytest.mark.parametrize("zero_field", ["a", "b"])
+def test_v2_normal_equation_zero_denominator_fails_closed(
+    zero_field: str,
+) -> None:
+    """Catches substituting one for a zero diagnostic denominator."""
+    pooled_a = np.zeros((2, 2)) if zero_field == "a" else np.eye(2)
+    pooled_b = np.zeros(2) if zero_field == "b" else np.ones(2)
+    row = normal_equation_diagnostics_v2(
+        diagnostic_equations(a=pooled_a.copy(), b=pooled_b.copy()),
+        diagnostic_equations(a=pooled_a, b=pooled_b),
+    )
+
+    assert row[f"{zero_field}_denominator_positive"] is False
+    assert row["normal_equations_pass"] is False
+    assert row["finite_pass"] is False
+
+
+def test_v2_system_diagnostic_requires_exact_alpha_identity() -> None:
+    """Catches approximate alpha comparison at the locked-model boundary."""
+    equations = diagnostic_equations()
+    row = system_diagnostics_v2(
+        equations,
+        equations,
+        diagnostic_model(alpha=0.1),
+        diagnostic_model(alpha=np.nextafter(0.1, 1.0)),
+    )
+
+    assert row["alpha_equal"] is False
+    assert row["finite_pass"] is True
+
+
+@pytest.mark.parametrize(
+    "smallest_diagonal",
+    [0.0, np.finfo(np.float64).eps / 2.0],
+)
+def test_v2_condition_gate_rejects_nonfinite_or_epsilon_unsafe_kappa(
+    smallest_diagonal: float,
+) -> None:
+    """Catches accepting singular or kappa*epsilon >= 1 systems."""
+    matrix = np.diag([1.0, smallest_diagonal]).astype(np.float64)
+    coef = np.array([1.0, 1.0], dtype=np.float64)
+    equations = diagnostic_equations(a=matrix, b=matrix @ coef)
+    row = system_diagnostics_v2(
+        equations,
+        equations,
+        diagnostic_model(coef=(1.0, 1.0)),
+        diagnostic_model(coef=(1.0, 1.0)),
+    )
+
+    assert row["condition_pass"] is False
+
+
+def test_v2_system_residual_uses_exact_registered_denominator() -> None:
+    """Catches omitting ||b|| or replacing the spectral matrix norm."""
+    matrix = np.array([[4.0, 1.0], [1.0, 3.0]], dtype=np.float64)
+    vector = np.array([3.0, 2.0], dtype=np.float64)
+    coef = np.array([0.5, 0.25], dtype=np.float64)
+    equations = diagnostic_equations(a=matrix, b=vector)
+    row = system_diagnostics_v2(
+        equations,
+        equations,
+        diagnostic_model(coef=tuple(coef)),
+        diagnostic_model(coef=tuple(coef)),
+    )
+    expected = np.linalg.norm(matrix @ coef - vector) / (
+        np.linalg.norm(matrix, ord=2) * np.linalg.norm(coef)
+        + np.linalg.norm(vector)
+    )
+
+    assert row["fed_relative_residual"] == pytest.approx(expected)
+    assert row["pooled_relative_residual"] == pytest.approx(expected)
+
+
+def test_v2_zero_system_and_beta_denominators_fail_closed() -> None:
+    """Catches residual or coefficient denominator substitution."""
+    zero_equations = diagnostic_equations(a=np.zeros((2, 2)), b=np.zeros(2))
+    zero_model = diagnostic_model(coef=(0.0, 0.0))
+
+    row = system_diagnostics_v2(
+        zero_equations, zero_equations, zero_model, zero_model
+    )
+
+    assert row["fed_residual_denominator_positive"] is False
+    assert row["pooled_residual_denominator_positive"] is False
+    assert row["beta_denominator_positive"] is False
+    assert row["fed_residual_pass"] is False
+    assert row["pooled_residual_pass"] is False
+    assert row["finite_pass"] is False
+
+
+def test_v2_beta_forward_envelope_is_reported_but_not_a_system_hard_gate() -> None:
+    """Catches promoting the coefficient envelope into the hard conjunction."""
+    equations = diagnostic_equations()
+    row = system_diagnostics_v2(
+        equations,
+        equations,
+        diagnostic_model(coef=(0.5, 0.5)),
+        diagnostic_model(coef=(0.5, 0.500001)),
+    )
+
+    assert row["beta_within_forward_envelope"] is False
+    assert row["condition_pass"] is True
+    assert row["fed_residual_pass"] is True
+    assert row["pooled_residual_pass"] is False
+
+
+def test_v2_functional_diagnostic_checks_raw_and_clipped_metrics_separately() -> None:
+    """Catches reusing clipped predictions for the registered raw gate."""
+    values = np.array([[0.0], [1.0]], dtype=np.float64)
+    targets = np.ones(2, dtype=np.float64)
+    row = functional_diagnostics_v2(
+        diagnostic_model(coef=(100.0, 0.0), clip_max=1.0),
+        diagnostic_model(coef=(101.0, 0.0), clip_max=1.0),
+        values,
+        targets,
+    )
+
+    assert row["max_abs_raw_prediction_difference"] == 1.0
+    assert row["max_abs_clipped_prediction_difference"] == 0.0
+    assert row["raw_prediction_pass"] is False
+    assert row["clipped_prediction_pass"] is True
+    assert row["rmse_parity_pass"] is True
+    assert row["mae_parity_pass"] is True
+
+
+@pytest.mark.parametrize("nonfinite", [np.nan, np.inf, -np.inf])
+def test_v2_diagnostics_fail_closed_on_nonfinite_input(nonfinite: float) -> None:
+    """Catches any NaN/Inf comparison silently becoming a passing gate."""
+    bad_scaler = diagnostic_scaler(mean=(nonfinite,))
+    scaler_row = scaler_diagnostics_v2(bad_scaler, diagnostic_scaler())
+    bad_equations = diagnostic_equations(b=np.array([nonfinite, 1.0]))
+    equation_row = normal_equation_diagnostics_v2(
+        bad_equations, diagnostic_equations()
+    )
+    functional_row = functional_diagnostics_v2(
+        diagnostic_model(),
+        diagnostic_model(),
+        np.array([[nonfinite]], dtype=np.float64),
+        np.array([0.0], dtype=np.float64),
+    )
+
+    assert scaler_row["finite_pass"] is False
+    assert scaler_row["scaler_pass"] is False
+    assert equation_row["finite_pass"] is False
+    assert equation_row["normal_equations_pass"] is False
+    assert functional_row["finite_pass"] is False
+    assert functional_row["raw_prediction_pass"] is False
+
+
+def test_v2_scaler_diagnostic_rejects_nonfinite_secondary_statistics() -> None:
+    """Catches ignoring nonfinite variance/raw-scale fields in input records."""
+    bad = StableGlobalScalerV2(
+        gas_id=0,
+        role="source_refit",
+        n=8,
+        mean=np.array([0.0]),
+        variance=np.array([np.nan]),
+        raw_scale=np.array([np.inf]),
+        scale=np.array([1.0]),
+        safe_scale_mask=np.array([False]),
+        minimum=np.array([-1.0]),
+        maximum=np.array([1.0]),
+        aggregation_order=("C1", "C2"),
+    )
+
+    row = scaler_diagnostics_v2(bad, diagnostic_scaler())
+
+    assert row["finite_pass"] is False
+    assert row["scaler_pass"] is False
+
+
+def test_v2_equation_diagnostic_rejects_nonfinite_target_statistics() -> None:
+    """Catches ignoring nonfinite y'y/min/max carried by equation records."""
+    bad = AggregatedNormalEquationsV2(
+        gas_id=0,
+        role="source_refit",
+        n=8,
+        a=np.diag([4.0, 2.0]),
+        b=np.array([2.0, 1.0]),
+        y_y=np.nan,
+        y_min=0.0,
+        y_max=10.0,
+        aggregation_order=("C1", "C2"),
+    )
+
+    row = normal_equation_diagnostics_v2(bad, diagnostic_equations())
+
+    assert row["finite_pass"] is False
+    assert row["normal_equations_pass"] is False
+
+
+def test_v2_decide_gas_equivalence_combines_registered_hard_fields() -> None:
+    """Catches dropping a diagnostic family before the four-gas decision."""
+    row = decide_gas_equivalence_v2(
+        {
+            "gas_id": 0,
+            "scaler_pass": True,
+            "safe_scale_mask_equal": True,
+            "finite_pass": True,
+        },
+        {"gas_id": 0, "normal_equations_pass": True, "finite_pass": True},
+        {
+            "gas_id": 0,
+            "alpha_equal": True,
+            "condition_pass": True,
+            "fed_residual_pass": True,
+            "pooled_residual_pass": True,
+            "relative_beta_difference": 0.0,
+            "finite_pass": True,
+        },
+        {
+            "gas_id": 0,
+            "raw_prediction_pass": True,
+            "clipped_prediction_pass": True,
+            "rmse_parity_pass": True,
+            "mae_parity_pass": True,
+            "finite_pass": True,
+        },
+    )
+
+    assert row == passing_gas_diagnostic()
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "alpha_equal",
+        "scaler_pass",
+        "safe_scale_mask_equal",
+        "normal_equations_pass",
+        "condition_pass",
+        "fed_residual_pass",
+        "pooled_residual_pass",
+        "raw_prediction_pass",
+        "clipped_prediction_pass",
+        "rmse_parity_pass",
+        "mae_parity_pass",
+        "finite_pass",
+    ],
+)
+def test_each_registered_hard_gate_can_fail_r0_v2(field: str) -> None:
+    """Catches omission of any preregistered Boolean from the conjunction."""
+    rows = [passing_gas_diagnostic(gas_id=gas) for gas in range(4)]
+    rows[0][field] = False
+
+    assert decide_r0_v2(rows)["decision"] == "R0_V2_FAILED"
+
+
+def test_coefficient_difference_is_diagnostic_not_a_hard_gate() -> None:
+    """Catches rejecting an otherwise passing run on beta discrepancy alone."""
+    rows = [
+        passing_gas_diagnostic(gas_id=gas, relative_beta_difference=1.0)
+        for gas in range(4)
+    ]
+
+    assert decide_r0_v2(rows)["decision"] == (
+        "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED"
+    )
+
+
+@pytest.mark.parametrize(
+    "gas_ids",
+    [
+        (0, 1, 2),
+        (0, 1, 2, 4),
+        (0, 1, 2, 3, 4),
+        (0, 1, 2, 2),
+        (False, 1, 2, 3),
+    ],
+)
+def test_v2_decision_requires_exactly_one_row_for_each_registered_gas(
+    gas_ids: tuple[object, ...],
+) -> None:
+    """Catches missing, extra, duplicate, or bool-coerced gas identities."""
+    rows = [passing_gas_diagnostic(gas_id=gas) for gas in gas_ids]  # type: ignore[arg-type]
+
+    assert decide_r0_v2(rows)["decision"] == "R0_V2_FAILED"
+
+
+@pytest.mark.parametrize("invalid", [1, None, "true", np.bool_(True)])
+def test_v2_decision_requires_exact_builtin_boolean_hard_fields(
+    invalid: object,
+) -> None:
+    """Catches truthiness coercion at the final registered decision gate."""
+    rows = [passing_gas_diagnostic(gas_id=gas) for gas in range(4)]
+    rows[0]["condition_pass"] = invalid
+
+    assert decide_r0_v2(rows)["decision"] == "R0_V2_FAILED"
+
+
+def test_v2_decision_fails_when_a_registered_hard_field_is_missing() -> None:
+    """Catches treating absent evidence as an implicit pass."""
+    rows = [passing_gas_diagnostic(gas_id=gas) for gas in range(4)]
+    del rows[0]["mae_parity_pass"]
+
+    assert decide_r0_v2(rows)["decision"] == "R0_V2_FAILED"
+
+
+@pytest.mark.parametrize("nonfinite", [np.nan, np.inf, -np.inf])
+def test_v2_decision_fails_closed_on_nonfinite_diagnostic_values(
+    nonfinite: float,
+) -> None:
+    """Catches coefficient diagnostics bypassing the global finite gate."""
+    rows = [passing_gas_diagnostic(gas_id=gas) for gas in range(4)]
+    rows[0]["relative_beta_difference"] = nonfinite
+
+    assert decide_r0_v2(rows)["decision"] == "R0_V2_FAILED"
