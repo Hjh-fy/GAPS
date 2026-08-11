@@ -73,17 +73,22 @@ def _ecs_client(template: list[str], client: int) -> list[str]:
     return command
 
 
-def build_gate_a_commands(method: str) -> dict[str, Any]:
+def build_gate_a_commands(
+    method: str, *, seed: int = 42, experiment_id: str | None = None
+) -> dict[str, Any]:
     if method not in {"fedavg", "gaps_dg_p"}:
         raise ValueError(f"unsupported Gate-A method: {method}")
+    if int(seed) <= 0:
+        raise ValueError("seed must be positive")
+    experiment_id = experiment_id or EXPERIMENT_IDS[method]
     base = build_source_fl_commands("FedAvg") if method == "fedavg" else build_g2_commands()
     commands = copy.deepcopy(base)
     replacements = (
         ("/root/GAPS/dataset/iotj_canonical_v1", REMOTE_DATA_ROOT),
         ("/home/gaps/GAPS/flower_runtime/dataset/iotj_canonical_v1", PI_DATA_ROOT),
         ("/root/GAPS/confirmation_c2_data/iotj_canonical_v1", C2_DATA_ROOT),
-        ("CAN-V1-CMP-FEDAVG", "CAN-V1-MB-A-S4-FEDAVG"),
-        ("CAN-V1-MR-G2-DGP", "CAN-V1-MB-A-S4-DGP"),
+        ("CAN-V1-CMP-FEDAVG", experiment_id),
+        ("CAN-V1-MR-G2-DGP", experiment_id),
     )
     for role in ("server", "client_c1", "client_c2"):
         commands[role] = _replace(commands[role], replacements)
@@ -95,12 +100,16 @@ def build_gate_a_commands(method: str) -> dict[str, Any]:
         "C3": _ecs_client(c2, 3),
         "C4": _ecs_client(c2, 4),
     }
+    _set_option(commands["server"], "--seed", str(seed))
+    _set_option(commands["server"], "--run-name", experiment_id)
+    for command in clients.values():
+        _set_option(command, "--seed", str(seed))
     protocol = commands["protocol"]
     protocol.update(
         {
             "dataset": DATASET_NAME,
             "dataset_aggregate_sha256": ROLE_VIEW_AGGREGATE_SHA256,
-            "experiment_id": EXPERIMENT_IDS[method],
+            "experiment_id": experiment_id,
             "source_clients": ["C1", "C2", "C3", "C4"],
             "target_clients": ["C5"],
             "target_access": "NONE",
@@ -111,7 +120,7 @@ def build_gate_a_commands(method: str) -> dict[str, Any]:
             "rounds": 25,
             "local_epochs": 1,
             "batch_size": 32,
-            "seed": 42,
+            "seed": int(seed),
             "optimizer": "Adam",
             "optimizer_lr": 5e-4,
             "checkpoint_selection": "fixed_round_25",
@@ -439,18 +448,21 @@ def execute_s4_fl(
     pi_host: str,
     c2_host: str,
     timeout_hours: float,
+    seed: int = 42,
+    experiment_id: str | None = None,
+    run_subdir: str | None = None,
 ) -> Path:
     from scripts.run_iotj_confirmation_observability import _start_ecs_c2_tunnels, _terminate_processes
 
-    experiment_id = EXPERIMENT_IDS[method]
-    run_dir = Path(output) / METHOD_DIRS[method]
+    experiment_id = experiment_id or EXPERIMENT_IDS[method]
+    run_dir = Path(output) / (run_subdir or METHOD_DIRS[method])
     marker = run_dir / "fixed_endpoint_complete.json"
     if marker.is_file():
         return marker
     if run_dir.exists():
         raise FileExistsError(f"FAIL_CLOSED partial Gate-A run exists: {run_dir}")
     run_dir.mkdir(parents=True)
-    commands = build_gate_a_commands(method)
+    commands = build_gate_a_commands(method, seed=seed, experiment_id=experiment_id)
     _write_json(run_dir / "locked_run_spec.json", commands)
     archive, archive_hash = frozen._source_archive(str(freeze["freeze_commit"]))
     short_hash = archive_hash[:12]
