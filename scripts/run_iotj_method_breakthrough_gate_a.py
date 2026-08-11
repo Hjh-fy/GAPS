@@ -11,6 +11,7 @@ import json
 import itertools
 import shlex
 import subprocess
+import sys
 import tarfile
 import time
 from pathlib import Path
@@ -18,6 +19,10 @@ from typing import Any
 
 import numpy as np
 import torch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from gaps_flower.evaluate_checkpoint import load_checkpoint_model, make_loader
 from gaps_flower.posthoc_commissioning import ordered_state_fingerprint
@@ -34,7 +39,6 @@ DATASET_NAME = "iotj_canonical_v1_s4_role_view"
 REMOTE_DATA_ROOT = f"/root/GAPS/dataset/{DATASET_NAME}"
 PI_DATA_ROOT = f"/home/gaps/GAPS/flower_runtime/dataset/{DATASET_NAME}"
 C2_DATA_ROOT = f"/root/GAPS/confirmation_c2_data/{DATASET_NAME}"
-ROOT = Path(__file__).resolve().parents[1]
 LOCAL_DATA_ROOT = ROOT / "dataset" / DATASET_NAME
 CANONICAL_DATA_ROOT = ROOT / "dataset/iotj_canonical_v1"
 DEFAULT_OUTPUT = ROOT / "results/iotj_canonical_v1_method_breakthrough_20260811/gate_a_source_diversity"

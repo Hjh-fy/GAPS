@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -295,3 +297,15 @@ def test_gate_a_per_class_rows_can_be_reconstructed_from_frozen_predictions() ->
     result = per_class_rows_from_predictions("fixture", rows)
     assert [row["gas"] for row in result] == ["Ethanol", "CO", "Ethylene", "Methane"]
     assert all(row["precision"] == 1.0 and row["recall"] == 1.0 and row["f1"] == 1.0 for row in result)
+
+
+def test_gate_a_runner_is_directly_executable_from_repository_root() -> None:
+    result = subprocess.run(
+        [sys.executable, "scripts/run_iotj_method_breakthrough_gate_a.py", "--help"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "Gate-A" in result.stdout
