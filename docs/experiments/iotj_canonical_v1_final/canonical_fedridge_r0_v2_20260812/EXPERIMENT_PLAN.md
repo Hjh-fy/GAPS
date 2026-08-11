@@ -17,7 +17,7 @@
 
 | ID | Falsifiable hypothesis | Baseline | Intervention | Primary metric | Expected Evidence | Acceptance criterion |
 |---|---|---|---|---|---|---|
-| H-R0V2-NUM | For identical ordered C1/C2 canonical source rows, the sufficient-statistics and pooled reconstructions satisfy every preregistered algebraic, numerical, functional, finite-value, and access gate for each gas; any failed gate falsifies the hypothesis. | POOLED-RIDGE-SAME-ROWS: pooled Ridge using the same scaler semantics, row order, alpha, solver, and intercept policy | Source-only sufficient-statistics reconstruction with float64 mergeable central moments in C1-then-C2 order | Registered per-gas hard-gate conjunction and one registered R0-v2 decision | Four per-gas gate records and one registered PASS/FAIL decision; no direction or numeric outcome is predicted | `FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED` only if every hard Boolean is true for exactly gases 0,1,2,3; otherwise `R0_V2_FAILED` |
+| H-R0V2-NUM | Formal execution will determine whether every preregistered gate passes; either registered decision is admissible, with no expected direction. | POOLED-RIDGE-SAME-ROWS: pooled Ridge using the same scaler semantics, row order, alpha, solver, and intercept policy | Source-only sufficient-statistics reconstruction with float64 mergeable central moments in C1-then-C2 order | Registered per-gas hard-gate conjunction and one registered R0-v2 decision | Four per-gas gate records and one registered PASS/FAIL decision; no direction or numeric outcome is predicted | `FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED` only if every hard Boolean is true for exactly gases 0,1,2,3; otherwise `R0_V2_FAILED` |
 
 ## Fixed protocol
 

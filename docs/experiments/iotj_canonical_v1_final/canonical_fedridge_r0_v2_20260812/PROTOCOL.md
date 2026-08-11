@@ -63,6 +63,22 @@ The exact formula-derived gates are `tau_moment=64*gamma(1340)`,
 scaler, safe-scale-mask, normal-equation, condition, both residual, raw and
 clipped prediction, RMSE, MAE, and finite-value gates for exactly gases 0-3.
 
+## Explicit reconciliation check
+
+The following read-only checks were performed during the Task 5 review fix.
+They compare sources; they do not generate experimental evidence.
+
+| Source | Read-only command or artifact | Checked fields | Outcome |
+|---|---|---|---|
+| Approved design commit | `git show b41fee1d5bd64a19d6fefcad5fde610183856202:docs/superpowers/specs/2026-08-12-canonical-fedridge-r0-v2-design.md` | study ID; C1/C2 order; split roles/counts; target/QC boundary; float64, M2/n, scale floor, alpha, solver, intercept, tolerance formulas, decisions | No traceable disagreement found |
+| Task 4 code/constants | Read-only import of `CLIENT_ORDER`, `RIDGE_ALPHAS`, `SCALE_FLOOR`, and `registered_tolerances_v2()` from `gaps_flower/canonical_fedridge_v2.py` at `6668dc5db83428a2d957d962d6a5fa4bb5dc2430` | C1/C2; alpha grid; `1e-9`; epsilon, dimensions, `tau_moment`, `tau_residual`, functional ppm | No traceable disagreement found |
+| Canonical manifests/data roles | Parsed `dataset/iotj_canonical_v1/dataset_sha256.json` and C1/C2 `stats.json`; recomputed the manifest-listed C1/C2 feature/phase/metadata SHA256 values | aggregate SHA; source roles; train/calibration/test counts; per-file hashes | No traceable disagreement found |
+| Planner/registry records | Parsed both CSVs with `csv.DictReader` and compared the canonical fields with this manifest and the sources above | one experiment ID; ordered sources; empty targets; split/model/checkpoint policy; none controls; seed; result/metric/status/provenance fields | No traceable disagreement found |
+
+Reconciliation result: `conflict_fields=[]`. The two non-configuration unknowns
+remain the future execution resource budget and future execution
+environment/BLAS metadata.
+
 ## Decision and stop boundary
 
 The only R0-v2 decisions are:

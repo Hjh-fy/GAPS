@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 from typing import Mapping
@@ -86,6 +87,57 @@ REQUIRED_PROTOCOL_MARKDOWN = (
     "R0_V2_NUMERICAL_TOLERANCE_JUSTIFICATION.md",
     "FEDRIDGE_NUMERICAL_STABILITY_MANUSCRIPT_NOTE.md",
 )
+REQUIRED_BUNDLE_FILES = REQUIRED_PROTOCOL_MARKDOWN + (
+    "protocol_manifest.json",
+    "EXPERIMENT_MATRIX.csv",
+    "EXPERIMENT_REGISTRY.csv",
+)
+REGISTERED_METRIC_REFERENCES = (
+    "protocol_manifest.json#/numerical_gates"
+    "|future:r0_v2_scaler_diagnostics.csv"
+    "|future:r0_v2_normal_equation_diagnostics.csv"
+    "|future:r0_v2_system_diagnostics.csv"
+    "|future:r0_v2_functional_equivalence.csv"
+    "|future:R0_V2_DECISION.json"
+)
+REQUIRED_FIELD_PROVENANCE = {
+    "experiment_id",
+    "source_clients",
+    "target_clients",
+    "split_protocol",
+    "model",
+    "checkpoint",
+    "DA",
+    "calibration",
+    "QC",
+    "seed",
+    "result_path",
+    "metrics",
+    "status",
+    "evidence_status",
+    "code_commit",
+    "config_path",
+    "dataset_path",
+}
+EXECUTION_INSTRUCTION = re.compile(
+    r"\b(?:open|load|evaluate|run|execute|conduct|perform|apply)\b"
+    r"[^.\n]{0,80}\b(?:target|C3|C4|C5|QC)\b",
+    flags=re.IGNORECASE,
+)
+EXPLICIT_PROHIBITION = re.compile(
+    r"\b(?:no|not|never|forbidden|prohibited|must\s+not|do\s+not|"
+    r"shall\s+not|unavailable|false|empty)\b",
+    flags=re.IGNORECASE,
+)
+
+
+def unauthorized_target_qc_instructions(text: str) -> list[str]:
+    findings: list[str] = []
+    for line in text.splitlines():
+        for match in EXECUTION_INSTRUCTION.finditer(line):
+            if not EXPLICIT_PROHIBITION.search(line[: match.start()]):
+                findings.append(match.group(0))
+    return findings
 
 
 class AccessRecordingMapping(
@@ -1407,6 +1459,7 @@ def test_r0_v2_matrix_registers_exactly_one_unexecuted_configuration() -> None:
     assert row["status"] == "registered"
     assert row["evidence_status"] == "blocked_pending_execution"
     assert row["hypothesis_id"] == "H-R0V2-NUM"
+    assert row["metrics"] == REGISTERED_METRIC_REFERENCES
     assert row["expected_evidence"] == (
         "four per-gas gate records and one registered PASS/FAIL decision"
     )
@@ -1431,29 +1484,114 @@ def test_r0_v2_registry_has_one_registered_record_and_planner_handoff() -> None:
     assert row["status"] == "registered"
     assert row["evidence_status"] == "blocked_pending_execution"
     assert row["checkpoint"].startswith("not_created_pre_run")
-    assert row["metrics"] == "blocked_pending_execution"
-    assert "experiment-planner -> experiment-registry" in row["provenance"]
+    assert row["metrics"] == REGISTERED_METRIC_REFERENCES
     assert "separately named freeze commit" in row["notes"]
 
 
 def test_r0_v2_protocol_markdown_preserves_boundaries_and_decisions() -> None:
     """Catches missing freeze notes or instructions that cross access scope."""
-    forbidden_instructions = (
-        "run target",
-        "execute target",
-        "perform target",
-        "run qc",
-        "execute qc",
-        "perform qc",
-    )
     for filename in REQUIRED_PROTOCOL_MARKDOWN:
         text = (PROTOCOL_ROOT / filename).read_text(encoding="utf-8")
-        lowered = text.lower()
         assert "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED" in text
         assert "R0_V2_FAILED" in text
         assert "R0_EXACT_RECOVERY_NOT_ESTABLISHED" in text
         assert "V1_INTERLEAVED_RETAINED" in text
-        assert not any(instruction in lowered for instruction in forbidden_instructions)
+
+
+def test_experiment_plan_hypothesis_is_neutral_before_execution() -> None:
+    """Catches a preregistration that predicts the registered PASS outcome."""
+    text = (PROTOCOL_ROOT / "EXPERIMENT_PLAN.md").read_text(encoding="utf-8")
+
+    assert (
+        "Formal execution will determine whether every preregistered gate "
+        "passes; either registered decision is admissible, with no expected "
+        "direction."
+    ) in text
+    assert (
+        "the sufficient-statistics and pooled reconstructions satisfy every "
+        "preregistered"
+    ) not in text
+
+
+def test_matrix_and_registry_use_metrics_not_workflow_evidence_state() -> None:
+    """Catches storing evidence workflow state in the metrics field."""
+    for path in (EXPERIMENT_MATRIX, EXPERIMENT_REGISTRY):
+        with path.open(encoding="utf-8", newline="") as handle:
+            row = next(csv.DictReader(handle))
+
+        assert row["metrics"] == REGISTERED_METRIC_REFERENCES
+        assert row["metrics"] != row["evidence_status"]
+        assert row["evidence_status"] == "blocked_pending_execution"
+
+
+def test_matrix_and_registry_provenance_is_field_addressable_json() -> None:
+    """Catches free-text provenance that cannot trace each canonical field."""
+    for path in (EXPERIMENT_MATRIX, EXPERIMENT_REGISTRY):
+        with path.open(encoding="utf-8", newline="") as handle:
+            row = next(csv.DictReader(handle))
+        provenance = json.loads(row["provenance"])
+
+        assert REQUIRED_FIELD_PROVENANCE <= set(provenance)
+        assert all(
+            isinstance(provenance[field], str) and provenance[field]
+            for field in REQUIRED_FIELD_PROVENANCE
+        )
+        assert "task-5-brief.md" in provenance["experiment_id"]
+        assert "b41fee1d5bd64a19d6fefcad5fde610183856202" in provenance[
+            "source_clients"
+        ]
+        assert "canonical_fedridge_v2.py@6668dc5" in provenance["model"]
+        assert "protocol_manifest.json#/numerical_gates" in provenance["metrics"]
+        assert "dataset_sha256.json" in provenance["dataset_path"]
+        assert "protocol_manifest.json" in provenance["config_path"]
+        assert "task-5-brief.md" in provenance["status"]
+        assert "task-5-brief.md" in provenance["evidence_status"]
+
+
+def test_protocol_records_explicit_multi_source_reconciliation() -> None:
+    """Catches asserting no conflict without documenting compared sources."""
+    text = (PROTOCOL_ROOT / "PROTOCOL.md").read_text(encoding="utf-8")
+
+    assert "## Explicit reconciliation check" in text
+    for source in (
+        "Approved design commit",
+        "Task 4 code/constants",
+        "Canonical manifests/data roles",
+        "Planner/registry records",
+    ):
+        assert source in text
+    assert "No traceable disagreement found" in text
+    assert "conflict_fields=[]" in text
+
+
+def test_target_qc_instruction_guard_detects_semantic_variants() -> None:
+    """Catches unauthorized access phrased without the original six verbs."""
+    for instruction in (
+        "Open target calibration arrays.",
+        "Load C3 labels.",
+        "Evaluate C5 test rows.",
+        "Run target inference.",
+        "Execute QC thresholds.",
+        "Conduct target evaluation.",
+        "Perform QC filtering.",
+        "Apply QC policy.",
+    ):
+        assert unauthorized_target_qc_instructions(instruction)
+
+    for prohibition in (
+        "Do not open target calibration arrays.",
+        "Never load C3 labels.",
+        "Target evaluation is prohibited.",
+        "QC execution is unavailable.",
+    ):
+        assert unauthorized_target_qc_instructions(prohibition) == []
+
+
+def test_protocol_bundle_has_no_authorized_target_or_qc_instruction() -> None:
+    """Catches positive target/QC instructions anywhere in the eight files."""
+    for filename in REQUIRED_BUNDLE_FILES:
+        text = (PROTOCOL_ROOT / filename).read_text(encoding="utf-8")
+        assert unauthorized_target_qc_instructions(text) == []
 
 
 def test_near_constant_policy_reuses_strict_floor_without_selection() -> None:
