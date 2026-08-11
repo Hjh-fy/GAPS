@@ -1356,6 +1356,12 @@ def test_r0_v2_protocol_manifest_is_pre_run_target_free_and_canonical() -> None:
         "dataset_aggregate_sha256": (
             "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6"
         ),
+        "dataset_sha256_json_sha256": (
+            "4aa511a59e62cf878a1b230b637591f5509728da149a7dff9876fa8f303e1486"
+        ),
+        "canonical_preprocessing_manifest_sha256": (
+            "6c33f0a1586653b2bfa5a43f43ab502c5bdaa3474c24ac03015e36ddd40c2c41"
+        ),
         "preprocessing": "HZ5_MEAN_W10S",
         "sampling_rate_hz": 5,
         "window_seconds": 10,
@@ -1371,6 +1377,7 @@ def test_r0_v2_protocol_manifest_is_pre_run_target_free_and_canonical() -> None:
         "per_gas_test_count_per_client": 170,
         "per_gas_test_count_pooled": 340,
     }
+    assert len(manifest["canonical_source_artifact_sha256"]) == 32
     assert manifest["feature_protocol"]["sensor_dimensions"] == 83
     assert manifest["feature_protocol"]["h1_dimensions"] == 104
     assert manifest["feature_protocol"]["ordered_h1_feature_names_sha256"] == (
@@ -1759,8 +1766,9 @@ def test_execution_rejects_lexical_output_root_symlink_before_resolving(
 
 def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Catches an aggregate verifier traversing non-source array/label paths."""
+    """Catches enumerating or hashing target bytes during source preflight."""
     data_root = tmp_path / "canonical"
     data_root.mkdir()
     protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
@@ -1789,6 +1797,9 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
                 else:
                     values = np.zeros((n, 4), dtype=np.float64)
                 np.save(path, values, allow_pickle=False)
+                artifacts[f"{client}_{split}_{label_kind}_labels"] = (
+                    runner.sha256_file(path)
+                )
                 index_files[path.relative_to(data_root).as_posix()] = runner.sha256_file(
                     path
                 )
@@ -1806,6 +1817,8 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
         index_files[stats_path.relative_to(data_root).as_posix()] = runner.sha256_file(
             stats_path
         )
+        artifacts[f"{client}_stats"] = runner.sha256_file(stats_path)
+    assert len(artifacts) == 32
     protocol["canonical_source_artifact_sha256"] = artifacts
     canonical_manifest = data_root / "canonical_preprocessing_manifest.json"
     canonical_manifest.write_text(
@@ -1820,6 +1833,11 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
         encoding="utf-8",
     )
     index_files[canonical_manifest.name] = runner.sha256_file(canonical_manifest)
+    target_directory = data_root / "client_3"
+    target_directory.mkdir()
+    target_poison = target_directory / "target_test_labels.npy"
+    target_poison.write_bytes(b"must never be opened")
+    index_files[target_poison.relative_to(data_root).as_posix()] = "f" * 64
     aggregate = hashlib.sha256()
     for name, digest in sorted(index_files.items()):
         aggregate.update(name.encode())
@@ -1827,20 +1845,64 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
         aggregate.update(digest.encode())
         aggregate.update(b"\n")
     protocol["canonical_data"]["dataset_aggregate_sha256"] = aggregate.hexdigest()
-    (data_root / "dataset_sha256.json").write_text(
+    index_path = data_root / "dataset_sha256.json"
+    index_path.write_text(
         json.dumps(
             {
+                "schema_version": "iotj.canonical_v1.sha256",
                 "aggregate_sha256": aggregate.hexdigest(),
                 "files": index_files,
             }
         ),
         encoding="utf-8",
     )
+    protocol["canonical_data"]["dataset_sha256_json_sha256"] = (
+        runner.sha256_file(index_path)
+    )
+    protocol["canonical_data"]["canonical_preprocessing_manifest_sha256"] = (
+        runner.sha256_file(canonical_manifest)
+    )
+
+    path_type = type(data_root)
+    real_rglob = path_type.rglob
+
+    def reject_root_traversal(self: Path, pattern: str):
+        if self == data_root:
+            raise AssertionError("target-inclusive canonical traversal")
+        return real_rglob(self, pattern)
+
+    real_sha256_file = runner.sha256_file
+    opened: list[Path] = []
+
+    def reject_target_hash(path: str | Path) -> str:
+        candidate = Path(path)
+        opened.append(candidate)
+        if candidate == target_poison or target_directory in candidate.parents:
+            raise AssertionError("target artifact byte access")
+        return real_sha256_file(candidate)
+
+    monkeypatch.setattr(path_type, "rglob", reject_root_traversal)
+    monkeypatch.setattr(runner, "sha256_file", reject_target_hash)
 
     result = runner._verify_source_dataset(data_root, protocol)
 
     assert result["status"] == "PASS"
     assert result["bad_files"] == []
+    assert result["checked_files"] == 32
+    assert target_poison not in opened
+
+    extra_source = data_root / "client_1/unregistered.bin"
+    extra_source.write_bytes(b"unregistered source")
+    with pytest.raises(RuntimeError, match="source file set"):
+        runner._verify_source_dataset(data_root, protocol)
+    extra_source.unlink()
+
+    missing_source = data_root / "client_1/train_features.npy"
+    missing_source_bytes = missing_source.read_bytes()
+    missing_source.unlink()
+    with pytest.raises(RuntimeError, match="source file set"):
+        runner._verify_source_dataset(data_root, protocol)
+    missing_source.write_bytes(missing_source_bytes)
 
     (data_root / "client_1/test_regression_labels.npy").write_text(
         "changed", encoding="utf-8"
@@ -1859,7 +1921,6 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
     one = int(np.flatnonzero(classes == 1)[0])
     classes[zero], classes[one] = classes[one], classes[zero]
     np.save(class_path, classes, allow_pickle=False)
-    index_path = data_root / "dataset_sha256.json"
     index = json.loads(index_path.read_text(encoding="utf-8"))
     relative = class_path.relative_to(data_root).as_posix()
     index["files"][relative] = runner.sha256_file(class_path)
@@ -1871,55 +1932,8 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
         rehashed.update(b"\n")
     index["aggregate_sha256"] = rehashed.hexdigest()
     index_path.write_text(json.dumps(index), encoding="utf-8")
-    with pytest.raises(RuntimeError, match="aggregate"):
+    with pytest.raises(RuntimeError, match="dataset index|source hash"):
         runner._verify_source_dataset(data_root, protocol)
-
-
-def test_canonical_index_rejects_extra_missing_unsafe_and_symlink_paths(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Catches trusting a mutable index/path set instead of the frozen tree."""
-    root = tmp_path / "canonical"
-    root.mkdir()
-    registered = root / "registered.bin"
-    registered.write_bytes(b"registered")
-    digest = runner.sha256_file(registered)
-    index = {"files": {"registered.bin": digest}}
-
-    extra = root / "extra.bin"
-    extra.write_bytes(b"extra")
-    with pytest.raises(RuntimeError, match="coverage"):
-        runner._recompute_canonical_aggregate(root, index)
-    extra.unlink()
-
-    registered.unlink()
-    with pytest.raises(RuntimeError, match="coverage"):
-        runner._recompute_canonical_aggregate(root, index)
-    registered.write_bytes(b"registered")
-
-    for unsafe in ("../escape.bin", "/absolute.bin", "C:/absolute.bin"):
-        with pytest.raises(RuntimeError, match="unsafe"):
-            runner._recompute_canonical_aggregate(
-                root, {"files": {unsafe: digest}}
-            )
-
-    link = root / "linked.bin"
-    try:
-        link.symlink_to(registered)
-    except OSError:
-        path_type = type(registered)
-        real_is_symlink = path_type.is_symlink
-        monkeypatch.setattr(
-            path_type,
-            "is_symlink",
-            lambda self: self == registered or real_is_symlink(self),
-        )
-        link = registered
-    with pytest.raises(RuntimeError, match="symlink"):
-        runner._recompute_canonical_aggregate(
-            root,
-            {"files": {"registered.bin": digest, "linked.bin": digest}},
-        )
 
 
 def test_preflight_is_pure_and_accepts_only_the_frozen_source_prerequisites(
@@ -2471,7 +2485,63 @@ def test_favorable_numerics_with_incomplete_access_forces_failure(
         (output / "R0_V2_DECISION.json").read_text(encoding="utf-8")
     )
     assert "access_sequence_incomplete" in decision["blocking_findings"]
+    assert decision["error"] is None
+    assert runner.audit(output)["decision"] == "R0_V2_FAILED"
     assert not (output / "fixed_endpoint_complete.json").exists()
+
+
+def test_favorable_numerics_with_lock_provenance_failure_audits(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches requiring an exception for an exact lock-order-only FAIL."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "lock-failure"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    decision_path = output / "R0_V2_DECISION.json"
+    decision = json.loads(decision_path.read_text(encoding="utf-8"))
+    decision.update(
+        {
+            "decision": "R0_V2_FAILED",
+            "blocking_findings": ["locks_not_complete_before_source_test"],
+            "evidence_complete": False,
+            "error": None,
+        }
+    )
+    decision_path.write_text(json.dumps(decision), encoding="utf-8")
+
+    execution_path = output / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution.update(
+        {
+            "status": "FAIL_CLOSED",
+            "decision": "R0_V2_FAILED",
+            "source_test_opened_after_locks": False,
+            "error": None,
+        }
+    )
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    (output / "DATA_ACCESS_AUDIT.md").write_text(
+        runner._access_audit_text(
+            execution["access_events"],
+            locks_before_test=False,
+            decision="R0_V2_FAILED",
+        ),
+        encoding="utf-8",
+    )
+    (output / "R0_V2_EXPERIMENT_AUDIT.md").write_text(
+        runner._experiment_audit_text(
+            decision="R0_V2_FAILED",
+            findings=["locks_not_complete_before_source_test"],
+            access_complete=True,
+        ),
+        encoding="utf-8",
+    )
+    (output / "fixed_endpoint_complete.json").unlink()
+    rehash_evidence_after_tamper(output)
+
+    assert runner.audit(output)["decision"] == "R0_V2_FAILED"
 
 
 def test_blocking_findings_accumulate_exception_gate_access_lock_and_artifact() -> None:
@@ -2826,6 +2896,51 @@ def test_audit_rejects_rehashed_semantic_diagnostic_contradictions(
     rehash_evidence_after_tamper(output)
 
     with pytest.raises(RuntimeError, match="semantic"):
+        runner.audit(output)
+
+
+def test_pass_audit_rejects_rehashed_h1_no_rows_sentinel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches accepting a PASS whose required 416 H1 rows were removed."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "missing-h1"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    (output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv").write_text(
+        "status\nNO_ROWS\n", encoding="utf-8"
+    )
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="feature diagnostic coverage"):
+        runner.audit(output)
+
+
+def test_late_failure_audit_rejects_rehashed_h1_no_rows_sentinel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches accepting NO_ROWS after model-derived evidence already exists."""
+    force_synthetic_alpha(monkeypatch)
+    original = runner.functional_diagnostics_v2
+
+    def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
+        row = original(*args, **kwargs)
+        row["raw_prediction_pass"] = False
+        row["max_abs_raw_prediction_difference"] = 1.0
+        return row
+
+    monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
+    output = tmp_path / "late-failure-missing-h1"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    (output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv").write_text(
+        "status\nNO_ROWS\n", encoding="utf-8"
+    )
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="feature diagnostic coverage"):
         runner.audit(output)
 
 

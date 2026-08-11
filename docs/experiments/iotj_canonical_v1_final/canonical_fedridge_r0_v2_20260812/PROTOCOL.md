@@ -31,12 +31,17 @@ R0=`R0_EXACT_RECOVERY_NOT_ESTABLISHED`.
 
 ### Strengthened provenance contract
 
-Preflight rebuilds the canonical dataset aggregate using the canonical-v1
-builder framing (`relative_path`, NUL, observed file SHA256, newline, in sorted
-path order). The registered and actual file sets must match exactly; unsafe
-paths, symlinks, wrong types, missing files, extra files, per-file digest
-drift, stored-aggregate drift, or disagreement with the frozen aggregate all
-fail closed.
+Preflight authenticates the whole `dataset_sha256.json` file at
+`4aa511a59e62cf878a1b230b637591f5509728da149a7dff9876fa8f303e1486`
+and the canonical preprocessing manifest at
+`6c33f0a1586653b2bfa5a43f43ab502c5bdaa3474c24ac03015e36ddd40c2c41`.
+It checks that the index's stored aggregate identity remains the frozen
+canonical-v1 aggregate, then verifies the exact 32-file C1/C2 source subset
+against both the pinned index and `canonical_source_artifact_sha256`. Only the
+C1 and C2 directories are enumerated; missing, extra, linked, wrong-type, or
+digest-drifted source files fail closed. C3/C4/C5 directories and artifacts
+are never enumerated, hashed, opened, or used to recompute a target-inclusive
+aggregate during this source-only preflight.
 
 The prerequisite indexes are independently pinned before any indexed record
 is trusted. `C0/C0_SHA256_INDEX.json` has whole-file SHA256
@@ -79,6 +84,15 @@ and audits. Audit-only mode reads and cross-checks existing evidence; it does
 not regenerate metrics or alter evidence. Reserved index and completion names
 are excluded only at the evidence root, so identically named nested files
 remain hash-indexed.
+
+A PASS audit requires exactly 416 H1 feature-audit rows (104 coordinates for
+each of gases 0-3), plus exactly one row for each gas in every other diagnostic
+family; `NO_ROWS` is never valid PASS evidence. A partial FAIL may retain a
+stage-valid `NO_ROWS` sentinel, but every family already present is validated.
+When gas rows are favorable, a stored FAIL is auditable only when the complete
+recomputed access, lock, artifact, or execution-provenance context contains a
+blocking defect and the stored blocking-finding list matches it exactly; an
+exception string is not required for a provenance-only failure.
 
 ## Frozen numerical protocol
 

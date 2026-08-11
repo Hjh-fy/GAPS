@@ -65,7 +65,7 @@ PROTOCOL_ROOT = (
 )
 PROTOCOL_MANIFEST = PROTOCOL_ROOT / "protocol_manifest.json"
 EXPECTED_PROTOCOL_FREEZE_SHA256 = (
-    "2ece5004ae71a454086042270d4478f8ce04c60f5d71c63bfce854af61898e01"
+    "6693761f4b660cf11f01a2b41148ffd2c031293b3e23d2e0163f18cd2b0451d6"
 )
 RESULT_ROOT = (
     ROOT
@@ -332,124 +332,114 @@ def _verify_protocol() -> dict[str, Any]:
     return protocol
 
 
-def _recompute_canonical_aggregate(
-    data_root: Path, dataset_index: Mapping[str, Any]
-) -> tuple[str, dict[str, str]]:
-    """Rebuild the canonical-v1 digest from the registered paths and bytes."""
-    data_root = _reject_symlink_components(data_root, "canonical data").resolve()
-    indexed_files = dataset_index.get("files")
-    if not isinstance(indexed_files, Mapping):
-        raise RuntimeError("FAIL_CLOSED canonical dataset index schema changed")
-    registered: dict[str, str] = {}
-    for relative, expected in indexed_files.items():
-        if not isinstance(relative, str) or not isinstance(expected, str):
-            raise RuntimeError("FAIL_CLOSED canonical dataset index schema changed")
-        pure = PurePosixPath(relative)
-        if (
-            not relative
-            or "\\" in relative
-            or pure.is_absolute()
-            or pure.parts in ((), (".",))
-            or any(part in ("", ".", "..") for part in pure.parts)
-            or ":" in pure.parts[0]
-            or relative == "dataset_sha256.json"
-        ):
-            raise RuntimeError(
-                f"FAIL_CLOSED canonical dataset index contains unsafe path: {relative}"
+def _source_artifact_paths(data_root: Path) -> dict[str, Path]:
+    paths: dict[str, Path] = {}
+    for client in SOURCE_CLIENTS:
+        directory = data_root / f"client_{client[1:]}"
+        for split in SOURCE_SPLITS:
+            paths[f"{client}_{split}_features"] = (
+                directory / f"{split}_features.npy"
             )
-        registered[relative] = expected
-
-    entries = list(data_root.rglob("*"))
-    symlinks = [
-        path.relative_to(data_root).as_posix()
-        for path in entries
-        if path.is_symlink()
-    ]
-    if symlinks:
-        raise RuntimeError(
-            f"FAIL_CLOSED canonical dataset contains symlink paths: {symlinks}"
-        )
-    actual_files = {
-        path.relative_to(data_root).as_posix(): path
-        for path in entries
-        if path.is_file() and path != data_root / "dataset_sha256.json"
-    }
-    if set(actual_files) != set(registered):
-        missing = sorted(set(registered) - set(actual_files))
-        extra = sorted(set(actual_files) - set(registered))
-        raise RuntimeError(
-            "FAIL_CLOSED canonical dataset index coverage changed: "
-            f"missing={missing}, extra={extra}"
-        )
-
-    observed: dict[str, str] = {}
-    for relative, path in sorted(actual_files.items()):
-        digest = sha256_file(path)
-        if digest != registered[relative]:
-            raise RuntimeError(
-                f"FAIL_CLOSED canonical source hash changed: {relative}"
+            paths[f"{client}_{split}_phase"] = (
+                directory / f"{split}_phase_labels.npy"
             )
-        observed[relative] = digest
-    aggregate = hashlib.sha256()
-    for relative, digest in sorted(observed.items()):
-        aggregate.update(relative.encode())
-        aggregate.update(b"\0")
-        aggregate.update(digest.encode())
-        aggregate.update(b"\n")
-    return aggregate.hexdigest(), observed
+            paths[f"{client}_{split}_metadata"] = (
+                directory / f"{split}_experiment_info.json"
+            )
+            for label_kind in ("classification", "regression"):
+                paths[f"{client}_{split}_{label_kind}_labels"] = (
+                    directory / f"{split}_{label_kind}_labels.npy"
+                )
+        paths[f"{client}_stats"] = directory / "stats.json"
+    return paths
 
 
 def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[str, Any]:
+    data_root = _reject_symlink_components(data_root, "canonical data").resolve()
     canonical = protocol["canonical_data"]
     expected_aggregate = str(canonical["dataset_aggregate_sha256"])
-    dataset_index = _read_json(data_root / "dataset_sha256.json")
-    recomputed_aggregate, observed_files = _recompute_canonical_aggregate(
-        data_root, dataset_index
-    )
+    index_path = data_root / "dataset_sha256.json"
+    expected_index_sha256 = canonical.get("dataset_sha256_json_sha256")
     if (
-        dataset_index.get("aggregate_sha256") != recomputed_aggregate
-        or recomputed_aggregate != expected_aggregate
+        index_path.is_symlink()
+        or not index_path.is_file()
+        or not isinstance(expected_index_sha256, str)
+        or sha256_file(index_path) != expected_index_sha256
+    ):
+        raise RuntimeError("FAIL_CLOSED canonical dataset index hash changed")
+    dataset_index = _read_json(index_path)
+    indexed_files = dataset_index.get("files")
+    if (
+        dataset_index.get("schema_version") != "iotj.canonical_v1.sha256"
+        or dataset_index.get("aggregate_sha256") != expected_aggregate
+        or not isinstance(indexed_files, Mapping)
+        or any(
+            not isinstance(relative, str) or not isinstance(digest, str)
+            for relative, digest in (
+                indexed_files.items() if isinstance(indexed_files, Mapping) else ()
+            )
+        )
     ):
         raise RuntimeError(
             "FAIL_CLOSED canonical dataset hash/aggregate verification failed"
         )
-    indexed_files = dataset_index["files"]
 
-    def verify_indexed_source(path: Path) -> None:
-        nonlocal checked_files
-        relative = path.relative_to(data_root).as_posix()
-        expected = indexed_files.get(relative)
+    source_paths = _source_artifact_paths(data_root)
+    expected_artifacts = protocol.get("canonical_source_artifact_sha256")
+    if (
+        not isinstance(expected_artifacts, Mapping)
+        or len(source_paths) != 32
+        or set(expected_artifacts) != set(source_paths)
+        or any(
+            not isinstance(digest, str) or len(digest) != 64
+            for digest in (
+                expected_artifacts.values()
+                if isinstance(expected_artifacts, Mapping)
+                else ()
+            )
+        )
+    ):
+        raise RuntimeError("FAIL_CLOSED canonical source artifact map changed")
+    expected_relative_paths = {
+        path.relative_to(data_root).as_posix() for path in source_paths.values()
+    }
+    indexed_source_paths = {
+        relative
+        for relative in indexed_files
+        if PurePosixPath(relative).parts
+        and PurePosixPath(relative).parts[0] in {"client_1", "client_2"}
+    }
+    if indexed_source_paths != expected_relative_paths:
+        raise RuntimeError("FAIL_CLOSED canonical source index file set changed")
+
+    for client in SOURCE_CLIENTS:
+        directory = data_root / f"client_{client[1:]}"
+        if directory.is_symlink() or not directory.is_dir():
+            raise RuntimeError("FAIL_CLOSED canonical source directory changed")
+        expected_names = {
+            path.name
+            for key, path in source_paths.items()
+            if key.startswith(f"{client}_")
+        }
+        entries = list(directory.iterdir())
         if (
-            not isinstance(expected, str)
-            or observed_files.get(relative) != expected
+            {path.name for path in entries} != expected_names
+            or any(path.is_symlink() or not path.is_file() for path in entries)
         ):
+            raise RuntimeError("FAIL_CLOSED canonical source file set changed")
+
+    for key, path in source_paths.items():
+        relative = path.relative_to(data_root).as_posix()
+        expected = expected_artifacts[key]
+        if indexed_files.get(relative) != expected or sha256_file(path) != expected:
             raise RuntimeError(
                 f"FAIL_CLOSED canonical source hash changed: {relative}"
             )
-        checked_files += 1
 
-    expected_artifacts = protocol["canonical_source_artifact_sha256"]
-    checked_files = 0
     for client in ("C1", "C2"):
         directory = data_root / f"client_{client[1:]}"
         classifications: dict[str, np.ndarray] = {}
         for split in ("train", "calibration", "test"):
-            paths = {
-                "features": directory / f"{split}_features.npy",
-                "phase": directory / f"{split}_phase_labels.npy",
-                "metadata": directory / f"{split}_experiment_info.json",
-            }
-            for kind, path in paths.items():
-                key = f"{client}_{split}_{kind}"
-                if sha256_file(path) != expected_artifacts.get(key):
-                    raise RuntimeError(
-                        f"FAIL_CLOSED canonical source artifact hash changed: {key}"
-                    )
-                verify_indexed_source(path)
-            for label_kind in ("classification", "regression"):
-                verify_indexed_source(
-                    directory / f"{split}_{label_kind}_labels.npy"
-                )
             classes = np.load(
                 directory / f"{split}_classification_labels.npy",
                 allow_pickle=False,
@@ -470,7 +460,6 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
                 )
             classifications[split] = classes.astype(np.int64, copy=False)
         stats_path = directory / "stats.json"
-        verify_indexed_source(stats_path)
         stats = _read_json(stats_path)
         if (
             stats.get("client_id") != client
@@ -498,7 +487,20 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
             )
 
     canonical_manifest_path = data_root / "canonical_preprocessing_manifest.json"
-    verify_indexed_source(canonical_manifest_path)
+    expected_manifest_sha256 = canonical.get(
+        "canonical_preprocessing_manifest_sha256"
+    )
+    if (
+        canonical_manifest_path.is_symlink()
+        or not canonical_manifest_path.is_file()
+        or not isinstance(expected_manifest_sha256, str)
+        or indexed_files.get("canonical_preprocessing_manifest.json")
+        != expected_manifest_sha256
+        or sha256_file(canonical_manifest_path) != expected_manifest_sha256
+    ):
+        raise RuntimeError(
+            "FAIL_CLOSED canonical preprocessing manifest hash changed"
+        )
     canonical_manifest = _read_json(canonical_manifest_path)
     if (
         canonical_manifest.get("candidate_id") != canonical.get("preprocessing")
@@ -525,7 +527,7 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
     return {
         "status": "PASS",
         "aggregate_sha256": expected_aggregate,
-        "checked_files": checked_files,
+        "checked_files": len(source_paths),
         "bad_files": [],
     }
 
@@ -1750,7 +1752,19 @@ def _semantic_evidence_audit(
     )
     feature_names_by_index: dict[int, str] = {}
     feature_state_by_gas_index: dict[tuple[int, int], tuple[float, float]] = {}
-    if feature_rows[0].get("status") != "NO_ROWS":
+    feature_no_rows = feature_rows[0].get("status") == "NO_ROWS"
+    feature_no_rows_stage_valid = bool(
+        decision == R0_V2_FAIL
+        and not gas_results
+        and not (output / "model_lock.json").exists()
+    )
+    if feature_no_rows and (
+        len(feature_rows) != 1 or not feature_no_rows_stage_valid
+    ):
+        raise RuntimeError(
+            "FAIL_CLOSED semantic feature diagnostic coverage mismatch"
+        )
+    if not feature_no_rows:
         keys: set[tuple[int, int]] = set()
         for row in feature_rows:
             try:
@@ -1838,6 +1852,10 @@ def _semantic_evidence_audit(
         name: _rows_by_gas(_read_csv_evidence(output / filename), filename)
         for name, filename in diagnostic_files.items()
     }
+    if feature_no_rows and any(diagnostics.values()):
+        raise RuntimeError(
+            "FAIL_CLOSED semantic feature diagnostic coverage mismatch"
+        )
     if decision == R0_V2_PASS and any(
         set(rows) != set(GAS_IDS) for rows in diagnostics.values()
     ):
@@ -2692,13 +2710,6 @@ def audit(output: Path) -> dict[str, Any]:
     ):
         raise RuntimeError("FAIL_CLOSED decision error provenance is invalid")
     recomputed_decision = decide_r0_v2(gas_rows).get("decision")
-    execution_failure_override = (
-        decision == R0_V2_FAIL
-        and recomputed_decision == R0_V2_PASS
-        and recorded_error is not None
-    )
-    if recomputed_decision != decision and not execution_failure_override:
-        raise RuntimeError("FAIL_CLOSED decision conflicts with stored gate evidence")
     findings = decision_payload.get("blocking_findings")
     if (
         not isinstance(findings, list)
@@ -2765,23 +2776,38 @@ def audit(output: Path) -> dict[str, Any]:
         or execution.get("global_key_audit") != expected_global_key_audit
         or execution.get("expected_formal_files") != list(EXPECTED_FORMAL_FILES)
         or (
-            any(request.split == "test" for request in observed)
+            decision == R0_V2_PASS
+            and any(request.split == "test" for request in observed)
             and execution.get("source_test_opened_after_locks") is not True
         )
         or (decision == R0_V2_PASS and not exact_access)
     ):
         raise RuntimeError("FAIL_CLOSED access/protocol audit validation failed")
 
+    locks_before_test = execution.get("source_test_opened_after_locks") is True
+    artifact_findings = _artifact_type_findings(
+        output, EXPECTED_FORMAL_FILES[:9], require_present=True
+    )
     expected_findings = _blocking_findings(
         str(decision),
         gas_rows,
         recorded_error,
         access_complete=exact_access,
-        locks_before_test=execution.get("source_test_opened_after_locks") is True,
-        artifact_findings=_artifact_type_findings(
-            output, EXPECTED_FORMAL_FILES[:9], require_present=True
-        ),
+        locks_before_test=locks_before_test,
+        artifact_findings=artifact_findings,
     )
+    provenance_failure_override = bool(
+        decision == R0_V2_FAIL
+        and recomputed_decision == R0_V2_PASS
+        and (
+            recorded_error
+            or not exact_access
+            or not locks_before_test
+            or artifact_findings
+        )
+    )
+    if recomputed_decision != decision and not provenance_failure_override:
+        raise RuntimeError("FAIL_CLOSED decision conflicts with stored gate evidence")
     if findings != expected_findings:
         raise RuntimeError(
             "FAIL_CLOSED decision completeness/blocking findings are invalid"
