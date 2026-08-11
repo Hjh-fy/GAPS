@@ -1,0 +1,21 @@
+{
+  "batch_size": 32,
+  "calibration_manifest_sha256": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final\\canonical_regression_reconstruction_qc_20260811\\C0\\final_adapt_C5\\final_adapt_a4_C5.pth",
+  "checkpoint_selection": "fixed_step_100",
+  "checkpoint_sha256": "cb992439c83d7b5a246a36412da8bcf3915de7eab7fcabe0167ac472de02fe3e",
+  "experiment_id": "CAN-V1-CRRQ-C0-B-C5",
+  "final_adaptation_context": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final\\canonical_regression_reconstruction_qc_20260811\\C0\\source_fl\\remote_server\\final_adaptation_context_round_025.json",
+  "final_adaptation_context_sha256": "4f7abd455854a758c1099e254b3c9d357db8f57eea75223f63871bfe7f8fd1eb",
+  "hyperparameter_search": false,
+  "optimizer": "Adam",
+  "optimizer_lr": 0.0005,
+  "schema_version": "iotj.canonical_v1.crrq.c0.final_adapt.v1",
+  "seed": 42,
+  "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final\\canonical_regression_reconstruction_qc_20260811\\C0\\source_fl\\remote_server\\server_round_025.pth",
+  "source_checkpoint_sha256": "f0ec23d9b5bdb0194fee11e25bb8a8c27f7b3fdcb18d68268a5ad72cbbe0615b",
+  "source_state_fingerprint": "09565570f0f4c6d3d6e96d89eb936f37f095a4d23f55a889829f327583397665",
+  "steps": 100,
+  "target": "C5",
+  "target_test_opened": false
+}

@@ -1,0 +1,35 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.c0.source_endpoint_audit.v1",
+  "status": "PASS",
+  "experiment_id": "CAN-V1-CRRQ-C0-B-SOURCE",
+  "unique_source_endpoint": true,
+  "rounds_completed": 25,
+  "round_checkpoint_count": 25,
+  "client_stats_round_count": 25,
+  "prototype_stats_round_count": 25,
+  "semantic_prototype_round_count": 25,
+  "wall_seconds": 241.05853280005977,
+  "source_archive_sha256": "b11b5455ad8bea3bd472b369efa2a8f7b30839276a5218e9683c9af1ee66dc24",
+  "server_latest_checkpoint_sha256": "5af34d51124305bd69253d2c55a1ffc6c9f7027f57d76b76942e4a9ea16dd2cf",
+  "round25_checkpoint_sha256": "f0ec23d9b5bdb0194fee11e25bb8a8c27f7b3fdcb18d68268a5ad72cbbe0615b",
+  "round25_ordered_state_fingerprint": "09565570f0f4c6d3d6e96d89eb936f37f095a4d23f55a889829f327583397665",
+  "final_adaptation_context_sha256": "4f7abd455854a758c1099e254b3c9d357db8f57eea75223f63871bfe7f8fd1eb",
+  "protocol_hash": "4d3746624ccccbf3c71d216d6bcd418f9f15885497156e2e071fd350230565b8",
+  "context_clients": [1, 2],
+  "context_availability": {
+    "semantic_prototypes": true,
+    "client_prototypes": true,
+    "two_client_prototypes": true,
+    "client_residuals": false
+  },
+  "matches_C0_A_context_availability": true,
+  "target_access": {
+    "target_x": false,
+    "target_class": false,
+    "target_phase": false,
+    "target_concentration": false,
+    "target_test": false
+  },
+  "checkpoint_selection": "fixed_round_25",
+  "hyperparameter_search": false
+}

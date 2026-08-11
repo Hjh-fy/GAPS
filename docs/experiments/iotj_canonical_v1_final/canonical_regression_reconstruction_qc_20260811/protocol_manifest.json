@@ -1,12 +1,12 @@
 {
   "schema_version": "iotj.canonical_v1.crrq.pre_run.v1",
   "study_id": "CAN-V1-CRRQ-20260811",
-  "status": "C0_EXECUTABLE_FREEZE_READY_FORMAL_NOT_STARTED",
+  "status": "C0_COMPLETE_V1_INTERLEAVED_RETAINED_R0_READY",
   "base_commit": "26d453eed62057fff45cb6abdb96037b48112ba4",
   "branch": "codex/iotj-final-classification-le1",
   "design": "docs/superpowers/specs/2026-08-11-canonical-regression-reconstruction-qc-necessity-design.md",
   "result_root": "results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811",
-  "formal_execution_started": false,
+  "formal_execution_started": true,
   "c0_pre_execution_audit": "results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/C0_PRE_EXECUTION_AUDIT.json",
   "canonical_freeze": {
     "dataset": "canonical-v1",
@@ -91,7 +91,25 @@
       }
     },
     "macro_f1_noninferiority_margin_absolute": 0.005,
-    "rescue_search": false
+    "rescue_search": false,
+    "execution_result": {
+      "decision": "V1_INTERLEAVED_RETAINED",
+      "all_targets_pass": false,
+      "source_round25_ordered_state_fingerprint": "09565570f0f4c6d3d6e96d89eb936f37f095a4d23f55a889829f327583397665",
+      "source_round25_checkpoint_sha256": "f0ec23d9b5bdb0194fee11e25bb8a8c27f7b3fdcb18d68268a5ad72cbbe0615b",
+      "final_adapt_checkpoint_sha256": {
+        "C3": "b052bb65f0b773bdf4f161833c23f3ecc14fdeec9a72c7bb6e17db6cf238f0c5",
+        "C4": "47d600c41fae1b2dad481de7b923fbe5be296b0cbda8e92dee19988df5a84521",
+        "C5": "cb992439c83d7b5a246a36412da8bcf3915de7eab7fcabe0167ac472de02fe3e"
+      },
+      "macro_f1_delta_final_minus_interleaved": {
+        "C3": -0.00973804109026788,
+        "C4": -0.009589252571763573,
+        "C5": -0.053484456401900804
+      },
+      "sealed_test_opened_after_all_endpoints_locked": true,
+      "duplicate_source_training_run": false
+    }
   },
   "R0": {
     "source_feature_fit_roles": ["C1_train", "C2_train"],

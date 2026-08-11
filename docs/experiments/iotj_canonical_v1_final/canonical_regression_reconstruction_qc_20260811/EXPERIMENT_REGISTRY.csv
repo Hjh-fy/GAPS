@@ -1,11 +1,11 @@
 experiment_id,gate,target,seed,method,status,depends_on,result_root,claim_scope
-CAN-V1-CRRQ-C0-A-C3,C0,C3,42,V1_INTERLEAVED,REUSE_PENDING_AUDIT,26d453e,results/iotj_canonical_v1_final_20260808/classification/CANONICAL-V1-A4-C3,classification timing reference
-CAN-V1-CRRQ-C0-A-C4,C0,C4,42,V1_INTERLEAVED,REUSE_PENDING_AUDIT,26d453e,results/iotj_canonical_v1_final_20260808/classification/CANONICAL-V1-A4-C4,classification timing reference
-CAN-V1-CRRQ-C0-A-C5,C0,C5,42,V1_INTERLEAVED,REUSE_PENDING_AUDIT,26d453e,results/iotj_canonical_v1_final_20260808/classification/CANONICAL-V1-A4-C5,classification timing reference
-CAN-V1-CRRQ-C0-B-SOURCE,C0,C1+C2,42,V1_FINAL_ADAPT_SOURCE_FL,PRE_EXECUTION_AUDIT_PASS,design_review,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/source_fl,target-independent round25 source state
-CAN-V1-CRRQ-C0-B-C3,C0,C3,42,V1_FINAL_ADAPT,PLANNED,CAN-V1-CRRQ-C0-B-SOURCE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/final_adapt_C3,classification timing candidate
-CAN-V1-CRRQ-C0-B-C4,C0,C4,42,V1_FINAL_ADAPT,PLANNED,CAN-V1-CRRQ-C0-B-SOURCE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/final_adapt_C4,classification timing candidate
-CAN-V1-CRRQ-C0-B-C5,C0,C5,42,V1_FINAL_ADAPT,PLANNED,CAN-V1-CRRQ-C0-B-SOURCE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/final_adapt_C5,classification timing candidate
+CAN-V1-CRRQ-C0-A-C3,C0,C3,42,V1_INTERLEAVED,REUSED_AUDIT_PASS,26d453e,results/iotj_canonical_v1_final_20260808/classification/CANONICAL-V1-A4-C3,classification timing reference
+CAN-V1-CRRQ-C0-A-C4,C0,C4,42,V1_INTERLEAVED,REUSED_AUDIT_PASS,26d453e,results/iotj_canonical_v1_final_20260808/classification/CANONICAL-V1-A4-C4,classification timing reference
+CAN-V1-CRRQ-C0-A-C5,C0,C5,42,V1_INTERLEAVED,REUSED_AUDIT_PASS,26d453e,results/iotj_canonical_v1_final_20260808/classification/CANONICAL-V1-A4-C5,classification timing reference
+CAN-V1-CRRQ-C0-B-SOURCE,C0,C1+C2,42,V1_FINAL_ADAPT_SOURCE_FL,COMPLETED,design_review,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/source_fl,target-independent round25 source state
+CAN-V1-CRRQ-C0-B-C3,C0,C3,42,V1_FINAL_ADAPT,COMPLETED_NONINFERIORITY_FAIL,CAN-V1-CRRQ-C0-B-SOURCE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/final_adapt_C3,classification timing candidate
+CAN-V1-CRRQ-C0-B-C4,C0,C4,42,V1_FINAL_ADAPT,COMPLETED_NONINFERIORITY_FAIL,CAN-V1-CRRQ-C0-B-SOURCE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/final_adapt_C4,classification timing candidate
+CAN-V1-CRRQ-C0-B-C5,C0,C5,42,V1_FINAL_ADAPT,COMPLETED_NONINFERIORITY_FAIL,CAN-V1-CRRQ-C0-B-SOURCE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/final_adapt_C5,classification timing candidate
 CAN-V1-CRRQ-R0-PORT,R0,C1+C2+C3+C4+C5,42,H1_83D_CANONICAL_PORT_AUDIT,PLANNED,C0,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/R0/porting_audit,feature provenance only
 CAN-V1-CRRQ-R0-FEDRIDGE,R0,C1+C2,42,CANONICAL_FEDRIDGE,PLANNED,CAN-V1-CRRQ-R0-PORT,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/R0/fedridge,canonical source quantitative prior
 CAN-V1-CRRQ-R1-C3,R1,C3,42,SOURCE_83D_R84,PLANNED,CAN-V1-CRRQ-R0-FEDRIDGE,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/R1/C3,canonical target regression
