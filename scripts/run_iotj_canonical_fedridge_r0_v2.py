@@ -1758,6 +1758,10 @@ def _semantic_evidence_audit(
         and not gas_results
         and not (output / "model_lock.json").exists()
     )
+    if decision == R0_V2_PASS and len(feature_rows) != 416:
+        raise RuntimeError(
+            "FAIL_CLOSED semantic feature diagnostic coverage mismatch"
+        )
     if feature_no_rows and (
         len(feature_rows) != 1 or not feature_no_rows_stage_valid
     ):
@@ -1848,8 +1852,18 @@ def _semantic_evidence_audit(
         "system": "r0_v2_system_diagnostics.csv",
         "functional": "r0_v2_functional_equivalence.csv",
     }
+    diagnostic_raw_rows = {
+        name: _read_csv_evidence(output / filename)
+        for name, filename in diagnostic_files.items()
+    }
+    if decision == R0_V2_PASS and any(
+        len(rows) != len(GAS_IDS)
+        or any(row.get("status") == "NO_ROWS" for row in rows)
+        for rows in diagnostic_raw_rows.values()
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic diagnostic coverage mismatch")
     diagnostics = {
-        name: _rows_by_gas(_read_csv_evidence(output / filename), filename)
+        name: _rows_by_gas(diagnostic_raw_rows[name], filename)
         for name, filename in diagnostic_files.items()
     }
     if feature_no_rows and any(diagnostics.values()):

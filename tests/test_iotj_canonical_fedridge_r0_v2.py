@@ -2944,6 +2944,33 @@ def test_late_failure_audit_rejects_rehashed_h1_no_rows_sentinel(
         runner.audit(output)
 
 
+def test_pass_audit_rejects_extra_diagnostic_no_rows_sentinel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches filtering a fifth sentinel before PASS cardinality checks."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "extra-scaler-sentinel"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    diagnostic_path = output / "r0_v2_scaler_diagnostics.csv"
+    with diagnostic_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+        fieldnames = [*(reader.fieldnames or []), "status"]
+    rows.append(
+        {field: "NO_ROWS" if field == "status" else "" for field in fieldnames}
+    )
+    with diagnostic_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="diagnostic coverage"):
+        runner.audit(output)
+
+
 def test_audit_rejects_rehashed_cache_alpha_and_model_provenance_attacks(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
