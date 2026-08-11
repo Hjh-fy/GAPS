@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 import torch
 
@@ -491,3 +492,211 @@ def test_c0_lock_only_retry_rejects_any_execution_artifact(tmp_path: Path) -> No
     (run / "server.stderr.log").write_text("round 1", encoding="utf-8")
     with pytest.raises(FileExistsError, match="execution artifacts"):
         prepare_lock_only_source_retry(run, expected)
+
+
+def test_canonical_quantitative_feature_operator_is_50x8_and_83_plus_21() -> None:
+    """Catches resizing, a changed H1 schema, or loss of row identity binding."""
+    from gaps_flower.canonical_quantitative_features import extract_canonical_features
+
+    window = np.arange(50 * 8, dtype=np.float32).reshape(50, 8) / 100.0
+    record = extract_canonical_features(
+        window,
+        phase=1,
+        metadata={
+            "physical_identity": "C3|methane|225|repeat1|60.0|70.0",
+            "filename": "methane_225_repeat1.csv",
+            "window_start_s": 60.0,
+            "window_end_s": 70.0,
+            "response_phase": "main_response",
+            "phase_label": "middle",
+        },
+        client="C3",
+        split="calibration",
+        sample_index=7,
+    )
+
+    assert record.sensor83.shape == (83,)
+    assert record.h1.shape == (104,)
+    assert record.h1_feature_names[:83] != record.sensor_feature_names  # H1 is globally ordered.
+    assert set(record.sensor_feature_names).issubset(record.h1_feature_names)
+    assert record.identity["physical_identity"].startswith("C3|")
+    assert record.identity["window_start_s"] == 60.0
+    assert record.provenance["window_shape"] == [50, 8]
+    assert record.provenance["sampling_rate_hz"] == 5
+    assert record.provenance["dynamic_descriptor_interpretation"] == (
+        "fixed-5-Hz discrete per-sample descriptors"
+    )
+    assert record.provenance["sampling_rate_invariant_claim"] is False
+
+
+def test_canonical_quantitative_feature_operator_rejects_legacy_window() -> None:
+    """Catches a legacy 10-Hz/100x8 array entering canonical R0."""
+    from gaps_flower.canonical_quantitative_features import extract_canonical_features
+
+    with pytest.raises(ValueError, match="50x8"):
+        extract_canonical_features(
+            np.zeros((100, 8), dtype=np.float32),
+            phase=0,
+            metadata={},
+            client="C1",
+            split="train",
+            sample_index=0,
+        )
+
+
+def test_canonical_feature_cache_manifest_rejects_legacy_or_mixed_provenance() -> None:
+    """Catches accepting a cache without the complete canonical content binding."""
+    from gaps_flower.canonical_quantitative_features import validate_cache_manifest
+
+    valid = {
+        "study_id": "CAN-V1-CRRQ-20260811",
+        "sampling_rate_hz": 5,
+        "window_shape": [50, 8],
+        "dataset_aggregate_sha256": "a" * 64,
+        "source_array_sha256": "b" * 64,
+        "metadata_sha256": "c" * 64,
+        "extractor_file_sha256": "d" * 64,
+        "ordered_h1_feature_names_sha256": "e" * 64,
+        "ordered_sensor_feature_names_sha256": "f" * 64,
+        "h1_dimensions": 104,
+        "sensor_dimensions": 83,
+        "created_from_canonical_arrays": True,
+        "legacy_cache_reused": False,
+    }
+    validate_cache_manifest(valid, expected_dataset_sha256="a" * 64)
+    for key, value in (
+        ("window_shape", [100, 8]),
+        ("sampling_rate_hz", 10),
+        ("legacy_cache_reused", True),
+        ("extractor_file_sha256", ""),
+    ):
+        broken = dict(valid)
+        broken[key] = value
+        with pytest.raises(RuntimeError, match="canonical cache provenance"):
+            validate_cache_manifest(broken, expected_dataset_sha256="a" * 64)
+
+
+def test_canonical_fedridge_uses_population_scaler_and_unregularized_intercept() -> None:
+    """Catches ddof drift, scale-floor drift, or regularizing the intercept."""
+    from gaps_flower.canonical_fedridge import (
+        client_feature_moments,
+        client_normal_equations,
+        server_aggregate_scaler,
+        server_reconstruct_ridge,
+    )
+
+    x1 = np.asarray([[1.0, 5.0], [3.0, 5.0]])
+    x2 = np.asarray([[5.0, 5.0], [7.0, 5.0]])
+    y1 = np.asarray([2.0, 4.0])
+    y2 = np.asarray([6.0, 8.0])
+    moments = [
+        client_feature_moments("C1", 0, "train", x1),
+        client_feature_moments("C2", 0, "train", x2),
+    ]
+    scaler = server_aggregate_scaler(moments)
+    assert np.allclose(scaler.mean, [4.0, 5.0])
+    assert np.allclose(scaler.scale, [np.sqrt(5.0), 1.0])
+    equations = [
+        client_normal_equations("C1", 0, "train", x1, y1, scaler),
+        client_normal_equations("C2", 0, "train", x2, y2, scaler),
+    ]
+    model = server_reconstruct_ridge(equations, scaler, ["x0", "x1"], alpha=1000.0)
+    assert model.coef[0] == pytest.approx(5.0, abs=1e-12)
+    assert sum(item.y_y for item in equations) == pytest.approx(float(y1 @ y1 + y2 @ y2))
+
+
+def test_canonical_fedridge_exactly_recovers_pooled_reference() -> None:
+    """Catches non-additive statistics or a different pseudoinverse convention."""
+    from gaps_flower.canonical_fedridge import federated_fit, pooled_fit
+
+    x1 = np.asarray([[0.0, 1.0], [2.0, 1.0], [4.0, 1.0]], dtype=np.float64)
+    x2 = np.asarray([[1.0, 1.0], [3.0, 1.0], [5.0, 1.0]], dtype=np.float64)
+    y1 = np.asarray([1.0, 5.0, 9.0])
+    y2 = np.asarray([3.0, 7.0, 11.0])
+    federated, _stats = federated_fit(
+        {"C1": (x1, y1), "C2": (x2, y2)},
+        gas_id=2,
+        role="train_plus_calibration_refit",
+        feature_names=["x0", "x1"],
+        alpha=0.1,
+    )
+    pooled = pooled_fit(
+        np.vstack([x1, x2]),
+        np.concatenate([y1, y2]),
+        gas_id=2,
+        role="train_plus_calibration_refit",
+        feature_names=["x0", "x1"],
+        alpha=0.1,
+    )
+    probe = np.asarray([[1.5, 1.0], [4.5, 1.0]])
+    assert np.max(np.abs(federated.mean - pooled.mean)) <= 1e-10
+    assert np.max(np.abs(federated.coef - pooled.coef)) <= 1e-8
+    assert np.max(np.abs(federated.predict_matrix(probe) - pooled.predict_matrix(probe))) <= 1e-6
+
+
+def test_canonical_source_alpha_selection_is_source_calibration_only_and_tie_stable() -> None:
+    """Catches target/test leakage or an unregistered alpha/tie-break rule."""
+    from gaps_flower.canonical_fedridge import select_source_alpha
+
+    train = {
+        "C1": (np.asarray([[0.0], [1.0]]), np.asarray([0.0, 1.0])),
+        "C2": (np.asarray([[2.0], [3.0]]), np.asarray([2.0, 3.0])),
+    }
+    calibration = {
+        "C1": (np.asarray([[0.5]]), np.asarray([0.5])),
+        "C2": (np.asarray([[2.5]]), np.asarray([2.5])),
+    }
+    selected, audit = select_source_alpha(
+        train,
+        calibration,
+        gas_id=0,
+        feature_names=["x0"],
+        alphas=[0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+        train_role="source_train",
+        validation_role="source_calibration",
+    )
+    assert selected == 0.0
+    assert [row["alpha"] for row in audit] == [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
+    with pytest.raises(RuntimeError, match="source-only"):
+        select_source_alpha(
+            train,
+            calibration,
+            gas_id=0,
+            feature_names=["x0"],
+            alphas=[0.0],
+            train_role="source_train",
+            validation_role="C5_test",
+        )
+
+
+def test_r0_execution_plan_locks_source_model_before_any_test_label_access() -> None:
+    """Catches source/target test labels entering feature or alpha construction."""
+    from scripts.run_iotj_canonical_regression_reconstruction_r0 import (
+        build_r0_execution_plan,
+    )
+
+    plan = build_r0_execution_plan()
+    assert plan.index("write_source_alpha_and_model_lock") < plan.index("open_source_test_labels")
+    assert plan.index("write_source_alpha_and_model_lock") < plan.index("build_target_x_only_caches")
+    assert "open_target_test_labels" not in plan
+
+
+def test_r0_exact_recovery_gate_has_no_practical_fallback() -> None:
+    """Catches accepting a merely close reconstruction outside the frozen tolerances."""
+    from scripts.run_iotj_canonical_regression_reconstruction_r0 import (
+        decide_exact_recovery,
+    )
+
+    passed = decide_exact_recovery(
+        scaler_difference=1e-11,
+        coefficient_difference=1e-9,
+        prediction_difference_ppm=1e-7,
+    )
+    assert passed["status"] == "PASS"
+    failed = decide_exact_recovery(
+        scaler_difference=1e-11,
+        coefficient_difference=1.1e-8,
+        prediction_difference_ppm=1e-7,
+    )
+    assert failed["status"] == "FAIL_CLOSED"
+    assert failed["practical_equivalence_fallback"] is False

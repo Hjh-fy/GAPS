@@ -1,13 +1,14 @@
 {
   "schema_version": "iotj.canonical_v1.crrq.pre_run.v1",
   "study_id": "CAN-V1-CRRQ-20260811",
-  "status": "C0_COMPLETE_V1_INTERLEAVED_RETAINED_R0_READY",
+  "status": "R0_EXECUTABLE_FREEZE_READY_FORMAL_NOT_STARTED",
   "base_commit": "26d453eed62057fff45cb6abdb96037b48112ba4",
   "branch": "codex/iotj-final-classification-le1",
   "design": "docs/superpowers/specs/2026-08-11-canonical-regression-reconstruction-qc-necessity-design.md",
   "result_root": "results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811",
   "formal_execution_started": true,
   "c0_pre_execution_audit": "results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/C0_PRE_EXECUTION_AUDIT.json",
+  "r0_pre_execution_audit": "docs/experiments/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/R0_PRE_EXECUTION_AUDIT.json",
   "canonical_freeze": {
     "dataset": "canonical-v1",
     "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
