@@ -1,0 +1,32 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.c0.launcher_failure.v1",
+  "status": "PREEXECUTION_LOCK_ONLY_SAFE_RETRY",
+  "launcher_pid": 22484,
+  "launcher_mechanism": "detached_Start-Process",
+  "failure_boundary": "content-addressed source archive deployment to C2",
+  "root_cause": "detached launcher did not survive the desktop tool process lifetime",
+  "source_archive": "inputs/source_1ce206a81c98.tar",
+  "source_archive_bytes": 239144960,
+  "source_archive_sha256": "b11b5455ad8bea3bd472b369efa2a8f7b30839276a5218e9683c9af1ee66dc24",
+  "remote_state": {
+    "ecs_runtime_complete": true,
+    "pi_runtime_complete": true,
+    "c2_runtime_created": false,
+    "c2_partial_temp_archive_bytes": 41287680,
+    "remote_formal_output_created": false,
+    "flower_process_seen": false,
+    "server_or_client_log_created": false,
+    "round_started": false
+  },
+  "local_state": {
+    "source_run_entries": [
+      "locked_run_spec.json"
+    ],
+    "fixed_endpoint_complete": false,
+    "round_artifact_count": 0
+  },
+  "retry_policy": "archive exact lock-only directory; hard fail if any execution artifact exists; reuse no scientific endpoint",
+  "scientific_protocol_changed": false,
+  "target_information_accessed": false,
+  "target_test_opened": false
+}
