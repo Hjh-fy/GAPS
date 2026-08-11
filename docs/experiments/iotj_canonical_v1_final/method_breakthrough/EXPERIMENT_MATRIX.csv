@@ -1,0 +1,16 @@
+experiment_id,phase,source_clients,target_clients,method,seed,calibration,rounds,local_epochs,steps,status,result_path,held_constants,stopping_rule
+CAN-V1-MB-P1-S4-FEDAVG-S41,P1,C1;C2;C3;C4,C5,FedAvg,41,none,25,1,0,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase1_s4_dg_multiseed/seed_41/fedavg,canonical-v1;Adam5e-4;batch32;C5-unseen,fixed-round25
+CAN-V1-MB-P1-S4-DGP-S41,P1,C1;C2;C3;C4,C5,GAPS-DG-P,41,none,25,1,0,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase1_s4_dg_multiseed/seed_41/gaps_dg_p,canonical-v1;Adam5e-4;batch32;lambda-proto0.05;C5-unseen,fixed-round25
+CAN-V1-MB-P1-S4-FEDAVG-S42,P1,C1;C2;C3;C4,C5,FedAvg,42,none,25,1,0,completed-reuse,results/iotj_canonical_v1_method_breakthrough_20260811/gate_a_source_diversity/fedavg,Gate-A exact endpoint,fixed-round25
+CAN-V1-MB-P1-S4-DGP-S42,P1,C1;C2;C3;C4,C5,GAPS-DG-P,42,none,25,1,0,completed-reuse,results/iotj_canonical_v1_method_breakthrough_20260811/gate_a_source_diversity/gaps_dg_p,Gate-A exact endpoint,fixed-round25
+CAN-V1-MB-P1-S4-FEDAVG-S43,P1,C1;C2;C3;C4,C5,FedAvg,43,none,25,1,0,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase1_s4_dg_multiseed/seed_43/fedavg,canonical-v1;Adam5e-4;batch32;C5-unseen,fixed-round25
+CAN-V1-MB-P1-S4-DGP-S43,P1,C1;C2;C3;C4,C5,GAPS-DG-P,43,none,25,1,0,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase1_s4_dg_multiseed/seed_43/gaps_dg_p,canonical-v1;Adam5e-4;batch32;lambda-proto0.05;C5-unseen,fixed-round25
+CAN-V1-MB-P2-I0-A0T-B20-S42,P2,C1;C2,C5,S2-FedAvg+Full-A0T,42,B20-320,25,1,100,completed-reuse,results/iotj_canonical_v1_method_redesign_20260811/gate1_posthoc/a0t_full,canonical-v1;fixed-step100,exact-reuse-audit
+CAN-V1-MB-P2-I0-A0T-B05-S42,P2,C1;C2,C5,S2-FedAvg+Full-A0T,42,B05-80,25,1,100,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase2_dg_commissioning_bridge/I0/B05,canonical-v1;Adam5e-4;batch32,fixed-step100
+CAN-V1-MB-P2-I1-A0T-B20-S42,P2,C1;C2;C3;C4,C5,S4-FedAvg+Full-A0T,42,B20-320,25,1,100,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase2_dg_commissioning_bridge/I1/B20,canonical-v1;Adam5e-4;batch32,fixed-step100
+CAN-V1-MB-P2-I1-A0T-B05-S42,P2,C1;C2;C3;C4,C5,S4-FedAvg+Full-A0T,42,B05-80,25,1,100,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase2_dg_commissioning_bridge/I1/B05,canonical-v1;Adam5e-4;batch32,fixed-step100
+CAN-V1-MB-P2-I2-A0T-B20-S42,P2,C1;C2;C3;C4,C5,S4-DG-P+Full-A0T,42,B20-320,25,1,100,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase2_dg_commissioning_bridge/I2/B20,canonical-v1;Adam5e-4;batch32,fixed-step100
+CAN-V1-MB-P2-I2-A0T-B05-S42,P2,C1;C2;C3;C4,C5,S4-DG-P+Full-A0T,42,B05-80,25,1,100,registered,results/iotj_canonical_v1_method_breakthrough_20260811/phase2_dg_commissioning_bridge/I2/B05,canonical-v1;Adam5e-4;batch32,fixed-step100
+CAN-V1-MB-P3-POSTHOC-R84-S42,P3,conditional,C5,POSTHOC_ARGMAX_BASELINE,42,B20-320,25,1,100,draft,results/iotj_canonical_v1_method_breakthrough_20260811/phase3_posthoc_r84,canonical-H1;frozen-C5-alphas,method-identity-rule
+CAN-V1-MB-P4-COST-ROUTER-S42,P4,selected-P3,C5,Expected-Downstream-Cost-Router,42,B20-320,25,1,100,draft,results/iotj_canonical_v1_method_breakthrough_20260811/phase4_cost_aware_routing,no-lambda;no-threshold;2000-file-bootstrap,guardrail-decision
+
