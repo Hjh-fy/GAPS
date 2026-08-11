@@ -245,6 +245,20 @@ def test_v2_local_moments_avoid_mean_overflow_for_finite_constant_input() -> Non
     assert record.m2[0] == 0.0
 
 
+@pytest.mark.parametrize("rows", [3, 7])
+def test_v2_local_moments_avoid_scaled_sum_overflow_for_maximum_constants(
+    rows: int,
+) -> None:
+    """Catches fallback overflow from summing repeated maximum/n values."""
+    maximum = np.finfo(np.float64).max
+    values = np.full((rows, 1), maximum, dtype=np.float64)
+
+    record = local_central_moments("C1", 1, "refit", values)
+
+    assert record.mean[0] == maximum
+    assert record.m2[0] == 0.0
+
+
 def test_v2_local_moments_preserve_constant_smallest_subnormal_mean() -> None:
     """Catches underflowing inputs by dividing before the mean reduction."""
     smallest = np.nextafter(np.float64(0.0), np.float64(1.0))

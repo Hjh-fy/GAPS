@@ -112,10 +112,12 @@ def local_central_moments(
     x = _finite_matrix(values)
     with np.errstate(over="ignore", invalid="ignore"):
         ordinary_mean = np.mean(x, axis=0, dtype=np.float64)
-        scaled_mean = np.sum(
-            x / np.float64(x.shape[0]), axis=0, dtype=np.float64
+        fallback_scale = np.max(np.abs(x), axis=0)
+        normalized_mean = np.mean(
+            x / fallback_scale, axis=0, dtype=np.float64
         )
-        mean = np.where(np.isfinite(ordinary_mean), ordinary_mean, scaled_mean)
+        fallback_mean = np.clip(normalized_mean, -1.0, 1.0) * fallback_scale
+        mean = np.where(np.isfinite(ordinary_mean), ordinary_mean, fallback_mean)
         m2 = np.sum((x - mean) ** 2, axis=0, dtype=np.float64)
     if not np.isfinite(mean).all() or not np.isfinite(m2).all():
         raise ValueError("local central moments overflowed float64")
