@@ -120,6 +120,8 @@ def test_gate_a_commands_are_four_source_only_fixed_endpoint() -> None:
         assert commands["protocol"]["local_epochs"] == 1
         assert commands["protocol"]["seed"] == 42
         assert commands["protocol"]["checkpoint_selection"] == "fixed_round_25"
+        assert commands["protocol"]["experiment_id"].startswith("CAN-V1-MB-A-S4-")
+        assert commands["protocol"]["dataset_aggregate_sha256"] == "843459df765eb1525a30b91024e6db6a66a740858d0761ff84e67decb92389fa"
 
 
 def test_gate_a_dg_changes_only_exact_g2_mechanism() -> None:
@@ -216,3 +218,80 @@ def test_gate_a_reuse_audit_rejects_target_access_or_wrong_checkpoint(tmp_path: 
     path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(RuntimeError, match="target access"):
         audit_s2_reuse(path)
+
+
+def test_gate_a_execution_roles_colocate_only_added_sources_on_ecs() -> None:
+    from scripts.run_iotj_method_breakthrough_gate_a import execution_role_hosts
+
+    assert execution_role_hosts() == {
+        "server": "ecs",
+        "C1": "pi",
+        "C2": "c2",
+        "C3": "ecs",
+        "C4": "ecs",
+    }
+
+
+def test_gate_a_representation_diagnostic_uses_all_source_pairs() -> None:
+    from scripts.run_iotj_method_breakthrough_gate_a import representation_diagnostics
+
+    records = []
+    for client, offset in ((1, 0.0), (2, 2.0), (3, 4.0)):
+        for class_id, center in ((0, 0.0), (1, 10.0)):
+            records.append(
+                {
+                    "client": client,
+                    "class_id": class_id,
+                    "phase_id": 0,
+                    "feature": np.asarray([center + offset, 0.0]),
+                }
+            )
+    result = representation_diagnostics(records, method="fixture", source_count=3)
+    assert result["inter_source_pairs"] == 3
+    assert result["within_class_inter_source_centroid_distance_mean"] == pytest.approx(8.0 / 3.0)
+    assert result["between_class_centroid_margin_mean"] == pytest.approx(10.0)
+    assert result["class_phase_cells"] == 2
+
+
+def test_gate_a_requires_both_s4_locks_before_test_open(tmp_path: Path) -> None:
+    from scripts.run_iotj_method_breakthrough_gate_a import verify_s4_endpoint_locks
+
+    for method in ("fedavg", "gaps_dg_p"):
+        directory = tmp_path / method
+        directory.mkdir()
+        checkpoint = directory / "server_latest.pth"
+        checkpoint.write_bytes(method.encode())
+        manifest = {
+            "checkpoint": str(checkpoint),
+            "checkpoint_sha256": __import__("hashlib").sha256(method.encode()).hexdigest(),
+            "target_test_opened": False,
+            "protocol": {"checkpoint_selection": "fixed_round_25"},
+        }
+        (directory / "run_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+        (directory / "fixed_endpoint_complete.json").write_text(
+            json.dumps({"fixed_endpoint": {"round": 25}, "target_test_opened": False}),
+            encoding="utf-8",
+        )
+    locked = verify_s4_endpoint_locks(tmp_path)
+    assert set(locked) == {"fedavg", "gaps_dg_p"}
+    assert all(Path(value["checkpoint"]).is_file() for value in locked.values())
+
+    bad = tmp_path / "gaps_dg_p/fixed_endpoint_complete.json"
+    payload = json.loads(bad.read_text(encoding="utf-8"))
+    payload["target_test_opened"] = True
+    bad.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="endpoint lock"):
+        verify_s4_endpoint_locks(tmp_path)
+
+
+def test_gate_a_per_class_rows_can_be_reconstructed_from_frozen_predictions() -> None:
+    from scripts.run_iotj_method_breakthrough_gate_a import per_class_rows_from_predictions
+
+    rows = []
+    for class_id in range(4):
+        probs = [0.0] * 4
+        probs[class_id] = 1.0
+        rows.append({"true_class": class_id, **{f"prob_{i}": probs[i] for i in range(4)}})
+    result = per_class_rows_from_predictions("fixture", rows)
+    assert [row["gas"] for row in result] == ["Ethanol", "CO", "Ethylene", "Methane"]
+    assert all(row["precision"] == 1.0 and row["recall"] == 1.0 and row["f1"] == 1.0 for row in result)
