@@ -2917,6 +2917,31 @@ def test_pass_audit_rejects_rehashed_h1_no_rows_sentinel(
         runner.audit(output)
 
 
+def test_pass_audit_rejects_nonfirst_h1_no_rows_sentinel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches checking only the first H1 row for a forbidden sentinel."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "nonfirst-h1-sentinel"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    diagnostic_path = output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv"
+    with diagnostic_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+        fieldnames = [*(reader.fieldnames or []), "status"]
+    rows[1]["status"] = "NO_ROWS"
+    with diagnostic_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="feature diagnostic coverage"):
+        runner.audit(output)
+
+
 def test_late_failure_audit_rejects_rehashed_h1_no_rows_sentinel(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

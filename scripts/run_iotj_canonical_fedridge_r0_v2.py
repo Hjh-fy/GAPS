@@ -1758,7 +1758,28 @@ def _semantic_evidence_audit(
         and not gas_results
         and not (output / "model_lock.json").exists()
     )
-    if decision == R0_V2_PASS and len(feature_rows) != 416:
+    feature_row_fields = {
+        "gas_id",
+        "role",
+        "feature_index",
+        "feature_name",
+        "n",
+        "minimum",
+        "maximum",
+        "mean",
+        "population_variance",
+        "raw_scale",
+        "dynamic_range",
+        "safe_scale_floor",
+        "safe_scale_applied",
+        "canonical_scale",
+        "aggregation_order",
+        "dtype",
+    }
+    if decision == R0_V2_PASS and (
+        len(feature_rows) != 416
+        or any(set(row) != feature_row_fields for row in feature_rows)
+    ):
         raise RuntimeError(
             "FAIL_CLOSED semantic feature diagnostic coverage mismatch"
         )
