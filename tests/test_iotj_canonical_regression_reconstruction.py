@@ -460,3 +460,34 @@ def test_c0_test_gate_rejects_nonfixed_or_preopened_endpoint(tmp_path: Path) -> 
         )
     with pytest.raises(RuntimeError, match="fixed step100|test opened"):
         verify_final_adaptation_endpoints(tmp_path)
+
+
+def test_c0_lock_only_preexecution_failure_is_preserved_for_retry(tmp_path: Path) -> None:
+    """Catches deleting the sole evidence when no process/round ever started."""
+    from scripts.run_iotj_canonical_regression_reconstruction_c0 import (
+        prepare_lock_only_source_retry,
+    )
+
+    run = tmp_path / "source_fl"
+    run.mkdir()
+    expected = {"server": ["python", "server"], "protocol": {"rounds": 25}}
+    (run / "locked_run_spec.json").write_text(json.dumps(expected), encoding="utf-8")
+    archived = prepare_lock_only_source_retry(run, expected)
+    assert archived == tmp_path / "source_fl_preexecution_failure_001"
+    assert not run.exists()
+    assert json.loads((archived / "locked_run_spec.json").read_text(encoding="utf-8")) == expected
+
+
+def test_c0_lock_only_retry_rejects_any_execution_artifact(tmp_path: Path) -> None:
+    """Catches retrying a partial or completed scientific endpoint."""
+    from scripts.run_iotj_canonical_regression_reconstruction_c0 import (
+        prepare_lock_only_source_retry,
+    )
+
+    run = tmp_path / "source_fl"
+    run.mkdir()
+    expected = {"server": ["python", "server"]}
+    (run / "locked_run_spec.json").write_text(json.dumps(expected), encoding="utf-8")
+    (run / "server.stderr.log").write_text("round 1", encoding="utf-8")
+    with pytest.raises(FileExistsError, match="execution artifacts"):
+        prepare_lock_only_source_retry(run, expected)

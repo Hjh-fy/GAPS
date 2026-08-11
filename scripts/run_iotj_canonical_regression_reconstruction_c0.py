@@ -387,6 +387,31 @@ def preflight(
     return _write_json(Path(output_root) / "C0/C0_PRE_EXECUTION_AUDIT.json", payload) and payload
 
 
+def prepare_lock_only_source_retry(
+    run_dir: Path, expected_commands: dict[str, Any]
+) -> Path:
+    """Archive the exact zero-execution lock-only state; reject all others."""
+
+    run_dir = Path(run_dir)
+    entries = list(run_dir.iterdir())
+    lock = run_dir / "locked_run_spec.json"
+    if len(entries) != 1 or entries[0].name != lock.name:
+        raise FileExistsError(
+            f"FAIL_CLOSED source retry found execution artifacts: {run_dir}"
+        )
+    observed = json.loads(lock.read_text(encoding="utf-8"))
+    if observed != expected_commands:
+        raise RuntimeError("FAIL_CLOSED lock-only source spec differs from frozen commands")
+    index = 1
+    while True:
+        archive = run_dir.parent / f"source_fl_preexecution_failure_{index:03d}"
+        if not archive.exists():
+            break
+        index += 1
+    run_dir.rename(archive)
+    return archive
+
+
 def execute_source_fl(
     *,
     ecs_host: str,
@@ -400,7 +425,7 @@ def execute_source_fl(
     if (SOURCE_RUN / "fixed_endpoint_complete.json").is_file():
         return
     if SOURCE_RUN.exists():
-        raise FileExistsError(f"FAIL_CLOSED partial source endpoint exists: {SOURCE_RUN}")
+        prepare_lock_only_source_retry(SOURCE_RUN, build_c0_source_commands())
     original_root = frozen.RESULT_ROOT
     original_builder = frozen.build_flower_commands
     try:
