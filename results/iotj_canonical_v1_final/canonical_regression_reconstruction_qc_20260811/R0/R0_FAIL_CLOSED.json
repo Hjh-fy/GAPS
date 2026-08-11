@@ -1,0 +1,57 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.r0.v1.exact_recovery",
+  "status": "FAIL_CLOSED",
+  "tolerances": {
+    "scaler_max_abs_difference": 1e-10,
+    "coefficient_max_abs_difference": 1e-08,
+    "prediction_max_abs_difference_ppm": 1e-06
+  },
+  "practical_equivalence_fallback": false,
+  "gas_results": [
+    {
+      "gas_id": 0,
+      "gas": "Ethanol",
+      "selected_alpha": 0.1,
+      "pooled_alpha": 0.1,
+      "scaler_max_abs_difference": 2.4868995751603507e-14,
+      "coefficient_max_abs_difference": 6.111804395914078e-10,
+      "prediction_max_abs_difference_ppm": 2.3260611214936944e-09,
+      "status": "PASS"
+    },
+    {
+      "gas_id": 1,
+      "gas": "CO",
+      "selected_alpha": 0.01,
+      "pooled_alpha": 0.01,
+      "scaler_max_abs_difference": 1.2434497875801753e-13,
+      "coefficient_max_abs_difference": 6.100162863731384e-08,
+      "prediction_max_abs_difference_ppm": 2.249365138595749e-08,
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "gas_id": 2,
+      "gas": "Ethylene",
+      "selected_alpha": 0.01,
+      "pooled_alpha": 0.01,
+      "scaler_max_abs_difference": 9.769962616701378e-15,
+      "coefficient_max_abs_difference": 2.0023435354232788e-08,
+      "prediction_max_abs_difference_ppm": 1.3728268299928459e-08,
+      "status": "FAIL_CLOSED"
+    },
+    {
+      "gas_id": 3,
+      "gas": "Methane",
+      "selected_alpha": 0.01,
+      "pooled_alpha": 0.01,
+      "scaler_max_abs_difference": 0.999999831412606,
+      "coefficient_max_abs_difference": 0.0018461935413379388,
+      "prediction_max_abs_difference_ppm": 2.5330280095658964e-08,
+      "status": "FAIL_CLOSED"
+    }
+  ],
+  "maxima": {
+    "scaler_max_abs_difference": 0.999999831412606,
+    "coefficient_max_abs_difference": 0.0018461935413379388,
+    "prediction_max_abs_difference_ppm": 2.5330280095658964e-08
+  }
+}

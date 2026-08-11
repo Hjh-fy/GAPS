@@ -1,0 +1,50 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.r0.v1.alpha_lock",
+  "status": "SEALED_BEFORE_SOURCE_TEST_AND_TARGET_CACHE",
+  "study_id": "CAN-V1-CRRQ-20260811",
+  "alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "source_roles": {
+    "selection_fit": [
+      "C1_train",
+      "C2_train"
+    ],
+    "selection_validation": [
+      "C1_calibration",
+      "C2_calibration"
+    ],
+    "final_refit": [
+      "C1_train",
+      "C1_calibration",
+      "C2_train",
+      "C2_calibration"
+    ]
+  },
+  "source_test_used_for_selection": false,
+  "target_input_used_for_selection": false,
+  "selected_alpha": {
+    "0": {
+      "gas": "Ethanol",
+      "alpha": 0.1
+    },
+    "1": {
+      "gas": "CO",
+      "alpha": 0.01
+    },
+    "2": {
+      "gas": "Ethylene",
+      "alpha": 0.01
+    },
+    "3": {
+      "gas": "Methane",
+      "alpha": 0.01
+    }
+  }
+}

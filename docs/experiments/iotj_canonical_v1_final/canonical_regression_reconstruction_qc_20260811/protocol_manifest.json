@@ -1,7 +1,7 @@
 {
   "schema_version": "iotj.canonical_v1.crrq.pre_run.v1",
   "study_id": "CAN-V1-CRRQ-20260811",
-  "status": "R0_EXECUTABLE_FREEZE_READY_FORMAL_NOT_STARTED",
+  "status": "R0_FAIL_CLOSED_EXACT_RECOVERY_R1_BLOCKED",
   "base_commit": "26d453eed62057fff45cb6abdb96037b48112ba4",
   "branch": "codex/iotj-final-classification-le1",
   "design": "docs/superpowers/specs/2026-08-11-canonical-regression-reconstruction-qc-necessity-design.md",
@@ -126,6 +126,21 @@
       "scaler_max_abs_difference": 1e-10,
       "coefficient_max_abs_difference": 1e-8,
       "prediction_max_abs_difference_ppm": 1e-6
+    },
+    "execution_result": {
+      "status": "FAIL_CLOSED",
+      "failed_gate": "R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY",
+      "execution_commit": "1b16f1e",
+      "alpha_agreement_all_gases": true,
+      "max_scaler_abs_difference": 0.999999831412606,
+      "max_coefficient_abs_difference": 0.0018461935413379388,
+      "max_prediction_abs_difference_ppm": 2.5330280095658964e-08,
+      "source_test_opened": false,
+      "target_caches_built": false,
+      "target_test_labels_opened": false,
+      "practical_equivalence_fallback_used": false,
+      "rerun_performed": false,
+      "R1_released": false
     }
   },
   "R1": {
