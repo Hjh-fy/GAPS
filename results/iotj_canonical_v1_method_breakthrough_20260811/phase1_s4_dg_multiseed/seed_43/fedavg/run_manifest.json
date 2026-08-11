@@ -1,0 +1,59 @@
+{
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\phase1_s4_dg_multiseed\\seed_43\\fedavg\\remote_server\\server_latest.pth",
+  "checkpoint_sha256": "6ca6b12a0aff2a854b20ceed27d9a8fad9066201186a05159e89bdc6b3897c1f",
+  "checkpoint_state_fingerprint": "95beb014638a6dd400a6315c464f76af0deacbda2c3caeaa83b96a96cd809f3b",
+  "dataset_aggregate_sha256": "843459df765eb1525a30b91024e6db6a66a740858d0761ff84e67decb92389fa",
+  "experiment_id": "CAN-V1-MB-P1-S4-FEDAVG-S43",
+  "method": "fedavg",
+  "protocol": {
+    "batch_size": 32,
+    "checkpoint_reuse": false,
+    "checkpoint_selection": "fixed_round_25",
+    "dataset": "iotj_canonical_v1_s4_role_view",
+    "dataset_aggregate_sha256": "843459df765eb1525a30b91024e6db6a66a740858d0761ff84e67decb92389fa",
+    "experiment_id": "CAN-V1-MB-P1-S4-FEDAVG-S43",
+    "hyperparameter_search": false,
+    "lambda_proto": 0.0,
+    "local_epochs": 1,
+    "method": "FedAvg",
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "optimizer_note": "frozen GAPS experimental protocol",
+    "posthoc_da_methods": [
+      "MMD"
+    ],
+    "prototype_alignment": false,
+    "replay": false,
+    "rounds": 25,
+    "seed": 43,
+    "selective_aggregation": false,
+    "server_domain_adaptation": false,
+    "source_clients": [
+      "C1",
+      "C2",
+      "C3",
+      "C4"
+    ],
+    "source_fl_methods": [
+      "FedAvg",
+      "FedProx",
+      "SCAFFOLD"
+    ],
+    "target": "C5",
+    "target_access": "NONE",
+    "target_clients": [
+      "C5"
+    ],
+    "target_concentration": false,
+    "target_information_regime": "source_only",
+    "target_phase": false,
+    "target_test_selection": false,
+    "target_x": false,
+    "target_y": false
+  },
+  "protocol_hash": "7d264c85936af65e184644aa1edb1d1079016682a9ac77609ae210f9f2f06c65",
+  "schema_version": "iotj.canonical_v1.method_breakthrough.gate_a.run.v1",
+  "source_archive_sha256": "ce64c2f8a753930b02964e535725d6070bdfca0261b764bd96bffacd35dbba00",
+  "target_test_opened": false,
+  "wall_seconds": 291.0571023999946
+}

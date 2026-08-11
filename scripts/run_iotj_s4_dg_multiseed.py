@@ -222,6 +222,37 @@ def _write_progress(output: Path, *, status: str, completed: list[str], active: 
     )
 
 
+def write_final_hash_index(output: Path) -> dict[str, Any]:
+    """Lock immutable evidence while excluding wrapper-owned mutable status files."""
+    output = Path(output).resolve()
+    excluded = {
+        "RUN_PROGRESS.json",
+        "runner.pid",
+        "runner.stdout.log",
+        "runner.stderr.log",
+        "sha256_index_final.json",
+    }
+    files = {
+        str(path.relative_to(output)).replace("\\", "/"): _sha256_file(path)
+        for path in evidence_files_for_hash_index(output)
+        if path.name not in excluded
+    }
+    payload = {
+        "schema_version": "iotj.canonical_v1.method_breakthrough.phase1.final_hash.v1",
+        "status": "PASS",
+        "excluded_mutable_wrapper_files": sorted(excluded - {"sha256_index_final.json"}),
+        "files": files,
+    }
+    path = output / "sha256_index_final.json"
+    if path.is_file():
+        observed = json.loads(path.read_text(encoding="utf-8"))
+        if observed != payload:
+            raise RuntimeError("FAIL_CLOSED Phase-1 final hash index differs")
+    else:
+        _write_json(path, payload)
+    return payload
+
+
 def train_new_endpoints(output: Path, freeze: dict[str, Any], args: argparse.Namespace) -> None:
     completed = []
     for spec in phase1_run_specs():
@@ -373,6 +404,7 @@ This is a registered three-seed C5 hardest-target source-DG confirmation. It doe
         },
     )
     _write_progress(output, status="COMPLETE", completed=[f"seed_{seed}/{method}" for seed in NEW_SEEDS for method in ("fedavg", "gaps_dg_p")], active=None)
+    write_final_hash_index(output)
     return decision
 
 

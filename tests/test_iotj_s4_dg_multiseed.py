@@ -138,3 +138,18 @@ def test_multiseed_lock_gate_requires_exactly_four_new_round25_endpoints(tmp_pat
     bad.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(RuntimeError, match="seed"):
         verify_new_endpoint_locks(tmp_path)
+
+
+def test_multiseed_final_hash_index_excludes_mutable_wrapper_files(tmp_path: Path) -> None:
+    from scripts.run_iotj_s4_dg_multiseed import write_final_hash_index
+
+    (tmp_path / "immutable.csv").write_text("metric,value\nf1,0.5\n", encoding="utf-8")
+    (tmp_path / "RUN_PROGRESS.json").write_text('{"status":"RUNNING"}\n', encoding="utf-8")
+    (tmp_path / "runner.stdout.log").write_text("mutable\n", encoding="utf-8")
+    payload = write_final_hash_index(tmp_path)
+    assert payload["status"] == "PASS"
+    assert "immutable.csv" in payload["files"]
+    assert "RUN_PROGRESS.json" not in payload["files"]
+    assert "runner.stdout.log" not in payload["files"]
+    (tmp_path / "RUN_PROGRESS.json").write_text('{"status":"COMPLETE"}\n', encoding="utf-8")
+    assert write_final_hash_index(tmp_path) == payload

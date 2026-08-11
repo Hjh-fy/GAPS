@@ -1,0 +1,21 @@
+{
+  "all_seeds_positive": false,
+  "decision": "SOURCE_DG_NOT_CONFIRMED",
+  "evaluated_seeds": [
+    41,
+    42,
+    43
+  ],
+  "mean_gain": -0.04373012295267836,
+  "next_action": "STOP_SEED_EXPANSION_AND_ENTER_PHASE2",
+  "paired_macro_f1_gains": {
+    "41": -0.16472951903666322,
+    "42": 0.0749899433041799,
+    "43": -0.04145079312555178
+  },
+  "sample_sd": 0.11987598451980008,
+  "thresholds": {
+    "maximum_sample_sd": 0.05,
+    "minimum_mean_gain": 0.03
+  }
+}
