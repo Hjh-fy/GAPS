@@ -23,7 +23,7 @@ from gaps_flower.domain_adaptation import ServerDomainAdaptation
 from utils import set_random_seed
 
 
-METHODS = ("a0t_full", "a4", "target_head")
+METHODS = ("a0t_full", "a4", "target_head", "classifier_only", "low_rank_adapter")
 STEPS = 100
 LR = 5e-4
 BATCH_SIZE = 32
@@ -102,7 +102,49 @@ def configure_trainable_parameters(model: torch.nn.Module, method: str) -> list[
             parameter.requires_grad_(True)
         for parameter in model.classifier.parameters():
             parameter.requires_grad_(True)
+    elif method in {"classifier_only", "low_rank_adapter"}:
+        for parameter in model.classifier.parameters():
+            parameter.requires_grad_(True)
     return [name for name, parameter in model.named_parameters() if parameter.requires_grad]
+
+
+class LowRankPosthocAdapter(torch.nn.Module):
+    """Rank-r residual adapter on the normalized 64-D classification feature."""
+
+    def __init__(self, source_model: torch.nn.Module, *, rank: int = 4) -> None:
+        super().__init__()
+        if rank <= 0:
+            raise ValueError("adapter rank must be positive")
+        self.base_model = copy.deepcopy(source_model)
+        configure_trainable_parameters(self.base_model, "low_rank_adapter")
+        feature_dim = int(self.base_model.classifier.in_features)
+        self.rank = int(rank)
+        self.down = torch.nn.Linear(feature_dim, self.rank, bias=False)
+        self.up = torch.nn.Linear(self.rank, feature_dim, bias=False)
+        torch.nn.init.kaiming_uniform_(self.down.weight, a=5**0.5)
+        torch.nn.init.zeros_(self.up.weight)
+
+    def forward(self, x: torch.Tensor):
+        _base_logits, cls_feat, reg_feat = self.base_model(x)
+        adapted_feat = cls_feat + self.up(self.down(cls_feat))
+        logits = self.base_model.classifier(adapted_feat)
+        return logits, adapted_feat, reg_feat
+
+
+def fold_low_rank_adapter(adapter: LowRankPosthocAdapter) -> torch.nn.Module:
+    """Fold z'=(I+BA)z into the ordinary classifier without runtime changes."""
+    folded = copy.deepcopy(adapter.base_model)
+    with torch.no_grad():
+        feature_dim = int(folded.classifier.in_features)
+        identity = torch.eye(
+            feature_dim,
+            dtype=adapter.up.weight.dtype,
+            device=adapter.up.weight.device,
+        )
+        transform = identity + adapter.up.weight @ adapter.down.weight
+        folded.classifier.weight.copy_(adapter.base_model.classifier.weight @ transform)
+        folded.classifier.bias.copy_(adapter.base_model.classifier.bias)
+    return folded
 
 
 def relative_parameter_displacement(
@@ -137,8 +179,8 @@ def supervised_ce_adapt(
     lr: float = LR,
     seed: int = SEED,
 ) -> tuple[torch.nn.Module, list[dict[str, float]], dict[str, Any]]:
-    if method not in {"a0t_full", "target_head"}:
-        raise ValueError("supervised CE adaptation supports a0t_full or target_head")
+    if method not in {"a0t_full", "target_head", "classifier_only"}:
+        raise ValueError("supervised CE adaptation supports a0t_full, target_head, or classifier_only")
     set_random_seed(seed)
     source = copy.deepcopy(source_model).to(device)
     adapted = copy.deepcopy(source_model).to(device)
@@ -185,6 +227,68 @@ def supervised_ce_adapt(
         "relative_parameter_displacement": relative_parameter_displacement(
             adapted, source
         ),
+    }
+
+
+def low_rank_adapter_adapt(
+    source_model: torch.nn.Module,
+    calibration_loader: DataLoader,
+    *,
+    device: torch.device,
+    rank: int = 4,
+    steps: int = STEPS,
+    lr: float = LR,
+    seed: int = SEED,
+) -> tuple[torch.nn.Module, list[dict[str, float]], dict[str, Any]]:
+    """Train the fixed rank-4 residual adapter and return an exactly folded model."""
+    set_random_seed(seed)
+    source = copy.deepcopy(source_model).to(device)
+    adapter = LowRankPosthocAdapter(source_model, rank=rank).to(device)
+    parameters = [parameter for parameter in adapter.parameters() if parameter.requires_grad]
+    names = [name for name, parameter in adapter.named_parameters() if parameter.requires_grad]
+    optimizer = torch.optim.Adam(parameters, lr=lr)
+    iterator = iter(calibration_loader)
+    rows: list[dict[str, float]] = []
+    started = time.perf_counter()
+    adapter.train()
+    for step in range(1, steps + 1):
+        batch, iterator = _next_batch(iterator, calibration_loader)
+        x = batch[0].to(device)
+        y = batch[1].to(device).long()
+        optimizer.zero_grad()
+        logits, _, _ = adapter(x)
+        loss = F.cross_entropy(logits, y)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(parameters, 5.0)
+        optimizer.step()
+        rows.append(
+            {
+                "step": float(step),
+                "target_ce": float(loss.detach().item()),
+                "target_accuracy": float(
+                    (logits.detach().argmax(dim=1) == y).float().mean().item()
+                ),
+            }
+        )
+    elapsed = time.perf_counter() - started
+    folded = fold_low_rank_adapter(adapter).to(device)
+    total = sum(parameter.numel() for parameter in folded.parameters())
+    trainable = sum(parameter.numel() for parameter in parameters)
+    return folded, rows, {
+        "method": "low_rank_adapter",
+        "adapter_rank": int(rank),
+        "adapter_initialization": "kaiming_down_zero_up",
+        "deployment_form": "exact_classifier_fold",
+        "steps": int(steps),
+        "optimizer": "Adam",
+        "lr": float(lr),
+        "seed": int(seed),
+        "trainable_parameter_names": names,
+        "trainable_parameters": int(trainable),
+        "total_parameters": int(total),
+        "trainable_parameter_ratio": float(trainable / total),
+        "adaptation_seconds": float(elapsed),
+        "relative_parameter_displacement": relative_parameter_displacement(folded, source),
     }
 
 

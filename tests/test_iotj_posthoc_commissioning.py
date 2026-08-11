@@ -54,6 +54,48 @@ def test_target_head_updates_only_projection_and_classifier() -> None:
     assert not any(parameter.requires_grad for parameter in model.attn_linear.parameters())
 
 
+def test_classifier_only_updates_only_classifier() -> None:
+    from gaps_flower.posthoc_commissioning import configure_trainable_parameters
+
+    model = create_model(make_config(device="cpu", local_epochs=1, batch_size=32, seed=42))
+    names = configure_trainable_parameters(model, "classifier_only")
+    assert names == ["classifier.weight", "classifier.bias"]
+    assert not any(parameter.requires_grad for parameter in model.tcn.parameters())
+    assert not any(parameter.requires_grad for parameter in model.feat_proj.parameters())
+
+
+def test_rank4_adapter_folds_exactly_into_classifier() -> None:
+    from gaps_flower.posthoc_commissioning import LowRankPosthocAdapter, fold_low_rank_adapter
+
+    torch.manual_seed(42)
+    source = create_model(make_config(device="cpu", local_epochs=1, batch_size=32, seed=42))
+    adapter = LowRankPosthocAdapter(source, rank=4)
+    with torch.no_grad():
+        adapter.up.weight.normal_(mean=0.0, std=0.05)
+    adapter.eval()
+    folded = fold_low_rank_adapter(adapter).eval()
+    x = torch.randn(7, 50, 8)
+    with torch.no_grad():
+        adapter_logits = adapter(x)[0]
+        folded_logits = folded(x)[0]
+    assert torch.allclose(adapter_logits, folded_logits, atol=1e-6, rtol=1e-6)
+
+
+def test_rank4_adapter_trains_only_adapter_and_classifier() -> None:
+    from gaps_flower.posthoc_commissioning import LowRankPosthocAdapter
+
+    source = create_model(make_config(device="cpu", local_epochs=1, batch_size=32, seed=42))
+    adapter = LowRankPosthocAdapter(source, rank=4)
+    names = [name for name, parameter in adapter.named_parameters() if parameter.requires_grad]
+    assert names == [
+        "base_model.classifier.weight",
+        "base_model.classifier.bias",
+        "down.weight",
+        "up.weight",
+    ]
+    assert sum(parameter.numel() for parameter in adapter.parameters() if parameter.requires_grad) == 772
+
+
 def test_full_methods_update_all_parameters() -> None:
     from gaps_flower.posthoc_commissioning import configure_trainable_parameters
 
