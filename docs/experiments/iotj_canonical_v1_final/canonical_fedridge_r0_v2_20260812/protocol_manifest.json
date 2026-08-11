@@ -1,0 +1,208 @@
+{
+  "schema_version": "iotj.canonical_v1.fedridge_r0_v2.pre_run.v1",
+  "study_id": "CAN-V1-FEDRIDGE-R0V2-20260812",
+  "status": "DESIGN_FREEZE_READY_FORMAL_NOT_STARTED",
+  "formal_execution_started": false,
+  "execution_commit_policy": "CLI authorized freeze commit must equal current Git HEAD",
+  "branch": "codex/iotj-final-classification-le1",
+  "source_clients": ["C1", "C2"],
+  "target_clients": [],
+  "target_access": {
+    "calibration_x": false,
+    "calibration_labels": false,
+    "test_x": false,
+    "test_labels": false
+  },
+  "C0_decision": "V1_INTERLEAVED_RETAINED",
+  "original_R0_decision": "R0_EXACT_RECOVERY_NOT_ESTABLISHED",
+  "design_provenance": {
+    "path": "docs/superpowers/specs/2026-08-12-canonical-fedridge-r0-v2-design.md",
+    "commit": "b41fee1d5bd64a19d6fefcad5fde610183856202",
+    "status": "approved"
+  },
+  "implementation_provenance": {
+    "task_base_commit": "6668dc5db83428a2d957d962d6a5fa4bb5dc2430",
+    "numerical_module": "gaps_flower/canonical_fedridge_v2.py",
+    "feature_cache_module": "gaps_flower/canonical_quantitative_features.py"
+  },
+  "protocol_config_path": "docs/experiments/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/protocol_manifest.json",
+  "formal_result_root": "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812",
+  "canonical_data": {
+    "dataset_path": "dataset/iotj_canonical_v1",
+    "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "preprocessing": "HZ5_MEAN_W10S",
+    "sampling_rate_hz": 5,
+    "window_seconds": 10,
+    "stride_seconds": 5,
+    "window_shape": [50, 8],
+    "source_split_counts_per_client": {
+      "train": 2360,
+      "calibration": 320,
+      "test": 680
+    },
+    "per_gas_refit_count_per_client": 670,
+    "per_gas_refit_count_pooled": 1340,
+    "per_gas_test_count_per_client": 170,
+    "per_gas_test_count_pooled": 340
+  },
+  "canonical_source_artifact_sha256": {
+    "C1_train_features": "c5a616009eb95c8b213ddf117190233c830939488736c036169d9d3e9c889956",
+    "C1_train_phase": "38eee537f9ae57f123d5fa1941bea0b4bb2f6ad5dd2b61c81cdc287489bfa737",
+    "C1_train_metadata": "e8781d40e66909aa198c832edf39e1c45c9cc0262b73ef3d008c95d5818596e4",
+    "C1_calibration_features": "63cd4452d34f2835616f2c2c0e66ff8f93ca97abaa492263a13219c04a7fc997",
+    "C1_calibration_phase": "46a160e39feabb0d900d759312db03cc85e7914c7a5f3206edf58cbf1fed8153",
+    "C1_calibration_metadata": "8d71a73d77a1c780fd3ea5338e60cb95e7c5830ca9cd40dcefde213456e118fc",
+    "C1_test_features": "f8ae79eb9ba937d94d8564e766330773a476679bd758af23b5370656a2b5deaf",
+    "C1_test_phase": "1f2209e892aabb198baa876f622f78da9c5c832113f2e9af1a6745fe879fc357",
+    "C1_test_metadata": "fde03ef7867c7dd897320eab5b2b1739f8f8e924e098cbcdc2db02e7bb2fef4b",
+    "C2_train_features": "57ed2fdf56558c03c13e3195c7657b89c15b98ca8779b1ab65e306157ad7d9d5",
+    "C2_train_phase": "3663571623e94f3ccdeb8a406cd5aaff594cf6ea8d238fba46bc0dbd1ee57e58",
+    "C2_train_metadata": "acf9c7a5038a5916a0880962f98a578f14cad117ef3a93c64d787084c6571957",
+    "C2_calibration_features": "c18e759bd66078a81994b8262981dc64755b865b488fdc36ae87d9df773e72eb",
+    "C2_calibration_phase": "97a13e7202050c540b737046f65b5e69c0fca96fb4c875c88a30dcd0101df7a4",
+    "C2_calibration_metadata": "f21467df358499720cf16553f40802da42e41995ee74e194012d5a0268e36005",
+    "C2_test_features": "ddc82b6c50f6a48bb840d573daa79063946f3746cb59ba655aa9bf168db72e8c",
+    "C2_test_phase": "ad0fa28a5cd5941956948f607d931f3e936aafc4832f4080ae0ac77ecacf03bb",
+    "C2_test_metadata": "9cb9690c3aa71cbe50c4ef89335124b5d7211f6f85000ade33fd2a7cbeacbbc8"
+  },
+  "feature_protocol": {
+    "extractor_path": "run_regression_head_ablation.py::rich_feature_dict",
+    "extractor_file_sha256": "7627b72ee4e1823d24c374d41a6c931f66b5efedd6eaf4a839c62e7b5b1fa72a",
+    "ordered_h1_feature_names_sha256": "df696d3cfbe43eff40b515f6f1a7bb51c9cd11900dba93e231a3ded0755c3259",
+    "ordered_sensor_feature_names_sha256": "4cb9e621b39cf726b18d0102d2ec395ba11b109b6ffcabb381c729dd44f26248",
+    "sensor_dimensions": 83,
+    "h1_dimensions": 104,
+    "metadata_phase_dimensions": 21,
+    "dtype": "float64",
+    "created_from_canonical_arrays": true,
+    "legacy_cache_reused": false
+  },
+  "canonical_split_roles": {
+    "source_feature_fit": ["C1_train", "C2_train"],
+    "source_alpha_selection": ["C1_calibration", "C2_calibration"],
+    "source_refit": ["C1_train", "C1_calibration", "C2_train", "C2_calibration"],
+    "source_functional_evaluation_after_lock": ["C1_test", "C2_test"]
+  },
+  "numerical_protocol": {
+    "dtype": "float64",
+    "local_moment": "M2_k=sum_i((x_i-mean_k)^2)",
+    "merge_mean": "mean_A+delta*n_B/(n_A+n_B)",
+    "merge_M2": "M2_A+M2_B+delta^2*n_A*n_B/(n_A+n_B)",
+    "variance": "max(M2/n,0)",
+    "population_variance_denominator": "n",
+    "safe_scale_condition": "raw_scale < 1e-9",
+    "safe_scale_replacement": 1.0,
+    "aggregation_order": ["C1", "C2"],
+    "alpha_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+    "alpha_selection": "source train fit; source calibration SSE/count only",
+    "alpha_tie_break": "first_in_registered_grid",
+    "solver": "numpy.linalg.pinv",
+    "intercept_regularized": false
+  },
+  "model_checkpoint_policy": {
+    "model": "four per-gas 104D CanonicalRidgeModelV2 reconstructions",
+    "checkpoint_pre_run": "not_created_pre_run",
+    "future_lock_files": ["source_alpha_lock.json", "model_lock.json"],
+    "source_test_open_after_lock_only": true
+  },
+  "seed": 42,
+  "seed_note": "deterministic numeric reconstruction; seed unused",
+  "DA": "none",
+  "calibration": "none",
+  "QC": "none",
+  "numerical_gates": {
+    "epsilon": 2.220446049250313e-16,
+    "gamma_formula": "gamma(m)=m*epsilon/(1-m*epsilon)",
+    "n_max": 1340,
+    "feature_dimensions": 104,
+    "design_dimensions": 105,
+    "tau_moment_formula": "64*gamma(1340)",
+    "tau_moment": 1.9042545318376352e-11,
+    "tau_residual_formula": "128*gamma(105)",
+    "tau_residual": 2.9842794901924903e-12,
+    "functional_ppm": 1e-6,
+    "condition": "finite(kappa) and kappa*epsilon < 1",
+    "hard_boolean_fields": [
+      "alpha_equal",
+      "scaler_pass",
+      "safe_scale_mask_equal",
+      "normal_equations_pass",
+      "condition_pass",
+      "fed_residual_pass",
+      "pooled_residual_pass",
+      "raw_prediction_pass",
+      "clipped_prediction_pass",
+      "rmse_parity_pass",
+      "mae_parity_pass",
+      "finite_pass"
+    ],
+    "coefficient_difference_hard_gate": false
+  },
+  "decision_vocabulary": [
+    "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED",
+    "R0_V2_FAILED"
+  ],
+  "access_sequence": [
+    "verify_design_freeze_and_canonical_dataset",
+    "verify_original_C0_and_R0_immutable",
+    "create_fresh_C1_C2_train_calibration_feature_caches",
+    "write_H1_numerical_audit",
+    "perform_source_only_alpha_selection",
+    "refit_source_train_calibration_federated_and_pooled_models",
+    "write_source_alpha_and_model_locks",
+    "open_C1_C2_source_test_after_locks",
+    "evaluate_functional_equivalence",
+    "write_diagnostics_decision_audit_and_SHA256_index",
+    "stop"
+  ],
+  "expected_formal_files": [
+    "canonical_feature_caches/",
+    "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv",
+    "r0_v2_scaler_diagnostics.csv",
+    "r0_v2_normal_equation_diagnostics.csv",
+    "r0_v2_system_diagnostics.csv",
+    "r0_v2_functional_equivalence.csv",
+    "source_alpha_audit.csv",
+    "source_alpha_lock.json",
+    "model_lock.json",
+    "DATA_ACCESS_AUDIT.md",
+    "R0_V2_DECISION.json",
+    "R0_V2_EXPERIMENT_AUDIT.md",
+    "protocol_manifest_execution.json",
+    "sha256_index.json"
+  ],
+  "stop_rules": [
+    "stop_on_any_protocol_design_code_config_dataset_or_hash_mismatch",
+    "stop_on_any_nonfinite_value_or_hard_gate_failure",
+    "stop_on_any_noncanonical_client_role_order_or_split",
+    "stop_if_source_test_is_opened_before_alpha_and_model_locks",
+    "stop_on_any_unregistered_input_or_access_request",
+    "preserve_partial_evidence_and_do_not_resume_or_rerun_automatically",
+    "do_not_change_tolerance_solver_alpha_feature_or_aggregation_after_observation"
+  ],
+  "planning_registry_handoff": {
+    "from_skill": "experiment-planner",
+    "to_skill": "experiment-registry",
+    "input_artifacts": [
+      "docs/superpowers/specs/2026-08-12-canonical-fedridge-r0-v2-design.md@b41fee1d5bd64a19d6fefcad5fde610183856202",
+      "gaps_flower/canonical_fedridge_v2.py@6668dc5db83428a2d957d962d6a5fa4bb5dc2430",
+      "protocol_manifest.json"
+    ],
+    "completed_checks": [
+      "unique_experiment_id",
+      "canonical_fields_present",
+      "source_roles_and_order_verified",
+      "target_access_false",
+      "status_registered_not_executed"
+    ],
+    "unknown_fields": ["execution_resource_budget", "execution_environment_and_BLAS_metadata"],
+    "conflict_fields": [],
+    "blocking_evidence_gap": "formal source-only execution is blocked pending a separately named freeze commit",
+    "requested_next_action": "register the frozen candidate only; await separate execution authorization",
+    "read_only_files": [
+      "docs/superpowers/specs/2026-08-12-canonical-fedridge-r0-v2-design.md",
+      "gaps_flower/canonical_fedridge_v2.py",
+      "dataset/iotj_canonical_v1"
+    ]
+  }
+}

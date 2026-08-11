@@ -1,4 +1,7 @@
+import csv
+import json
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 from typing import Mapping
 
 import numpy as np
@@ -33,6 +36,56 @@ from gaps_flower.canonical_quantitative_features import validate_cache_manifest
 
 
 R0_V2_STUDY_ID = "CAN-V1-FEDRIDGE-R0V2-20260812"
+ROOT = Path(__file__).resolve().parents[1]
+PROTOCOL_ROOT = (
+    ROOT
+    / "docs/experiments/iotj_canonical_v1_final"
+    / "canonical_fedridge_r0_v2_20260812"
+)
+PROTOCOL_MANIFEST = PROTOCOL_ROOT / "protocol_manifest.json"
+EXPERIMENT_MATRIX = PROTOCOL_ROOT / "EXPERIMENT_MATRIX.csv"
+EXPERIMENT_REGISTRY = PROTOCOL_ROOT / "EXPERIMENT_REGISTRY.csv"
+FORMAL_RESULT_ROOT = (
+    ROOT
+    / "results/iotj_canonical_v1_final"
+    / "canonical_fedridge_r0_v2_20260812"
+)
+
+PLANNER_FIELDS = [
+    "experiment_id",
+    "source_clients",
+    "target_clients",
+    "split_protocol",
+    "model",
+    "checkpoint",
+    "DA",
+    "calibration",
+    "QC",
+    "seed",
+    "result_path",
+    "metrics",
+    "status",
+    "notes",
+    "code_commit",
+    "config_path",
+    "dataset_path",
+    "created_at",
+    "evidence_status",
+    "provenance",
+    "hypothesis_id",
+    "baseline_id",
+    "ablation_factor",
+    "expected_evidence",
+    "acceptance_criterion",
+]
+REGISTRY_FIELDS = PLANNER_FIELDS[:20]
+REQUIRED_PROTOCOL_MARKDOWN = (
+    "PROTOCOL.md",
+    "EXPERIMENT_PLAN.md",
+    "NEAR_CONSTANT_SCALE_POLICY.md",
+    "R0_V2_NUMERICAL_TOLERANCE_JUSTIFICATION.md",
+    "FEDRIDGE_NUMERICAL_STABILITY_MANUSCRIPT_NOTE.md",
+)
 
 
 class AccessRecordingMapping(
@@ -1221,3 +1274,244 @@ def test_v2_decision_fails_closed_on_nonfinite_diagnostic_values(
     rows[0]["relative_beta_difference"] = nonfinite
 
     assert decide_r0_v2(rows)["decision"] == "R0_V2_FAILED"
+
+
+def test_r0_v2_protocol_manifest_is_pre_run_target_free_and_canonical() -> None:
+    """Catches executing early, enabling target access, or drifting source data."""
+    manifest = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+
+    assert manifest["study_id"] == R0_V2_STUDY_ID
+    assert manifest["status"] == "DESIGN_FREEZE_READY_FORMAL_NOT_STARTED"
+    assert manifest["formal_execution_started"] is False
+    assert manifest["execution_commit_policy"] == (
+        "CLI authorized freeze commit must equal current Git HEAD"
+    )
+    assert manifest["source_clients"] == ["C1", "C2"]
+    assert manifest["target_clients"] == []
+    assert manifest["target_access"] == {
+        "calibration_x": False,
+        "calibration_labels": False,
+        "test_x": False,
+        "test_labels": False,
+    }
+    assert manifest["canonical_data"] == {
+        "dataset_path": "dataset/iotj_canonical_v1",
+        "dataset_aggregate_sha256": (
+            "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6"
+        ),
+        "preprocessing": "HZ5_MEAN_W10S",
+        "sampling_rate_hz": 5,
+        "window_seconds": 10,
+        "stride_seconds": 5,
+        "window_shape": [50, 8],
+        "source_split_counts_per_client": {
+            "train": 2360,
+            "calibration": 320,
+            "test": 680,
+        },
+        "per_gas_refit_count_per_client": 670,
+        "per_gas_refit_count_pooled": 1340,
+        "per_gas_test_count_per_client": 170,
+        "per_gas_test_count_pooled": 340,
+    }
+    assert manifest["feature_protocol"]["sensor_dimensions"] == 83
+    assert manifest["feature_protocol"]["h1_dimensions"] == 104
+    assert manifest["feature_protocol"]["ordered_h1_feature_names_sha256"] == (
+        "df696d3cfbe43eff40b515f6f1a7bb51c9cd11900dba93e231a3ded0755c3259"
+    )
+    assert manifest["feature_protocol"]["ordered_sensor_feature_names_sha256"] == (
+        "4cb9e621b39cf726b18d0102d2ec395ba11b109b6ffcabb381c729dd44f26248"
+    )
+    assert manifest["feature_protocol"]["extractor_file_sha256"] == (
+        "7627b72ee4e1823d24c374d41a6c931f66b5efedd6eaf4a839c62e7b5b1fa72a"
+    )
+    assert manifest["design_provenance"]["commit"] == (
+        "b41fee1d5bd64a19d6fefcad5fde610183856202"
+    )
+    assert manifest["implementation_provenance"]["task_base_commit"] == (
+        "6668dc5db83428a2d957d962d6a5fa4bb5dc2430"
+    )
+    assert manifest["C0_decision"] == "V1_INTERLEAVED_RETAINED"
+    assert manifest["original_R0_decision"] == "R0_EXACT_RECOVERY_NOT_ESTABLISHED"
+    assert manifest["formal_result_root"] == (
+        "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812"
+    )
+    assert not FORMAL_RESULT_ROOT.exists()
+
+
+def test_r0_v2_protocol_manifest_freezes_exact_numerical_semantics() -> None:
+    """Catches changing formulas, solver behavior, or the hard gate set."""
+    manifest = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    numerical = manifest["numerical_protocol"]
+    gates = manifest["numerical_gates"]
+
+    assert numerical == {
+        "dtype": "float64",
+        "local_moment": "M2_k=sum_i((x_i-mean_k)^2)",
+        "merge_mean": "mean_A+delta*n_B/(n_A+n_B)",
+        "merge_M2": "M2_A+M2_B+delta^2*n_A*n_B/(n_A+n_B)",
+        "variance": "max(M2/n,0)",
+        "population_variance_denominator": "n",
+        "safe_scale_condition": "raw_scale < 1e-9",
+        "safe_scale_replacement": 1.0,
+        "aggregation_order": ["C1", "C2"],
+        "alpha_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+        "alpha_selection": "source train fit; source calibration SSE/count only",
+        "alpha_tie_break": "first_in_registered_grid",
+        "solver": "numpy.linalg.pinv",
+        "intercept_regularized": False,
+    }
+    assert gates["epsilon"] == 2.220446049250313e-16
+    assert gates["gamma_formula"] == "gamma(m)=m*epsilon/(1-m*epsilon)"
+    assert gates["tau_moment_formula"] == "64*gamma(1340)"
+    assert gates["tau_moment"] == 1.9042545318376352e-11
+    assert gates["tau_residual_formula"] == "128*gamma(105)"
+    assert gates["tau_residual"] == 2.9842794901924903e-12
+    assert gates["functional_ppm"] == 1e-6
+    assert gates["condition"] == "finite(kappa) and kappa*epsilon < 1"
+    assert gates["hard_boolean_fields"] == [
+        "alpha_equal",
+        "scaler_pass",
+        "safe_scale_mask_equal",
+        "normal_equations_pass",
+        "condition_pass",
+        "fed_residual_pass",
+        "pooled_residual_pass",
+        "raw_prediction_pass",
+        "clipped_prediction_pass",
+        "rmse_parity_pass",
+        "mae_parity_pass",
+        "finite_pass",
+    ]
+    assert gates["coefficient_difference_hard_gate"] is False
+    assert manifest["decision_vocabulary"] == [
+        "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED",
+        "R0_V2_FAILED",
+    ]
+
+
+def test_r0_v2_matrix_registers_exactly_one_unexecuted_configuration() -> None:
+    """Catches multiplying rows, omitting planner fields, or claiming Evidence."""
+    with EXPERIMENT_MATRIX.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+
+    assert reader.fieldnames == PLANNER_FIELDS
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["experiment_id"] == R0_V2_STUDY_ID
+    assert row["source_clients"] == "C1;C2"
+    assert row["target_clients"] == ""
+    assert row["DA"] == row["calibration"] == row["QC"] == "none"
+    assert row["seed"] == "42"
+    assert row["status"] == "registered"
+    assert row["evidence_status"] == "blocked_pending_execution"
+    assert row["hypothesis_id"] == "H-R0V2-NUM"
+    assert row["expected_evidence"] == (
+        "four per-gas gate records and one registered PASS/FAIL decision"
+    )
+    assert "deterministic numeric reconstruction; seed unused" in row["notes"]
+    assert row["result_path"] == (
+        "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812"
+    )
+
+
+def test_r0_v2_registry_has_one_registered_record_and_planner_handoff() -> None:
+    """Catches registry schema drift, premature completion, or missing handoff."""
+    with EXPERIMENT_REGISTRY.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+
+    assert reader.fieldnames == REGISTRY_FIELDS
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["experiment_id"] == R0_V2_STUDY_ID
+    assert row["source_clients"] == "C1;C2"
+    assert row["target_clients"] == ""
+    assert row["status"] == "registered"
+    assert row["evidence_status"] == "blocked_pending_execution"
+    assert row["checkpoint"].startswith("not_created_pre_run")
+    assert row["metrics"] == "blocked_pending_execution"
+    assert "experiment-planner -> experiment-registry" in row["provenance"]
+    assert "separately named freeze commit" in row["notes"]
+
+
+def test_r0_v2_protocol_markdown_preserves_boundaries_and_decisions() -> None:
+    """Catches missing freeze notes or instructions that cross access scope."""
+    forbidden_instructions = (
+        "run target",
+        "execute target",
+        "perform target",
+        "run qc",
+        "execute qc",
+        "perform qc",
+    )
+    for filename in REQUIRED_PROTOCOL_MARKDOWN:
+        text = (PROTOCOL_ROOT / filename).read_text(encoding="utf-8")
+        lowered = text.lower()
+        assert "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED" in text
+        assert "R0_V2_FAILED" in text
+        assert "R0_EXACT_RECOVERY_NOT_ESTABLISHED" in text
+        assert "V1_INTERLEAVED_RETAINED" in text
+        assert not any(instruction in lowered for instruction in forbidden_instructions)
+
+
+def test_near_constant_policy_reuses_strict_floor_without_selection() -> None:
+    """Catches tuning the inherited scale floor or changing its boundary."""
+    text = (PROTOCOL_ROOT / "NEAR_CONSTANT_SCALE_POLICY.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "raw_scale < 1e-9" in text
+    assert "raw_scale == 1e-9" in text
+    assert "reused" in text
+    assert "not selected or tuned" in text
+    assert "performance" in text
+    assert "target data" in text
+
+
+def test_numerical_tolerance_justification_lists_every_hard_gate() -> None:
+    """Catches an under-specified or result-tuned tolerance freeze."""
+    text = (
+        PROTOCOL_ROOT / "R0_V2_NUMERICAL_TOLERANCE_JUSTIFICATION.md"
+    ).read_text(encoding="utf-8")
+
+    for literal in (
+        "2.220446049250313e-16",
+        "gamma(m) = m*epsilon / (1 - m*epsilon)",
+        "64*gamma(1340)",
+        "1.9042545318376352e-11",
+        "128*gamma(105)",
+        "2.9842794901924903e-12",
+        "1e-6 ppm",
+        "alpha_equal",
+        "scaler_pass",
+        "safe_scale_mask_equal",
+        "normal_equations_pass",
+        "condition_pass",
+        "fed_residual_pass",
+        "pooled_residual_pass",
+        "raw_prediction_pass",
+        "clipped_prediction_pass",
+        "rmse_parity_pass",
+        "mae_parity_pass",
+        "finite_pass",
+    ):
+        assert literal in text
+    assert "not selected or adjusted from observed R0-v2 results" in text
+
+
+def test_manuscript_note_limits_the_future_stability_claim() -> None:
+    """Catches upgrading numerical engineering into an unsupported claim."""
+    text = (
+        PROTOCOL_ROOT / "FEDRIDGE_NUMERICAL_STABILITY_MANUSCRIPT_NOTE.md"
+    ).read_text(encoding="utf-8")
+    proposed = (
+        "global mean/variance is reconstructed using numerically stable "
+        "mergeable moments"
+    )
+
+    assert text.count(proposed) == 1
+    assert "bitwise-exact claim is prohibited" in text
+    assert "novel-algorithm claim is prohibited" in text
+    assert "manuscript body is not edited by this protocol bundle" in text
