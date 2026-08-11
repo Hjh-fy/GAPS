@@ -21,6 +21,10 @@ from gaps_flower.domain_adaptation_inputs import (
     validate_domain_adaptation_request,
 )
 from gaps_flower.flower_message_audit import audit_fit_ins, audit_fit_res
+from gaps_flower.final_adaptation_context import (
+    build_final_adaptation_context,
+    write_final_adaptation_context,
+)
 from gaps_flower.observability import NullObserver
 from gaps_flower.p0i_adaptation import (
     BATCH_SIZE as P0I_BATCH_SIZE,
@@ -652,6 +656,7 @@ class GapsStrategy(CheckpointFedAvg):
         ablation_variant: str = "",
         require_selective_after_warmup: bool = False,
         target_information_method: str = "gaps",
+        final_adaptation_context_round: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -702,6 +707,11 @@ class GapsStrategy(CheckpointFedAvg):
         self.ablation_variant = str(ablation_variant or "unspecified")
         self.require_selective_after_warmup = bool(require_selective_after_warmup)
         self.target_information_method = str(target_information_method).lower()
+        self.final_adaptation_context_round = int(final_adaptation_context_round)
+        if self.final_adaptation_context_round not in (0, 25):
+            raise ValueError(
+                "final adaptation context capture is disabled (0) or fixed at round25"
+            )
         self.target_access_ledger = TargetAccessLedger(
             self.output_dir / "target_access_ledger.jsonl"
         )
@@ -1005,6 +1015,15 @@ class GapsStrategy(CheckpointFedAvg):
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
+            context_path = self._capture_final_adaptation_context(
+                server_round=server_round,
+                aggregated_state=aggregated_state,
+                checkpoint_path=Path(event["checkpoint"]),
+                results=results,
+                weights=weights,
+            )
+            if context_path is not None:
+                event["final_adaptation_context"] = str(context_path)
 
             # ── 阶段 4.4: 服务端域适应 ──
             if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
@@ -1424,6 +1443,44 @@ class GapsStrategy(CheckpointFedAvg):
             else:
                 client_residuals.append(None)
         return client_mus, client_counts, client_ids, client_residuals
+
+    def _capture_final_adaptation_context(
+        self,
+        *,
+        server_round: int,
+        aggregated_state: OrderedDict,
+        checkpoint_path: Path,
+        results: List[Tuple[ClientProxy, FitRes]],
+        weights: torch.Tensor,
+    ) -> Optional[Path]:
+        """Persist the exact source-side inputs for one fixed round25 adaptation."""
+
+        if int(server_round) != int(self.final_adaptation_context_round):
+            return None
+        if int(server_round) != 25:
+            raise RuntimeError("FAIL_CLOSED final adaptation context is not round25")
+        client_mus, client_counts, client_ids, client_residuals = (
+            self._collect_da_client_payloads(results)
+        )
+        payload = build_final_adaptation_context(
+            round_id=server_round,
+            run_name=self.run_name,
+            checkpoint_path=Path(checkpoint_path),
+            checkpoint_state=aggregated_state,
+            semantic_protos=self.semantic_protos,
+            semantic_proto_vars=self.semantic_proto_vars,
+            client_mus=client_mus,
+            client_counts=client_counts,
+            client_ids=client_ids,
+            client_residuals=client_residuals,
+            client_weights=weights,
+        )
+        path = self.output_dir / "final_adaptation_context_round_025.json"
+        write_final_adaptation_context(path, payload)
+        write_final_adaptation_context(
+            self.output_dir / "final_adaptation_context_latest.json", payload
+        )
+        return path
 
     # ═══════════════════════════════════════════════════════════════
     # 阶段 4.4: 服务端域适应 (CORAL + MMD + 对抗)

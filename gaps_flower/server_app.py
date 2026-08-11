@@ -195,6 +195,13 @@ def main() -> None:
     parser.add_argument("--da-target-ce-label-smoothing", type=float, default=0.0)
     parser.add_argument("--da-target-ce-class-balanced", type=lambda v: v.lower() in ("true", "1", "yes"), default=False)
     parser.add_argument("--da-server-opt-lr", type=float, default=1e-4)
+    parser.add_argument(
+        "--final-adaptation-context-round",
+        type=int,
+        choices=(0, 25),
+        default=0,
+        help="Persist complete source-side A4 inputs at fixed round25; 0 disables capture",
+    )
     args = parser.parse_args()
     explicit_dests = _explicit_cli_dests(parser, sys.argv[1:])
     apply_da_preset(args, explicit_dests)
@@ -294,6 +301,7 @@ def main() -> None:
                 ablation_variant=args.ablation_variant,
                 require_selective_after_warmup=args.require_selective_after_warmup,
                 target_information_method=args.target_information_method,
+                final_adaptation_context_round=args.final_adaptation_context_round,
                 **strategy_kwargs,
             )
         elif args.strategy == "scaffold":

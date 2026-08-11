@@ -13,7 +13,7 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 import torch
 import torch.nn.functional as F
@@ -28,6 +28,15 @@ STEPS = 100
 LR = 5e-4
 BATCH_SIZE = 32
 SEED = 42
+A4_C0_A_CONTEXT_AVAILABILITY = {
+    # Audited from the frozen C0-A A4 round25 loss-activity artifact.  The
+    # ce_stats profile does not upload a device residual, so that configured
+    # term remains baseline-unavailable in both lifecycles.
+    "client_prototypes": True,
+    "client_residuals": False,
+    "semantic_prototypes": True,
+    "two_client_prototypes": True,
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -330,6 +339,60 @@ def registered_a4_hyperparameters() -> dict[str, Any]:
         "ADV_CLASS_CONDITIONAL": True,
         "DA_LEARN_SEMANTIC_PROTOS": True,
         "RETURN_STEP_DIAGNOSTICS": True,
+        "ABLATION_VARIANT": "A4",
+    }
+
+
+def _a4_context_configured_weights(hyperparams: Mapping[str, Any]) -> dict[str, float]:
+    return {
+        "proto_anchor": float(hyperparams["LAMBDA_PROTO_ANCHOR"]),
+        "proto_loss": float(hyperparams["LAMBDA_PROTO"]),
+        "consistency": float(hyperparams["LAMBDA_CONSISTENCY"]),
+        "device_residual": float(hyperparams["LAMBDA_RES"]),
+        "proto_mmd": float(hyperparams["LAMBDA_PROTO_MMD"]),
+    }
+
+
+def build_a4_final_invocation(context: Mapping[str, Any]) -> dict[str, Any]:
+    """Bind a decoded round25 context to the single registered A4 invocation."""
+
+    from gaps_flower.final_adaptation_context import validate_a4_context_loss_inputs
+
+    hyperparams = registered_a4_hyperparameters()
+    gate = validate_a4_context_loss_inputs(
+        context,
+        configured_weights=_a4_context_configured_weights(hyperparams),
+        expected_context_availability=A4_C0_A_CONTEXT_AVAILABILITY,
+    )
+    required_runtime = (
+        "semantic_protos",
+        "client_mus",
+        "client_counts",
+        "client_weights",
+        "client_ids",
+        "client_residuals",
+    )
+    missing = [key for key in required_runtime if key not in context]
+    if missing:
+        raise RuntimeError(
+            "FAIL_CLOSED decoded final adaptation context missing: "
+            + ",".join(missing)
+        )
+    return {
+        "num_steps": STEPS,
+        "optimizer": "Adam",
+        "lr": LR,
+        "seed": SEED,
+        "batch_size": BATCH_SIZE,
+        "semantic_protos": context["semantic_protos"],
+        "client_mus": context["client_mus"],
+        "client_counts": context["client_counts"],
+        "client_weights": context["client_weights"],
+        "client_ids": context["client_ids"],
+        "client_residuals": context["client_residuals"],
+        "context_availability": dict(context["loss_input_availability"]),
+        "context_gate": gate,
+        "hyperparams": hyperparams,
     }
 
 
@@ -386,6 +449,72 @@ def a4_posthoc_adapt(
                 adapted, source
             ),
             "interleaved_client_statistics_available": False,
+        }
+    )
+    return adapted, rows, summary
+
+
+def a4_final_adapt(
+    source_model: torch.nn.Module,
+    source_loader: DataLoader,
+    calibration_loader: DataLoader,
+    *,
+    context: Mapping[str, Any],
+    device: torch.device,
+) -> tuple[torch.nn.Module, list[dict[str, float]], dict[str, Any]]:
+    """Run the fixed 100-step A4 endpoint with audited round25 source inputs."""
+
+    invocation = build_a4_final_invocation(context)
+    set_random_seed(invocation["seed"])
+    source = copy.deepcopy(source_model).to(device)
+    model = copy.deepcopy(source_model).to(device)
+    names = configure_trainable_parameters(model, "a4")
+    trainer = ServerDomainAdaptation(
+        model,
+        source_loader,
+        calibration_loader,
+        semantic_protos=invocation["semantic_protos"],
+        device=device,
+        hyperparams=invocation["hyperparams"],
+    )
+    started = time.perf_counter()
+    adapted, summary = trainer.run_adaptation(
+        num_steps=invocation["num_steps"],
+        client_mus=invocation["client_mus"],
+        client_counts=invocation["client_counts"],
+        client_weights=invocation["client_weights"].to(device),
+        client_ids=invocation["client_ids"],
+        client_residuals=invocation["client_residuals"],
+    )
+    elapsed = time.perf_counter() - started
+    per_step = summary.pop("step_diagnostics")
+    rows = [
+        {
+            "step": float(index + 1),
+            **{key: float(values[index]) for key, values in per_step.items()},
+        }
+        for index in range(invocation["num_steps"])
+    ]
+    total = sum(parameter.numel() for parameter in adapted.parameters())
+    summary.update(
+        {
+            "method": "a4_final",
+            "steps": invocation["num_steps"],
+            "optimizer": invocation["optimizer"],
+            "lr": invocation["lr"],
+            "seed": invocation["seed"],
+            "batch_size": invocation["batch_size"],
+            "trainable_parameter_names": names,
+            "trainable_parameters": int(total),
+            "total_parameters": int(total),
+            "trainable_parameter_ratio": 1.0,
+            "adaptation_seconds": float(elapsed),
+            "relative_parameter_displacement": relative_parameter_displacement(
+                adapted, source
+            ),
+            "interleaved_client_statistics_available": True,
+            "context_availability": invocation["context_availability"],
+            "context_gate": invocation["context_gate"],
         }
     )
     return adapted, rows, summary
