@@ -1,0 +1,67 @@
+{
+  "status": "PASS",
+  "producer_commit": "eeb4c455d1d488c892856bb2af57999fc75d1063",
+  "protocol": {
+    "gate": "C_DOWNSTREAM_ROUTING_COST_AUDIT",
+    "dataset": "canonical-v1",
+    "target": "C5",
+    "cost_matrix_source": "C5_canonical_calibration_only",
+    "primary_cost": "max_0_mean_incremental_squared_ppm",
+    "secondary_cost": "mean_range_normalized_incremental_squared",
+    "bootstrap_group": "raw_filename",
+    "bootstrap_replicates": 2000,
+    "bootstrap_seed": 42,
+    "target_test_used_for_cost_matrix": false,
+    "hyperparameter_search": false,
+    "decision_thresholds": {
+      "minimum_positive_offdiagonal_cells": 2,
+      "minimum_positive_cost_cv": 0.5,
+      "minimum_positive_contribution_files": 2,
+      "maximum_top_file_positive_share": 0.8,
+      "minimum_actual_misroute_windows": 4
+    }
+  },
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "calibration_cost_matrix_sha256": "0912c4703fdd30fecbaf369030221a5ec5ddcadae2900d3cf70b60cb71c31fef",
+  "test_diagnostic_only": true,
+  "decision": {
+    "decision": "COST_AWARE_ROUTING_MOTIVATED",
+    "next_action": "GO_GATE_D",
+    "positive_offdiagonal_cells": 12,
+    "positive_cost_cv": 0.6380499500272843,
+    "positive_contribution_files": 3,
+    "top_file_positive_share": 0.5194113369696863,
+    "actual_misroute_windows": 14,
+    "heterogeneous_costs": true,
+    "distributed_observed_contribution": true,
+    "observed": {
+      "a0t_rmse": 22.155950669872233,
+      "a4_rmse": 18.47654027252635,
+      "a4_minus_a0t_rmse": -3.679410397345883
+    },
+    "a0t_misroutes": 8,
+    "a4_misroutes": 8,
+    "misroute_union_windows": 14,
+    "top_two_file_positive_share": 0.8657037668178764,
+    "bootstrap": {
+      "a4_minus_a0t_rmse": {
+        "metric": "a4_minus_a0t_rmse",
+        "replicates": 2000,
+        "mean": -3.523903723441437,
+        "median": -3.347954385918925,
+        "ci95_low": -11.202360913644101,
+        "ci95_high": 3.3128172323051706,
+        "probability_negative": 0.83
+      },
+      "a4_minus_a0t_mean_excess_squared_error": {
+        "metric": "a4_minus_a0t_mean_excess_squared_error",
+        "replicates": 2000,
+        "mean": -150.08189174382696,
+        "median": -133.5607544694151,
+        "ci95_low": -516.8604779942463,
+        "ci95_high": 118.5588406331964,
+        "probability_negative": 0.83
+      }
+    }
+  }
+}
