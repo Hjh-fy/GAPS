@@ -1,0 +1,192 @@
+{
+  "adaptation": {
+    "lr": 0.0005,
+    "method": "a0t_full",
+    "optimizer": "Adam",
+    "seed": 42,
+    "steps": 100
+  },
+  "budgets": {
+    "adaptation_input_contract": "explicit calibration arrays only; no path enters supervised_ce_adapt",
+    "calibration_test_identity_overlap": 0,
+    "counts": {
+      "20": 320,
+      "5": 80
+    },
+    "manifest_sha256": {
+      "20": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+      "5": "1024ba468e7afa54be08db075a490836ba11f42c8bb08be2fb140b8c73173d28"
+    },
+    "nested": true,
+    "per_stratum": {
+      "20": 8,
+      "5": 2
+    },
+    "status": "PASS",
+    "strata": 40,
+    "test_arrays_available_to_adaptation": false
+  },
+  "freeze_commit": "0d0e5f2109d7f665929592ca901179dc392a4947",
+  "hyperparameter_search": false,
+  "i0_b20_reuse": {
+    "adaptation_seconds": 13.081214299891144,
+    "budget": 20,
+    "calibration_manifest_sha256": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_redesign_20260811\\gate1_posthoc\\a0t_full\\posthoc_a0t_full_c5.pth",
+    "checkpoint_sha256": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
+    "identity": "I0",
+    "lr": 0.0005,
+    "method": "a0t_full",
+    "seed": 42,
+    "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+    "status": "PASS",
+    "steps": 100
+  },
+  "phase1_decision": {
+    "all_seeds_positive": false,
+    "decision": "SOURCE_DG_NOT_CONFIRMED",
+    "evaluated_seeds": [
+      41,
+      42,
+      43
+    ],
+    "mean_gain": -0.04373012295267836,
+    "next_action": "STOP_SEED_EXPANSION_AND_ENTER_PHASE2",
+    "paired_macro_f1_gains": {
+      "41": -0.16472951903666322,
+      "42": 0.0749899433041799,
+      "43": -0.04145079312555178
+    },
+    "sample_sd": 0.11987598451980008,
+    "thresholds": {
+      "maximum_sample_sd": 0.05,
+      "minimum_mean_gain": 0.03
+    }
+  },
+  "schema_version": "iotj.canonical_v1.method_breakthrough.phase2.freeze.v1",
+  "sources": {
+    "I0": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\comparators\\source_fl\\CAN-V1-CMP-FEDAVG\\remote_server\\server_latest.pth",
+      "checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+      "checkpoint_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+      "identity": "I0",
+      "round": 25,
+      "seed": 42,
+      "source_clients": [
+        1,
+        2
+      ],
+      "source_method": "S2-FedAvg",
+      "target_access": "NONE"
+    },
+    "I1": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\gate_a_source_diversity\\fedavg\\remote_server\\server_latest.pth",
+      "checkpoint_sha256": "cd78163391643e8292122733036789404286055701e5294f6f4e0e90c7ff20f7",
+      "checkpoint_state_fingerprint": "e29efb86721785af23756ced030c58f8f88dbd7443c1985e7ca0f472d2e21ae7",
+      "identity": "I1",
+      "round": 25,
+      "seed": 42,
+      "source_clients": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "source_method": "S4-FedAvg",
+      "target_access": "NONE"
+    },
+    "I2": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\gate_a_source_diversity\\gaps_dg_p\\remote_server\\server_latest.pth",
+      "checkpoint_sha256": "016a240f2d196cdda7d590fa44821dbad3e83fe77558b900959d77640b015413",
+      "checkpoint_state_fingerprint": "cb19991ee51c23039bb09afd30295551d1c432f67437942e42aee844fb5e432f",
+      "identity": "I2",
+      "round": 25,
+      "seed": 42,
+      "source_clients": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "source_method": "S4-DG-P",
+      "target_access": "NONE"
+    }
+  },
+  "specs": [
+    {
+      "budget": 20,
+      "calibration_n": 320,
+      "execution": "reuse",
+      "experiment_id": "CAN-V1-MB-P2-I0-A0T-B20-S42",
+      "identity": "I0",
+      "lr": 0.0005,
+      "seed": 42,
+      "source_method": "S2-FedAvg",
+      "steps": 100
+    },
+    {
+      "budget": 5,
+      "calibration_n": 80,
+      "execution": "train",
+      "experiment_id": "CAN-V1-MB-P2-I0-A0T-B05-S42",
+      "identity": "I0",
+      "lr": 0.0005,
+      "seed": 42,
+      "source_method": "S2-FedAvg",
+      "steps": 100
+    },
+    {
+      "budget": 20,
+      "calibration_n": 320,
+      "execution": "train",
+      "experiment_id": "CAN-V1-MB-P2-I1-A0T-B20-S42",
+      "identity": "I1",
+      "lr": 0.0005,
+      "seed": 42,
+      "source_method": "S4-FedAvg",
+      "steps": 100
+    },
+    {
+      "budget": 5,
+      "calibration_n": 80,
+      "execution": "train",
+      "experiment_id": "CAN-V1-MB-P2-I1-A0T-B05-S42",
+      "identity": "I1",
+      "lr": 0.0005,
+      "seed": 42,
+      "source_method": "S4-FedAvg",
+      "steps": 100
+    },
+    {
+      "budget": 20,
+      "calibration_n": 320,
+      "execution": "train",
+      "experiment_id": "CAN-V1-MB-P2-I2-A0T-B20-S42",
+      "identity": "I2",
+      "lr": 0.0005,
+      "seed": 42,
+      "source_method": "S4-DG-P",
+      "steps": 100
+    },
+    {
+      "budget": 5,
+      "calibration_n": 80,
+      "execution": "train",
+      "experiment_id": "CAN-V1-MB-P2-I2-A0T-B05-S42",
+      "identity": "I2",
+      "lr": 0.0005,
+      "seed": 42,
+      "source_method": "S4-DG-P",
+      "steps": 100
+    }
+  ],
+  "status": "FROZEN",
+  "target_calibration_fields": {
+    "class": true,
+    "concentration": false,
+    "phase": "schema_only_not_used_by_loss",
+    "x": true
+  },
+  "target_test_available_to_adaptation": false,
+  "target_test_selection": false
+}

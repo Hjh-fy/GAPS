@@ -1,0 +1,21 @@
+{
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "decision": {
+    "decision": "DG_TO_COMMISSIONING_NOT_SUPPORTED",
+    "dg_minus_s4_fedavg": {
+      "20": 0.016902210099009607,
+      "5": -0.011791507475367835
+    },
+    "meaningful_gain": 0.01,
+    "next_action": "ENTER_PHASE3_REGISTERED_SELECTION",
+    "s4_minus_s2_fedavg": {
+      "20": -0.009625717858521288,
+      "5": 0.017498896055037072
+    },
+    "seed42_zero_shot_dg_gain": 0.0749899433041799
+  },
+  "freeze_commit": "0d0e5f2109d7f665929592ca901179dc392a4947",
+  "status": "PASS",
+  "target_test_manifest_sha256": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95",
+  "target_test_selection": false
+}
