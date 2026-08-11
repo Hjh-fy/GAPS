@@ -1,0 +1,14 @@
+{
+  "calibration_N": 320,
+  "classifier_sha256": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
+  "cost_formula": "max(0, mean(SE_forced_j-SE_correct_c)); diagonal=0",
+  "cost_matrix_sha256": "0912c4703fdd30fecbaf369030221a5ec5ddcadae2900d3cf70b60cb71c31fef",
+  "forced_prediction_N": 1280,
+  "forced_predictions_sha256": "9a82e0b18eb58b5f3b061d1a9c23e11193076a386b25e688e9046b4d056092d2",
+  "lambda": null,
+  "r84_models_sha256": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729",
+  "router": "argmin_j sum_c p(c|x) C(c,j)",
+  "status": "LOCKED_BEFORE_TARGET_TEST",
+  "target_test_opened": false,
+  "threshold": null
+}

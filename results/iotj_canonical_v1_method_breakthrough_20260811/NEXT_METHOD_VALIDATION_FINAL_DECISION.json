@@ -1,0 +1,21 @@
+{
+  "schema_version": "iotj.canonical_v1.next_method_validation.final.v1",
+  "status": "COMPLETE",
+  "phase1_decision": "SOURCE_DG_NOT_CONFIRMED",
+  "phase2_decision": "DG_TO_COMMISSIONING_NOT_SUPPORTED",
+  "phase3_decision": "POSTHOC_ARGMAX_BASELINE_ESTABLISHED",
+  "phase4_decision": "COST_AWARE_ROUTING_NOT_SUPPORTED",
+  "story": "STORY_E",
+  "story_membership": {
+    "A": false,
+    "B": false,
+    "C": false,
+    "D": false,
+    "E": true
+  },
+  "action": "STOP_NEW_ALGORITHMS",
+  "go_mme_integration": false,
+  "freeze_method": false,
+  "stop_new_algorithms": true,
+  "additional_experiments_started": false
+}

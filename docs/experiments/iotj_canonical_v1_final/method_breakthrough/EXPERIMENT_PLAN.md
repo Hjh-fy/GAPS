@@ -2,9 +2,9 @@
 
 ## Status and routing
 
-- Current stage: planning and registration for Phase 1.
-- Largest evidence gap: the seed42 S4 GAPS-DG-P gain has no stability evidence.
-- Execution order: Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> story audit.
+- Current stage: complete; final Story E audit approved.
+- Largest evidence gap disposition: multi-seed source-DG was not confirmed and the fixed expected-cost router was not supported.
+- Executed order: Phase 1 -> Phase 2 -> Phase 3 -> Phase 4 -> Story E audit.
 - Existing Gate A/B/C artifacts and every canonical-v1 dataset/checkpoint are read-only.
 
 ## Alternatives considered
@@ -89,4 +89,3 @@ Hypothesis `H-P4-COST-ROUTER`: the parameter-free expected downstream-cost route
 ## Required verification
 
 Each phase requires relevant pytest, `python -m compileall`, checkpoint/data/manifest SHA checks, leakage audit, one commit, and push to `codex/iotj-final-classification-le1`.
-
