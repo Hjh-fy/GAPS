@@ -151,7 +151,10 @@ def extract_canonical_features(
 
 
 def validate_cache_manifest(
-    manifest: Mapping[str, Any], *, expected_dataset_sha256: str
+    manifest: Mapping[str, Any],
+    *,
+    expected_dataset_sha256: str,
+    expected_study_id: str = STUDY_ID,
 ) -> None:
     required_hashes = (
         "dataset_aggregate_sha256",
@@ -162,7 +165,7 @@ def validate_cache_manifest(
         "ordered_sensor_feature_names_sha256",
     )
     valid = (
-        manifest.get("study_id") == STUDY_ID
+        manifest.get("study_id") == expected_study_id
         and manifest.get("sampling_rate_hz") == CANONICAL_SAMPLING_RATE_HZ
         and manifest.get("window_shape") == list(CANONICAL_WINDOW_SHAPE)
         and manifest.get("dataset_aggregate_sha256") == expected_dataset_sha256
@@ -187,6 +190,7 @@ def build_feature_cache(
     split: str,
     dataset_aggregate_sha256: str,
     extractor_path: str | Path,
+    study_id: str = STUDY_ID,
 ) -> dict[str, Any]:
     """Recompute one content-bound 83D/H1 cache; never load a prior cache."""
     dataset_root = Path(dataset_root)
@@ -232,7 +236,7 @@ def build_feature_cache(
     )
     manifest = {
         "schema_version": "iotj.canonical_v1.quantitative_feature_cache.v1",
-        "study_id": STUDY_ID,
+        "study_id": str(study_id),
         "client": str(client).upper(),
         "split": str(split),
         "row_count": int(len(windows)),
@@ -256,18 +260,29 @@ def build_feature_cache(
         "sampling_rate_invariant_claim": False,
         "legacy_10hz_5hz_numeric_equivalence_claim": False,
     }
-    validate_cache_manifest(manifest, expected_dataset_sha256=dataset_aggregate_sha256)
+    validate_cache_manifest(
+        manifest,
+        expected_dataset_sha256=dataset_aggregate_sha256,
+        expected_study_id=str(study_id),
+    )
     manifest_path = cache_dir / "cache_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest
 
 
 def load_feature_cache(
-    cache_dir: str | Path, *, expected_dataset_sha256: str
+    cache_dir: str | Path,
+    *,
+    expected_dataset_sha256: str,
+    expected_study_id: str = STUDY_ID,
 ) -> tuple[np.ndarray, np.ndarray, list[dict[str, Any]], dict[str, Any]]:
     cache_dir = Path(cache_dir)
     manifest = json.loads((cache_dir / "cache_manifest.json").read_text(encoding="utf-8"))
-    validate_cache_manifest(manifest, expected_dataset_sha256=expected_dataset_sha256)
+    validate_cache_manifest(
+        manifest,
+        expected_dataset_sha256=expected_dataset_sha256,
+        expected_study_id=expected_study_id,
+    )
     cache_path = cache_dir / "canonical_quantitative_features.npz"
     identity_path = cache_dir / "row_identities.json"
     if sha256_file(cache_path) != manifest["cache_sha256"]:
