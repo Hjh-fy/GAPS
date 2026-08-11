@@ -20,7 +20,7 @@
 
 - Source clients: Gate A S2=`C1;C2`, S4=`C1;C2;C3;C4`; Gate B source checkpoint trained on `C1;C2`.
 - Target clients: `C5` only.
-- Split protocol: derived S4 role view uses frozen physical identities from the repository's C1-C4-source/C5-target map; C5 calibration/test identities must exactly equal canonical-v1.
+- Split protocol: C1/C2 and C5 are byte-identical to canonical-v1. Added source clients C3/C4 use a pre-run-frozen, client-local seed42, class×concentration-stratified 70/10/20 partition of their complete canonical calibration+test pools. C5 calibration/test identities and hashes must exactly equal canonical-v1.
 - Model/checkpoint policy: canonical backbone; fixed round25; every post-hoc endpoint independently reloads source state fingerprint `cad6726e...d5d7`.
 - Seeds: 42 only.
 - DA/calibration/QC controls: GAPS-DG-P exact G2 `lambda_proto=0.05`; C5 calibration N=320; 100 Adam steps at 5e-4; QC and R84 unchanged; Gate C policy costs are calibration-only raw ppm.
@@ -28,8 +28,7 @@
 ## Risks, unknowns, conflicts, and stopping rules
 
 - S4 is a source-composition sensitivity study, not strict experiment-independent generalization evidence.
-- C3/C4 role changes are explicit and use a new derived dataset; the canonical-v1 directory is read-only.
+- C3/C4 role changes and added labeled source data are explicit and use a new derived dataset; the canonical-v1 directory is read-only. Source-count and source-data-volume effects are not separable in this sensitivity.
 - Gate A negative results stop DG expansion; no lambda/source search.
 - Gate B B4 becomes `NOT_IMPLEMENTED` if exact fold/serialization is not clean; no refactor or rank search.
 - Gate C negative result stops cost-aware routing. A positive result records `GO_GATE_D` only; Gate D is not executed in this task.
-

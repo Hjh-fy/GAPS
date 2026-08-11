@@ -12,7 +12,9 @@ Run three strictly ordered, fail-closed gates without changing canonical-v1 prep
 
 ### Gate A role view
 
-The canonical-v1 directory is immutable and has source train arrays only for C1/C2. S4 therefore uses a new derived role-view dataset. It reruns the exact `HZ5_MEAN_W10S` preprocessing on the same raw files, applies the repository's frozen `C1-C4 source / C5 target` physical-identity map, and writes to a new directory. C5 calibration/test physical identities and their hashes must equal canonical-v1. The canonical-v1 directory is never edited.
+The canonical-v1 directory is immutable and has source train arrays only for C1/C2. S4 therefore uses a new derived role-view dataset. C1/C2 and C5 are copied byte-for-byte. Only C3/C4 are re-roled: their complete canonical calibration+test pools are partitioned per client and per class×concentration stratum into 70% train, 10% calibration, and 20% test with fixed seed42 client-local RNG. The derived view writes to a new directory. C5 calibration/test physical identities and file hashes must equal canonical-v1. The canonical-v1 directory is never edited.
+
+The legacy C1-C4-source metadata was inspected but cannot serve as a window-identity map because it omits physical window start/end fields. Inferring those identities would create unverifiable provenance. The explicit new C3/C4 partition is therefore frozen before execution and is reported as a source-diversity-plus-added-source-data sensitivity, not an optimizer-controlled single-factor causal comparison.
 
 Rejected alternatives:
 
@@ -53,4 +55,3 @@ The C5 test is used only after the calibration cost matrix is locked. Existing p
 
 - Plan/audit/registry: `docs/experiments/iotj_canonical_v1_final/method_breakthrough_20260811/`
 - Results: `results/iotj_canonical_v1_method_breakthrough_20260811/`
-

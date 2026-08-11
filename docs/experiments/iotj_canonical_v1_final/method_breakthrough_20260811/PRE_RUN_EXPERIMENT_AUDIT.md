@@ -19,7 +19,7 @@ Audit Gate A source-diversity sensitivity, Gate B lightweight post-hoc commissio
 
 | Finding ID | Severity | Check | Evidence | Impact | Required action | Status |
 |---|---|---|---|---|---|---|
-| MB-01 | blocking if unresolved | C3/C4 source-train role | canonical-v1 has no C3/C4 train arrays | S4 cannot run by path substitution | build new identity-audited role view; preserve C5 exactly | resolved in design; runtime verification pending |
+| MB-01 | blocking if unresolved | C3/C4 source-train role | canonical-v1 has no C3/C4 train arrays; legacy source metadata omits physical window coordinates | S4 cannot run by path substitution or unverifiable identity inference | pre-freeze a client-local seed42 stratified 70/10/20 C3/C4 role view; preserve C1/C2/C5 byte-for-byte | resolved in amendment; runtime verification pending |
 | MB-02 | major | S2 reuse equality | G2 records 25 rounds, LE1, Adam 5e-4, seed42, fixed endpoint, no C5 training access | valid only if hashes remain equal | strict manifest/hash gate | pending execution audit |
 | MB-03 | informational | B3 identity | G1 `target_head` trains `feat_proj` and `classifier` only | it is B3, not B2 | rename semantically in new table; do not rerun | resolved |
 | MB-04 | major | B4 serialization | new adapter would otherwise change runtime architecture | could violate deployment constraint | require exact classifier-fold equivalence or mark not implemented | pending TDD |
@@ -34,7 +34,7 @@ Audit Gate A source-diversity sensitivity, Gate B lightweight post-hoc commissio
 
 ## Baseline, completeness, and reproducibility assessment
 
-The planned matrix contains all user-required A/B/C baselines. No method, source count, rank, LR, step count, threshold, or checkpoint is selected from C5 test. Existing results remain read-only and are reused only through immutable provenance.
+The planned matrix contains all user-required A/B/C baselines. No method, source count, rank, LR, step count, threshold, or checkpoint is selected from C5 test. Existing results remain read-only and are reused only through immutable provenance. Gate A is explicitly a source-diversity-plus-added-source-data sensitivity because adding C3/C4 necessarily adds labeled source windows.
 
 ## Verdict: approved
 
@@ -44,4 +44,3 @@ Approved to implement and execute subject to runtime fail-closed gates MB-01, MB
 
 - Pending values: S4 checkpoint hashes, B2/B4 checkpoint hashes, all new metrics.
 - Handoff: experiment-registry candidate rows above to implementation; post-run artifacts return to result analysis and experiment audit.
-
