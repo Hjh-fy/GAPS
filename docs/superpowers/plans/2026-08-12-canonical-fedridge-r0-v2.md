@@ -746,16 +746,32 @@ audit
 
 Require `--authorized-freeze-commit` for preflight/run. Preflight verifies current HEAD equality, protocol hash/status, formal-execution false, canonical aggregate hash, feature extractor hashes, source counts, original C0/R0 decisions/audits, absent output, no target path, and no existing completion marker. Preflight must not create the output root.
 
-Review correction (2026-08-12): canonical integrity must be established by
-recomputing the aggregate from the actual registered file paths and observed
-digests, then comparing it with the frozen aggregate; the stored aggregate
-string is not an oracle. The protocol manifest must pin the whole-file SHA256
-of the original C0 and R0 index files, and preflight must verify those anchors
-before trusting any indexed prerequisite. It must also verify the exact
+Review correction (2026-08-12): canonical source integrity must not be
+established by traversing the target-inclusive C1-C5 aggregate, because opening
+C3/C4/C5 bytes violates the source-only access gate. Instead, the protocol
+manifest must pin the whole-file SHA256 of `dataset_sha256.json`, the canonical
+preprocessing manifest, and the complete exact C1/C2 source file set (all 32
+feature, phase, metadata, classification-label, regression-label, and stats
+files). Preflight verifies only those C1/C2 bytes, rejects missing/extra source
+files, and checks that the stored aggregate identity still equals the frozen
+dataset identity; it must never enumerate or hash any C3/C4/C5 artifact. The
+protocol manifest must also pin the whole-file SHA256 of the original C0 and R0
+index files, and preflight must verify those anchors before trusting any
+indexed prerequisite. It must also verify the exact
 original C0/R0 decision vocabulary and verify that the runner, v2 numerical
 module, cache module, and protocol bytes match the authorized Git HEAD. Global
 worktree cleanliness is not required because unrelated preserved logs and
 `.tmp_pytest_*` assets are outside the execution-critical path.
+
+The frozen canonical manifest anchors are:
+
+- `dataset/iotj_canonical_v1/dataset_sha256.json`:
+  `4aa511a59e62cf878a1b230b637591f5509728da149a7dff9876fa8f303e1486`;
+- `dataset/iotj_canonical_v1/canonical_preprocessing_manifest.json`:
+  `6c33f0a1586653b2bfa5a43f43ab502c5bdaa3474c24ac03015e36ddd40c2c41`.
+
+The complete per-file C1/C2 hashes are frozen in
+`canonical_source_artifact_sha256`; the map must contain exactly 32 entries.
 
 The immutable prerequisite-index anchors observed during this pre-run freeze
 are:
@@ -901,6 +917,12 @@ Audit rejects symlinks and wrong artifact types; validates completion schema,
 study ID, and release fields; and semantically cross-checks diagnostic CSVs,
 alpha/model locks, access audit, execution manifest, blocking findings, and
 decision instead of accepting a coordinated rehash of contradictory evidence.
+For PASS, H1 audit coverage is exactly 416 data rows and every other diagnostic
+family has exactly four gas rows; a `NO_ROWS` sentinel is never valid PASS
+evidence. For partial FAIL, audit validates every available family and permits
+a stored FAIL over favorable gas rows when exact recomputed access, lock,
+artifact, or provenance blocking findings justify the override, even when no
+execution exception string exists.
 
 - [ ] **Step 7: Run all v2 tests and original R0 regression tests**
 
