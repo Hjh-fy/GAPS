@@ -678,6 +678,11 @@ git commit -m "docs: freeze canonical FedRidge R0-v2 protocol"
 **Files:**
 - Create: `scripts/run_iotj_canonical_fedridge_r0_v2.py`
 - Modify/Test: `tests/test_iotj_canonical_fedridge_r0_v2.py`
+- Review-required provenance hardening: modify
+  `docs/experiments/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/protocol_manifest.json`
+  and `PROTOCOL.md` only to pin immutable prerequisite-index hashes and
+  describe the strengthened preflight/audit contract. This does not alter any
+  scientific configuration, numerical gate, or execution matrix row.
 
 **Interfaces:**
 - Consumes: v2 module, versioned cache API, frozen protocol, canonical hash verifier.
@@ -740,6 +745,25 @@ audit
 ```
 
 Require `--authorized-freeze-commit` for preflight/run. Preflight verifies current HEAD equality, protocol hash/status, formal-execution false, canonical aggregate hash, feature extractor hashes, source counts, original C0/R0 decisions/audits, absent output, no target path, and no existing completion marker. Preflight must not create the output root.
+
+Review correction (2026-08-12): canonical integrity must be established by
+recomputing the aggregate from the actual registered file paths and observed
+digests, then comparing it with the frozen aggregate; the stored aggregate
+string is not an oracle. The protocol manifest must pin the whole-file SHA256
+of the original C0 and R0 index files, and preflight must verify those anchors
+before trusting any indexed prerequisite. It must also verify the exact
+original C0/R0 decision vocabulary and verify that the runner, v2 numerical
+module, cache module, and protocol bytes match the authorized Git HEAD. Global
+worktree cleanliness is not required because unrelated preserved logs and
+`.tmp_pytest_*` assets are outside the execution-critical path.
+
+The immutable prerequisite-index anchors observed during this pre-run freeze
+are:
+
+- `C0/C0_SHA256_INDEX.json`:
+  `18d6fa01352be80273460439e6c3a77196d8d93df53e3ea967f0e9ebdf335da0`;
+- `R0/R0_SHA256_INDEX.json`:
+  `0f9a4ed854df5b87acad2d6801fa1e5607ac8df58d6e21e5138b6e1401bfc242`.
 
 - [ ] **Step 4: Write failing synthetic pipeline and failure-preservation tests**
 
@@ -859,9 +883,24 @@ The production provider calls the versioned `build_feature_cache(..., study_id=R
 
 The PASS path writes `fixed_endpoint_complete.json` with `R1_released=true` but does not call R1. The FAIL path writes decision/failure audit/hash index and returns/stops without completion marker.
 
+Review correction (2026-08-12): evidence writes must be exclusive and
+crash-atomic; no check-then-overwrite path is allowed. PASS publication is
+permitted only when the exact source request sequence is complete, locks
+precede test access, every required artifact has the registered regular-file
+or directory type, no symlink is present, every hard gate passes, and no
+blocking finding remains. Blocking findings accumulate numerical, access,
+provenance, and exception failures rather than returning early.
+
 - [ ] **Step 6: Implement audit-only mode**
 
 Audit recomputes every indexed SHA256, validates protocol and decision vocabularies, validates access events, requires all expected files for PASS, and never regenerates metrics.
+
+Review correction (2026-08-12): exact index coverage excludes only the two
+reserved root-level files and must include identically named nested files.
+Audit rejects symlinks and wrong artifact types; validates completion schema,
+study ID, and release fields; and semantically cross-checks diagnostic CSVs,
+alpha/model locks, access audit, execution manifest, blocking findings, and
+decision instead of accepting a coordinated rehash of contradictory evidence.
 
 - [ ] **Step 7: Run all v2 tests and original R0 regression tests**
 
