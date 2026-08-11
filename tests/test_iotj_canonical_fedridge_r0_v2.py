@@ -2942,6 +2942,30 @@ def test_pass_audit_rejects_nonfirst_h1_no_rows_sentinel(
         runner.audit(output)
 
 
+def test_pass_audit_rejects_duplicate_h1_csv_header(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches DictReader collapsing a duplicate valid H1 field name."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "duplicate-h1-header"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    diagnostic_path = output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv"
+    with diagnostic_path.open(encoding="utf-8", newline="") as handle:
+        table = list(csv.reader(handle))
+    dtype_index = table[0].index("dtype")
+    table[0].append("dtype")
+    for row in table[1:]:
+        row.append(row[dtype_index])
+    with diagnostic_path.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle).writerows(table)
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="semantic CSV evidence schema"):
+        runner.audit(output)
+
+
 def test_late_failure_audit_rejects_rehashed_h1_no_rows_sentinel(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

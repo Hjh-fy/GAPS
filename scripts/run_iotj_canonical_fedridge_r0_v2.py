@@ -1577,7 +1577,17 @@ def run(
 def _read_csv_evidence(path: Path) -> list[dict[str, str]]:
     try:
         with path.open(encoding="utf-8", newline="") as handle:
-            rows = list(csv.DictReader(handle))
+            reader = csv.DictReader(handle)
+            fieldnames = reader.fieldnames
+            if (
+                not fieldnames
+                or any(fieldname is None for fieldname in fieldnames)
+                or len(set(fieldnames)) != len(fieldnames)
+            ):
+                raise RuntimeError(
+                    f"FAIL_CLOSED semantic CSV evidence schema invalid: {path.name}"
+                )
+            rows = list(reader)
     except (OSError, csv.Error) as error:
         raise RuntimeError(
             f"FAIL_CLOSED semantic CSV evidence unreadable: {path.name}"
