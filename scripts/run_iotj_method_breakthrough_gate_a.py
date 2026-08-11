@@ -329,6 +329,12 @@ def protocol_hash() -> str:
     return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
+def evidence_files_for_hash_index(output: Path) -> list[Path]:
+    """Return immutable evidence files; wrapper-owned runner files remain mutable."""
+    excluded = {"sha256_index.json", "runner.stdout.log", "runner.stderr.log", "runner.pid"}
+    return sorted(path for path in output.rglob("*") if path.is_file() and path.name not in excluded)
+
+
 def write_pre_run_freeze(output: Path) -> dict[str, Any]:
     output = Path(output).resolve()
     dataset_hash = json.loads((LOCAL_DATA_ROOT / "dataset_sha256.json").read_text(encoding="utf-8"))
@@ -738,7 +744,7 @@ Only the registered C5 source-diversity sensitivity wording is permitted. Protot
             "decision": decision,
         },
     )
-    files = sorted(path for path in output.rglob("*") if path.is_file() and path.name != "sha256_index.json")
+    files = evidence_files_for_hash_index(output)
     _write_json(output / "sha256_index.json", {str(path.relative_to(output)).replace("\\", "/"): _sha256_file(path) for path in files})
     return decision
 

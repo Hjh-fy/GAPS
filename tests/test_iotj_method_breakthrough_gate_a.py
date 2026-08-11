@@ -309,3 +309,16 @@ def test_gate_a_runner_is_directly_executable_from_repository_root() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "Gate-A" in result.stdout
+
+
+def test_gate_a_hash_index_excludes_mutable_runner_logs(tmp_path: Path) -> None:
+    from scripts.run_iotj_method_breakthrough_gate_a import evidence_files_for_hash_index
+
+    (tmp_path / "result.csv").write_text("metric,value\nmacro_f1,0.5\n", encoding="utf-8")
+    (tmp_path / "runner.stdout.log").write_text("still mutable", encoding="utf-8")
+    (tmp_path / "runner.stderr.log").write_text("", encoding="utf-8")
+    (tmp_path / "runner.pid").write_text("123", encoding="utf-8")
+    (tmp_path / "sha256_index.json").write_text("{}", encoding="utf-8")
+
+    names = {path.name for path in evidence_files_for_hash_index(tmp_path)}
+    assert names == {"result.csv"}

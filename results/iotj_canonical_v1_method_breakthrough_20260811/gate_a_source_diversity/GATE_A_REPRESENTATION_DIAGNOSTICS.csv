@@ -1,0 +1,5 @@
+source_set,method,source_count,source_clients,within_class_inter_source_centroid_distance_mean,between_class_centroid_margin_mean,class_phase_prototype_dispersion_mean,inter_source_pairs,class_phase_cells,source_test_windows
+S2,FedAvg,2,C1;C2,0.07194903399795294,1.624671200911204,0.03853458779243132,1,12,1360
+S2,GAPS-DG-P,2,C1;C2,0.06037111906334758,1.6165278553962708,0.03185756392000864,1,12,1360
+S4,FedAvg,4,C1;C2;C3;C4,0.08009824246925783,1.6192140141671558,0.048745003997768606,6,12,2358
+S4,GAPS-DG-P,4,C1;C2;C3;C4,0.06907264863988784,1.611793622419394,0.042323805337736616,6,12,2358

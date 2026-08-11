@@ -1,0 +1,59 @@
+{
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\gate_a_source_diversity\\fedavg\\remote_server\\server_latest.pth",
+  "checkpoint_sha256": "cd78163391643e8292122733036789404286055701e5294f6f4e0e90c7ff20f7",
+  "checkpoint_state_fingerprint": "e29efb86721785af23756ced030c58f8f88dbd7443c1985e7ca0f472d2e21ae7",
+  "dataset_aggregate_sha256": "843459df765eb1525a30b91024e6db6a66a740858d0761ff84e67decb92389fa",
+  "experiment_id": "CAN-V1-MB-A-S4-FEDAVG",
+  "method": "fedavg",
+  "protocol": {
+    "batch_size": 32,
+    "checkpoint_reuse": false,
+    "checkpoint_selection": "fixed_round_25",
+    "dataset": "iotj_canonical_v1_s4_role_view",
+    "dataset_aggregate_sha256": "843459df765eb1525a30b91024e6db6a66a740858d0761ff84e67decb92389fa",
+    "experiment_id": "CAN-V1-MB-A-S4-FEDAVG",
+    "hyperparameter_search": false,
+    "lambda_proto": 0.0,
+    "local_epochs": 1,
+    "method": "FedAvg",
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "optimizer_note": "frozen GAPS experimental protocol",
+    "posthoc_da_methods": [
+      "MMD"
+    ],
+    "prototype_alignment": false,
+    "replay": false,
+    "rounds": 25,
+    "seed": 42,
+    "selective_aggregation": false,
+    "server_domain_adaptation": false,
+    "source_clients": [
+      "C1",
+      "C2",
+      "C3",
+      "C4"
+    ],
+    "source_fl_methods": [
+      "FedAvg",
+      "FedProx",
+      "SCAFFOLD"
+    ],
+    "target": "C5",
+    "target_access": "NONE",
+    "target_clients": [
+      "C5"
+    ],
+    "target_concentration": false,
+    "target_information_regime": "source_only",
+    "target_phase": false,
+    "target_test_selection": false,
+    "target_x": false,
+    "target_y": false
+  },
+  "protocol_hash": "c181363a6a8464cd4ee6c5a15133eb4850e06344a77767734165c9b6a0d45c37",
+  "schema_version": "iotj.canonical_v1.method_breakthrough.gate_a.run.v1",
+  "source_archive_sha256": "61d2e505a164bd6139ebb1c87031e21e40263e8e5425fa7c24707f28b571124d",
+  "target_test_opened": false,
+  "wall_seconds": 291.0521421000594
+}
