@@ -180,13 +180,18 @@ def test_v2_constant_and_near_constant_features_use_registered_safe_scale():
     assert np.array_equal(scaler.scale, [1.0, 1.0])
 
 def test_v2_large_offset_small_variance_avoids_raw_moment_cancellation():
-    x1 = np.array([[1e12], [1e12 + 1e-3]], dtype=np.float64)
-    x2 = np.array([[1e12 + 2e-3], [1e12 + 3e-3]], dtype=np.float64)
+    # Binary-exact values isolate cancellation resistance from input rounding.
+    base = np.float64(2**40)
+    step = np.float64(2**-10)
+    x1 = np.array([[base], [base + step]], dtype=np.float64)
+    x2 = np.array([[base + 2 * step], [base + 3 * step]], dtype=np.float64)
     scaler = merge_central_moments([
         local_central_moments("C1", 1, "refit", x1),
         local_central_moments("C2", 1, "refit", x2),
     ])
     pooled = np.vstack([x1, x2])
+    naive_variance = np.mean(pooled[:, 0] ** 2) - np.mean(pooled[:, 0]) ** 2
+    assert naive_variance == 0.0
     assert scaler.raw_scale[0] == pytest.approx(np.std(pooled[:, 0], ddof=0), rel=1e-10)
     assert scaler.raw_scale[0] > 0.0
 
@@ -199,6 +204,15 @@ def test_v2_safe_scale_boundary_is_strictly_less_than_one_e_minus_nine():
     assert scaler.raw_scale[0] == pytest.approx(1e-9)
     assert not scaler.safe_scale_mask[0]
 ```
+
+Fixture correction record (2026-08-12): the earlier decimal fixture used
+`1e12 + {0,1,2,3}e-3`. At that magnitude the second local mean lies at a
+half-ULP that cannot be represented in the required single float64 `mean`
+field, so the assertion compared different rounding histories rather than the
+registered Chan merge. The binary-exact fixture preserves the large-offset
+cancellation challenge, makes the naive raw-moment variance collapse to zero,
+and leaves the frozen schema, equations, production gates, and tolerances
+unchanged.
 
 Also add tests for `M2/n` versus sample variance, float64 outputs, duplicate/missing clients, mismatched gas/role/dimensions, and nonfinite input rejection.
 
