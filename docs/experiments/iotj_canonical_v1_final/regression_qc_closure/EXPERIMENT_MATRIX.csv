@@ -1,0 +1,11 @@
+phase,experiment_id,target,method,input_or_comparator,status,execution_rule
+P0,CAN-V1-RQC-P0-AUDIT,C3/C4/C5,provenance audit,all frozen assets,IN_PROGRESS,read-only fail-closed audit
+P1,CAN-V1-RQC-P1-C5,C5,Posthoc-A0T + R84_FED_H1 + frozen equal-mean QC,existing Phase3 fixed endpoint,READY,reuse exact fixed endpoint and derive calibration-only QC lock
+P1,CAN-V1-RQC-P1-C3,C3,final post-hoc lifecycle endpoint,none,BLOCKED_MISSING_ENDPOINT,proposal only
+P1,CAN-V1-RQC-P1-C4,C4,final post-hoc lifecycle endpoint,none,BLOCKED_MISSING_ENDPOINT,proposal only
+P2,CAN-V1-RQC-P2-C5,C5,M83 vs M84,final post-hoc routing,READY,grouped bootstrap without alpha search
+P2,CAN-V1-RQC-P2-CROSS,C3/C4/C5,M83 vs M84 cross-target,missing C3/C4 endpoints,BLOCKED_MISSING_ENDPOINT,no pooled cross-target decision
+P3,CAN-V1-RQC-P3-C5,C5,Q0/Q1/Q2/Q3 frozen QC,Phase1 predictions,READY,fixed coverage grid and actual HC90/HC95 counts
+P4,CAN-V1-RQC-P4-C5,C5,S2 vs S4 FedRidge,source-only alpha protocol,PROTOCOL_AUDIT_REQUIRED,execute only if preregistered source-only mechanism is proven
+P5,CAN-V1-RQC-P5-PROPOSAL,C5,residual personalization/reliability prior,none,PROPOSAL_ONLY,no experiment
+P6,CAN-V1-RQC-P6-IMPACT,C3/C4/C5,manuscript impact audit,verified P0-P4 evidence,PENDING,no manuscript edit
