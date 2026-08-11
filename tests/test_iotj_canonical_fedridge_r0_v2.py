@@ -26,6 +26,26 @@ from gaps_flower.canonical_quantitative_features import validate_cache_manifest
 R0_V2_STUDY_ID = "CAN-V1-FEDRIDGE-R0V2-20260812"
 
 
+class AccessRecordingMapping(
+    Mapping[str, tuple[np.ndarray, np.ndarray]]
+):
+    def __init__(
+        self, data: Mapping[str, tuple[np.ndarray, np.ndarray]]
+    ) -> None:
+        self._data = dict(data)
+        self.value_reads: list[str] = []
+
+    def __getitem__(self, key: str) -> tuple[np.ndarray, np.ndarray]:
+        self.value_reads.append(key)
+        return self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+
 def synthetic_two_client_regression() -> dict[
     str, tuple[np.ndarray, np.ndarray]
 ]:
@@ -575,6 +595,34 @@ def test_v2_source_role_gate_rejects_target_or_test_semantics(
                 train_role=train_role,
                 validation_role=validation_role,
             )
+
+
+@pytest.mark.parametrize("forbidden_mapping", ["train", "calibration"])
+def test_v2_source_role_gate_scans_all_keys_before_any_value_access(
+    forbidden_mapping: str,
+) -> None:
+    """Catches dereferencing one valid mapping before validating both key sets."""
+    base = synthetic_two_client_regression()
+    forbidden = {"C1_target": base["C1"], "C2": base["C2"]}
+
+    for selector in (select_source_alpha_v2, select_pooled_alpha_v2):
+        train = AccessRecordingMapping(
+            forbidden if forbidden_mapping == "train" else base
+        )
+        calibration = AccessRecordingMapping(
+            forbidden if forbidden_mapping == "calibration" else base
+        )
+
+        with pytest.raises(RuntimeError, match="source-only"):
+            selector(
+                train,
+                calibration,
+                gas_id=0,
+                feature_names=("x0", "x1"),
+            )
+
+        assert train.value_reads == []
+        assert calibration.value_reads == []
 
 
 def test_v2_equation_and_model_arrays_are_immutable_float64() -> None:

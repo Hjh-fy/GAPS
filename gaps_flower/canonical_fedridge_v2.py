@@ -815,7 +815,9 @@ def _validate_alpha_selection_contract(
             "canonical alpha grid differs from the registered source-only grid"
         )
 
-    normalized: list[dict[str, tuple[np.ndarray, np.ndarray]]] = []
+    validated_mappings: list[
+        tuple[str, Mapping[str, tuple[np.ndarray, np.ndarray]]]
+    ] = []
     for label, mapping in (
         ("source_train", source_train),
         ("source_calibration", source_calibration),
@@ -835,6 +837,10 @@ def _validate_alpha_selection_contract(
             raise ValueError(f"{label} client keys must be non-empty strings")
         if len(keys) != len(set(keys)) or set(keys) != set(CLIENT_ORDER):
             raise ValueError(f"{label} requires exactly C1 and C2")
+        validated_mappings.append((label, mapping))
+
+    normalized: list[dict[str, tuple[np.ndarray, np.ndarray]]] = []
+    for label, mapping in validated_mappings:
         ordered: dict[str, tuple[np.ndarray, np.ndarray]] = {}
         for client in CLIENT_ORDER:
             pair = mapping[client]
