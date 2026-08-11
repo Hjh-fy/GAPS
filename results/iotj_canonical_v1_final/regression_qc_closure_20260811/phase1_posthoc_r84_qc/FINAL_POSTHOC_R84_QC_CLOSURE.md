@@ -1,6 +1,11 @@
 # Final post-hoc R84/QC closure
 
-Decision: `PIPELINE_CLOSURE_PASS_C5_ONLY`.
+Decision: `PIPELINE_CLOSURE_BLOCKED`.
+
+Post-execution provenance correction: the frozen H1 source prior was trained on
+historical `100x8` windows, whereas canonical-v1 uses `50x8`. This triggers the
+registered hard-fail rule. The numerical results below are retained as
+diagnostics and are not final canonical R84/QC evidence.
 
 The formal post-hoc lifecycle endpoint is available only for C5. It uses the
 fixed step-100 post-hoc classifier (SHA256 `857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c`), the

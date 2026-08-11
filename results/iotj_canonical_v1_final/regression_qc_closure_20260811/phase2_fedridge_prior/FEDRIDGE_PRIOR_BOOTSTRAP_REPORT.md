@@ -1,5 +1,9 @@
 # FedRidge prior grouped-bootstrap report
 
+Evidence status: `INVALID_FOR_FINAL_CANONICAL_CLAIM`. The M84 prior was trained
+on legacy `100x8` source windows and therefore fails the canonical-v1
+preprocessing gate. The statistics are preserved as diagnostics only.
+
 Primary C5 grouping is the highest retained raw experimental identity,
 `filename`: 80 files and 1360 correlated
 windows. Each of 5000 replicates resamples whole files with replacement and

@@ -2,13 +2,18 @@
 
 ## Phase-0 preliminary verdict
 
-`PASS_WITH_SCOPE_RESTRICTION`
+`HARD_FAIL_LEGACY_CANONICAL_MIX`
 
 The final post-hoc lifecycle chain is formally available for C5 only. C3 and C4
 have historical canonical-v1 interleaved-A4 regression/QC assets, but no formal
 final post-hoc classification endpoint. Those assets are not interchangeable.
-Consequently, C5 may proceed to final regression/QC closure, while C3/C4 and
-pooled cross-target conclusions are fail-closed pending registered endpoints.
+In addition, the frozen H1 manifest points to
+`client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid`, whose source
+arrays are `100x8`. The canonical-v1 arrays are `50x8`. The task explicitly
+defines this legacy/canonical mix as a hard fail. Consequently, the C5
+post-hoc classification endpoint remains valid, but the derived R84 and QC
+numbers are diagnostic only and cannot close the final canonical pipeline.
+C3/C4 and pooled cross-target conclusions are also fail-closed.
 
 ## Audited C5 chain
 
@@ -23,15 +28,18 @@ pooled cross-target conclusions are fail-closed pending registered endpoints.
 | Canonical dataset aggregate | `2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6` |
 | C5 calibration / test | 320 / 1360 windows |
 | H1 manifest SHA256 | `d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc` |
+| H1 training input | historical 10 Hz, `100x8` |
+| canonical-v1 input | 5 Hz, `50x8` |
 | C5 R84 alphas | gas 0: 1.0; gas 1: 0.01; gas 2: 10.0; gas 3: 0.1 |
 | Alpha selection in this stage | none |
 | Target test used for selection | false |
 
-The existing fixed endpoint is
+The existing numerical endpoint is
 `results/iotj_canonical_v1_method_breakthrough_20260811/phase3_posthoc_argmax/retry3`.
 It was locked after calibration and before sealed-test evaluation. Its reported
-C5 endpoint is Accuracy `0.9764705882`, Macro-F1 `0.9765440505`, and R84 S_ALL
-RMSE `28.0574962` ppm.
+C5 endpoint is Accuracy `0.9764705882`, Macro-F1 `0.9765440505`, and diagnostic
+R84 S_ALL RMSE `28.0574962` ppm. Only the classification metrics are unaffected
+by the H1 preprocessing conflict.
 
 ## QC lifecycle ruling
 

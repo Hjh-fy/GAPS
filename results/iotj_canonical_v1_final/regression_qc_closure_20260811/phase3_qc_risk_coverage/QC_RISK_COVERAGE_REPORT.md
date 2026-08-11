@@ -1,5 +1,10 @@
 # Frozen QC risk-coverage validation
 
+Evidence status: `INVALID_FOR_FINAL_CANONICAL_CLAIM`. These QC diagnostics are
+computed correctly from the saved predictions, but those R84 predictions depend
+on a legacy `100x8` H1 prior mixed into the canonical `50x8` pipeline. They
+cannot close the final canonical QC claim.
+
 All comparators use the exact Phase-1 C5 post-hoc R84 predictions. Calibration
 risk fields determine the frozen normalization scales. The analysis curve ranks
 deployment-visible test risks without labels and retains identical counts;

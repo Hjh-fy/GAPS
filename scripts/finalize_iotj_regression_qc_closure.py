@@ -24,6 +24,7 @@ from scripts.evaluate_iotj_feature_metadata_ablation import profile_feature_dict
 from scripts.finalize_iotj_canonical_v1_evidence import _classification_uncertainty
 from scripts import run_gaps_cross_target_r84_full as r84_common
 from scripts.run_iotj_canonical_v1_r84 import enriched_oracle_rows
+from scripts.run_iotj_s2_s4_fedridge_closure import audit_frozen_h1_preprocessing
 
 
 SOURCE_ENDPOINT = (
@@ -544,6 +545,11 @@ def _sha_index(root: Path) -> dict[str, str]:
 
 
 def run(output: Path = DEFAULT_OUTPUT, repeats: int = 5000) -> dict[str, Any]:
+    h1_preprocessing = audit_frozen_h1_preprocessing()
+    if h1_preprocessing["phase4_execution_authorized"] is not True:
+        raise RuntimeError(
+            "HARD_FAIL_LEGACY_CANONICAL_MIX: frozen H1 source is 100x8 while canonical-v1 is 50x8"
+        )
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f"FAIL_CLOSED refusing non-empty output: {output}")

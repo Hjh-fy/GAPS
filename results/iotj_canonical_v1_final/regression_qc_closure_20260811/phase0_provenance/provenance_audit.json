@@ -6,15 +6,19 @@
   "classifier_sha256": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
   "classifier_state_fingerprint": "4c7f13115e8a16c26e615f0f501cbd08a990e733bac2ac368c25b5533f53c2ef",
   "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
-  "formal_targets": [
-    "C5"
-  ],
+  "formal_targets": [],
+  "classification_only_valid_targets": ["C5"],
+  "frozen_h1_source_root": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "frozen_h1_source_shape": [100, 8],
+  "canonical_source_shape": [50, 8],
+  "hard_fail_reason": "Existing H1 was fit on legacy 10Hz/100x8 windows and was mixed with canonical-v1 5Hz/50x8 target features.",
   "h1_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
   "h23_sha256": "18b6c14373018474807eec2bd19a0b508b75adfbf994b0821a786a11def9c263",
   "historical_interleaved_a4_not_relabelled": true,
   "r83_sha256": "b470ce910a6a9ab5c8e3853cd09d43db7e7388df3db10a6d9c9cb07aba57e9f1",
   "r84_sha256": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729",
   "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
-  "status": "PASS_WITH_SCOPE_RESTRICTION",
+  "status": "HARD_FAIL_LEGACY_CANONICAL_MIX",
+  "downstream_regression_qc_claims_valid": false,
   "target_test_used_for_selection": false
 }
