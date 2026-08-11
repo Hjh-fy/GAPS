@@ -1,7 +1,7 @@
 import csv
 import json
 import re
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, asdict
 from pathlib import Path
 from typing import Mapping
 
@@ -34,6 +34,7 @@ from gaps_flower.canonical_fedridge_v2 import (
     system_diagnostics_v2,
 )
 from gaps_flower.canonical_quantitative_features import validate_cache_manifest
+from scripts import run_iotj_canonical_fedridge_r0_v2 as runner
 
 
 R0_V2_STUDY_ID = "CAN-V1-FEDRIDGE-R0V2-20260812"
@@ -51,6 +52,7 @@ FORMAL_RESULT_ROOT = (
     / "results/iotj_canonical_v1_final"
     / "canonical_fedridge_r0_v2_20260812"
 )
+DATA_ROOT = ROOT / "dataset/iotj_canonical_v1"
 
 PLANNER_FIELDS = [
     "experiment_id",
@@ -1653,3 +1655,797 @@ def test_manuscript_note_limits_the_future_stability_claim() -> None:
     assert "bitwise-exact claim is prohibited" in text
     assert "novel-algorithm claim is prohibited" in text
     assert "manuscript body is not edited by this protocol bundle" in text
+
+
+def test_r0_v2_parser_has_only_preflight_run_and_audit_without_target_or_qc() -> None:
+    """Catches exposing any target/QC execution surface or an unregistered stage."""
+    parser = runner.build_parser()
+    options = {
+        option
+        for action in parser._actions
+        for option in action.option_strings
+    }
+    stage = next(action for action in parser._actions if action.dest == "stage")
+
+    assert stage.choices == ("preflight", "run", "audit")
+    assert "--target" not in options
+    assert "--target-data" not in options
+    assert "--qc" not in options
+
+
+@pytest.mark.parametrize("stage", ("preflight", "run"))
+def test_r0_v2_parser_requires_authorized_freeze_commit(stage: str) -> None:
+    """Catches allowing a production-capable stage without the commit lock."""
+    parser = runner.build_parser()
+
+    with pytest.raises(SystemExit):
+        parser.parse_args([stage])
+
+
+def test_r0_v2_execution_plan_locks_model_before_source_test() -> None:
+    """Catches source-test access before immutable alpha/model locks."""
+    plan = runner.build_r0_v2_execution_plan()
+
+    assert plan.index("write_source_alpha_and_model_locks") < plan.index(
+        "open_source_test"
+    )
+    assert all("target" not in step.lower() for step in plan)
+
+
+def test_r0_v2_preflight_rejects_wrong_commit_and_existing_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches bypassing authorization or reusing partial evidence."""
+    monkeypatch.setattr(runner, "_git_head", lambda: "actual")
+    with pytest.raises(RuntimeError, match="authorized freeze commit"):
+        runner.preflight(DATA_ROOT, tmp_path / "out", "different")
+
+    output = tmp_path / "occupied"
+    output.mkdir()
+    (output / "partial.txt").write_text("evidence", encoding="utf-8")
+    with pytest.raises(FileExistsError, match="output"):
+        runner.preflight(DATA_ROOT, output, "actual")
+
+
+def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
+    tmp_path: Path,
+) -> None:
+    """Catches an aggregate verifier traversing non-source array/label paths."""
+    data_root = tmp_path / "canonical"
+    data_root.mkdir()
+    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    protocol["canonical_data"]["dataset_aggregate_sha256"] = "a" * 64
+    artifacts: dict[str, str] = {}
+    index_files: dict[str, str] = {}
+    for client in ("C1", "C2"):
+        directory = data_root / f"client_{client[1:]}"
+        directory.mkdir()
+        for split in ("train", "calibration", "test"):
+            for kind, suffix in (
+                ("features", "features.npy"),
+                ("phase", "phase_labels.npy"),
+                ("metadata", "experiment_info.json"),
+            ):
+                path = directory / f"{split}_{suffix}"
+                path.write_text(f"{client}/{split}/{kind}", encoding="utf-8")
+                artifacts[f"{client}_{split}_{kind}"] = runner.sha256_file(path)
+                index_files[path.relative_to(data_root).as_posix()] = runner.sha256_file(
+                    path
+                )
+            for label_kind in ("classification", "regression"):
+                path = directory / f"{split}_{label_kind}_labels.npy"
+                n = {"train": 2360, "calibration": 320, "test": 680}[split]
+                if label_kind == "classification":
+                    values = np.repeat(np.arange(4, dtype=np.int64), n // 4)
+                else:
+                    values = np.zeros((n, 4), dtype=np.float64)
+                np.save(path, values, allow_pickle=False)
+                index_files[path.relative_to(data_root).as_posix()] = runner.sha256_file(
+                    path
+                )
+        stats_path = directory / "stats.json"
+        stats_path.write_text(
+            json.dumps(
+                {
+                    "client_id": client,
+                    "role": "source",
+                    "counts": {"train": 2360, "calibration": 320, "test": 680},
+                }
+            ),
+            encoding="utf-8",
+        )
+        index_files[stats_path.relative_to(data_root).as_posix()] = runner.sha256_file(
+            stats_path
+        )
+    protocol["canonical_source_artifact_sha256"] = artifacts
+    canonical_manifest = data_root / "canonical_preprocessing_manifest.json"
+    canonical_manifest.write_text(
+        json.dumps(
+            {
+                "candidate_id": "HZ5_MEAN_W10S",
+                "sampling_rate_hz": 5,
+                "points_per_window": 50,
+                "window_duration_s": 10.0,
+            }
+        ),
+        encoding="utf-8",
+    )
+    index_files[canonical_manifest.name] = runner.sha256_file(canonical_manifest)
+    (data_root / "dataset_sha256.json").write_text(
+        json.dumps(
+            {
+                "aggregate_sha256": "a" * 64,
+                "files": {
+                    **index_files,
+                    "client_3/unregistered_secret.npy": "b" * 64,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner._verify_source_dataset(data_root, protocol)
+
+    assert result["status"] == "PASS"
+    assert result["bad_files"] == []
+
+    (data_root / "client_1/test_regression_labels.npy").write_text(
+        "changed", encoding="utf-8"
+    )
+    with pytest.raises(RuntimeError, match="source hash"):
+        runner._verify_source_dataset(data_root, protocol)
+
+    np.save(
+        data_root / "client_1/test_regression_labels.npy",
+        np.zeros((680, 4), dtype=np.float64),
+        allow_pickle=False,
+    )
+    class_path = data_root / "client_1/test_classification_labels.npy"
+    classes = np.load(class_path, allow_pickle=False)
+    classes[0] = 1
+    np.save(class_path, classes, allow_pickle=False)
+    index_path = data_root / "dataset_sha256.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    relative = class_path.relative_to(data_root).as_posix()
+    index["files"][relative] = runner.sha256_file(class_path)
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="per-gas source counts"):
+        runner._verify_source_dataset(data_root, protocol)
+
+
+def test_preflight_is_pure_and_accepts_only_the_frozen_source_prerequisites(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches preflight writing evidence or omitting a real prerequisite check."""
+    output = tmp_path / "absent"
+    monkeypatch.setattr(runner, "_git_head", lambda: "authorized")
+
+    result = runner.preflight(DATA_ROOT, output, "authorized")
+
+    assert result["status"] == "PASS"
+    assert result["output_created"] is False
+    assert result["source_clients"] == ["C1", "C2"]
+    assert result["target_clients"] == []
+    assert not output.exists()
+
+
+def test_preflight_fails_closed_on_protocol_hash_and_status_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches accepting either byte drift or semantic execution-state drift."""
+    changed = tmp_path / "protocol.json"
+    original = PROTOCOL_MANIFEST.read_text(encoding="utf-8")
+    changed.write_text(original + " ", encoding="utf-8")
+    monkeypatch.setattr(runner, "PROTOCOL_MANIFEST", changed)
+    with pytest.raises(RuntimeError, match="protocol hash"):
+        runner._verify_protocol()
+
+    payload = json.loads(original)
+    payload["formal_execution_started"] = True
+    changed.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setattr(
+        runner,
+        "EXPECTED_PROTOCOL_FREEZE_SHA256",
+        runner.sha256_file(changed),
+    )
+    with pytest.raises(RuntimeError, match="status or role"):
+        runner._verify_protocol()
+
+    payload = json.loads(original)
+    payload["numerical_protocol"]["aggregation_order"] = ["C2", "C1"]
+    changed.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setattr(
+        runner,
+        "EXPECTED_PROTOCOL_FREEZE_SHA256",
+        runner.sha256_file(changed),
+    )
+    with pytest.raises(RuntimeError, match="source order"):
+        runner._verify_protocol()
+
+
+def test_preflight_fails_closed_on_dataset_and_extractor_hash_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Catches accepting changed canonical aggregate or extractor provenance."""
+    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    changed_dataset = json.loads(json.dumps(protocol))
+    changed_dataset["canonical_data"]["dataset_aggregate_sha256"] = "0" * 64
+    with pytest.raises(RuntimeError, match="dataset hash"):
+        runner._verify_source_dataset(DATA_ROOT, changed_dataset)
+
+    original_hash = runner.sha256_file
+
+    def changed_extractor(path: str | Path) -> str:
+        if Path(path).resolve() == runner.EXTRACTOR_PATH.resolve():
+            return "0" * 64
+        return original_hash(path)
+
+    monkeypatch.setattr(runner, "sha256_file", changed_extractor)
+    with pytest.raises(RuntimeError, match="extractor/schema"):
+        runner._verify_source_dataset(DATA_ROOT, protocol)
+
+
+def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches rewriting/relocating the read-only C0 or original-R0 evidence."""
+    c0_root = tmp_path / "old/C0"
+    r0_root = tmp_path / "old/R0"
+    c0_root.mkdir(parents=True)
+    r0_root.mkdir(parents=True)
+    (c0_root / "C0_DECISION.json").write_text(
+        json.dumps({"decision": "CHANGED"}), encoding="utf-8"
+    )
+    (c0_root / "C0_EXPERIMENT_AUDIT.md").write_text("audit", encoding="utf-8")
+    (c0_root / "C0_SHA256_INDEX.json").write_text(
+        json.dumps(
+            {
+                name: runner.sha256_file(c0_root / name)
+                for name in ("C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md")
+            }
+        ),
+        encoding="utf-8",
+    )
+    for name, payload in (
+        ("canonical_fedridge_exact_recovery.json", '{"status":"FAIL_CLOSED"}'),
+        ("R0_FAILURE_AUDIT.json", '{"status":"FAIL_CLOSED"}'),
+        ("R0_EXPERIMENT_AUDIT.md", "audit"),
+    ):
+        (r0_root / name).write_text(payload, encoding="utf-8")
+    (r0_root / "R0_SHA256_INDEX.json").write_text(
+        json.dumps(
+            {
+                name: runner.sha256_file(r0_root / name)
+                for name in (
+                    "canonical_fedridge_exact_recovery.json",
+                    "R0_FAILURE_AUDIT.json",
+                    "R0_EXPERIMENT_AUDIT.md",
+                )
+            }
+        ),
+        encoding="utf-8",
+    )
+    original_protocol = tmp_path / "old_protocol.json"
+    original_protocol.write_text(
+        json.dumps({"R0": {"execution_result": {"status": "FAIL_CLOSED"}}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
+    monkeypatch.setattr(runner, "ORIGINAL_R0_ROOT", r0_root)
+    monkeypatch.setattr(runner, "ORIGINAL_PROTOCOL_MANIFEST", original_protocol)
+    with pytest.raises(RuntimeError, match="original C0 decision"):
+        runner._verify_original_prerequisites(tmp_path / "new")
+
+    monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", tmp_path / "new/C0")
+    with pytest.raises(RuntimeError, match="inside output"):
+        runner._verify_original_prerequisites(tmp_path / "new")
+
+    (c0_root / "C0_DECISION.json").write_text(
+        json.dumps({"decision": "V1_INTERLEAVED_RETAINED"}), encoding="utf-8"
+    )
+    c0_index = json.loads(
+        (c0_root / "C0_SHA256_INDEX.json").read_text(encoding="utf-8")
+    )
+    c0_index["C0_DECISION.json"] = runner.sha256_file(
+        c0_root / "C0_DECISION.json"
+    )
+    (c0_root / "C0_SHA256_INDEX.json").write_text(
+        json.dumps(c0_index), encoding="utf-8"
+    )
+    monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
+    with pytest.raises(RuntimeError, match="overlaps output"):
+        runner._verify_original_prerequisites(c0_root / "new_output")
+
+
+@pytest.mark.parametrize(
+    "protected_root",
+    (DATA_ROOT, PROTOCOL_ROOT),
+)
+def test_preflight_rejects_output_beneath_read_only_inputs(
+    protected_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches using a canonical input/protocol tree as an output parent."""
+    output = protected_root / "uncreated_r0_v2_output"
+    assert not output.exists()
+    monkeypatch.setattr(runner, "_git_head", lambda: "authorized")
+
+    with pytest.raises(RuntimeError, match="path separation"):
+        runner.preflight(DATA_ROOT, output, "authorized")
+
+    assert not output.exists()
+
+
+def synthetic_four_gas_source_data(
+) -> dict[tuple[str, str, int], tuple[np.ndarray, np.ndarray]]:
+    rows: dict[tuple[str, str, int], tuple[np.ndarray, np.ndarray]] = {}
+    split_offsets = {"train": 0.0, "calibration": 0.25, "test": 0.5}
+    for gas_id in range(4):
+        for client_index, client in enumerate(("C1", "C2")):
+            for split, split_offset in split_offsets.items():
+                n = 6 if split == "train" else 4
+                signal = np.arange(n, dtype=np.float64) + client_index + split_offset
+                x = np.zeros((n, 104), dtype=np.float64)
+                x[:, 0] = signal
+                x[:, 1] = 1.0
+                x[:, 2] = gas_id
+                y = 2.0 * signal + float(gas_id)
+                rows[(client, split, gas_id)] = (x, y)
+    return rows
+
+
+def frozen_protocol_fixture() -> dict[str, object]:
+    return {
+        "study_id": R0_V2_STUDY_ID,
+        "source_clients": ["C1", "C2"],
+        "target_clients": [],
+        "feature_names": [f"f{i}" for i in range(104)],
+        "alpha_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+        "formal_execution_started": False,
+        "numerical_gates": asdict(registered_tolerances_v2()),
+    }
+
+
+def force_synthetic_alpha(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fixed_selection(*args: object, **kwargs: object) -> tuple[float, list[dict[str, object]]]:
+        return 0.1, [
+            {
+                "alpha": 0.1,
+                "source_calibration_RMSE": 0.0,
+                "target_input_accessed": False,
+                "source_test_accessed": False,
+            }
+        ]
+
+    monkeypatch.setattr(runner, "select_source_alpha_v2", fixed_selection)
+    monkeypatch.setattr(runner, "select_pooled_alpha_v2", fixed_selection)
+
+
+class RecordingSyntheticProvider:
+    def __init__(self) -> None:
+        self.requests: list[runner.SourceRequest] = []
+        self.data = synthetic_four_gas_source_data()
+
+    def build_fresh_cache(self, client: str, split: str) -> Mapping[str, object]:
+        self.requests.append(runner.SourceRequest(client, split, None))
+        return {"client": client, "split": split, "study_id": R0_V2_STUDY_ID}
+
+    def gas_data(
+        self, client: str, split: str, gas_id: int
+    ) -> tuple[np.ndarray, np.ndarray]:
+        self.requests.append(runner.SourceRequest(client, split, gas_id))
+        return self.data[(client, split, gas_id)]
+
+
+def expected_source_only_request_sequence() -> list[runner.SourceRequest]:
+    expected: list[runner.SourceRequest] = []
+    for split in ("train", "calibration"):
+        for client in ("C1", "C2"):
+            expected.append(runner.SourceRequest(client, split, None))
+    for gas_id in range(4):
+        for split in ("train", "calibration"):
+            for client in ("C1", "C2"):
+                expected.append(runner.SourceRequest(client, split, gas_id))
+    for client in ("C1", "C2"):
+        expected.append(runner.SourceRequest(client, "test", None))
+    for gas_id in range(4):
+        for client in ("C1", "C2"):
+            expected.append(runner.SourceRequest(client, "test", gas_id))
+    return expected
+
+
+EXPECTED_EXECUTION_FILES = {
+    "canonical_feature_caches",
+    "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv",
+    "r0_v2_scaler_diagnostics.csv",
+    "r0_v2_normal_equation_diagnostics.csv",
+    "r0_v2_system_diagnostics.csv",
+    "r0_v2_functional_equivalence.csv",
+    "source_alpha_audit.csv",
+    "source_alpha_lock.json",
+    "model_lock.json",
+    "DATA_ACCESS_AUDIT.md",
+    "R0_V2_DECISION.json",
+    "R0_V2_EXPERIMENT_AUDIT.md",
+    "protocol_manifest_execution.json",
+    "sha256_index.json",
+}
+
+
+def test_synthetic_runner_writes_all_diagnostics_and_never_requests_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches missing evidence, reordered source access, or target leakage."""
+    force_synthetic_alpha(monkeypatch)
+    provider = RecordingSyntheticProvider()
+    output = tmp_path / "run"
+
+    result = runner._execute_source_only(
+        provider, output, frozen_protocol_fixture()
+    )
+
+    assert result["decision"] == (
+        "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED"
+    )
+    assert provider.requests == expected_source_only_request_sequence()
+    assert not any(
+        request.client not in {"C1", "C2"} for request in provider.requests
+    )
+    assert EXPECTED_EXECUTION_FILES <= {path.name for path in output.iterdir()}
+    assert (output / "fixed_endpoint_complete.json").is_file()
+    assert (output / "sha256_index.json").stat().st_mtime_ns <= (
+        output / "fixed_endpoint_complete.json"
+    ).stat().st_mtime_ns
+    marker = json.loads(
+        (output / "fixed_endpoint_complete.json").read_text(encoding="utf-8")
+    )
+    assert marker["R1_released"] is True
+    index = json.loads((output / "sha256_index.json").read_text(encoding="utf-8"))
+    assert "fixed_endpoint_complete.json" not in index
+    assert "sha256_index.json" not in index
+    assert marker["sha256_index_sha256"] == runner.sha256_file(
+        output / "sha256_index.json"
+    )
+    execution = json.loads(
+        (output / "protocol_manifest_execution.json").read_text(encoding="utf-8")
+    )
+    assert execution["target_clients"] == []
+    assert execution["global_key_audit"] == {
+        "allowed_clients": ["C1", "C2"],
+        "allowed_gases": [0, 1, 2, 3],
+        "allowed_splits": ["train", "calibration", "test"],
+        "exact_registered_sequence": True,
+        "observed_request_count": len(expected_source_only_request_sequence()),
+    }
+    assert sum(
+        1
+        for _ in csv.DictReader(
+            (output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv").open(
+                encoding="utf-8", newline=""
+            )
+        )
+    ) == 416
+    for filename in (
+        "r0_v2_scaler_diagnostics.csv",
+        "r0_v2_normal_equation_diagnostics.csv",
+        "r0_v2_system_diagnostics.csv",
+        "r0_v2_functional_equivalence.csv",
+    ):
+        with (output / filename).open(encoding="utf-8", newline="") as handle:
+            assert len(list(csv.DictReader(handle))) == 4
+
+
+def test_failed_synthetic_runner_preserves_evidence_without_completion(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches favorable diagnostics overriding one failed hard gate."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "run"
+    provider = RecordingSyntheticProvider()
+    original = runner.functional_diagnostics_v2
+
+    def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
+        row = original(*args, **kwargs)
+        row["raw_prediction_pass"] = False
+        return row
+
+    monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
+    result = runner._execute_source_only(
+        provider, output, frozen_protocol_fixture()
+    )
+
+    assert result["decision"] == "R0_V2_FAILED"
+    assert (output / "R0_V2_DECISION.json").is_file()
+    assert (output / "R0_V2_EXPERIMENT_AUDIT.md").is_file()
+    assert (output / "sha256_index.json").is_file()
+    assert not (output / "fixed_endpoint_complete.json").exists()
+    audit_text = (output / "R0_V2_EXPERIMENT_AUDIT.md").read_text(
+        encoding="utf-8"
+    )
+    assert "blocking" in audit_text.lower()
+    assert "raw_prediction_pass" in audit_text
+
+
+def test_provider_exception_and_output_collision_preserve_failure_evidence(
+    tmp_path: Path,
+) -> None:
+    """Catches deleting partial evidence or overwriting a collided output."""
+    class FailingProvider(RecordingSyntheticProvider):
+        def gas_data(
+            self, client: str, split: str, gas_id: int
+        ) -> tuple[np.ndarray, np.ndarray]:
+            super().gas_data(client, split, gas_id)
+            raise OSError("synthetic provider failure")
+
+    output = tmp_path / "failed"
+    result = runner._execute_source_only(
+        FailingProvider(), output, frozen_protocol_fixture()
+    )
+
+    assert result["decision"] == "R0_V2_FAILED"
+    assert "synthetic provider failure" in json.loads(
+        (output / "R0_V2_DECISION.json").read_text(encoding="utf-8")
+    )["error"]
+    assert runner.audit(output)["decision"] == "R0_V2_FAILED"
+    assert not (output / "fixed_endpoint_complete.json").exists()
+
+    occupied = tmp_path / "occupied"
+    occupied.mkdir()
+    evidence = occupied / "partial.txt"
+    evidence.write_text("immutable", encoding="utf-8")
+    with pytest.raises(FileExistsError, match="output"):
+        runner._execute_source_only(
+            RecordingSyntheticProvider(), occupied, frozen_protocol_fixture()
+        )
+    assert evidence.read_text(encoding="utf-8") == "immutable"
+
+
+def test_production_provider_passes_versioned_study_id_to_fresh_cache_api(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches silently falling back to the old unversioned cache identity."""
+    observed: dict[str, object] = {}
+
+    def fake_build(
+        dataset_root: Path,
+        cache_root: Path,
+        **kwargs: object,
+    ) -> dict[str, object]:
+        observed.update(
+            {"dataset_root": dataset_root, "cache_root": cache_root, **kwargs}
+        )
+        return {
+            "client": kwargs["client"],
+            "split": kwargs["split"],
+            "study_id": kwargs["study_id"],
+        }
+
+    monkeypatch.setattr(runner, "build_feature_cache", fake_build)
+    provider = runner.CanonicalSourceDataProvider(
+        tmp_path / "data", tmp_path / "output", "a" * 64
+    )
+
+    manifest = provider.build_fresh_cache("C1", "train")
+
+    assert manifest["study_id"] == R0_V2_STUDY_ID
+    assert observed["study_id"] == R0_V2_STUDY_ID
+    assert observed["client"] == "C1"
+    assert observed["split"] == "train"
+    assert observed["cache_root"] == (tmp_path / "output/canonical_feature_caches")
+
+
+def test_audit_only_validates_pass_and_fail_without_modifying_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches audit regenerating metrics or rejecting preserved failure evidence."""
+    force_synthetic_alpha(monkeypatch)
+    pass_output = tmp_path / "pass"
+    fail_output = tmp_path / "fail"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), pass_output, frozen_protocol_fixture()
+    )
+    original = runner.functional_diagnostics_v2
+
+    def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
+        row = original(*args, **kwargs)
+        row["mae_parity_pass"] = False
+        return row
+
+    monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), fail_output, frozen_protocol_fixture()
+    )
+    before = {
+        path.relative_to(tmp_path).as_posix(): (path.stat().st_mtime_ns, path.read_bytes())
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+
+    pass_audit = runner.audit(pass_output)
+    fail_audit = runner.audit(fail_output)
+
+    after = {
+        path.relative_to(tmp_path).as_posix(): (path.stat().st_mtime_ns, path.read_bytes())
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+    assert pass_audit["status"] == "PASS"
+    assert fail_audit == {"status": "PASS", "decision": "R0_V2_FAILED", "bad": []}
+    assert after == before
+
+
+def test_audit_only_fails_closed_on_hash_decision_and_access_tampering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches accepting altered diagnostics, vocabulary, or access events."""
+    force_synthetic_alpha(monkeypatch)
+    outputs = [
+        tmp_path / name for name in ("hash", "decision", "access", "operation")
+    ]
+    for output in outputs:
+        runner._execute_source_only(
+            RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+        )
+
+    (outputs[0] / "r0_v2_scaler_diagnostics.csv").write_text(
+        "tampered\n", encoding="utf-8"
+    )
+    with pytest.raises(RuntimeError, match="hash"):
+        runner.audit(outputs[0])
+
+    decision_path = outputs[1] / "R0_V2_DECISION.json"
+    decision = json.loads(decision_path.read_text(encoding="utf-8"))
+    decision["decision"] = "UNKNOWN"
+    decision_path.write_text(json.dumps(decision), encoding="utf-8")
+    index_path = outputs[1] / "sha256_index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["R0_V2_DECISION.json"] = runner.sha256_file(decision_path)
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="decision vocabulary"):
+        runner.audit(outputs[1])
+
+    execution_path = outputs[2] / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution["access_events"][0]["client"] = "C9"
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    index_path = outputs[2] / "sha256_index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["protocol_manifest_execution.json"] = runner.sha256_file(execution_path)
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="access"):
+        runner.audit(outputs[2])
+
+    execution_path = outputs[3] / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution["access_events"][0]["operation"] = "unregistered_operation"
+    execution["access_events"][0]["sequence"] = 99
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    index_path = outputs[3] / "sha256_index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["protocol_manifest_execution.json"] = runner.sha256_file(execution_path)
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+    marker_path = outputs[3] / "fixed_endpoint_complete.json"
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    marker["sha256_index_sha256"] = runner.sha256_file(index_path)
+    marker_path.write_text(json.dumps(marker), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="access"):
+        runner.audit(outputs[3])
+
+
+def test_audit_rejects_incomplete_pass_and_fail_hash_indexes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches an omitted evidence file being outside audit hash coverage."""
+    force_synthetic_alpha(monkeypatch)
+    pass_output = tmp_path / "pass"
+    fail_output = tmp_path / "fail"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), pass_output, frozen_protocol_fixture()
+    )
+    original = runner.functional_diagnostics_v2
+
+    def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
+        row = original(*args, **kwargs)
+        row["raw_prediction_pass"] = False
+        return row
+
+    monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), fail_output, frozen_protocol_fixture()
+    )
+    for output in (pass_output, fail_output):
+        index_path = output / "sha256_index.json"
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        del index["r0_v2_scaler_diagnostics.csv"]
+        index_path.write_text(json.dumps(index), encoding="utf-8")
+        marker_path = output / "fixed_endpoint_complete.json"
+        if marker_path.exists():
+            marker = json.loads(marker_path.read_text(encoding="utf-8"))
+            marker["sha256_index_sha256"] = runner.sha256_file(index_path)
+            marker_path.write_text(json.dumps(marker), encoding="utf-8")
+
+        with pytest.raises(RuntimeError, match="index completeness"):
+            runner.audit(output)
+
+
+def test_audit_rejects_changed_exact_blocking_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches replacing the observed failed gate with a vague favorable record."""
+    force_synthetic_alpha(monkeypatch)
+    original = runner.functional_diagnostics_v2
+
+    def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
+        row = original(*args, **kwargs)
+        row["mae_parity_pass"] = False
+        return row
+
+    monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
+    output = tmp_path / "fail"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    decision_path = output / "R0_V2_DECISION.json"
+    decision = json.loads(decision_path.read_text(encoding="utf-8"))
+    decision["blocking_findings"] = ["incomplete_or_unknown_gate_evidence"]
+    decision_path.write_text(json.dumps(decision), encoding="utf-8")
+    index_path = output / "sha256_index.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["R0_V2_DECISION.json"] = runner.sha256_file(decision_path)
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="blocking findings"):
+        runner.audit(output)
+
+
+def test_late_environment_failure_is_preserved_as_complete_failure_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches a finalizer retry colliding with already-written core evidence."""
+    force_synthetic_alpha(monkeypatch)
+    real_environment = runner._environment_metadata
+
+    def unavailable_environment() -> dict[str, object]:
+        raise RuntimeError("synthetic environment metadata failure")
+
+    monkeypatch.setattr(runner, "_environment_metadata", unavailable_environment)
+    output = tmp_path / "run"
+
+    result = runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+
+    assert result["decision"] == "R0_V2_FAILED"
+    assert (output / "R0_V2_DECISION.json").is_file()
+    assert (output / "R0_V2_EXPERIMENT_AUDIT.md").is_file()
+    assert (output / "sha256_index.json").is_file()
+    assert not (output / "fixed_endpoint_complete.json").exists()
+    decision = json.loads(
+        (output / "R0_V2_DECISION.json").read_text(encoding="utf-8")
+    )
+    assert "environment metadata failure" in decision["error"]
+    assert runner.audit(output)["decision"] == "R0_V2_FAILED"
+
+    monkeypatch.setattr(runner, "_environment_metadata", real_environment)
+    real_write_index = runner._write_hash_index
+    attempts = 0
+
+    def fail_first_index_write(index_output: Path) -> dict[str, str]:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("synthetic late index failure")
+        return real_write_index(index_output)
+
+    monkeypatch.setattr(runner, "_write_hash_index", fail_first_index_write)
+    retry_output = tmp_path / "late-index"
+    retry_provider = RecordingSyntheticProvider()
+    retry_result = runner._execute_source_only(
+        retry_provider, retry_output, frozen_protocol_fixture()
+    )
+
+    assert attempts == 2
+    assert retry_result["decision"] == (
+        "FEDRIDGE_ALGEBRAIC_EXACT_NUMERICAL_EQUIVALENCE_ESTABLISHED"
+    )
+    assert retry_provider.requests == expected_source_only_request_sequence()
+    assert runner.audit(retry_output)["status"] == "PASS"
