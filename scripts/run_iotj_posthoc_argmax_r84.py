@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -198,6 +199,80 @@ def fit_calibration(output: Path, freeze: dict[str, Any], device: torch.device, 
     return spec, models
 
 
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def finalize_existing_evaluation(output: Path, freeze: dict[str, Any]) -> dict[str, Any]:
+    """Finalize an already-computed endpoint without reopening target test."""
+    output = Path(output)
+    endpoint = output / "endpoint"
+    lock = verify_calibration_lock(endpoint / "calibration_lock.json", endpoint / "r84_models.json")
+    sealed_open = json.loads((output / "SEALED_TEST_OPEN.json").read_text(encoding="utf-8"))
+    endpoint_manifest = json.loads((endpoint / "endpoint_manifest.json").read_text(encoding="utf-8"))
+    if sealed_open.get("status") != "OPENED_AFTER_PHASE3_CALIBRATION_LOCK":
+        raise RuntimeError("FAIL_CLOSED Phase-3 sealed-test opening record invalid")
+    if (
+        endpoint_manifest.get("status") != "COMPLETE"
+        or endpoint_manifest.get("experiment_id") != EXPERIMENT_ID
+        or endpoint_manifest.get("checkpoint_sha256") != freeze["classifier"]["checkpoint_sha256"]
+        or endpoint_manifest.get("target_test_used_for_selection") is not False
+    ):
+        raise RuntimeError("FAIL_CLOSED Phase-3 completed endpoint manifest invalid")
+
+    summary = _read_csv(output / "POSTHOC_ARGMAX_BASELINE.csv")
+    for required in ("POSTHOC_ARGMAX_PER_GAS.csv", "POSTHOC_ARGMAX_PER_CONCENTRATION.csv"):
+        if not (output / required).is_file():
+            raise RuntimeError(f"FAIL_CLOSED Phase-3 output missing: {required}")
+    lookup = {row["scope"]: row for row in summary}
+    required_scopes = ("S_ALL", "S_CC", "Oracle_ALL", "Oracle_CC")
+    if set(lookup) != set(required_scopes):
+        raise RuntimeError("FAIL_CLOSED Phase-3 scope summary incomplete")
+    lines = "\n".join(
+        f"| {scope} | {int(float(lookup[scope]['N']))} | {float(lookup[scope]['RMSE']):.6f} | "
+        f"{float(lookup[scope]['MAE']):.6f} | {float(lookup[scope]['NRMSE_range']):.6f} | "
+        f"{float(lookup[scope]['R2']):.6f} | {float(lookup[scope]['Bias']):.6f} |"
+        for scope in required_scopes
+    )
+    classification = endpoint_manifest["test_classification"]
+    (output / "POSTHOC_ARGMAX_BASELINE_REPORT.md").write_text(
+        f"# Posthoc Argmax R84 baseline\n\nSelected identity: `{freeze['selection']['identity']}+B20` "
+        f"by `{freeze['selection']['selection_rule']}`.\n\nC5 classification Accuracy/Macro-F1: "
+        f"{classification['accuracy']:.6f}/{classification['macro_f1']:.6f}.\n\n"
+        "| Scope | N | RMSE | MAE | NRMSE | R2 | Bias |\n"
+        "|---|---:|---:|---:|---:|---:|---:|\n"
+        f"{lines}\n\nThe classifier was not retrained. R84 used the unchanged H1 source pool and fixed "
+        "C5 alpha table; C5 test opened only after the calibration lock.\n",
+        encoding="utf-8",
+    )
+    _json(
+        endpoint / "fixed_endpoint_complete.json",
+        {
+            "status": "COMPLETE",
+            "experiment_id": EXPERIMENT_ID,
+            "classifier_checkpoint_sha256": freeze["classifier"]["checkpoint_sha256"],
+            "r84_models_sha256": lock["r84_models_sha256"],
+            "target_test_used_for_selection": False,
+        },
+    )
+    manifest = {
+        "schema_version": "iotj.canonical_v1.method_breakthrough.phase3.protocol.v1",
+        "status": "PASS",
+        "selection": freeze["selection"],
+        "classifier": freeze["classifier"],
+        "r84": freeze["r84"],
+        "classification": classification,
+        "scope_metrics": summary,
+        "target_test_selection": False,
+    }
+    _json(output / "protocol_manifest.json", manifest)
+    excluded = {"sha256_index.json", "runner.pid", "runner.stdout.log", "runner.stderr.log"}
+    files = sorted(path for path in output.rglob("*") if path.is_file() and path.name not in excluded)
+    _json(output / "sha256_index.json", {str(path.relative_to(output)).replace("\\", "/"): sha256_file(path) for path in files})
+    return manifest
+
+
 def evaluate(output: Path, freeze: dict[str, Any], spec: EndpointSpec, models: dict[int, Any], device: torch.device, batch_size: int) -> dict[str, Any]:
     endpoint = Path(output) / "endpoint"
     lock = verify_calibration_lock(endpoint / "calibration_lock.json", endpoint / "r84_models.json")
@@ -214,17 +289,7 @@ def evaluate(output: Path, freeze: dict[str, Any], spec: EndpointSpec, models: d
     r84_common.write_csv(Path(output) / "POSTHOC_ARGMAX_BASELINE.csv", result["summary"])
     r84_common.write_csv(Path(output) / "POSTHOC_ARGMAX_PER_GAS.csv", result["per_gas"])
     r84_common.write_csv(Path(output) / "POSTHOC_ARGMAX_PER_CONCENTRATION.csv", result["per_concentration"])
-    classification = result["manifest"]["test_classification"]
-    lookup = {row["evaluation_scope"]: row for row in result["summary"]}
-    lines = "\n".join(f"| {scope} | {lookup[scope]['N']} | {lookup[scope]['RMSE']:.6f} | {lookup[scope]['MAE']:.6f} | {lookup[scope]['NRMSE_range']:.6f} | {lookup[scope]['R2']:.6f} | {lookup[scope]['Bias']:.6f} |" for scope in ("S_ALL", "S_CC", "Oracle_ALL", "Oracle_CC"))
-    (Path(output) / "POSTHOC_ARGMAX_BASELINE_REPORT.md").write_text(f"# Posthoc Argmax R84 baseline\n\nSelected identity: `{freeze['selection']['identity']}+B20` by `{freeze['selection']['selection_rule']}`.\n\nC5 classification Accuracy/Macro-F1: {classification['accuracy']:.6f}/{classification['macro_f1']:.6f}.\n\n| Scope | N | RMSE | MAE | NRMSE | R2 | Bias |\n|---|---:|---:|---:|---:|---:|---:|\n{lines}\n\nThe classifier was not retrained. R84 used the unchanged H1 source pool and fixed C5 alpha table; C5 test opened only after the calibration lock.\n", encoding="utf-8")
-    _json(endpoint / "fixed_endpoint_complete.json", {"status": "COMPLETE", "experiment_id": EXPERIMENT_ID, "classifier_checkpoint_sha256": freeze["classifier"]["checkpoint_sha256"], "r84_models_sha256": lock["r84_models_sha256"], "target_test_used_for_selection": False})
-    manifest = {"schema_version": "iotj.canonical_v1.method_breakthrough.phase3.protocol.v1", "status": "PASS", "selection": freeze["selection"], "classifier": freeze["classifier"], "r84": freeze["r84"], "classification": classification, "scope_metrics": result["summary"], "target_test_selection": False}
-    _json(Path(output) / "protocol_manifest.json", manifest)
-    excluded = {"sha256_index.json", "runner.pid", "runner.stdout.log", "runner.stderr.log"}
-    files = sorted(path for path in Path(output).rglob("*") if path.is_file() and path.name not in excluded)
-    _json(Path(output) / "sha256_index.json", {str(path.relative_to(output)).replace("\\", "/"): sha256_file(path) for path in files})
-    return manifest
+    return finalize_existing_evaluation(Path(output), freeze)
 
 
 def run(output: Path, device: torch.device, batch_size: int) -> dict[str, Any]:
@@ -240,9 +305,15 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=OUTPUT)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--finalize-existing", action="store_true")
     args = parser.parse_args()
     device = torch.device(args.device if not args.device.startswith("cuda") or torch.cuda.is_available() else "cpu")
-    print(json.dumps({"status": run(args.output, device, args.batch_size)["status"]}, indent=2))
+    if args.finalize_existing:
+        freeze = json.loads((args.output / "PRE_RUN_FREEZE.json").read_text(encoding="utf-8"))
+        result = finalize_existing_evaluation(args.output, freeze)
+    else:
+        result = run(args.output, device, args.batch_size)
+    print(json.dumps({"status": result["status"]}, indent=2))
 
 
 if __name__ == "__main__":
