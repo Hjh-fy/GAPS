@@ -5,14 +5,16 @@ from __future__ import annotations
 import argparse
 import contextlib
 import csv
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import hashlib
 import io
 import json
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath
 import platform
 import subprocess
 import sys
+import tempfile
 from typing import Any, Mapping, Protocol, Sequence
 
 import numpy as np
@@ -42,6 +44,7 @@ from gaps_flower.canonical_fedridge_v2 import (  # noqa: E402
     merge_central_moments,
     normal_equation_diagnostics_v2,
     pooled_reference_fit_v2,
+    registered_tolerances_v2,
     reconstruct_ridge_v2,
     scaler_diagnostics_v2,
     select_pooled_alpha_v2,
@@ -62,7 +65,7 @@ PROTOCOL_ROOT = (
 )
 PROTOCOL_MANIFEST = PROTOCOL_ROOT / "protocol_manifest.json"
 EXPECTED_PROTOCOL_FREEZE_SHA256 = (
-    "96cb6e6ce5826e24774f633d8fe0082e420bb377f2eeff976625014b06205e96"
+    "2ece5004ae71a454086042270d4478f8ce04c60f5d71c63bfce854af61898e01"
 )
 RESULT_ROOT = (
     ROOT
@@ -158,6 +161,41 @@ def _git_head() -> str:
     return completed.stdout.strip()
 
 
+def _git_file_bytes(commit: str, path: Path) -> bytes:
+    relative = Path(path).resolve().relative_to(ROOT.resolve()).as_posix()
+    completed = subprocess.run(
+        ["git", "show", f"{commit}:{relative}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    )
+    return completed.stdout
+
+
+def _verify_critical_paths_match_head(head: str) -> None:
+    critical_paths = (
+        Path(__file__).resolve(),
+        ROOT / "gaps_flower/canonical_fedridge_v2.py",
+        ROOT / "gaps_flower/canonical_quantitative_features.py",
+        PROTOCOL_MANIFEST,
+    )
+    for path in critical_paths:
+        if path.is_symlink() or not path.is_file():
+            raise RuntimeError(
+                f"FAIL_CLOSED execution-critical path type changed: {path.name}"
+            )
+        try:
+            committed = _git_file_bytes(head, path)
+        except (OSError, subprocess.CalledProcessError, ValueError) as error:
+            raise RuntimeError(
+                f"FAIL_CLOSED cannot verify critical path at HEAD: {path.name}"
+            ) from error
+        if path.read_bytes() != committed:
+            raise RuntimeError(
+                f"FAIL_CLOSED execution-critical path differs from HEAD: {path.name}"
+            )
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
@@ -178,6 +216,21 @@ def _is_descendant(path: Path, ancestor: Path) -> bool:
 
 def _paths_overlap(left: Path, right: Path) -> bool:
     return _is_descendant(left, right) or _is_descendant(right, left)
+
+
+def _reject_symlink_components(path: Path, label: str) -> Path:
+    lexical = Path(os.path.abspath(os.fspath(path)))
+    current = lexical
+    while True:
+        if current.is_symlink():
+            raise RuntimeError(
+                f"FAIL_CLOSED symlink in {label} path: {current}"
+            )
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return lexical
 
 
 def _require_absent_output(output: Path) -> None:
@@ -209,6 +262,33 @@ def _verify_protocol() -> dict[str, Any]:
         and protocol.get("C0_decision") == "V1_INTERLEAVED_RETAINED"
         and protocol.get("original_R0_decision")
         == "R0_EXACT_RECOVERY_NOT_ESTABLISHED"
+        and protocol.get("immutable_prerequisites")
+        == {
+            "C0": {
+                "index_path": (
+                    "results/iotj_canonical_v1_final/"
+                    "canonical_regression_reconstruction_qc_20260811/"
+                    "C0/C0_SHA256_INDEX.json"
+                ),
+                "index_sha256": (
+                    "18d6fa01352be80273460439e6c3a77196d8d93df53e3ea967f0e9ebdf335da0"
+                ),
+                "decision": "V1_INTERLEAVED_RETAINED",
+            },
+            "original_R0": {
+                "index_path": (
+                    "results/iotj_canonical_v1_final/"
+                    "canonical_regression_reconstruction_qc_20260811/"
+                    "R0/R0_SHA256_INDEX.json"
+                ),
+                "index_sha256": (
+                    "0f9a4ed854df5b87acad2d6801fa1e5607ac8df58d6e21e5138b6e1401bfc242"
+                ),
+                "decision": "R0_EXACT_RECOVERY_NOT_ESTABLISHED",
+                "status": "FAIL_CLOSED",
+                "failed_gate": "R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY",
+            },
+        }
     )
     if not valid:
         raise RuntimeError("FAIL_CLOSED frozen protocol status or role contract changed")
@@ -252,22 +332,97 @@ def _verify_protocol() -> dict[str, Any]:
     return protocol
 
 
+def _recompute_canonical_aggregate(
+    data_root: Path, dataset_index: Mapping[str, Any]
+) -> tuple[str, dict[str, str]]:
+    """Rebuild the canonical-v1 digest from the registered paths and bytes."""
+    data_root = _reject_symlink_components(data_root, "canonical data").resolve()
+    indexed_files = dataset_index.get("files")
+    if not isinstance(indexed_files, Mapping):
+        raise RuntimeError("FAIL_CLOSED canonical dataset index schema changed")
+    registered: dict[str, str] = {}
+    for relative, expected in indexed_files.items():
+        if not isinstance(relative, str) or not isinstance(expected, str):
+            raise RuntimeError("FAIL_CLOSED canonical dataset index schema changed")
+        pure = PurePosixPath(relative)
+        if (
+            not relative
+            or "\\" in relative
+            or pure.is_absolute()
+            or pure.parts in ((), (".",))
+            or any(part in ("", ".", "..") for part in pure.parts)
+            or ":" in pure.parts[0]
+            or relative == "dataset_sha256.json"
+        ):
+            raise RuntimeError(
+                f"FAIL_CLOSED canonical dataset index contains unsafe path: {relative}"
+            )
+        registered[relative] = expected
+
+    entries = list(data_root.rglob("*"))
+    symlinks = [
+        path.relative_to(data_root).as_posix()
+        for path in entries
+        if path.is_symlink()
+    ]
+    if symlinks:
+        raise RuntimeError(
+            f"FAIL_CLOSED canonical dataset contains symlink paths: {symlinks}"
+        )
+    actual_files = {
+        path.relative_to(data_root).as_posix(): path
+        for path in entries
+        if path.is_file() and path != data_root / "dataset_sha256.json"
+    }
+    if set(actual_files) != set(registered):
+        missing = sorted(set(registered) - set(actual_files))
+        extra = sorted(set(actual_files) - set(registered))
+        raise RuntimeError(
+            "FAIL_CLOSED canonical dataset index coverage changed: "
+            f"missing={missing}, extra={extra}"
+        )
+
+    observed: dict[str, str] = {}
+    for relative, path in sorted(actual_files.items()):
+        digest = sha256_file(path)
+        if digest != registered[relative]:
+            raise RuntimeError(
+                f"FAIL_CLOSED canonical source hash changed: {relative}"
+            )
+        observed[relative] = digest
+    aggregate = hashlib.sha256()
+    for relative, digest in sorted(observed.items()):
+        aggregate.update(relative.encode())
+        aggregate.update(b"\0")
+        aggregate.update(digest.encode())
+        aggregate.update(b"\n")
+    return aggregate.hexdigest(), observed
+
+
 def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[str, Any]:
     canonical = protocol["canonical_data"]
     expected_aggregate = str(canonical["dataset_aggregate_sha256"])
     dataset_index = _read_json(data_root / "dataset_sha256.json")
-    indexed_files = dataset_index.get("files")
+    recomputed_aggregate, observed_files = _recompute_canonical_aggregate(
+        data_root, dataset_index
+    )
     if (
-        dataset_index.get("aggregate_sha256") != expected_aggregate
-        or not isinstance(indexed_files, Mapping)
+        dataset_index.get("aggregate_sha256") != recomputed_aggregate
+        or recomputed_aggregate != expected_aggregate
     ):
-        raise RuntimeError("FAIL_CLOSED canonical dataset hash verification failed")
+        raise RuntimeError(
+            "FAIL_CLOSED canonical dataset hash/aggregate verification failed"
+        )
+    indexed_files = dataset_index["files"]
 
     def verify_indexed_source(path: Path) -> None:
         nonlocal checked_files
         relative = path.relative_to(data_root).as_posix()
         expected = indexed_files.get(relative)
-        if not isinstance(expected, str) or sha256_file(path) != expected:
+        if (
+            not isinstance(expected, str)
+            or observed_files.get(relative) != expected
+        ):
             raise RuntimeError(
                 f"FAIL_CLOSED canonical source hash changed: {relative}"
             )
@@ -378,11 +533,18 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
 def _verify_indexed_file(root: Path, index: dict[str, Any], relative: str) -> None:
     expected = index.get(relative)
     path = root / relative
-    if not isinstance(expected, str) or sha256_file(path) != expected:
+    if (
+        not isinstance(expected, str)
+        or path.is_symlink()
+        or not path.is_file()
+        or sha256_file(path) != expected
+    ):
         raise RuntimeError(f"FAIL_CLOSED original prerequisite hash changed: {path}")
 
 
-def _verify_original_prerequisites(output: Path) -> dict[str, str]:
+def _verify_original_prerequisites(
+    output: Path, protocol: Mapping[str, Any]
+) -> dict[str, str]:
     for original in (ORIGINAL_C0_ROOT, ORIGINAL_R0_ROOT):
         if _is_descendant(original, output):
             raise RuntimeError(
@@ -393,14 +555,33 @@ def _verify_original_prerequisites(output: Path) -> dict[str, str]:
                 "FAIL_CLOSED original C0/R0 prerequisite overlaps output"
             )
 
-    c0_index = _read_json(ORIGINAL_C0_ROOT / "C0_SHA256_INDEX.json")
+    anchors = protocol.get("immutable_prerequisites")
+    if not isinstance(anchors, Mapping):
+        raise RuntimeError("FAIL_CLOSED immutable prerequisite anchors missing")
+    c0_anchor = anchors.get("C0")
+    r0_anchor = anchors.get("original_R0")
+    if not isinstance(c0_anchor, Mapping) or not isinstance(r0_anchor, Mapping):
+        raise RuntimeError("FAIL_CLOSED immutable prerequisite anchors missing")
+    c0_index_path = ORIGINAL_C0_ROOT / "C0_SHA256_INDEX.json"
+    r0_index_path = ORIGINAL_R0_ROOT / "R0_SHA256_INDEX.json"
+    if (
+        c0_index_path.is_symlink()
+        or r0_index_path.is_symlink()
+        or not c0_index_path.is_file()
+        or not r0_index_path.is_file()
+        or sha256_file(c0_index_path) != c0_anchor.get("index_sha256")
+        or sha256_file(r0_index_path) != r0_anchor.get("index_sha256")
+    ):
+        raise RuntimeError("FAIL_CLOSED original prerequisite index anchor changed")
+
+    c0_index = _read_json(c0_index_path)
     for relative in ("C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md"):
         _verify_indexed_file(ORIGINAL_C0_ROOT, c0_index, relative)
     c0_decision = _read_json(ORIGINAL_C0_ROOT / "C0_DECISION.json")
     if c0_decision.get("decision") != "V1_INTERLEAVED_RETAINED":
         raise RuntimeError("FAIL_CLOSED original C0 decision changed")
 
-    r0_index = _read_json(ORIGINAL_R0_ROOT / "R0_SHA256_INDEX.json")
+    r0_index = _read_json(r0_index_path)
     for relative in (
         "canonical_fedridge_exact_recovery.json",
         "R0_FAILURE_AUDIT.json",
@@ -411,12 +592,37 @@ def _verify_original_prerequisites(output: Path) -> dict[str, str]:
         ORIGINAL_R0_ROOT / "canonical_fedridge_exact_recovery.json"
     )
     r0_failure = _read_json(ORIGINAL_R0_ROOT / "R0_FAILURE_AUDIT.json")
-    original_protocol = _read_json(ORIGINAL_PROTOCOL_MANIFEST)
-    r0_protocol = original_protocol.get("R0", {}).get("execution_result", {})
     if (
-        r0_decision.get("status") != "FAIL_CLOSED"
+        r0_decision.get("schema_version")
+        != "iotj.canonical_v1.crrq.r0.v1.exact_recovery"
+        or r0_decision.get("status") != "FAIL_CLOSED"
+        or r0_decision.get("practical_equivalence_fallback") is not False
+        or not isinstance(r0_decision.get("gas_results"), list)
+        or [row.get("gas_id") for row in r0_decision["gas_results"]]
+        != list(GAS_IDS)
+        or not any(
+            row.get("status") == "FAIL_CLOSED"
+            for row in r0_decision["gas_results"]
+        )
+        or r0_failure.get("schema_version")
+        != "iotj.canonical_v1.crrq.r0.failure_audit.v1"
         or r0_failure.get("status") != "FAIL_CLOSED"
-        or r0_protocol.get("status") != "FAIL_CLOSED"
+        or r0_failure.get("failed_gate")
+        != "R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY"
+        or r0_failure.get("practical_equivalence_fallback_used") is not False
+        or r0_failure.get("threshold_relaxed") is not False
+        or r0_failure.get("rerun_performed") is not False
+        or r0_failure.get("downstream_gate_opened") is not False
+        or r0_failure.get("not_opened")
+        != {
+            "source_test_labels": True,
+            "source_test_feature_caches": True,
+            "target_C3_feature_caches": True,
+            "target_C4_feature_caches": True,
+            "target_C5_feature_caches": True,
+            "target_test_labels": True,
+            "R1": True,
+        }
     ):
         raise RuntimeError("FAIL_CLOSED original R0 decision/audit changed")
     return {
@@ -429,8 +635,8 @@ def preflight(
     data_root: Path, output: Path, authorized_freeze_commit: str
 ) -> dict[str, Any]:
     """Validate all immutable prerequisites without creating output."""
-    data_root = Path(data_root).resolve()
-    output = Path(output).resolve()
+    data_root = _reject_symlink_components(data_root, "canonical data").resolve()
+    output = _reject_symlink_components(output, "output").resolve()
     head = _git_head()
     if authorized_freeze_commit != head:
         raise RuntimeError(
@@ -446,9 +652,10 @@ def preflight(
     )
     if any(_paths_overlap(output, path) for path in protected_paths):
         raise RuntimeError("FAIL_CLOSED input/output path separation violated")
+    _verify_critical_paths_match_head(head)
     protocol = _verify_protocol()
     dataset = _verify_source_dataset(data_root, protocol)
-    original = _verify_original_prerequisites(output)
+    original = _verify_original_prerequisites(output, protocol)
     return {
         "status": "PASS",
         "study_id": R0_V2_STUDY_ID,
@@ -535,39 +742,67 @@ def _json_text(payload: Mapping[str, Any]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True, allow_nan=True) + "\n"
 
 
-def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
-    if path.exists():
-        raise FileExistsError(f"refusing to overwrite immutable evidence: {path}")
+def _publish_bytes(path: Path, content: bytes, *, idempotent: bool) -> None:
+    """Publish immutable bytes via a same-directory, exclusive atomic link."""
+    path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_json_text(payload), encoding="utf-8")
+    if path.parent.is_symlink() or not path.parent.is_dir():
+        raise RuntimeError(f"refusing unsafe evidence parent: {path.parent}")
+
+    def accept_existing() -> bool:
+        return (
+            idempotent
+            and not path.is_symlink()
+            and path.is_file()
+            and path.read_bytes() == content
+        )
+
+    if path.exists() or path.is_symlink():
+        if accept_existing():
+            return
+        raise FileExistsError(
+            f"refusing to replace conflicting immutable evidence: {path}"
+        )
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.tmp-", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            if accept_existing():
+                return
+            raise FileExistsError(
+                f"refusing to replace conflicting immutable evidence: {path}"
+            ) from None
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
+    _publish_bytes(path, _json_text(payload).encode("utf-8"), idempotent=False)
 
 
 def _write_text(path: Path, text: str) -> None:
-    if path.exists():
-        raise FileExistsError(f"refusing to overwrite immutable evidence: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    _publish_bytes(path, text.encode("utf-8"), idempotent=False)
 
 
 def _ensure_json(path: Path, payload: Mapping[str, Any]) -> None:
-    expected = _json_text(payload)
-    if path.exists():
-        if path.read_text(encoding="utf-8") != expected:
-            raise FileExistsError(
-                f"refusing to replace conflicting immutable evidence: {path}"
-            )
-        return
-    _write_json(path, payload)
+    _publish_bytes(
+        path, _json_text(payload).encode("utf-8"), idempotent=True
+    )
 
 
 def _ensure_text(path: Path, content: str) -> None:
-    if path.exists():
-        if path.read_text(encoding="utf-8") != content:
-            raise FileExistsError(
-                f"refusing to replace conflicting immutable evidence: {path}"
-            )
-        return
-    _write_text(path, content)
+    _publish_bytes(path, content.encode("utf-8"), idempotent=True)
 
 
 def _csv_value(value: Any) -> Any:
@@ -576,10 +811,7 @@ def _csv_value(value: Any) -> Any:
     return value
 
 
-def _write_csv(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
-    if path.exists():
-        raise FileExistsError(f"refusing to overwrite immutable evidence: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
+def _csv_text(rows: Sequence[Mapping[str, Any]]) -> str:
     items = list(rows)
     fields: list[str] = []
     for row in items:
@@ -589,11 +821,20 @@ def _write_csv(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
     if not fields:
         fields = ["status"]
         items = [{"status": "NO_ROWS"}]
-    with path.open("x", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="raise")
-        writer.writeheader()
-        for row in items:
-            writer.writerow({key: _csv_value(row.get(key, "")) for key in fields})
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="raise")
+    writer.writeheader()
+    for row in items:
+        writer.writerow({key: _csv_value(row.get(key, "")) for key in fields})
+    return stream.getvalue()
+
+
+def _write_csv(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
+    _publish_bytes(path, _csv_text(rows).encode("utf-8"), idempotent=False)
+
+
+def _ensure_csv(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
+    _publish_bytes(path, _csv_text(rows).encode("utf-8"), idempotent=True)
 
 
 def _json_sha256(payload: Mapping[str, Any]) -> str:
@@ -740,29 +981,39 @@ def _fit_gas_models(
 
 def _write_hash_index(output: Path) -> dict[str, str]:
     index_path = output / "sha256_index.json"
+    symlinks = [
+        path.relative_to(output).as_posix()
+        for path in output.rglob("*")
+        if path.is_symlink()
+    ]
+    if symlinks:
+        raise RuntimeError(f"FAIL_CLOSED evidence contains symlink: {symlinks}")
     index = {
         path.relative_to(output).as_posix(): sha256_file(path)
         for path in sorted(output.rglob("*"))
         if path.is_file()
-        and path.name not in {"sha256_index.json", "fixed_endpoint_complete.json"}
+        and not (
+            path.parent == output
+            and path.name
+            in {"sha256_index.json", "fixed_endpoint_complete.json"}
+        )
     }
-    if index_path.exists():
-        if _read_json(index_path) != index:
-            raise FileExistsError(
-                f"refusing to replace conflicting immutable evidence: {index_path}"
-            )
-        return index
-    _write_json(index_path, index)
+    _ensure_json(index_path, index)
     return index
 
 
 def _blocking_findings(
-    decision: str, gas_rows: Sequence[Mapping[str, Any]], error: str | None
+    decision: str,
+    gas_rows: Sequence[Mapping[str, Any]],
+    error: str | None,
+    *,
+    access_complete: bool = True,
+    locks_before_test: bool = True,
+    artifact_findings: Sequence[str] = (),
 ) -> list[str]:
+    findings: list[str] = []
     if error:
-        return [f"execution_exception:{error}"]
-    if decision == R0_V2_PASS:
-        return []
+        findings.append(f"execution_exception:{error}")
     hard_fields = (
         "alpha_equal",
         "scaler_pass",
@@ -777,13 +1028,51 @@ def _blocking_findings(
         "mae_parity_pass",
         "finite_pass",
     )
-    findings = [
+    findings.extend(
         f"gas_{row.get('gas_id')}:{field}"
         for row in gas_rows
         for field in hard_fields
         if row.get(field) is not True
-    ]
-    return findings or ["incomplete_or_unknown_gate_evidence"]
+    )
+    recomputed_decision = str(decide_r0_v2(gas_rows).get("decision"))
+    provenance_override = bool(
+        error or not access_complete or not locks_before_test or artifact_findings
+    )
+    if decision != recomputed_decision and not (
+        decision == R0_V2_FAIL and provenance_override
+    ):
+        findings.append("decision_gate_evidence_conflict")
+    if not access_complete:
+        findings.append("access_sequence_incomplete")
+    if not locks_before_test:
+        findings.append("locks_not_complete_before_source_test")
+    findings.extend(str(finding) for finding in artifact_findings)
+    if decision != R0_V2_PASS and not findings:
+        findings.append("incomplete_or_unknown_gate_evidence")
+    return findings
+
+
+def _artifact_type_findings(
+    output: Path,
+    expected: Sequence[str],
+    *,
+    require_present: bool,
+) -> list[str]:
+    findings: list[str] = []
+    for relative in expected:
+        path = output / relative
+        if path.is_symlink():
+            findings.append(f"artifact_symlink:{relative}")
+            continue
+        should_be_directory = relative == "canonical_feature_caches"
+        if not path.exists():
+            if require_present:
+                findings.append(f"artifact_missing:{relative}")
+        elif should_be_directory and not path.is_dir():
+            findings.append(f"artifact_wrong_type:{relative}")
+        elif not should_be_directory and not path.is_file():
+            findings.append(f"artifact_wrong_type:{relative}")
+    return findings
 
 
 def _access_audit_text(
@@ -873,20 +1162,32 @@ def _finalize_evidence(
             else f"{error}; {environment_failure}"
         )
         decision = R0_V2_FAIL
-    findings = _blocking_findings(decision, gas_rows, error)
     expected_requests = _expected_source_requests()
     observed_requests = [
         SourceRequest(str(row["client"]), str(row["split"]), row.get("gas_id"))
         for row in events
     ]
     access_complete = observed_requests == expected_requests
+    prepublication_artifacts = _artifact_type_findings(
+        output, EXPECTED_FORMAL_FILES[:9], require_present=True
+    )
+    findings = _blocking_findings(
+        decision,
+        gas_rows,
+        error,
+        access_complete=access_complete,
+        locks_before_test=locks_before_test,
+        artifact_findings=prepublication_artifacts,
+    )
+    if findings:
+        decision = R0_V2_FAIL
     decision_payload = {
         "schema_version": f"{SCHEMA_VERSION}.decision",
         "study_id": R0_V2_STUDY_ID,
         "decision": decision,
         "gas_results": list(gas_rows),
         "blocking_findings": findings,
-        "evidence_complete": bool(decision == R0_V2_PASS and access_complete),
+        "evidence_complete": bool(decision == R0_V2_PASS and not findings),
         "error": error,
     }
     access_audit = _access_audit_text(
@@ -947,6 +1248,14 @@ def _finalize_evidence(
         )
         written_index = _write_hash_index(output)
         if decision == R0_V2_PASS:
+            publication_findings = _artifact_type_findings(
+                output, EXPECTED_FORMAL_FILES, require_present=True
+            )
+            if publication_findings:
+                raise RuntimeError(
+                    "FAIL_CLOSED PASS publication artifact defect: "
+                    f"{publication_findings}"
+                )
             marker = {
                 "schema_version": f"{SCHEMA_VERSION}.completion",
                 "status": "COMPLETE",
@@ -979,7 +1288,7 @@ def _execute_source_only(
     protocol: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Execute an injectable C1/C2-only pipeline used by formal and synthetic runs."""
-    output = Path(output).resolve()
+    output = _reject_symlink_components(output, "output").resolve()
     _require_absent_output(output)
     feature_names, alpha_grid = _validated_protocol_for_execution(protocol)
     output.mkdir(parents=True, exist_ok=False)
@@ -1208,16 +1517,20 @@ def _execute_source_only(
             (output / "r0_v2_functional_equivalence.csv", functional_rows),
             (output / "source_alpha_audit.csv", alpha_rows),
         ):
-            if not path.exists():
-                _write_csv(path, rows)
+            _ensure_csv(path, rows)
         cache_root = output / "canonical_feature_caches"
+        if cache_root.is_symlink() or (
+            cache_root.exists() and not cache_root.is_dir()
+        ):
+            raise RuntimeError(
+                "FAIL_CLOSED canonical feature cache artifact type changed"
+            )
         cache_root.mkdir(parents=True, exist_ok=True)
         cache_record = cache_root / "cache_manifests.json"
-        if not cache_record.exists():
-            _write_json(
-                cache_record,
-                {"study_id": R0_V2_STUDY_ID, "manifests": cache_manifests},
-            )
+        _ensure_json(
+            cache_record,
+            {"study_id": R0_V2_STUDY_ID, "manifests": cache_manifests},
+        )
         return _finalize_evidence(
             output,
             protocol=protocol,
@@ -1234,6 +1547,14 @@ def run(
     data_root: Path, output: Path, authorized_freeze_commit: str
 ) -> dict[str, Any]:
     """Run the separately authorized formal source-only execution."""
+    data_root = _reject_symlink_components(
+        data_root, "formal canonical data"
+    ).resolve()
+    output = _reject_symlink_components(output, "formal output").resolve()
+    if data_root != DATA_ROOT.resolve() or output != RESULT_ROOT.resolve():
+        raise RuntimeError(
+            "FAIL_CLOSED run paths do not match the registered formal roots"
+        )
     preflight_result = preflight(data_root, output, authorized_freeze_commit)
     protocol = _read_json(PROTOCOL_MANIFEST)
     execution_protocol = {
@@ -1251,16 +1572,1096 @@ def run(
     return _execute_source_only(provider, output, execution_protocol)
 
 
+def _read_csv_evidence(path: Path) -> list[dict[str, str]]:
+    try:
+        with path.open(encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+    except (OSError, csv.Error) as error:
+        raise RuntimeError(
+            f"FAIL_CLOSED semantic CSV evidence unreadable: {path.name}"
+        ) from error
+    if not rows:
+        raise RuntimeError(
+            f"FAIL_CLOSED semantic CSV evidence has no rows: {path.name}"
+        )
+    return rows
+
+
+def _strict_csv_bool(value: Any) -> bool:
+    if value == "True":
+        return True
+    if value == "False":
+        return False
+    raise RuntimeError(f"FAIL_CLOSED semantic boolean is invalid: {value!r}")
+
+
+def _rows_by_gas(
+    rows: Sequence[Mapping[str, str]], filename: str
+) -> dict[int, Mapping[str, str]]:
+    result: dict[int, Mapping[str, str]] = {}
+    for row in rows:
+        if row.get("status") == "NO_ROWS":
+            continue
+        try:
+            gas_id = int(str(row["gas_id"]))
+        except (KeyError, TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"FAIL_CLOSED semantic gas identity invalid: {filename}"
+            ) from error
+        if gas_id not in GAS_IDS or gas_id in result:
+            raise RuntimeError(
+                f"FAIL_CLOSED semantic gas coverage invalid: {filename}"
+            )
+        result[gas_id] = row
+    return result
+
+
+def _execution_provenance_is_valid(execution: Mapping[str, Any]) -> bool:
+    execution_kind = execution.get("execution_kind")
+    commit = execution.get("execution_commit")
+    if execution_kind == "synthetic_test":
+        return (
+            commit == "synthetic-test"
+            and execution.get("numerical_gates")
+            == asdict(registered_tolerances_v2())
+        )
+    if execution_kind != "formal" or not isinstance(commit, str):
+        return False
+    if len(commit) != 40 or any(character not in "0123456789abcdef" for character in commit):
+        return False
+    if protocol_freeze_hash() != EXPECTED_PROTOCOL_FREEZE_SHA256:
+        return False
+    try:
+        committed_protocol = _git_file_bytes(commit, PROTOCOL_MANIFEST)
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return False
+    return (
+        hashlib.sha256(committed_protocol).hexdigest()
+        == EXPECTED_PROTOCOL_FREEZE_SHA256
+        and execution.get("numerical_gates")
+        == _read_json(PROTOCOL_MANIFEST).get("numerical_gates")
+    )
+
+
+def _semantic_evidence_audit(
+    output: Path,
+    decision_payload: Mapping[str, Any],
+    execution: Mapping[str, Any],
+) -> None:
+    decision = str(decision_payload["decision"])
+    gas_results = decision_payload["gas_results"]
+    if (
+        decision_payload.get("schema_version") != f"{SCHEMA_VERSION}.decision"
+        or execution.get("schema_version") != f"{SCHEMA_VERSION}.manifest"
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic evidence schema mismatch")
+
+    environment = execution.get("environment")
+    recorded_error = decision_payload.get("error")
+    normal_environment_keys = {
+        "python",
+        "python_executable",
+        "numpy",
+        "platform",
+        "machine",
+        "processor",
+        "dtype",
+        "blas_lapack_configuration",
+    }
+    normal_environment = (
+        isinstance(environment, Mapping)
+        and set(environment) == normal_environment_keys
+        and environment.get("dtype") == "float64"
+        and all(
+            isinstance(environment.get(field), str)
+            and bool(environment.get(field))
+            for field in (
+                "python",
+                "python_executable",
+                "numpy",
+                "platform",
+                "machine",
+                "blas_lapack_configuration",
+            )
+        )
+        and isinstance(environment.get("processor"), str)
+    )
+    failure_environment = (
+        isinstance(environment, Mapping)
+        and set(environment) == {"status", "error", "dtype"}
+        and environment.get("status") == "unavailable"
+        and environment.get("dtype") == "float64"
+        and isinstance(environment.get("error"), str)
+        and bool(environment.get("error"))
+        and decision == R0_V2_FAIL
+        and isinstance(recorded_error, str)
+        and (
+            recorded_error == environment.get("error")
+            or recorded_error.endswith(f"; {environment.get('error')}")
+        )
+    )
+    if not normal_environment and not failure_environment:
+        raise RuntimeError("FAIL_CLOSED semantic environment provenance invalid")
+
+    cache_record = _read_json(
+        output / "canonical_feature_caches/cache_manifests.json"
+    )
+    manifests = execution.get("cache_manifests")
+    events = execution.get("access_events")
+    expected_cache_keys = [
+        (event.get("client"), event.get("split"), R0_V2_STUDY_ID)
+        for event in events
+        if isinstance(event, Mapping)
+        and event.get("operation") == "build_fresh_cache"
+    ] if isinstance(events, list) else []
+    observed_cache_keys = [
+        (manifest.get("client"), manifest.get("split"), manifest.get("study_id"))
+        for manifest in manifests
+        if isinstance(manifest, Mapping)
+    ] if isinstance(manifests, list) else []
+    cache_record_manifests = cache_record.get("manifests")
+    final_event_is_failed_cache_attempt = bool(
+        decision == R0_V2_FAIL
+        and decision_payload.get("error")
+        and isinstance(events, list)
+        and events
+        and isinstance(events[-1], Mapping)
+        and events[-1].get("operation") == "build_fresh_cache"
+    )
+    cache_attempts_match = observed_cache_keys == expected_cache_keys or (
+        final_event_is_failed_cache_attempt
+        and observed_cache_keys == expected_cache_keys[:-1]
+    )
+    if (
+        cache_record.get("study_id") != R0_V2_STUDY_ID
+        or not isinstance(manifests, list)
+        or len(observed_cache_keys) != len(manifests)
+        or not cache_attempts_match
+        or any(client not in SOURCE_CLIENTS for client, _split, _study in observed_cache_keys)
+        or any(split not in SOURCE_SPLITS for _client, split, _study in observed_cache_keys)
+        or any(study != R0_V2_STUDY_ID for _client, _split, study in observed_cache_keys)
+        or not isinstance(cache_record_manifests, list)
+        or cache_record_manifests != manifests[: min(4, len(manifests))]
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic cache provenance mismatch")
+
+    feature_rows = _read_csv_evidence(
+        output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv"
+    )
+    feature_names_by_index: dict[int, str] = {}
+    feature_state_by_gas_index: dict[tuple[int, int], tuple[float, float]] = {}
+    if feature_rows[0].get("status") != "NO_ROWS":
+        keys: set[tuple[int, int]] = set()
+        for row in feature_rows:
+            try:
+                gas_id = int(row["gas_id"])
+                feature_index = int(row["feature_index"])
+                n = int(row["n"])
+                finite_values = [
+                    float(row[field])
+                    for field in (
+                        "minimum",
+                        "maximum",
+                        "mean",
+                        "population_variance",
+                        "raw_scale",
+                        "dynamic_range",
+                        "safe_scale_floor",
+                        "canonical_scale",
+                    )
+                ]
+                order = json.loads(row["aggregation_order"])
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+                raise RuntimeError(
+                    "FAIL_CLOSED semantic feature diagnostic is invalid"
+                ) from error
+            key = (gas_id, feature_index)
+            safe = _strict_csv_bool(row.get("safe_scale_applied"))
+            raw_scale = float(row["raw_scale"])
+            variance = float(row["population_variance"])
+            minimum = float(row["minimum"])
+            maximum = float(row["maximum"])
+            mean = float(row["mean"])
+            dynamic_range = float(row["dynamic_range"])
+            feature_name = row.get("feature_name")
+            if (
+                gas_id not in GAS_IDS
+                or not 0 <= feature_index < 104
+                or key in keys
+                or n <= 0
+                or not isinstance(feature_name, str)
+                or not feature_name
+                or not np.isfinite(finite_values).all()
+                or row.get("role") != "source_train_plus_calibration_refit"
+                or row.get("dtype") != "float64"
+                or order != list(SOURCE_CLIENTS)
+                or minimum > mean
+                or mean > maximum
+                or variance < 0.0
+                or raw_scale < 0.0
+                or not np.isclose(raw_scale * raw_scale, variance)
+                or dynamic_range != maximum - minimum
+                or float(row["safe_scale_floor"]) != 1e-9
+                or safe is not (raw_scale < 1e-9)
+                or float(row["canonical_scale"])
+                != (1.0 if safe else raw_scale)
+                or (
+                    feature_index in feature_names_by_index
+                    and feature_names_by_index[feature_index] != feature_name
+                )
+            ):
+                raise RuntimeError(
+                    "FAIL_CLOSED semantic feature diagnostic contradiction"
+                )
+            keys.add(key)
+            feature_names_by_index[feature_index] = feature_name
+            feature_state_by_gas_index[key] = (
+                mean,
+                float(row["canonical_scale"]),
+            )
+        if decision == R0_V2_PASS and keys != {
+            (gas_id, feature_index)
+            for gas_id in GAS_IDS
+            for feature_index in range(104)
+        }:
+            raise RuntimeError(
+                "FAIL_CLOSED semantic feature diagnostic coverage mismatch"
+            )
+
+    diagnostic_files = {
+        "scaler": "r0_v2_scaler_diagnostics.csv",
+        "normal": "r0_v2_normal_equation_diagnostics.csv",
+        "system": "r0_v2_system_diagnostics.csv",
+        "functional": "r0_v2_functional_equivalence.csv",
+    }
+    diagnostics = {
+        name: _rows_by_gas(_read_csv_evidence(output / filename), filename)
+        for name, filename in diagnostic_files.items()
+    }
+    if decision == R0_V2_PASS and any(
+        set(rows) != set(GAS_IDS) for rows in diagnostics.values()
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic diagnostic coverage mismatch")
+    tolerances = registered_tolerances_v2()
+
+    def arithmetic_close(observed: float, expected: float) -> bool:
+        return bool(np.isclose(observed, expected, rtol=1e-13, atol=1e-15))
+
+    def arithmetic_leq(left: float, right: float) -> bool:
+        return left <= right or arithmetic_close(left, right)
+
+    # A failed execution can legitimately stop before every diagnostic family
+    # exists.  Validate each stored family on its own before doing the
+    # cross-family checks below, so a missing later family cannot hide a
+    # contradiction in evidence that was already published.
+    try:
+        for scaler in diagnostics["scaler"].values():
+            scaler_values = [
+                float(scaler[field])
+                for field in (
+                    "mean_absolute_mean_error",
+                    "max_abs_mean_error",
+                    "mean_absolute_scale_error",
+                    "max_abs_scale_error",
+                    "coordinate_scale_max",
+                    "max_normalized_mean_error",
+                    "max_normalized_scale_error",
+                )
+            ]
+            scaler_finite = _strict_csv_bool(scaler["finite_pass"])
+            mean_pass = _strict_csv_bool(scaler["mean_pass"])
+            scale_pass = _strict_csv_bool(scaler["scale_pass"])
+            mask_equal = _strict_csv_bool(scaler["safe_scale_mask_equal"])
+            (
+                mean_absolute_mean_error,
+                max_abs_mean_error,
+                mean_absolute_scale_error,
+                max_abs_scale_error,
+                coordinate_scale_max,
+                max_normalized_mean_error,
+                max_normalized_scale_error,
+            ) = scaler_values
+            if (
+                scaler_finite is not bool(np.isfinite(scaler_values).all())
+                or any(value < 0.0 for value in scaler_values)
+                or coordinate_scale_max < 1.0
+                or not arithmetic_leq(
+                    mean_absolute_mean_error, max_abs_mean_error
+                )
+                or not arithmetic_leq(
+                    mean_absolute_scale_error, max_abs_scale_error
+                )
+                or not arithmetic_leq(
+                    max_normalized_mean_error, max_abs_mean_error
+                )
+                or not arithmetic_leq(
+                    max_abs_mean_error,
+                    max_normalized_mean_error * coordinate_scale_max,
+                )
+                or not arithmetic_leq(
+                    max_normalized_scale_error, max_abs_scale_error
+                )
+                or not arithmetic_leq(
+                    max_abs_scale_error,
+                    max_normalized_scale_error * coordinate_scale_max,
+                )
+                or mean_pass
+                is not (
+                    scaler_finite
+                    and float(scaler["max_normalized_mean_error"])
+                    <= tolerances.tau_moment
+                )
+                or scale_pass
+                is not (
+                    scaler_finite
+                    and float(scaler["max_normalized_scale_error"])
+                    <= tolerances.tau_moment
+                )
+                or _strict_csv_bool(scaler["scaler_pass"])
+                is not (mean_pass and scale_pass and mask_equal and scaler_finite)
+            ):
+                raise RuntimeError("scaler")
+
+        for normal in diagnostics["normal"].values():
+            normal_values = [
+                float(normal[field])
+                for field in (
+                    "absolute_a_discrepancy",
+                    "a_denominator",
+                    "relative_a_discrepancy",
+                    "absolute_b_discrepancy",
+                    "b_denominator",
+                    "relative_b_discrepancy",
+                )
+            ]
+            normal_finite = _strict_csv_bool(normal["finite_pass"])
+            a_positive = _strict_csv_bool(normal["a_denominator_positive"])
+            b_positive = _strict_csv_bool(normal["b_denominator_positive"])
+            a_pass = _strict_csv_bool(normal["a_pass"])
+            b_pass = _strict_csv_bool(normal["b_pass"])
+            expected_normal_finite = bool(
+                np.isfinite(normal_values).all() and a_positive and b_positive
+            )
+            if (
+                any(value < 0.0 for value in normal_values)
+                or a_positive
+                is not (float(normal["a_denominator"]) > 0.0)
+                or b_positive is not (float(normal["b_denominator"]) > 0.0)
+                or normal_finite is not expected_normal_finite
+                or (
+                    expected_normal_finite
+                    and not arithmetic_close(
+                        float(normal["relative_a_discrepancy"]),
+                        float(normal["absolute_a_discrepancy"])
+                        / float(normal["a_denominator"]),
+                    )
+                )
+                or (
+                    expected_normal_finite
+                    and not arithmetic_close(
+                        float(normal["relative_b_discrepancy"]),
+                        float(normal["absolute_b_discrepancy"])
+                        / float(normal["b_denominator"]),
+                    )
+                )
+                or a_pass
+                is not (
+                    normal_finite
+                    and float(normal["relative_a_discrepancy"])
+                    <= tolerances.tau_moment
+                )
+                or b_pass
+                is not (
+                    normal_finite
+                    and float(normal["relative_b_discrepancy"])
+                    <= tolerances.tau_moment
+                )
+                or _strict_csv_bool(normal["normal_equations_pass"])
+                is not (a_pass and b_pass)
+            ):
+                raise RuntimeError("normal")
+
+        for system in diagnostics["system"].values():
+            system_values = [
+                float(system[field])
+                for field in (
+                    "federated_alpha",
+                    "pooled_alpha",
+                    "federated_condition_number",
+                    "pooled_condition_number",
+                    "kappa",
+                    "fed_residual_norm",
+                    "fed_residual_denominator",
+                    "fed_relative_residual",
+                    "pooled_residual_norm",
+                    "pooled_residual_denominator",
+                    "pooled_relative_residual",
+                    "max_abs_beta_difference",
+                    "beta_denominator",
+                    "relative_beta_difference",
+                    "beta_forward_envelope",
+                )
+            ]
+            system_finite = _strict_csv_bool(system["finite_pass"])
+            fed_positive = _strict_csv_bool(
+                system["fed_residual_denominator_positive"]
+            )
+            pooled_positive = _strict_csv_bool(
+                system["pooled_residual_denominator_positive"]
+            )
+            beta_positive = _strict_csv_bool(
+                system["beta_denominator_positive"]
+            )
+            expected_system_finite = bool(
+                np.isfinite(system_values).all()
+                and fed_positive
+                and pooled_positive
+                and beta_positive
+            )
+            condition = bool(
+                np.isfinite(float(system["federated_condition_number"]))
+                and np.isfinite(float(system["pooled_condition_number"]))
+                and float(system["federated_condition_number"])
+                * tolerances.epsilon
+                < 1.0
+                and float(system["pooled_condition_number"])
+                * tolerances.epsilon
+                < 1.0
+            )
+            if (
+                any(value < 0.0 for value in system_values)
+                or _strict_csv_bool(system["alpha_equal"])
+                is not (
+                    float(system["federated_alpha"])
+                    == float(system["pooled_alpha"])
+                )
+                or float(system["kappa"])
+                != max(
+                    float(system["federated_condition_number"]),
+                    float(system["pooled_condition_number"]),
+                )
+                or fed_positive
+                is not (float(system["fed_residual_denominator"]) > 0.0)
+                or pooled_positive
+                is not (float(system["pooled_residual_denominator"]) > 0.0)
+                or beta_positive
+                is not (float(system["beta_denominator"]) > 0.0)
+                or system_finite is not expected_system_finite
+                or (
+                    expected_system_finite
+                    and not arithmetic_close(
+                        float(system["fed_relative_residual"]),
+                        float(system["fed_residual_norm"])
+                        / float(system["fed_residual_denominator"]),
+                    )
+                )
+                or (
+                    expected_system_finite
+                    and not arithmetic_close(
+                        float(system["pooled_relative_residual"]),
+                        float(system["pooled_residual_norm"])
+                        / float(system["pooled_residual_denominator"]),
+                    )
+                )
+                or (
+                    expected_system_finite
+                    and not arithmetic_close(
+                        float(system["beta_forward_envelope"]),
+                        float(system["kappa"])
+                        * (
+                            2.0 * tolerances.tau_moment
+                            + tolerances.tau_residual
+                        ),
+                    )
+                )
+                or _strict_csv_bool(system["condition_pass"]) is not condition
+                or _strict_csv_bool(system["fed_residual_pass"])
+                is not (
+                    system_finite
+                    and float(system["fed_relative_residual"])
+                    <= tolerances.tau_residual
+                )
+                or _strict_csv_bool(system["pooled_residual_pass"])
+                is not (
+                    system_finite
+                    and float(system["pooled_relative_residual"])
+                    <= tolerances.tau_residual
+                )
+                or _strict_csv_bool(system["beta_within_forward_envelope"])
+                is not (
+                    system_finite
+                    and float(system["relative_beta_difference"])
+                    <= float(system["beta_forward_envelope"])
+                )
+            ):
+                raise RuntimeError("system")
+
+        for functional in diagnostics["functional"].values():
+            functional_values = [
+                float(functional[field])
+                for field in (
+                    "max_abs_raw_prediction_difference",
+                    "max_abs_clipped_prediction_difference",
+                    "federated_clipped_rmse",
+                    "pooled_clipped_rmse",
+                    "clipped_rmse_difference",
+                    "federated_clipped_mae",
+                    "pooled_clipped_mae",
+                    "clipped_mae_difference",
+                )
+            ]
+            functional_finite = bool(np.isfinite(functional_values).all())
+            if (
+                any(value < 0.0 for value in functional_values)
+                or _strict_csv_bool(functional["finite_pass"])
+                is not functional_finite
+                or (
+                    functional_finite
+                    and not arithmetic_close(
+                        float(functional["clipped_rmse_difference"]),
+                        abs(
+                            float(functional["federated_clipped_rmse"])
+                            - float(functional["pooled_clipped_rmse"])
+                        ),
+                    )
+                )
+                or (
+                    functional_finite
+                    and not arithmetic_close(
+                        float(functional["clipped_mae_difference"]),
+                        abs(
+                            float(functional["federated_clipped_mae"])
+                            - float(functional["pooled_clipped_mae"])
+                        ),
+                    )
+                )
+                or _strict_csv_bool(functional["raw_prediction_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["max_abs_raw_prediction_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+                or _strict_csv_bool(functional["clipped_prediction_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["max_abs_clipped_prediction_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+                or _strict_csv_bool(functional["rmse_parity_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["clipped_rmse_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+                or _strict_csv_bool(functional["mae_parity_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["clipped_mae_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+            ):
+                raise RuntimeError("functional")
+    except (KeyError, TypeError, ValueError, RuntimeError) as error:
+        raise RuntimeError(
+            "FAIL_CLOSED semantic diagnostic internal contradiction"
+        ) from error
+
+    for gas_id in set.intersection(
+        *(set(rows) for rows in diagnostics.values())
+    ) if all(diagnostics.values()) else ():
+        scaler = diagnostics["scaler"][gas_id]
+        normal = diagnostics["normal"][gas_id]
+        system = diagnostics["system"][gas_id]
+        functional = diagnostics["functional"][gas_id]
+        try:
+            scaler_finite = _strict_csv_bool(scaler["finite_pass"])
+            mean_pass = _strict_csv_bool(scaler["mean_pass"])
+            scale_pass = _strict_csv_bool(scaler["scale_pass"])
+            mask_equal = _strict_csv_bool(scaler["safe_scale_mask_equal"])
+            if (
+                mean_pass
+                is not (
+                    scaler_finite
+                    and float(scaler["max_normalized_mean_error"])
+                    <= tolerances.tau_moment
+                )
+                or scale_pass
+                is not (
+                    scaler_finite
+                    and float(scaler["max_normalized_scale_error"])
+                    <= tolerances.tau_moment
+                )
+                or _strict_csv_bool(scaler["scaler_pass"])
+                is not (mean_pass and scale_pass and mask_equal and scaler_finite)
+            ):
+                raise RuntimeError("scaler")
+
+            normal_finite = _strict_csv_bool(normal["finite_pass"])
+            a_positive = _strict_csv_bool(normal["a_denominator_positive"])
+            b_positive = _strict_csv_bool(normal["b_denominator_positive"])
+            a_pass = _strict_csv_bool(normal["a_pass"])
+            b_pass = _strict_csv_bool(normal["b_pass"])
+            if (
+                a_positive is not (float(normal["a_denominator"]) > 0.0)
+                or b_positive is not (float(normal["b_denominator"]) > 0.0)
+                or a_pass
+                is not (
+                    normal_finite
+                    and float(normal["relative_a_discrepancy"])
+                    <= tolerances.tau_moment
+                )
+                or b_pass
+                is not (
+                    normal_finite
+                    and float(normal["relative_b_discrepancy"])
+                    <= tolerances.tau_moment
+                )
+                or _strict_csv_bool(normal["normal_equations_pass"])
+                is not (a_pass and b_pass)
+            ):
+                raise RuntimeError("normal")
+
+            system_values = [
+                float(system[field])
+                for field in (
+                    "federated_alpha",
+                    "pooled_alpha",
+                    "federated_condition_number",
+                    "pooled_condition_number",
+                    "kappa",
+                    "fed_residual_norm",
+                    "fed_residual_denominator",
+                    "fed_relative_residual",
+                    "pooled_residual_norm",
+                    "pooled_residual_denominator",
+                    "pooled_relative_residual",
+                    "max_abs_beta_difference",
+                    "beta_denominator",
+                    "relative_beta_difference",
+                    "beta_forward_envelope",
+                )
+            ]
+            system_finite = _strict_csv_bool(system["finite_pass"])
+            fed_positive = _strict_csv_bool(
+                system["fed_residual_denominator_positive"]
+            )
+            pooled_positive = _strict_csv_bool(
+                system["pooled_residual_denominator_positive"]
+            )
+            beta_positive = _strict_csv_bool(
+                system["beta_denominator_positive"]
+            )
+            expected_system_finite = bool(
+                np.isfinite(system_values).all()
+                and fed_positive
+                and pooled_positive
+                and beta_positive
+            )
+            condition = bool(
+                np.isfinite(float(system["federated_condition_number"]))
+                and np.isfinite(float(system["pooled_condition_number"]))
+                and float(system["federated_condition_number"])
+                * tolerances.epsilon
+                < 1.0
+                and float(system["pooled_condition_number"])
+                * tolerances.epsilon
+                < 1.0
+            )
+            if (
+                _strict_csv_bool(system["alpha_equal"])
+                is not (
+                    float(system["federated_alpha"])
+                    == float(system["pooled_alpha"])
+                )
+                or float(system["kappa"])
+                != max(
+                    float(system["federated_condition_number"]),
+                    float(system["pooled_condition_number"]),
+                )
+                or fed_positive
+                is not (float(system["fed_residual_denominator"]) > 0.0)
+                or pooled_positive
+                is not (float(system["pooled_residual_denominator"]) > 0.0)
+                or beta_positive
+                is not (float(system["beta_denominator"]) > 0.0)
+                or system_finite is not expected_system_finite
+                or _strict_csv_bool(system["condition_pass"]) is not condition
+                or _strict_csv_bool(system["fed_residual_pass"])
+                is not (
+                    system_finite
+                    and float(system["fed_relative_residual"])
+                    <= tolerances.tau_residual
+                )
+                or _strict_csv_bool(system["pooled_residual_pass"])
+                is not (
+                    system_finite
+                    and float(system["pooled_relative_residual"])
+                    <= tolerances.tau_residual
+                )
+                or _strict_csv_bool(system["beta_within_forward_envelope"])
+                is not (
+                    system_finite
+                    and float(system["relative_beta_difference"])
+                    <= float(system["beta_forward_envelope"])
+                )
+            ):
+                raise RuntimeError("system")
+
+            functional_values = [
+                float(functional[field])
+                for field in (
+                    "max_abs_raw_prediction_difference",
+                    "max_abs_clipped_prediction_difference",
+                    "federated_clipped_rmse",
+                    "pooled_clipped_rmse",
+                    "clipped_rmse_difference",
+                    "federated_clipped_mae",
+                    "pooled_clipped_mae",
+                    "clipped_mae_difference",
+                )
+            ]
+            functional_finite = bool(np.isfinite(functional_values).all())
+            if (
+                _strict_csv_bool(functional["finite_pass"])
+                is not functional_finite
+                or _strict_csv_bool(functional["raw_prediction_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["max_abs_raw_prediction_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+                or _strict_csv_bool(functional["clipped_prediction_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["max_abs_clipped_prediction_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+                or _strict_csv_bool(functional["rmse_parity_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["clipped_rmse_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+                or _strict_csv_bool(functional["mae_parity_pass"])
+                is not (
+                    functional_finite
+                    and float(functional["clipped_mae_difference"])
+                    <= tolerances.tau_functional_ppm
+                )
+            ):
+                raise RuntimeError("functional")
+        except (KeyError, TypeError, ValueError, RuntimeError) as error:
+            raise RuntimeError(
+                f"FAIL_CLOSED semantic diagnostic internal contradiction: gas {gas_id}"
+            ) from error
+    result_by_gas = {
+        int(row["gas_id"]): row
+        for row in gas_results
+        if isinstance(row, Mapping) and "gas_id" in row
+    }
+    if len(result_by_gas) != len(gas_results):
+        raise RuntimeError("FAIL_CLOSED semantic decision gas coverage mismatch")
+    for gas_id, result in result_by_gas.items():
+        if any(gas_id not in rows for rows in diagnostics.values()):
+            raise RuntimeError("FAIL_CLOSED semantic diagnostic gas mismatch")
+        scaler = diagnostics["scaler"][gas_id]
+        normal = diagnostics["normal"][gas_id]
+        system = diagnostics["system"][gas_id]
+        functional = diagnostics["functional"][gas_id]
+        expected = {
+            "alpha_equal": _strict_csv_bool(system.get("alpha_equal")),
+            "scaler_pass": _strict_csv_bool(scaler.get("scaler_pass")),
+            "safe_scale_mask_equal": _strict_csv_bool(
+                scaler.get("safe_scale_mask_equal")
+            ),
+            "normal_equations_pass": _strict_csv_bool(
+                normal.get("normal_equations_pass")
+            ),
+            "condition_pass": _strict_csv_bool(system.get("condition_pass")),
+            "fed_residual_pass": _strict_csv_bool(
+                system.get("fed_residual_pass")
+            ),
+            "pooled_residual_pass": _strict_csv_bool(
+                system.get("pooled_residual_pass")
+            ),
+            "raw_prediction_pass": _strict_csv_bool(
+                functional.get("raw_prediction_pass")
+            ),
+            "clipped_prediction_pass": _strict_csv_bool(
+                functional.get("clipped_prediction_pass")
+            ),
+            "rmse_parity_pass": _strict_csv_bool(
+                functional.get("rmse_parity_pass")
+            ),
+            "mae_parity_pass": _strict_csv_bool(
+                functional.get("mae_parity_pass")
+            ),
+            "finite_pass": all(
+                _strict_csv_bool(row.get("finite_pass"))
+                for row in (scaler, normal, system, functional)
+            ),
+        }
+        if any(result.get(field) is not value for field, value in expected.items()):
+            raise RuntimeError("FAIL_CLOSED semantic diagnostic contradiction")
+        try:
+            relative_beta = float(system["relative_beta_difference"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise RuntimeError(
+                "FAIL_CLOSED semantic system diagnostic is invalid"
+            ) from error
+        if result.get("relative_beta_difference") != relative_beta:
+            raise RuntimeError("FAIL_CLOSED semantic system diagnostic contradiction")
+
+    alpha_rows = _read_csv_evidence(output / "source_alpha_audit.csv")
+    alpha_lock_path = output / "source_alpha_lock.json"
+    alpha_lock = _read_json(alpha_lock_path) if alpha_lock_path.is_file() else None
+    selected = alpha_lock.get("selected_alpha") if alpha_lock else {}
+    if alpha_lock is not None and (
+        alpha_lock.get("schema_version") != f"{SCHEMA_VERSION}.alpha_lock"
+        or alpha_lock.get("study_id") != R0_V2_STUDY_ID
+        or alpha_lock.get("status") != "LOCKED_BEFORE_SOURCE_TEST"
+        or alpha_lock.get("alpha_grid") != list(RIDGE_ALPHAS)
+        or alpha_lock.get("source_test_used_for_selection") is not False
+        or alpha_lock.get("source_aggregation_order") != list(SOURCE_CLIENTS)
+        or not isinstance(selected, Mapping)
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic alpha lock contradiction")
+    grouped: dict[tuple[str, str], list[Mapping[str, str]]] = {}
+    for row in alpha_rows:
+        if row.get("status") == "NO_ROWS":
+            continue
+        try:
+            gas_id = int(row["gas_id"])
+            route = str(row["route"])
+            alpha = float(row["alpha"])
+            calibration_rmse = float(row["source_calibration_RMSE"])
+            calibration_n = (
+                int(row["source_calibration_N"])
+                if row.get("source_calibration_N") not in (None, "")
+                else None
+            )
+        except (KeyError, TypeError, ValueError, OverflowError) as error:
+            raise RuntimeError("FAIL_CLOSED semantic alpha audit invalid") from error
+        if (
+            gas_id not in GAS_IDS
+            or route not in ("federated", "pooled")
+            or not np.isfinite(alpha)
+            or alpha not in RIDGE_ALPHAS
+            or not np.isfinite(calibration_rmse)
+            or calibration_rmse < 0.0
+            or (calibration_n is not None and calibration_n <= 0)
+            or (
+                execution.get("execution_kind") == "formal"
+                and calibration_n is None
+            )
+            or row.get("target_input_accessed") != "False"
+            or row.get("source_test_accessed") != "False"
+        ):
+            raise RuntimeError("FAIL_CLOSED semantic alpha access contradiction")
+        grouped.setdefault((str(gas_id), route), []).append(row)
+    if decision == R0_V2_PASS and set(grouped) != {
+        (str(gas_id), route)
+        for gas_id in GAS_IDS
+        for route in ("federated", "pooled")
+    }:
+        raise RuntimeError("FAIL_CLOSED semantic alpha audit coverage mismatch")
+    for (gas, route), rows in grouped.items():
+        try:
+            alpha_values = [float(row["alpha"]) for row in rows]
+            best_rmse = min(float(row["source_calibration_RMSE"]) for row in rows)
+            chosen = next(
+                float(row["alpha"])
+                for row in rows
+                if float(row["source_calibration_RMSE"]) == best_rmse
+            )
+        except (KeyError, TypeError, ValueError, StopIteration) as error:
+            raise RuntimeError("FAIL_CLOSED semantic alpha audit invalid") from error
+        registered_subset = [
+            alpha for alpha in RIDGE_ALPHAS if alpha in set(alpha_values)
+        ]
+        if (
+            len(alpha_values) != len(set(alpha_values))
+            or any(alpha not in RIDGE_ALPHAS for alpha in alpha_values)
+            or alpha_values != registered_subset
+            or (
+                execution.get("execution_kind") == "formal"
+                and alpha_values != list(RIDGE_ALPHAS)
+            )
+        ):
+            raise RuntimeError("FAIL_CLOSED semantic alpha grid contradiction")
+        if alpha_lock is not None and (
+            not isinstance(selected.get(gas), Mapping)
+            or selected[gas].get(route) != chosen
+        ):
+            raise RuntimeError("FAIL_CLOSED semantic alpha selection contradiction")
+
+    model_lock_path = output / "model_lock.json"
+    model_lock = _read_json(model_lock_path) if model_lock_path.is_file() else None
+    models = model_lock.get("models") if model_lock else None
+    if model_lock is not None and (
+        model_lock.get("schema_version") != f"{SCHEMA_VERSION}.model_lock"
+        or model_lock.get("study_id") != R0_V2_STUDY_ID
+        or model_lock.get("status") != "LOCKED_BEFORE_SOURCE_TEST"
+        or model_lock.get("source_clients") != list(SOURCE_CLIENTS)
+        or model_lock.get("source_aggregation_order") != list(SOURCE_CLIENTS)
+        or not isinstance(models, Mapping)
+        or set(models) != {str(gas_id) for gas_id in GAS_IDS}
+        or model_lock.get("models_sha256") != _json_sha256(models)
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic model lock contradiction")
+    for gas, routes in (models.items() if isinstance(models, Mapping) else ()):
+        if not isinstance(routes, Mapping) or set(routes) != {"federated", "pooled"}:
+            raise RuntimeError("FAIL_CLOSED semantic model routes mismatch")
+        for route, model in routes.items():
+            try:
+                model_names = list(model["feature_names"])
+                mean = np.asarray(model["mean"], dtype=np.float64)
+                scale = np.asarray(model["scale"], dtype=np.float64)
+                coef = np.asarray(model["coef"], dtype=np.float64)
+                clip_min = float(model["clip_min"])
+                clip_max = float(model["clip_max"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise RuntimeError(
+                    "FAIL_CLOSED semantic model state invalid"
+                ) from error
+            expected_scaler_state = [
+                feature_state_by_gas_index.get((int(gas), index))
+                for index in range(104)
+            ]
+            scaler_state_complete = all(
+                state is not None for state in expected_scaler_state
+            )
+            expected_mean = np.asarray(
+                [state[0] for state in expected_scaler_state]
+                if scaler_state_complete
+                else [],
+                dtype=np.float64,
+            )
+            expected_scale = np.asarray(
+                [state[1] for state in expected_scaler_state]
+                if scaler_state_complete
+                else [],
+                dtype=np.float64,
+            )
+            if (
+                not isinstance(model, Mapping)
+                or model.get("gas_id") != int(gas)
+                or model.get("alpha") != selected[gas][route]
+                or model.get("role") != "source_train_plus_calibration_refit"
+                or model.get("solver") != "numpy.linalg.pinv"
+                or model.get("intercept_regularized") is not False
+                or len(model_names) != 104
+                or mean.shape != (104,)
+                or scale.shape != (104,)
+                or coef.shape != (105,)
+                or not np.isfinite(mean).all()
+                or not np.isfinite(scale).all()
+                or not np.isfinite(coef).all()
+                or np.any(scale <= 0.0)
+                or not np.isfinite([clip_min, clip_max]).all()
+                or clip_min > clip_max
+                or (
+                    feature_names_by_index
+                    and model_names
+                    != [feature_names_by_index[index] for index in range(104)]
+                )
+                or (
+                    feature_state_by_gas_index
+                    and (
+                        not scaler_state_complete
+                        or not np.array_equal(mean, expected_mean)
+                        or not np.array_equal(scale, expected_scale)
+                    )
+                )
+            ):
+                raise RuntimeError("FAIL_CLOSED semantic model lock contradiction")
+        system_row = diagnostics["system"].get(int(gas))
+        if system_row is None:
+            raise RuntimeError("FAIL_CLOSED semantic model/system linkage missing")
+        fed_model = routes["federated"]
+        pooled_model = routes["pooled"]
+        if (
+            float(fed_model["clip_min"]) != float(pooled_model["clip_min"])
+            or float(fed_model["clip_max"]) != float(pooled_model["clip_max"])
+        ):
+            raise RuntimeError("FAIL_CLOSED semantic model clip contradiction")
+        fed_coef = np.asarray(fed_model["coef"], dtype=np.float64)
+        pooled_coef = np.asarray(pooled_model["coef"], dtype=np.float64)
+        coefficient_delta = fed_coef - pooled_coef
+        max_abs_beta = float(np.max(np.abs(coefficient_delta)))
+        beta_denominator = float(np.linalg.norm(pooled_coef, ord=2))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            relative_beta = float(
+                np.divide(
+                    np.linalg.norm(coefficient_delta, ord=2),
+                    beta_denominator,
+                )
+            )
+        linked_values = (
+            (float(system_row["federated_alpha"]), float(fed_model["alpha"])),
+            (float(system_row["pooled_alpha"]), float(pooled_model["alpha"])),
+            (float(system_row["max_abs_beta_difference"]), max_abs_beta),
+            (float(system_row["beta_denominator"]), beta_denominator),
+            (float(system_row["relative_beta_difference"]), relative_beta),
+        )
+        if any(
+            not np.isclose(observed, expected, rtol=1e-14, atol=1e-15)
+            for observed, expected in linked_values
+        ):
+            raise RuntimeError(
+                "FAIL_CLOSED semantic model coefficient diagnostics contradiction"
+            )
+
+    events = execution["access_events"]
+    locks_before_test = execution.get("source_test_opened_after_locks") is True
+    if (output / "DATA_ACCESS_AUDIT.md").read_text(encoding="utf-8") != _access_audit_text(
+        events, locks_before_test=locks_before_test, decision=decision
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic access audit contradiction")
+    access_complete = events == [
+        _request_payload(request, sequence)
+        for sequence, request in enumerate(_expected_source_requests())
+    ]
+    if (output / "R0_V2_EXPERIMENT_AUDIT.md").read_text(
+        encoding="utf-8"
+    ) != _experiment_audit_text(
+        decision=decision,
+        findings=decision_payload["blocking_findings"],
+        access_complete=access_complete,
+    ):
+        raise RuntimeError("FAIL_CLOSED semantic experiment audit contradiction")
+
+
 def audit(output: Path) -> dict[str, Any]:
     """Audit an existing execution without recomputing numerical evidence."""
-    output = Path(output).resolve()
+    output = _reject_symlink_components(output, "output").resolve()
     index_path = output / "sha256_index.json"
+    symlinks = [
+        path.relative_to(output).as_posix()
+        for path in output.rglob("*")
+        if path.is_symlink()
+    ]
+    if symlinks:
+        raise RuntimeError(f"FAIL_CLOSED evidence symlink violation: {symlinks}")
+    wrong_types = _artifact_type_findings(
+        output, EXPECTED_FORMAL_FILES, require_present=False
+    )
+    if wrong_types:
+        raise RuntimeError(
+            f"FAIL_CLOSED evidence artifact type violation: {wrong_types}"
+        )
+    if index_path.is_symlink() or not index_path.is_file():
+        raise RuntimeError("FAIL_CLOSED SHA256 index type violation")
     index = _read_json(index_path)
     indexable_files = {
         path.relative_to(output).as_posix()
         for path in output.rglob("*")
         if path.is_file()
-        and path.name not in {"sha256_index.json", "fixed_endpoint_complete.json"}
+        and not (
+            path.parent == output
+            and path.name
+            in {"sha256_index.json", "fixed_endpoint_complete.json"}
+        )
     }
     if set(index) != indexable_files:
         raise RuntimeError("FAIL_CLOSED SHA256 index completeness violation")
@@ -1299,12 +2700,8 @@ def audit(output: Path) -> dict[str, Any]:
     if recomputed_decision != decision and not execution_failure_override:
         raise RuntimeError("FAIL_CLOSED decision conflicts with stored gate evidence")
     findings = decision_payload.get("blocking_findings")
-    expected_findings = _blocking_findings(
-        str(decision), gas_rows, recorded_error
-    )
     if (
         not isinstance(findings, list)
-        or findings != expected_findings
         or (decision == R0_V2_PASS and findings != [])
         or (decision == R0_V2_FAIL and not findings)
         or decision_payload.get("evidence_complete")
@@ -1350,10 +2747,13 @@ def audit(output: Path) -> dict[str, Any]:
     valid_execution_kind = execution_kind in ("formal", "synthetic_test") and (
         execution.get("formal_execution_started") is (execution_kind == "formal")
     )
+    if not _execution_provenance_is_valid(execution):
+        raise RuntimeError("FAIL_CLOSED execution provenance manifest is invalid")
     if (
         not valid_prefix
         or execution.get("study_id") != R0_V2_STUDY_ID
         or execution.get("decision") != decision
+        or execution.get("error") != recorded_error
         or execution.get("status")
         != ("PASS" if decision == R0_V2_PASS else "FAIL_CLOSED")
         or not valid_execution_kind
@@ -1372,6 +2772,22 @@ def audit(output: Path) -> dict[str, Any]:
     ):
         raise RuntimeError("FAIL_CLOSED access/protocol audit validation failed")
 
+    expected_findings = _blocking_findings(
+        str(decision),
+        gas_rows,
+        recorded_error,
+        access_complete=exact_access,
+        locks_before_test=execution.get("source_test_opened_after_locks") is True,
+        artifact_findings=_artifact_type_findings(
+            output, EXPECTED_FORMAL_FILES[:9], require_present=True
+        ),
+    )
+    if findings != expected_findings:
+        raise RuntimeError(
+            "FAIL_CLOSED decision completeness/blocking findings are invalid"
+        )
+    _semantic_evidence_audit(output, decision_payload, execution)
+
     marker_path = output / "fixed_endpoint_complete.json"
     if decision == R0_V2_PASS:
         missing = [
@@ -1385,7 +2801,9 @@ def audit(output: Path) -> dict[str, Any]:
             )
         marker = _read_json(marker_path)
         if (
-            marker.get("status") != "COMPLETE"
+            marker.get("schema_version") != f"{SCHEMA_VERSION}.completion"
+            or marker.get("study_id") != R0_V2_STUDY_ID
+            or marker.get("status") != "COMPLETE"
             or marker.get("decision") != R0_V2_PASS
             or marker.get(COMPLETION_RELEASE_FIELD) is not True
             or marker.get("downstream_launched") is not False

@@ -1,6 +1,9 @@
 import csv
+import hashlib
 import json
+import os
 import re
+import shutil
 from dataclasses import FrozenInstanceError, asdict
 from pathlib import Path
 from typing import Mapping
@@ -1387,6 +1390,32 @@ def test_r0_v2_protocol_manifest_is_pre_run_target_free_and_canonical() -> None:
     )
     assert manifest["C0_decision"] == "V1_INTERLEAVED_RETAINED"
     assert manifest["original_R0_decision"] == "R0_EXACT_RECOVERY_NOT_ESTABLISHED"
+    assert manifest["immutable_prerequisites"] == {
+        "C0": {
+            "index_path": (
+                "results/iotj_canonical_v1_final/"
+                "canonical_regression_reconstruction_qc_20260811/"
+                "C0/C0_SHA256_INDEX.json"
+            ),
+            "index_sha256": (
+                "18d6fa01352be80273460439e6c3a77196d8d93df53e3ea967f0e9ebdf335da0"
+            ),
+            "decision": "V1_INTERLEAVED_RETAINED",
+        },
+        "original_R0": {
+            "index_path": (
+                "results/iotj_canonical_v1_final/"
+                "canonical_regression_reconstruction_qc_20260811/"
+                "R0/R0_SHA256_INDEX.json"
+            ),
+            "index_sha256": (
+                "0f9a4ed854df5b87acad2d6801fa1e5607ac8df58d6e21e5138b6e1401bfc242"
+            ),
+            "decision": "R0_EXACT_RECOVERY_NOT_ESTABLISHED",
+            "status": "FAIL_CLOSED",
+            "failed_gate": "R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY",
+        },
+    }
     assert manifest["formal_result_root"] == (
         "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812"
     )
@@ -1707,6 +1736,27 @@ def test_r0_v2_preflight_rejects_wrong_commit_and_existing_output(
         runner.preflight(DATA_ROOT, output, "actual")
 
 
+def test_execution_rejects_lexical_output_root_symlink_before_resolving(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches a symlinked result root redirecting writes outside its path."""
+    output = tmp_path / "linked-output"
+    path_type = type(output)
+    real_is_symlink = path_type.is_symlink
+    monkeypatch.setattr(
+        path_type,
+        "is_symlink",
+        lambda self: self == output or real_is_symlink(self),
+    )
+
+    with pytest.raises(RuntimeError, match="symlink.*output"):
+        runner._execute_source_only(
+            RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+        )
+
+    assert not output.exists()
+
+
 def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
     tmp_path: Path,
 ) -> None:
@@ -1714,7 +1764,6 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
     data_root = tmp_path / "canonical"
     data_root.mkdir()
     protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
-    protocol["canonical_data"]["dataset_aggregate_sha256"] = "a" * 64
     artifacts: dict[str, str] = {}
     index_files: dict[str, str] = {}
     for client in ("C1", "C2"):
@@ -1771,14 +1820,18 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
         encoding="utf-8",
     )
     index_files[canonical_manifest.name] = runner.sha256_file(canonical_manifest)
+    aggregate = hashlib.sha256()
+    for name, digest in sorted(index_files.items()):
+        aggregate.update(name.encode())
+        aggregate.update(b"\0")
+        aggregate.update(digest.encode())
+        aggregate.update(b"\n")
+    protocol["canonical_data"]["dataset_aggregate_sha256"] = aggregate.hexdigest()
     (data_root / "dataset_sha256.json").write_text(
         json.dumps(
             {
-                "aggregate_sha256": "a" * 64,
-                "files": {
-                    **index_files,
-                    "client_3/unregistered_secret.npy": "b" * 64,
-                },
+                "aggregate_sha256": aggregate.hexdigest(),
+                "files": index_files,
             }
         ),
         encoding="utf-8",
@@ -1802,15 +1855,71 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
     )
     class_path = data_root / "client_1/test_classification_labels.npy"
     classes = np.load(class_path, allow_pickle=False)
-    classes[0] = 1
+    zero = int(np.flatnonzero(classes == 0)[0])
+    one = int(np.flatnonzero(classes == 1)[0])
+    classes[zero], classes[one] = classes[one], classes[zero]
     np.save(class_path, classes, allow_pickle=False)
     index_path = data_root / "dataset_sha256.json"
     index = json.loads(index_path.read_text(encoding="utf-8"))
     relative = class_path.relative_to(data_root).as_posix()
     index["files"][relative] = runner.sha256_file(class_path)
+    rehashed = hashlib.sha256()
+    for name, digest in sorted(index["files"].items()):
+        rehashed.update(name.encode())
+        rehashed.update(b"\0")
+        rehashed.update(digest.encode())
+        rehashed.update(b"\n")
+    index["aggregate_sha256"] = rehashed.hexdigest()
     index_path.write_text(json.dumps(index), encoding="utf-8")
-    with pytest.raises(RuntimeError, match="per-gas source counts"):
+    with pytest.raises(RuntimeError, match="aggregate"):
         runner._verify_source_dataset(data_root, protocol)
+
+
+def test_canonical_index_rejects_extra_missing_unsafe_and_symlink_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches trusting a mutable index/path set instead of the frozen tree."""
+    root = tmp_path / "canonical"
+    root.mkdir()
+    registered = root / "registered.bin"
+    registered.write_bytes(b"registered")
+    digest = runner.sha256_file(registered)
+    index = {"files": {"registered.bin": digest}}
+
+    extra = root / "extra.bin"
+    extra.write_bytes(b"extra")
+    with pytest.raises(RuntimeError, match="coverage"):
+        runner._recompute_canonical_aggregate(root, index)
+    extra.unlink()
+
+    registered.unlink()
+    with pytest.raises(RuntimeError, match="coverage"):
+        runner._recompute_canonical_aggregate(root, index)
+    registered.write_bytes(b"registered")
+
+    for unsafe in ("../escape.bin", "/absolute.bin", "C:/absolute.bin"):
+        with pytest.raises(RuntimeError, match="unsafe"):
+            runner._recompute_canonical_aggregate(
+                root, {"files": {unsafe: digest}}
+            )
+
+    link = root / "linked.bin"
+    try:
+        link.symlink_to(registered)
+    except OSError:
+        path_type = type(registered)
+        real_is_symlink = path_type.is_symlink
+        monkeypatch.setattr(
+            path_type,
+            "is_symlink",
+            lambda self: self == registered or real_is_symlink(self),
+        )
+        link = registered
+    with pytest.raises(RuntimeError, match="symlink"):
+        runner._recompute_canonical_aggregate(
+            root,
+            {"files": {"registered.bin": digest, "linked.bin": digest}},
+        )
 
 
 def test_preflight_is_pure_and_accepts_only_the_frozen_source_prerequisites(
@@ -1819,6 +1928,9 @@ def test_preflight_is_pure_and_accepts_only_the_frozen_source_prerequisites(
     """Catches preflight writing evidence or omitting a real prerequisite check."""
     output = tmp_path / "absent"
     monkeypatch.setattr(runner, "_git_head", lambda: "authorized")
+    monkeypatch.setattr(
+        runner, "_verify_critical_paths_match_head", lambda _head: None
+    )
 
     result = runner.preflight(DATA_ROOT, output, "authorized")
 
@@ -1827,6 +1939,48 @@ def test_preflight_is_pure_and_accepts_only_the_frozen_source_prerequisites(
     assert result["source_clients"] == ["C1", "C2"]
     assert result["target_clients"] == []
     assert not output.exists()
+
+
+@pytest.mark.parametrize("changed_path", ("data", "output"))
+def test_formal_run_rejects_unregistered_paths_before_preflight_or_execution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    changed_path: str,
+) -> None:
+    """Catches publishing a formal run outside either registered root."""
+    data_root = DATA_ROOT if changed_path != "data" else tmp_path / "other-data"
+    output = runner.RESULT_ROOT if changed_path != "output" else tmp_path / "other-output"
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("formal path drift reached execution setup")
+
+    monkeypatch.setattr(runner, "preflight", forbidden)
+    monkeypatch.setattr(runner, "_execute_source_only", forbidden)
+    with pytest.raises(RuntimeError, match="registered formal"):
+        runner.run(data_root, output, "not-reached")
+
+
+def test_preflight_rejects_dirty_execution_critical_file_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Catches authorizing HEAD while executing modified critical code bytes."""
+    real = runner._git_file_bytes
+
+    def dirty(commit: str, path: Path) -> bytes:
+        if path.resolve() == Path(runner.__file__).resolve():
+            return b"different committed runner bytes"
+        return real(commit, path)
+
+    monkeypatch.setattr(runner, "_git_file_bytes", dirty)
+    with pytest.raises(RuntimeError, match="critical path"):
+        runner._verify_critical_paths_match_head(runner._git_head())
+
+
+def test_runner_constant_matches_final_amended_protocol_bytes() -> None:
+    """Catches updating the protocol without updating the compiled freeze lock."""
+    assert runner.EXPECTED_PROTOCOL_FREEZE_SHA256 == runner.sha256_file(
+        PROTOCOL_MANIFEST
+    )
 
 
 def test_preflight_fails_closed_on_protocol_hash_and_status_drift(
@@ -1933,12 +2087,25 @@ def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
     monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
     monkeypatch.setattr(runner, "ORIGINAL_R0_ROOT", r0_root)
     monkeypatch.setattr(runner, "ORIGINAL_PROTOCOL_MANIFEST", original_protocol)
+    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    protocol["immutable_prerequisites"] = {
+        "C0": {
+            "index_sha256": runner.sha256_file(
+                c0_root / "C0_SHA256_INDEX.json"
+            )
+        },
+        "original_R0": {
+            "index_sha256": runner.sha256_file(
+                r0_root / "R0_SHA256_INDEX.json"
+            )
+        },
+    }
     with pytest.raises(RuntimeError, match="original C0 decision"):
-        runner._verify_original_prerequisites(tmp_path / "new")
+        runner._verify_original_prerequisites(tmp_path / "new", protocol)
 
     monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", tmp_path / "new/C0")
     with pytest.raises(RuntimeError, match="inside output"):
-        runner._verify_original_prerequisites(tmp_path / "new")
+        runner._verify_original_prerequisites(tmp_path / "new", protocol)
 
     (c0_root / "C0_DECISION.json").write_text(
         json.dumps({"decision": "V1_INTERLEAVED_RETAINED"}), encoding="utf-8"
@@ -1952,9 +2119,91 @@ def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
     (c0_root / "C0_SHA256_INDEX.json").write_text(
         json.dumps(c0_index), encoding="utf-8"
     )
+    protocol["immutable_prerequisites"]["C0"]["index_sha256"] = (
+        runner.sha256_file(c0_root / "C0_SHA256_INDEX.json")
+    )
     monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
     with pytest.raises(RuntimeError, match="overlaps output"):
-        runner._verify_original_prerequisites(c0_root / "new_output")
+        runner._verify_original_prerequisites(c0_root / "new_output", protocol)
+
+
+def test_original_prerequisite_rehash_cannot_redefine_immutable_anchor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches coordinated prerequisite-file and self-index replacement."""
+    c0_root = tmp_path / "old/C0"
+    r0_root = tmp_path / "old/R0"
+    c0_root.mkdir(parents=True)
+    r0_root.mkdir(parents=True)
+    for root, source, names in (
+        (
+            c0_root,
+            runner.ORIGINAL_C0_ROOT,
+            ("C0_SHA256_INDEX.json", "C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md"),
+        ),
+        (
+            r0_root,
+            runner.ORIGINAL_R0_ROOT,
+            (
+                "R0_SHA256_INDEX.json",
+                "canonical_fedridge_exact_recovery.json",
+                "R0_FAILURE_AUDIT.json",
+                "R0_EXPERIMENT_AUDIT.md",
+            ),
+        ),
+    ):
+        for name in names:
+            shutil.copy2(source / name, root / name)
+    monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
+    monkeypatch.setattr(runner, "ORIGINAL_R0_ROOT", r0_root)
+    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+
+    assert runner._verify_original_prerequisites(tmp_path / "new", protocol)[
+        "C0_decision"
+    ] == "V1_INTERLEAVED_RETAINED"
+
+    failure_path = r0_root / "R0_FAILURE_AUDIT.json"
+    failure = json.loads(failure_path.read_text(encoding="utf-8"))
+    failure["downstream_gate_opened"] = True
+    failure_path.write_text(json.dumps(failure), encoding="utf-8")
+    r0_index_path = r0_root / "R0_SHA256_INDEX.json"
+    r0_index = json.loads(r0_index_path.read_text(encoding="utf-8"))
+    r0_index["R0_FAILURE_AUDIT.json"] = runner.sha256_file(failure_path)
+    r0_index_path.write_text(json.dumps(r0_index), encoding="utf-8")
+    semantic_protocol = json.loads(json.dumps(protocol))
+    semantic_protocol["immutable_prerequisites"]["original_R0"][
+        "index_sha256"
+    ] = runner.sha256_file(r0_index_path)
+    with pytest.raises(RuntimeError, match="original R0 decision/audit"):
+        runner._verify_original_prerequisites(
+            tmp_path / "new", semantic_protocol
+        )
+    shutil.copy2(
+        runner.ROOT
+        / "results/iotj_canonical_v1_final/"
+        "canonical_regression_reconstruction_qc_20260811/"
+        "R0/R0_FAILURE_AUDIT.json",
+        failure_path,
+    )
+    shutil.copy2(
+        runner.ROOT
+        / "results/iotj_canonical_v1_final/"
+        "canonical_regression_reconstruction_qc_20260811/"
+        "R0/R0_SHA256_INDEX.json",
+        r0_index_path,
+    )
+
+    decision_path = c0_root / "C0_DECISION.json"
+    decision = json.loads(decision_path.read_text(encoding="utf-8"))
+    decision["coordinated_rehash"] = True
+    decision_path.write_text(json.dumps(decision), encoding="utf-8")
+    index_path = c0_root / "C0_SHA256_INDEX.json"
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    index["C0_DECISION.json"] = runner.sha256_file(decision_path)
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="index anchor"):
+        runner._verify_original_prerequisites(tmp_path / "new", protocol)
 
 
 @pytest.mark.parametrize(
@@ -2071,6 +2320,40 @@ EXPECTED_EXECUTION_FILES = {
 }
 
 
+def rehash_evidence_after_tamper(output: Path) -> None:
+    index_path = output / "sha256_index.json"
+    index = {
+        path.relative_to(output).as_posix(): runner.sha256_file(path)
+        for path in sorted(output.rglob("*"))
+        if path.is_file()
+        and path.parent != output
+        or (
+            path.is_file()
+            and path.parent == output
+            and path.name
+            not in {"sha256_index.json", "fixed_endpoint_complete.json"}
+        )
+    }
+    index_path.write_text(json.dumps(index), encoding="utf-8")
+    marker_path = output / "fixed_endpoint_complete.json"
+    if marker_path.exists():
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        marker["sha256_index_sha256"] = runner.sha256_file(index_path)
+        marker_path.write_text(json.dumps(marker), encoding="utf-8")
+
+
+def rewrite_csv_cell(path: Path, field: str, value: str) -> None:
+    with path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        rows = list(reader)
+        fields = list(reader.fieldnames or [])
+    rows[0][field] = value
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def test_synthetic_runner_writes_all_diagnostics_and_never_requests_target(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2146,6 +2429,7 @@ def test_failed_synthetic_runner_preserves_evidence_without_completion(
     def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
         row = original(*args, **kwargs)
         row["raw_prediction_pass"] = False
+        row["max_abs_raw_prediction_difference"] = 1.0
         return row
 
     monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
@@ -2163,6 +2447,104 @@ def test_failed_synthetic_runner_preserves_evidence_without_completion(
     )
     assert "blocking" in audit_text.lower()
     assert "raw_prediction_pass" in audit_text
+
+
+def test_favorable_numerics_with_incomplete_access_forces_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches publishing PASS from favorable numbers and incomplete access."""
+    force_synthetic_alpha(monkeypatch)
+    expected = runner._expected_source_requests()
+    monkeypatch.setattr(
+        runner,
+        "_expected_source_requests",
+        lambda: expected + [runner.SourceRequest("C1", "test", 0)],
+    )
+    output = tmp_path / "run"
+
+    result = runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+
+    assert result["decision"] == "R0_V2_FAILED"
+    decision = json.loads(
+        (output / "R0_V2_DECISION.json").read_text(encoding="utf-8")
+    )
+    assert "access_sequence_incomplete" in decision["blocking_findings"]
+    assert not (output / "fixed_endpoint_complete.json").exists()
+
+
+def test_blocking_findings_accumulate_exception_gate_access_lock_and_artifact() -> None:
+    """Catches early-return logic that hides simultaneous blocking defects."""
+    rows = [passing_gas_diagnostic(gas_id=gas) for gas in range(4)]
+    rows[0]["raw_prediction_pass"] = False
+
+    findings = runner._blocking_findings(
+        "R0_V2_FAILED",
+        rows,
+        "OSError: provider failed",
+        access_complete=False,
+        locks_before_test=False,
+        artifact_findings=["artifact_wrong_type:model_lock.json"],
+    )
+
+    assert "execution_exception:OSError: provider failed" in findings
+    assert "gas_0:raw_prediction_pass" in findings
+    assert "access_sequence_incomplete" in findings
+    assert "locks_not_complete_before_source_test" in findings
+    assert "artifact_wrong_type:model_lock.json" in findings
+
+
+def test_evidence_publication_is_atomic_exclusive_and_idempotent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches partial official files, overwrite races, and non-idempotent retry."""
+    path = tmp_path / "atomic.txt"
+    real_link = os.link
+    observed: list[tuple[Path, Path]] = []
+
+    def inspect_link(source: str | Path, destination: str | Path) -> None:
+        source_path = Path(source)
+        destination_path = Path(destination)
+        observed.append((source_path, destination_path))
+        assert source_path.parent == destination_path.parent
+        assert source_path.read_bytes() == b"immutable\n"
+        assert not destination_path.exists()
+        real_link(source_path, destination_path)
+
+    monkeypatch.setattr(runner.os, "link", inspect_link)
+    runner._ensure_text(path, "immutable\n")
+    runner._ensure_text(path, "immutable\n")
+    assert observed
+    with pytest.raises(FileExistsError, match="conflicting immutable"):
+        runner._ensure_text(path, "changed\n")
+
+    raced = tmp_path / "raced.txt"
+
+    def identical_race(source: str | Path, destination: str | Path) -> None:
+        destination_path = Path(destination)
+        destination_path.write_bytes(Path(source).read_bytes())
+        raise FileExistsError(destination_path)
+
+    monkeypatch.setattr(runner.os, "link", identical_race)
+    runner._ensure_text(raced, "same bytes\n")
+    assert raced.read_text(encoding="utf-8") == "same bytes\n"
+
+
+def test_hash_index_includes_nested_reserved_basenames(tmp_path: Path) -> None:
+    """Catches excluding reserved basenames below the evidence root."""
+    output = tmp_path / "output"
+    nested = output / "canonical_feature_caches"
+    nested.mkdir(parents=True)
+    (nested / "sha256_index.json").write_text("nested", encoding="utf-8")
+    (nested / "fixed_endpoint_complete.json").write_text(
+        "nested marker", encoding="utf-8"
+    )
+
+    index = runner._write_hash_index(output)
+
+    assert "canonical_feature_caches/sha256_index.json" in index
+    assert "canonical_feature_caches/fixed_endpoint_complete.json" in index
 
 
 def test_provider_exception_and_output_collision_preserve_failure_evidence(
@@ -2197,6 +2579,56 @@ def test_provider_exception_and_output_collision_preserve_failure_evidence(
             RecordingSyntheticProvider(), occupied, frozen_protocol_fixture()
         )
     assert evidence.read_text(encoding="utf-8") == "immutable"
+
+
+def test_cache_build_exception_preserves_semantically_auditable_failure(
+    tmp_path: Path,
+) -> None:
+    """Catches requiring a success manifest for the final failed cache attempt."""
+    class FailingCacheProvider(RecordingSyntheticProvider):
+        def build_fresh_cache(
+            self, client: str, split: str
+        ) -> Mapping[str, object]:
+            self.requests.append(runner.SourceRequest(client, split, None))
+            raise OSError("synthetic cache build failure")
+
+    output = tmp_path / "failed-cache"
+    result = runner._execute_source_only(
+        FailingCacheProvider(), output, frozen_protocol_fixture()
+    )
+
+    assert result["decision"] == "R0_V2_FAILED"
+    assert runner.audit(output)["decision"] == "R0_V2_FAILED"
+
+
+def test_partial_failure_audit_checks_each_available_diagnostic_family(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches skipping scaler/system semantics when functional rows are absent."""
+    force_synthetic_alpha(monkeypatch)
+
+    class TestCacheFailureProvider(RecordingSyntheticProvider):
+        def build_fresh_cache(
+            self, client: str, split: str
+        ) -> Mapping[str, object]:
+            if split == "test":
+                self.requests.append(runner.SourceRequest(client, split, None))
+                raise OSError("synthetic post-lock test-cache failure")
+            return super().build_fresh_cache(client, split)
+
+    output = tmp_path / "partial"
+    result = runner._execute_source_only(
+        TestCacheFailureProvider(), output, frozen_protocol_fixture()
+    )
+    assert result["decision"] == "R0_V2_FAILED"
+    assert runner.audit(output)["decision"] == "R0_V2_FAILED"
+
+    rewrite_csv_cell(
+        output / "r0_v2_scaler_diagnostics.csv", "mean_pass", "False"
+    )
+    rehash_evidence_after_tamper(output)
+    with pytest.raises(RuntimeError, match="semantic diagnostic"):
+        runner.audit(output)
 
 
 def test_production_provider_passes_versioned_study_id_to_fresh_cache_api(
@@ -2248,6 +2680,8 @@ def test_audit_only_validates_pass_and_fail_without_modifying_evidence(
     def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
         row = original(*args, **kwargs)
         row["mae_parity_pass"] = False
+        row["federated_clipped_mae"] = float(row["pooled_clipped_mae"]) + 1.0
+        row["clipped_mae_difference"] = 1.0
         return row
 
     monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
@@ -2331,6 +2765,253 @@ def test_audit_only_fails_closed_on_hash_decision_and_access_tampering(
         runner.audit(outputs[3])
 
 
+@pytest.mark.parametrize(
+    ("filename", "field", "value"),
+    (
+        (
+            "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv",
+            "safe_scale_applied",
+            "True",
+        ),
+        ("r0_v2_scaler_diagnostics.csv", "scaler_pass", "False"),
+        ("r0_v2_normal_equation_diagnostics.csv", "a_pass", "False"),
+        ("r0_v2_system_diagnostics.csv", "condition_pass", "False"),
+        (
+            "r0_v2_functional_equivalence.csv",
+            "raw_prediction_pass",
+            "False",
+        ),
+        (
+            "r0_v2_scaler_diagnostics.csv",
+            "max_abs_mean_error",
+            "1e100",
+        ),
+        (
+            "r0_v2_normal_equation_diagnostics.csv",
+            "absolute_a_discrepancy",
+            "1e100",
+        ),
+        (
+            "r0_v2_system_diagnostics.csv",
+            "fed_residual_norm",
+            "1e100",
+        ),
+        (
+            "r0_v2_functional_equivalence.csv",
+            "federated_clipped_rmse",
+            "1e100",
+        ),
+        (
+            "source_alpha_audit.csv",
+            "source_calibration_RMSE",
+            "-Infinity",
+        ),
+        ("source_alpha_audit.csv", "target_input_accessed", "True"),
+    ),
+)
+def test_audit_rejects_rehashed_semantic_diagnostic_contradictions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    filename: str,
+    field: str,
+    value: str,
+) -> None:
+    """Catches coordinated evidence/index/marker rehash after semantic drift."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / field
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    rewrite_csv_cell(output / filename, field, value)
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="semantic"):
+        runner.audit(output)
+
+
+def test_audit_rejects_rehashed_cache_alpha_and_model_provenance_attacks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches coordinated rehashes of cache, alpha, or locked model state."""
+    force_synthetic_alpha(monkeypatch)
+    cache_output = tmp_path / "cache"
+    alpha_output = tmp_path / "alpha"
+    model_output = tmp_path / "model"
+    scaler_output = tmp_path / "scaler"
+    for output in (cache_output, alpha_output, model_output, scaler_output):
+        runner._execute_source_only(
+            RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+        )
+
+    execution_path = cache_output / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution["cache_manifests"].append(
+        {"client": "C3", "split": "test", "study_id": R0_V2_STUDY_ID}
+    )
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    rehash_evidence_after_tamper(cache_output)
+    with pytest.raises(RuntimeError, match="semantic cache"):
+        runner.audit(cache_output)
+
+    alpha_path = alpha_output / "source_alpha_audit.csv"
+    with alpha_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        alpha_rows = list(reader)
+        alpha_fields = list(reader.fieldnames or [])
+    alpha_rows.append(
+        {
+            **alpha_rows[0],
+            "alpha": "999.0",
+            "source_calibration_RMSE": "999.0",
+        }
+    )
+    with alpha_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=alpha_fields)
+        writer.writeheader()
+        writer.writerows(alpha_rows)
+    rehash_evidence_after_tamper(alpha_output)
+    with pytest.raises(RuntimeError, match="semantic alpha"):
+        runner.audit(alpha_output)
+
+    model_path = model_output / "model_lock.json"
+    model_lock = json.loads(model_path.read_text(encoding="utf-8"))
+    model_lock["models"]["0"]["federated"]["coef"][0] += 1.0
+    model_lock["models_sha256"] = runner._json_sha256(model_lock["models"])
+    model_path.write_text(json.dumps(model_lock), encoding="utf-8")
+    rehash_evidence_after_tamper(model_output)
+    with pytest.raises(RuntimeError, match="semantic model"):
+        runner.audit(model_output)
+
+    model_path = scaler_output / "model_lock.json"
+    model_lock = json.loads(model_path.read_text(encoding="utf-8"))
+    model_lock["models"]["0"]["federated"]["mean"][0] += 1.0
+    model_lock["models_sha256"] = runner._json_sha256(model_lock["models"])
+    model_path.write_text(json.dumps(model_lock), encoding="utf-8")
+    rehash_evidence_after_tamper(scaler_output)
+    with pytest.raises(RuntimeError, match="semantic model"):
+        runner.audit(scaler_output)
+
+
+def test_audit_rejects_rehashed_execution_commit_and_gate_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches replacing the execution commit or registered numerical gates."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "execution"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    execution_path = output / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution["execution_commit"] = "forged"
+    execution["numerical_gates"] = {"forged": True}
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="execution provenance"):
+        runner.audit(output)
+
+
+def test_audit_rejects_rehashed_execution_environment_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches replacing the registered float64 environment provenance."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "environment"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    execution_path = output / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution["environment"]["dtype"] = "float32"
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="environment"):
+        runner.audit(output)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("schema_version", "wrong.schema"),
+        ("study_id", "WRONG-STUDY"),
+    ),
+)
+def test_audit_rejects_completion_marker_schema_and_study_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: str,
+) -> None:
+    """Catches accepting a marker from another schema or experiment."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / field
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    marker_path = output / "fixed_endpoint_complete.json"
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    marker[field] = value
+    marker_path.write_text(json.dumps(marker), encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="completion marker"):
+        runner.audit(output)
+
+
+def test_audit_rejects_required_artifact_wrong_type_and_symlink(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches accepting directory/file substitution or linked evidence."""
+    force_synthetic_alpha(monkeypatch)
+    wrong_type = tmp_path / "wrong-type"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), wrong_type, frozen_protocol_fixture()
+    )
+    lock = wrong_type / "model_lock.json"
+    lock.unlink()
+    lock.mkdir()
+    with pytest.raises(RuntimeError, match="type"):
+        runner.audit(wrong_type)
+
+    symlinked = tmp_path / "symlinked"
+    runner._execute_source_only(
+        RecordingSyntheticProvider(), symlinked, frozen_protocol_fixture()
+    )
+    alpha_lock = symlinked / "source_alpha_lock.json"
+    target = symlinked / "source_alpha_lock.actual.json"
+    alpha_lock.replace(target)
+    try:
+        alpha_lock.symlink_to(target.name)
+    except OSError:
+        target.replace(alpha_lock)
+        path_type = type(alpha_lock)
+        real_is_symlink = path_type.is_symlink
+        monkeypatch.setattr(
+            path_type,
+            "is_symlink",
+            lambda self: self == alpha_lock or real_is_symlink(self),
+        )
+        with pytest.raises(RuntimeError, match="symlink"):
+            runner.audit(symlinked)
+        return
+    index = json.loads(
+        (symlinked / "sha256_index.json").read_text(encoding="utf-8")
+    )
+    index["source_alpha_lock.actual.json"] = runner.sha256_file(target)
+    (symlinked / "sha256_index.json").write_text(
+        json.dumps(index), encoding="utf-8"
+    )
+    marker_path = symlinked / "fixed_endpoint_complete.json"
+    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    marker["sha256_index_sha256"] = runner.sha256_file(
+        symlinked / "sha256_index.json"
+    )
+    marker_path.write_text(json.dumps(marker), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="symlink"):
+        runner.audit(symlinked)
+
+
 def test_audit_rejects_incomplete_pass_and_fail_hash_indexes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2346,6 +3027,7 @@ def test_audit_rejects_incomplete_pass_and_fail_hash_indexes(
     def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
         row = original(*args, **kwargs)
         row["raw_prediction_pass"] = False
+        row["max_abs_raw_prediction_difference"] = 1.0
         return row
 
     monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)
@@ -2377,6 +3059,8 @@ def test_audit_rejects_changed_exact_blocking_finding(
     def forced_failure(*args: object, **kwargs: object) -> dict[str, object]:
         row = original(*args, **kwargs)
         row["mae_parity_pass"] = False
+        row["federated_clipped_mae"] = float(row["pooled_clipped_mae"]) + 1.0
+        row["clipped_mae_difference"] = 1.0
         return row
 
     monkeypatch.setattr(runner, "functional_diagnostics_v2", forced_failure)

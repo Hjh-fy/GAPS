@@ -15,6 +15,20 @@
   },
   "C0_decision": "V1_INTERLEAVED_RETAINED",
   "original_R0_decision": "R0_EXACT_RECOVERY_NOT_ESTABLISHED",
+  "immutable_prerequisites": {
+    "C0": {
+      "index_path": "results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/C0/C0_SHA256_INDEX.json",
+      "index_sha256": "18d6fa01352be80273460439e6c3a77196d8d93df53e3ea967f0e9ebdf335da0",
+      "decision": "V1_INTERLEAVED_RETAINED"
+    },
+    "original_R0": {
+      "index_path": "results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/R0/R0_SHA256_INDEX.json",
+      "index_sha256": "0f9a4ed854df5b87acad2d6801fa1e5607ac8df58d6e21e5138b6e1401bfc242",
+      "decision": "R0_EXACT_RECOVERY_NOT_ESTABLISHED",
+      "status": "FAIL_CLOSED",
+      "failed_gate": "R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY"
+    }
+  },
   "design_provenance": {
     "path": "docs/superpowers/specs/2026-08-12-canonical-fedridge-r0-v2-design.md",
     "commit": "b41fee1d5bd64a19d6fefcad5fde610183856202",

@@ -29,6 +29,30 @@ R0=`R0_EXACT_RECOVERY_NOT_ESTABLISHED`.
   Exact per-split source-array, phase, and metadata hashes are frozen in
   `protocol_manifest.json`.
 
+### Strengthened provenance contract
+
+Preflight rebuilds the canonical dataset aggregate using the canonical-v1
+builder framing (`relative_path`, NUL, observed file SHA256, newline, in sorted
+path order). The registered and actual file sets must match exactly; unsafe
+paths, symlinks, wrong types, missing files, extra files, per-file digest
+drift, stored-aggregate drift, or disagreement with the frozen aggregate all
+fail closed.
+
+The prerequisite indexes are independently pinned before any indexed record
+is trusted. `C0/C0_SHA256_INDEX.json` has whole-file SHA256
+`18d6fa01352be80273460439e6c3a77196d8d93df53e3ea967f0e9ebdf335da0`;
+`R0/R0_SHA256_INDEX.json` has whole-file SHA256
+`0f9a4ed854df5b87acad2d6801fa1e5607ac8df58d6e21e5138b6e1401bfc242`.
+The anchored C0 decision remains exactly `V1_INTERLEAVED_RETAINED`; the
+anchored original R0 remains `FAIL_CLOSED` at
+`R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY`, with practical fallback, threshold
+relaxation, rerun, downstream release, and R1 release all false.
+
+Authorization binds the working bytes of this runner, the v2 numerical
+module, the versioned cache module, and this machine-readable protocol to the
+authorized Git HEAD. Unrelated logs and temporary directories do not affect
+that critical-path check.
+
 ## Fixed split, model, and checkpoint policy
 
 For each gas, source train fits each candidate alpha; distributed C1/C2 source
@@ -44,6 +68,17 @@ checkpoint exists pre-run. A separately authorized run must create immutable
 `results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/`.
 The authorized freeze commit supplied to the future CLI must equal current Git
 HEAD. This bundle creates no result directory.
+
+All future evidence files are immutable publications: bytes are written to a
+same-directory temporary file and linked exclusively to the official name.
+An idempotent retry may accept only byte-identical official evidence. The
+completion marker is last and requires exact access, pre-test locks, every
+hard gate, no blocking finding, exact artifact types, complete hash coverage,
+and semantic agreement across diagnostics, locks, access records, decision,
+and audits. Audit-only mode reads and cross-checks existing evidence; it does
+not regenerate metrics or alter evidence. Reserved index and completion names
+are excluded only at the evidence root, so identically named nested files
+remain hash-indexed.
 
 ## Frozen numerical protocol
 
