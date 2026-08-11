@@ -1,19 +1,69 @@
 from dataclasses import FrozenInstanceError
+from typing import Mapping
 
 import numpy as np
 import pytest
 
 from gaps_flower.canonical_fedridge_v2 import (
+    RIDGE_ALPHAS,
     LocalCentralMomentsV2,
+    LocalNormalEquationsV2,
     SCALE_FLOOR,
+    StableGlobalScalerV2,
+    aggregate_normal_equations_v2,
     feature_numerical_audit_rows,
     local_central_moments,
+    local_normal_equations_v2,
     merge_central_moments,
+    pooled_reference_fit_v2,
+    reconstruct_ridge_v2,
+    select_pooled_alpha_v2,
+    select_source_alpha_v2,
 )
 from gaps_flower.canonical_quantitative_features import validate_cache_manifest
 
 
 R0_V2_STUDY_ID = "CAN-V1-FEDRIDGE-R0V2-20260812"
+
+
+def synthetic_two_client_regression() -> dict[
+    str, tuple[np.ndarray, np.ndarray]
+]:
+    return {
+        "C1": (
+            np.array([[0.0, 1.0], [2.0, 1.0], [4.0, 1.0]], dtype=np.float64),
+            np.array([1.0, 5.0, 9.0], dtype=np.float64),
+        ),
+        "C2": (
+            np.array([[1.0, 1.0], [3.0, 1.0], [5.0, 1.0]], dtype=np.float64),
+            np.array([3.0, 7.0, 11.0], dtype=np.float64),
+        ),
+    }
+
+
+def stable_scaler_for(
+    client_data: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    *,
+    role: str = "refit",
+) -> StableGlobalScalerV2:
+    return merge_central_moments(
+        [
+            local_central_moments(client, 0, role, values)
+            for client, (values, _targets) in client_data.items()
+        ]
+    )
+
+
+def standardized_pooled_design(
+    client_data: Mapping[str, tuple[np.ndarray, np.ndarray]],
+    scaler: StableGlobalScalerV2,
+) -> tuple[np.ndarray, np.ndarray]:
+    values = np.vstack([client_data[client][0] for client in ("C1", "C2")])
+    targets = np.concatenate(
+        [client_data[client][1] for client in ("C1", "C2")]
+    )
+    z = (values - scaler.mean) / scaler.scale
+    return np.column_stack([np.ones(len(z), dtype=np.float64), z]), targets
 
 
 def canonical_cache_manifest_fixture(*, study_id: str) -> dict[str, object]:
@@ -361,3 +411,269 @@ def test_v2_feature_numerical_audit_requires_exactly_104_dimensions() -> None:
 
     with pytest.raises(ValueError, match="exactly 104"):
         feature_numerical_audit_rows(records, scaler, ["one", "two"])
+
+
+def test_v2_normal_equations_match_same_standardized_pooled_rows() -> None:
+    """Catches input-order aggregation or a design without the intercept."""
+    client_data = synthetic_two_client_regression()
+    scaler = stable_scaler_for(client_data)
+    local = [
+        local_normal_equations_v2(client, 0, "refit", x, y, scaler)
+        for client, (x, y) in reversed(list(client_data.items()))
+    ]
+    federated = aggregate_normal_equations_v2(local)
+    pooled_design, pooled_y = standardized_pooled_design(client_data, scaler)
+
+    assert federated.aggregation_order == ("C1", "C2")
+    assert np.allclose(federated.a, pooled_design.T @ pooled_design)
+    assert np.allclose(federated.b, pooled_design.T @ pooled_y)
+    assert federated.y_y == pytest.approx(float(pooled_y @ pooled_y))
+
+
+def test_v2_ridge_uses_an_unregularized_intercept_and_exact_alpha_grid() -> None:
+    """Catches shrinking the intercept or changing the registered grid."""
+    client_data = synthetic_two_client_regression()
+    scaler = stable_scaler_for(client_data)
+    equations = aggregate_normal_equations_v2(
+        [
+            local_normal_equations_v2(
+                client, 0, "refit", values, targets, scaler
+            )
+            for client, (values, targets) in client_data.items()
+        ]
+    )
+    model = reconstruct_ridge_v2(
+        equations, scaler, ["x0", "x1"], alpha=1000.0
+    )
+
+    expected_regularizer = np.eye(3, dtype=np.float64) * 1000.0
+    expected_regularizer[0, 0] = 0.0
+    expected_coef = np.linalg.pinv(equations.a + expected_regularizer) @ equations.b
+    assert np.allclose(model.coef, expected_coef)
+    assert model.intercept_regularized is False
+    assert model.to_json()["intercept_regularized"] is False
+    assert model.to_json()["solver"] == "numpy.linalg.pinv"
+    assert RIDGE_ALPHAS == (0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0)
+
+
+def test_v2_ridge_prediction_exposes_raw_and_clipped_parity_paths() -> None:
+    """Catches clipping the raw path or failing to clip to source-train labels."""
+    client_data = synthetic_two_client_regression()
+    scaler = stable_scaler_for(client_data)
+    equations = aggregate_normal_equations_v2(
+        [
+            local_normal_equations_v2(
+                client, 0, "refit", values, targets, scaler
+            )
+            for client, (values, targets) in client_data.items()
+        ]
+    )
+    model = reconstruct_ridge_v2(equations, scaler, ("x0", "x1"), 0.0)
+    extrapolation = np.array([[100.0, 1.0]], dtype=np.float64)
+
+    raw = model.predict_matrix(extrapolation, clip=False)
+    clipped = model.predict_matrix(extrapolation)
+    assert raw[0] > equations.y_max
+    assert clipped[0] == equations.y_max
+    assert model.clip_min == equations.y_min
+    assert model.clip_max == equations.y_max
+
+
+def test_v2_pooled_reference_fit_returns_equations_for_its_exact_rows() -> None:
+    """Catches fitting pooled coefficients from rows unlike its returned A/b."""
+    client_data = synthetic_two_client_regression()
+    values = np.vstack([client_data[client][0] for client in ("C1", "C2")])
+    targets = np.concatenate(
+        [client_data[client][1] for client in ("C1", "C2")]
+    )
+    model, equations = pooled_reference_fit_v2(
+        values,
+        targets,
+        gas_id=0,
+        role="source_train",
+        feature_names=("x0", "x1"),
+        alpha=0.1,
+    )
+
+    design = np.column_stack(
+        [np.ones(len(values), dtype=np.float64), (values - model.mean) / model.scale]
+    )
+    assert equations.aggregation_order == ("POOLED",)
+    assert np.allclose(equations.a, design.T @ design)
+    assert np.allclose(equations.b, design.T @ targets)
+
+
+def test_v2_source_alpha_loops_use_exact_grid_and_first_tie() -> None:
+    """Catches a changed grid, un-clipped score, or later-alpha tie break."""
+    train = {
+        "C2": (
+            np.array([[2.0], [3.0]], dtype=np.float64),
+            np.array([3.0, 3.0], dtype=np.float64),
+        ),
+        "C1": (
+            np.array([[0.0], [1.0]], dtype=np.float64),
+            np.array([3.0, 3.0], dtype=np.float64),
+        ),
+    }
+    calibration = {
+        "C2": (np.array([[20.0]], dtype=np.float64), np.array([3.0])),
+        "C1": (np.array([[-20.0]], dtype=np.float64), np.array([3.0])),
+    }
+
+    federated_alpha, federated_audit = select_source_alpha_v2(
+        train, calibration, gas_id=0, feature_names=("x0",)
+    )
+    pooled_alpha, pooled_audit = select_pooled_alpha_v2(
+        train, calibration, gas_id=0, feature_names=("x0",)
+    )
+
+    assert federated_alpha == pooled_alpha == RIDGE_ALPHAS[0]
+    assert [row["alpha"] for row in federated_audit] == list(RIDGE_ALPHAS)
+    assert [row["alpha"] for row in pooled_audit] == list(RIDGE_ALPHAS)
+    assert all(row["source_calibration_N"] == 2 for row in federated_audit)
+    assert all(row["source_calibration_N"] == 2 for row in pooled_audit)
+    assert all(row["target_input_accessed"] is False for row in federated_audit)
+    assert all(row["source_test_accessed"] is False for row in federated_audit)
+    assert all(row["target_input_accessed"] is False for row in pooled_audit)
+    assert all(row["source_test_accessed"] is False for row in pooled_audit)
+    assert np.allclose(
+        [row["source_calibration_RMSE"] for row in federated_audit],
+        [row["source_calibration_RMSE"] for row in pooled_audit],
+    )
+
+
+@pytest.mark.parametrize(
+    ("train_role", "validation_role", "train_keys", "calibration_keys"),
+    [
+        ("target_train", "source_calibration", ("C1", "C2"), ("C1", "C2")),
+        ("source_train", "source_test", ("C1", "C2"), ("C1", "C2")),
+        ("source_train", "source_calibration", ("C1_target", "C2"), ("C1", "C2")),
+        ("source_train", "source_calibration", ("C1", "C2"), ("C1_test", "C2")),
+    ],
+)
+def test_v2_source_role_gate_rejects_target_or_test_semantics(
+    train_role: str,
+    validation_role: str,
+    train_keys: tuple[str, str],
+    calibration_keys: tuple[str, str],
+) -> None:
+    """Catches target/test data entering either alpha-selection loop."""
+    base = synthetic_two_client_regression()
+    train = {key: base[client] for key, client in zip(train_keys, ("C1", "C2"))}
+    calibration = {
+        key: base[client]
+        for key, client in zip(calibration_keys, ("C1", "C2"))
+    }
+
+    for selector in (select_source_alpha_v2, select_pooled_alpha_v2):
+        with pytest.raises(RuntimeError, match="source-only"):
+            selector(
+                train,
+                calibration,
+                gas_id=0,
+                feature_names=("x0", "x1"),
+                train_role=train_role,
+                validation_role=validation_role,
+            )
+
+
+def test_v2_equation_and_model_arrays_are_immutable_float64() -> None:
+    """Catches dtype drift or reversible write flags in Task 3 records."""
+    client_data = synthetic_two_client_regression()
+    scaler = stable_scaler_for(client_data)
+    local = [
+        local_normal_equations_v2(client, 0, "refit", values, targets, scaler)
+        for client, (values, targets) in client_data.items()
+    ]
+    equations = aggregate_normal_equations_v2(local)
+    model = reconstruct_ridge_v2(equations, scaler, ("x0", "x1"), 0.1)
+
+    for values in (local[0].a, local[0].b, equations.a, equations.b, model.coef):
+        assert values.dtype == np.float64
+        assert not values.flags.writeable
+        with pytest.raises(ValueError, match="WRITEABLE"):
+            values.setflags(write=True)
+
+
+def test_v2_normal_equations_fail_closed_when_finite_products_overflow() -> None:
+    """Catches publishing infinite y'y from finite local labels."""
+    values = np.array([[0.0], [1.0]], dtype=np.float64)
+    scaler = merge_central_moments(
+        [
+            local_central_moments("C1", 0, "refit", values),
+            local_central_moments("C2", 0, "refit", values),
+        ]
+    )
+
+    with pytest.raises(ValueError, match="overflow"):
+        local_normal_equations_v2(
+            "C1",
+            0,
+            "refit",
+            values,
+            np.full(2, np.finfo(np.float64).max, dtype=np.float64),
+            scaler,
+        )
+
+
+def test_v2_aggregation_rejects_malformed_direct_record_shapes() -> None:
+    """Catches an IndexError escape from a scalar b in the public record API."""
+    malformed = LocalNormalEquationsV2(
+        client_id="C1",
+        gas_id=0,
+        role="refit",
+        n=1,
+        a=np.eye(2, dtype=np.float64),
+        b=np.array(1.0, dtype=np.float64),
+        y_y=1.0,
+        y_min=1.0,
+        y_max=1.0,
+        provenance_sha256="a" * 64,
+    )
+    valid = LocalNormalEquationsV2(
+        client_id="C2",
+        gas_id=0,
+        role="refit",
+        n=1,
+        a=np.eye(2, dtype=np.float64),
+        b=np.ones(2, dtype=np.float64),
+        y_y=1.0,
+        y_min=1.0,
+        y_max=1.0,
+        provenance_sha256="b" * 64,
+    )
+
+    with pytest.raises(ValueError, match="dimension"):
+        aggregate_normal_equations_v2([malformed, valid])
+
+
+def test_v2_alpha_contract_rejects_nonexact_role_and_boolean_grid() -> None:
+    """Catches non-string roles or bool-as-1.0 passing source-only selection."""
+    data = synthetic_two_client_regression()
+    boolean_grid = (0.0, 0.01, 0.1, True, 10.0, 100.0, 1000.0)
+
+    for selector in (select_source_alpha_v2, select_pooled_alpha_v2):
+        with pytest.raises(RuntimeError, match="source-only"):
+            selector(
+                data,
+                data,
+                gas_id=0,
+                feature_names=("x0", "x1"),
+                train_role=None,  # type: ignore[arg-type]
+            )
+        with pytest.raises(RuntimeError, match="grid"):
+            selector(
+                data,
+                data,
+                gas_id=0,
+                feature_names=("x0", "x1"),
+                alphas=boolean_grid,
+            )
+        with pytest.raises(RuntimeError, match="grid"):
+            selector(
+                data,
+                data,
+                gas_id=0,
+                feature_names=("x0", "x1"),
+                alphas=None,  # type: ignore[arg-type]
+            )
