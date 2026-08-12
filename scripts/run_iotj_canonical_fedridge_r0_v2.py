@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import platform
+import stat
 import subprocess
 import sys
 import tempfile
@@ -25,6 +26,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from gaps_flower.canonical_quantitative_features import (  # noqa: E402
+    DYNAMIC_DESCRIPTOR_INTERPRETATION,
     H1_FEATURE_NAMES,
     SENSOR_FEATURE_NAMES,
     build_feature_cache,
@@ -65,7 +67,7 @@ PROTOCOL_ROOT = (
 )
 PROTOCOL_MANIFEST = PROTOCOL_ROOT / "protocol_manifest.json"
 EXPECTED_PROTOCOL_FREEZE_SHA256 = (
-    "6693761f4b660cf11f01a2b41148ffd2c031293b3e23d2e0163f18cd2b0451d6"
+    "e4eb2217d6a0075378d2553b79da068740cb46260d6155a9f2c386dcbe675912"
 )
 RESULT_ROOT = (
     ROOT
@@ -113,6 +115,58 @@ EXPECTED_FORMAL_FILES = (
     "protocol_manifest_execution.json",
     "sha256_index.json",
 )
+SOURCE_TEST_RECEIPT_FILE = "source_test_validation_receipt.json"
+REGISTERED_FORMAL_FILES = (
+    EXPECTED_FORMAL_FILES[:9]
+    + (SOURCE_TEST_RECEIPT_FILE,)
+    + EXPECTED_FORMAL_FILES[9:]
+)
+FORMAL_CACHE_MANIFEST_FIELDS = frozenset(
+    {
+        "schema_version",
+        "study_id",
+        "client",
+        "split",
+        "row_count",
+        "sampling_rate_hz",
+        "window_shape",
+        "dataset_aggregate_sha256",
+        "source_array_sha256",
+        "phase_array_sha256",
+        "metadata_sha256",
+        "extractor_file_sha256",
+        "ordered_h1_feature_names_sha256",
+        "ordered_sensor_feature_names_sha256",
+        "h1_dimensions",
+        "sensor_dimensions",
+        "cache_sha256",
+        "row_identities_sha256",
+        "created_from_canonical_arrays",
+        "legacy_cache_reused",
+        "resized_or_interpolated_after_preprocessing",
+        "dynamic_descriptor_interpretation",
+        "sampling_rate_invariant_claim",
+        "legacy_10hz_5hz_numeric_equivalence_claim",
+    }
+)
+FORMAL_CACHE_FILES = frozenset(
+    {
+        "cache_manifest.json",
+        "canonical_quantitative_features.npz",
+        "row_identities.json",
+    }
+)
+ROW_IDENTITY_FIELDS = frozenset(
+    {
+        "client",
+        "split",
+        "sample_index",
+        "physical_identity",
+        "filename",
+        "window_start_s",
+        "window_end_s",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -129,6 +183,8 @@ class SourceDataProvider(Protocol):
         self, client: str, split: str, gas_id: int
     ) -> tuple[np.ndarray, np.ndarray]: ...
 
+    def validate_source_test_after_locks(self) -> Mapping[str, Any]: ...
+
 
 def build_r0_v2_execution_plan() -> list[str]:
     """Return the source-only execution order frozen by the protocol."""
@@ -138,6 +194,7 @@ def build_r0_v2_execution_plan() -> list[str]:
         "build_fresh_source_train_calibration_caches",
         "compute_source_only_alpha_and_models",
         "write_source_alpha_and_model_locks",
+        "validate_source_test_artifacts_after_locks",
         "open_source_test",
         "evaluate_source_functional_equivalence",
         "write_decision_audit_and_hash_index",
@@ -203,6 +260,16 @@ def _read_json(path: Path) -> dict[str, Any]:
         raise RuntimeError(f"FAIL_CLOSED cannot read required JSON: {path}") from error
     if not isinstance(value, dict):
         raise RuntimeError(f"FAIL_CLOSED required JSON is not an object: {path}")
+    return value
+
+
+def _read_json_list(path: Path) -> list[Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError(f"FAIL_CLOSED cannot read required JSON: {path}") from error
+    if not isinstance(value, list):
+        raise RuntimeError(f"FAIL_CLOSED required JSON is not an array: {path}")
     return value
 
 
@@ -311,6 +378,7 @@ def _verify_protocol() -> dict[str, Any]:
         "perform_source_only_alpha_selection",
         "refit_source_train_calibration_federated_and_pooled_models",
         "write_source_alpha_and_model_locks",
+        "verify_and_record_C1_C2_source_test_artifacts_after_locks",
         "open_C1_C2_source_test_after_locks",
         "evaluate_functional_equivalence",
         "write_diagnostics_decision_audit_and_SHA256_index",
@@ -320,13 +388,46 @@ def _verify_protocol() -> dict[str, Any]:
     normalized_expected_files = [
         str(value).rstrip("/") for value in protocol.get("expected_formal_files", [])
     ]
+    expected_source_access_provenance = {
+        "registered_source_artifact_count": 32,
+        "prelock_verified_non_test_artifact_count": 22,
+        "prelock_verified_splits": ["train", "calibration"],
+        "prelock_includes_client_stats": True,
+        "preflight_opens_source_test_bytes": False,
+        "postlock_source_test_artifact_count": 10,
+        "postlock_source_test_split": "test",
+        "postlock_required_files": [
+            "source_alpha_lock.json",
+            "model_lock.json",
+        ],
+        "formal_preflight_receipt_schema": (
+            f"{SCHEMA_VERSION}.preflight_receipt"
+        ),
+        "source_test_validation_receipt_schema": (
+            f"{SCHEMA_VERSION}.source_test_validation"
+        ),
+        "formal_execution_manifest_schema": (
+            f"{SCHEMA_VERSION}.manifest.formal"
+        ),
+        "synthetic_execution_manifest_schema": (
+            f"{SCHEMA_VERSION}.manifest.synthetic"
+        ),
+        "formal_result_root_bound": True,
+        "formal_cache_validation": (
+            "exact manifest schema, canonical provenance, fresh flags, "
+            "on-disk manifest/NPZ/row-identity bytes, hashes, shapes, "
+            "dtype, and row order"
+        ),
+    }
     if (
         numerical.get("aggregation_order") != list(SOURCE_CLIENTS)
         or tuple(numerical.get("alpha_grid", ())) != RIDGE_ALPHAS
         or protocol.get("canonical_split_roles") != expected_roles
         or protocol.get("access_sequence") != expected_access
-        or normalized_expected_files != list(EXPECTED_FORMAL_FILES)
+        or normalized_expected_files != list(REGISTERED_FORMAL_FILES)
         or protocol.get("decision_vocabulary") != list(DECISION_VOCABULARY)
+        or protocol.get("source_access_provenance")
+        != expected_source_access_provenance
     ):
         raise RuntimeError("FAIL_CLOSED frozen source order/execution contract changed")
     return protocol
@@ -428,10 +529,22 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
         ):
             raise RuntimeError("FAIL_CLOSED canonical source file set changed")
 
+    prelock_source_paths = {
+        key: path for key, path in source_paths.items() if "_test_" not in key
+    }
+    deferred_test_paths = {
+        key: path for key, path in source_paths.items() if "_test_" in key
+    }
+    if len(prelock_source_paths) != 22 or len(deferred_test_paths) != 10:
+        raise RuntimeError("FAIL_CLOSED canonical source access partition changed")
     for key, path in source_paths.items():
         relative = path.relative_to(data_root).as_posix()
         expected = expected_artifacts[key]
-        if indexed_files.get(relative) != expected or sha256_file(path) != expected:
+        if indexed_files.get(relative) != expected:
+            raise RuntimeError(
+                f"FAIL_CLOSED canonical source hash changed: {relative}"
+            )
+        if key in prelock_source_paths and sha256_file(path) != expected:
             raise RuntimeError(
                 f"FAIL_CLOSED canonical source hash changed: {relative}"
             )
@@ -439,7 +552,7 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
     for client in ("C1", "C2"):
         directory = data_root / f"client_{client[1:]}"
         classifications: dict[str, np.ndarray] = {}
-        for split in ("train", "calibration", "test"):
+        for split in ("train", "calibration"):
             classes = np.load(
                 directory / f"{split}_classification_labels.npy",
                 allow_pickle=False,
@@ -472,15 +585,8 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
             (classifications["train"], classifications["calibration"])
         )
         refit_counts = np.bincount(refit_classes, minlength=4)
-        test_counts = np.bincount(classifications["test"], minlength=4)
-        if (
-            not np.all(
-                refit_counts
-                == int(canonical["per_gas_refit_count_per_client"])
-            )
-            or not np.all(
-                test_counts == int(canonical["per_gas_test_count_per_client"])
-            )
+        if not np.all(
+            refit_counts == int(canonical["per_gas_refit_count_per_client"])
         ):
             raise RuntimeError(
                 f"FAIL_CLOSED canonical per-gas source counts changed: {client}"
@@ -527,8 +633,122 @@ def _verify_source_dataset(data_root: Path, protocol: dict[str, Any]) -> dict[st
     return {
         "status": "PASS",
         "aggregate_sha256": expected_aggregate,
-        "checked_files": len(source_paths),
+        "checked_files": len(prelock_source_paths),
+        "prelock_source_files_verified": len(prelock_source_paths),
+        "source_test_files_deferred": len(deferred_test_paths),
+        "prelock_source_sha256": {
+            key: str(expected_artifacts[key]) for key in prelock_source_paths
+        },
+        "deferred_source_test_sha256": {
+            key: str(expected_artifacts[key]) for key in deferred_test_paths
+        },
         "bad_files": [],
+    }
+
+
+def _verify_source_test_after_locks(
+    data_root: Path,
+    output: Path,
+    protocol: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate and record the ten C1/C2 source-test artifacts post-lock."""
+    data_root = _reject_symlink_components(data_root, "canonical data").resolve()
+    output = _reject_symlink_components(output, "output").resolve()
+    lock_sha256: dict[str, str] = {}
+    for lock_name in ("source_alpha_lock.json", "model_lock.json"):
+        lock_path = output / lock_name
+        if lock_path.is_symlink() or not lock_path.is_file():
+            raise RuntimeError(
+                "FAIL_CLOSED source-test validation requires published locks"
+            )
+        lock_sha256[lock_name] = sha256_file(lock_path)
+
+    source_paths = _source_artifact_paths(data_root)
+    test_paths = {
+        key: path for key, path in source_paths.items() if "_test_" in key
+    }
+    expected_artifacts = protocol.get("canonical_source_artifact_sha256")
+    if (
+        len(test_paths) != 10
+        or not isinstance(expected_artifacts, Mapping)
+        or any(key not in expected_artifacts for key in test_paths)
+    ):
+        raise RuntimeError("FAIL_CLOSED canonical source-test map changed")
+
+    events: list[dict[str, Any]] = []
+    for sequence, (key, path) in enumerate(test_paths.items()):
+        relative = path.relative_to(data_root).as_posix()
+        expected = expected_artifacts[key]
+        if (
+            not isinstance(expected, str)
+            or path.is_symlink()
+            or not path.is_file()
+            or sha256_file(path) != expected
+        ):
+            raise RuntimeError(
+                f"FAIL_CLOSED canonical source-test hash changed: {relative}"
+            )
+        events.append(
+            {
+                "sequence": sequence,
+                "operation": "validate_source_test_artifact",
+                "artifact_key": key,
+                "relative_path": relative,
+                "sha256": expected,
+                "access_stage": "after_alpha_and_model_locks",
+            }
+        )
+
+    canonical = protocol.get("canonical_data")
+    if not isinstance(canonical, Mapping):
+        raise RuntimeError("FAIL_CLOSED canonical source-test contract missing")
+    expected_n = canonical.get("source_split_counts_per_client", {}).get("test")
+    expected_per_gas = canonical.get("per_gas_test_count_per_client")
+    if type(expected_n) is not int or type(expected_per_gas) is not int:
+        raise RuntimeError("FAIL_CLOSED canonical source-test counts missing")
+    for client in SOURCE_CLIENTS:
+        directory = data_root / f"client_{client[1:]}"
+        features = np.load(
+            directory / "test_features.npy", allow_pickle=False
+        )
+        phases = np.load(
+            directory / "test_phase_labels.npy", allow_pickle=False
+        ).reshape(-1)
+        metadata = _read_json_list(directory / "test_experiment_info.json")
+        classes = np.load(
+            directory / "test_classification_labels.npy", allow_pickle=False
+        ).reshape(-1)
+        regression = np.load(
+            directory / "test_regression_labels.npy", allow_pickle=False
+        )
+        if (
+            features.shape != (expected_n, 50, 8)
+            or not np.issubdtype(features.dtype, np.number)
+            or not np.isfinite(features).all()
+            or phases.shape != (expected_n,)
+            or not np.issubdtype(phases.dtype, np.integer)
+            or len(metadata) != expected_n
+            or not all(isinstance(row, Mapping) for row in metadata)
+            or classes.shape != (expected_n,)
+            or not np.issubdtype(classes.dtype, np.integer)
+            or not np.isin(classes, GAS_IDS).all()
+            or regression.shape != (expected_n, 4)
+            or not np.issubdtype(regression.dtype, np.number)
+            or not np.isfinite(regression).all()
+            or not np.all(
+                np.bincount(classes.astype(np.int64, copy=False), minlength=4)
+                == expected_per_gas
+            )
+        ):
+            raise RuntimeError(
+                f"FAIL_CLOSED canonical source-test content changed: {client}"
+            )
+    return {
+        "schema_version": f"{SCHEMA_VERSION}.source_test_validation",
+        "status": "PASS",
+        "locks_verified": True,
+        "lock_sha256": lock_sha256,
+        "artifact_access_events": events,
     }
 
 
@@ -542,6 +762,131 @@ def _verify_indexed_file(root: Path, index: dict[str, Any], relative: str) -> No
         or sha256_file(path) != expected
     ):
         raise RuntimeError(f"FAIL_CLOSED original prerequisite hash changed: {path}")
+
+
+def _is_reparse_point(path: Path) -> bool:
+    """Return whether lexical path metadata marks a Windows reparse point."""
+    try:
+        attributes = getattr(path.lstat(), "st_file_attributes", 0)
+    except OSError as error:
+        raise RuntimeError(
+            f"FAIL_CLOSED original prerequisite path unreadable: {path}"
+        ) from error
+    return bool(
+        attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0)
+    )
+
+
+def _verify_indexed_tree(
+    root: Path,
+    index: Mapping[str, Any],
+    *,
+    index_name: str,
+    expected_entries: int,
+) -> None:
+    """Verify an immutable prerequisite tree without following links."""
+    root = _reject_symlink_components(root, "original prerequisite")
+    try:
+        root_stat = root.lstat()
+        index_stat = (root / index_name).lstat()
+    except OSError as error:
+        raise RuntimeError(
+            "FAIL_CLOSED original prerequisite tree is incomplete"
+        ) from error
+    if (
+        not stat.S_ISDIR(root_stat.st_mode)
+        or _is_reparse_point(root)
+        or not stat.S_ISREG(index_stat.st_mode)
+        or _is_reparse_point(root / index_name)
+        or len(index) != expected_entries
+    ):
+        raise RuntimeError(
+            "FAIL_CLOSED original prerequisite tree/type changed"
+        )
+
+    normalized: dict[str, str] = {}
+    expected_directories: set[str] = set()
+    for relative, digest in index.items():
+        if not isinstance(relative, str) or not isinstance(digest, str):
+            raise RuntimeError(
+                "FAIL_CLOSED original prerequisite index entry invalid"
+            )
+        raw_parts = relative.split("/")
+        pure = PurePosixPath(relative)
+        if (
+            not relative
+            or relative == index_name
+            or "\\" in relative
+            or relative.startswith("/")
+            or any(part in ("", ".", "..") for part in raw_parts)
+            or ":" in raw_parts[0]
+            or pure.as_posix() != relative
+            or len(digest) != 64
+            or digest != digest.lower()
+            or any(character not in "0123456789abcdef" for character in digest)
+        ):
+            raise RuntimeError(
+                "FAIL_CLOSED original prerequisite index entry invalid"
+            )
+        normalized[relative] = digest
+        parent = pure.parent
+        while parent != PurePosixPath("."):
+            expected_directories.add(parent.as_posix())
+            parent = parent.parent
+
+    observed_files: set[str] = set()
+    observed_directories: set[str] = set()
+    try:
+        for directory, child_directories, child_files in os.walk(
+            root, topdown=True, followlinks=False
+        ):
+            directory_path = Path(directory)
+            for name in child_directories:
+                path = directory_path / name
+                metadata = path.lstat()
+                if (
+                    path.is_symlink()
+                    or _is_reparse_point(path)
+                    or not stat.S_ISDIR(metadata.st_mode)
+                ):
+                    raise RuntimeError(
+                        "FAIL_CLOSED original prerequisite tree/type changed"
+                    )
+                observed_directories.add(
+                    path.relative_to(root).as_posix()
+                )
+            for name in child_files:
+                path = directory_path / name
+                metadata = path.lstat()
+                if (
+                    path.is_symlink()
+                    or _is_reparse_point(path)
+                    or not stat.S_ISREG(metadata.st_mode)
+                ):
+                    raise RuntimeError(
+                        "FAIL_CLOSED original prerequisite tree/type changed"
+                    )
+                relative = path.relative_to(root).as_posix()
+                if relative != index_name:
+                    observed_files.add(relative)
+    except OSError as error:
+        raise RuntimeError(
+            "FAIL_CLOSED original prerequisite tree unreadable"
+        ) from error
+
+    if (
+        observed_files != set(normalized)
+        or observed_directories != expected_directories
+    ):
+        raise RuntimeError(
+            "FAIL_CLOSED original prerequisite tree coverage changed"
+        )
+    for relative, expected in normalized.items():
+        path = root / Path(relative)
+        if sha256_file(path) != expected:
+            raise RuntimeError(
+                f"FAIL_CLOSED original prerequisite hash changed: {path}"
+            )
 
 
 def _verify_original_prerequisites(
@@ -577,6 +922,12 @@ def _verify_original_prerequisites(
         raise RuntimeError("FAIL_CLOSED original prerequisite index anchor changed")
 
     c0_index = _read_json(c0_index_path)
+    _verify_indexed_tree(
+        ORIGINAL_C0_ROOT,
+        c0_index,
+        index_name="C0_SHA256_INDEX.json",
+        expected_entries=171,
+    )
     for relative in ("C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md"):
         _verify_indexed_file(ORIGINAL_C0_ROOT, c0_index, relative)
     c0_decision = _read_json(ORIGINAL_C0_ROOT / "C0_DECISION.json")
@@ -584,6 +935,12 @@ def _verify_original_prerequisites(
         raise RuntimeError("FAIL_CLOSED original C0 decision changed")
 
     r0_index = _read_json(r0_index_path)
+    _verify_indexed_tree(
+        ORIGINAL_R0_ROOT,
+        r0_index,
+        index_name="R0_SHA256_INDEX.json",
+        expected_entries=34,
+    )
     for relative in (
         "canonical_fedridge_exact_recovery.json",
         "R0_FAILURE_AUDIT.json",
@@ -633,6 +990,72 @@ def _verify_original_prerequisites(
     }
 
 
+def _build_formal_preflight_receipt(
+    *,
+    head: str,
+    protocol: Mapping[str, Any],
+    dataset: Mapping[str, Any],
+) -> dict[str, Any]:
+    canonical = protocol.get("canonical_data")
+    prerequisites = protocol.get("immutable_prerequisites")
+    if not isinstance(canonical, Mapping) or not isinstance(
+        prerequisites, Mapping
+    ):
+        raise RuntimeError("FAIL_CLOSED formal preflight provenance missing")
+    c0 = prerequisites.get("C0")
+    r0 = prerequisites.get("original_R0")
+    if not isinstance(c0, Mapping) or not isinstance(r0, Mapping):
+        raise RuntimeError("FAIL_CLOSED formal prerequisite provenance missing")
+    receipt = {
+        "schema_version": f"{SCHEMA_VERSION}.preflight_receipt",
+        "study_id": R0_V2_STUDY_ID,
+        "authorized_freeze_commit": head,
+        "protocol_sha256": EXPECTED_PROTOCOL_FREEZE_SHA256,
+        "data_root": canonical.get("dataset_path"),
+        "output_root": protocol.get("formal_result_root"),
+        "dataset_aggregate_sha256": dataset.get("aggregate_sha256"),
+        "dataset_sha256_json_sha256": canonical.get(
+            "dataset_sha256_json_sha256"
+        ),
+        "canonical_preprocessing_manifest_sha256": canonical.get(
+            "canonical_preprocessing_manifest_sha256"
+        ),
+        "prelock_source_files_verified": dataset.get(
+            "prelock_source_files_verified"
+        ),
+        "source_test_files_deferred": dataset.get(
+            "source_test_files_deferred"
+        ),
+        "prelock_source_sha256": dataset.get("prelock_source_sha256"),
+        "deferred_source_test_sha256": dataset.get(
+            "deferred_source_test_sha256"
+        ),
+        "immutable_prerequisite_index_sha256": {
+            "C0": c0.get("index_sha256"),
+            "original_R0": r0.get("index_sha256"),
+        },
+        "source_clients": list(SOURCE_CLIENTS),
+        "target_clients": [],
+        "formal_execution_started": False,
+    }
+    if (
+        receipt["data_root"] != "dataset/iotj_canonical_v1"
+        or receipt["output_root"]
+        != (
+            "results/iotj_canonical_v1_final/"
+            "canonical_fedridge_r0_v2_20260812"
+        )
+        or receipt["prelock_source_files_verified"] != 22
+        or receipt["source_test_files_deferred"] != 10
+        or not isinstance(receipt["prelock_source_sha256"], Mapping)
+        or len(receipt["prelock_source_sha256"]) != 22
+        or not isinstance(receipt["deferred_source_test_sha256"], Mapping)
+        or len(receipt["deferred_source_test_sha256"]) != 10
+    ):
+        raise RuntimeError("FAIL_CLOSED formal preflight receipt invalid")
+    return receipt
+
+
 def preflight(
     data_root: Path, output: Path, authorized_freeze_commit: str
 ) -> dict[str, Any]:
@@ -658,6 +1081,9 @@ def preflight(
     protocol = _verify_protocol()
     dataset = _verify_source_dataset(data_root, protocol)
     original = _verify_original_prerequisites(output, protocol)
+    receipt = _build_formal_preflight_receipt(
+        head=head, protocol=protocol, dataset=dataset
+    )
     return {
         "status": "PASS",
         "study_id": R0_V2_STUDY_ID,
@@ -668,8 +1094,163 @@ def preflight(
         "target_clients": [],
         "formal_execution_started": False,
         "output_created": False,
+        "prelock_source_files_verified": dataset[
+            "prelock_source_files_verified"
+        ],
+        "source_test_files_deferred": dataset["source_test_files_deferred"],
+        "formal_preflight_receipt": receipt,
         **original,
     }
+
+
+def _verify_formal_cache_artifact(
+    cache_root: Path,
+    manifest: Mapping[str, Any],
+    *,
+    client: str,
+    split: str,
+    protocol: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Validate one formal cache manifest and its immutable on-disk bytes."""
+    if client not in SOURCE_CLIENTS or split not in SOURCE_SPLITS:
+        raise RuntimeError("FAIL_CLOSED formal cache key is unregistered")
+    canonical = protocol.get("canonical_data")
+    feature = protocol.get("feature_protocol")
+    source_hashes = protocol.get("canonical_source_artifact_sha256")
+    expected_n = (
+        canonical.get("source_split_counts_per_client", {}).get(split)
+        if isinstance(canonical, Mapping)
+        else None
+    )
+    expected_values = {
+        "schema_version": "iotj.canonical_v1.quantitative_feature_cache.v1",
+        "study_id": R0_V2_STUDY_ID,
+        "client": client,
+        "split": split,
+        "row_count": expected_n,
+        "sampling_rate_hz": (
+            canonical.get("sampling_rate_hz")
+            if isinstance(canonical, Mapping)
+            else None
+        ),
+        "window_shape": (
+            canonical.get("window_shape")
+            if isinstance(canonical, Mapping)
+            else None
+        ),
+        "dataset_aggregate_sha256": (
+            canonical.get("dataset_aggregate_sha256")
+            if isinstance(canonical, Mapping)
+            else None
+        ),
+        "source_array_sha256": (
+            source_hashes.get(f"{client}_{split}_features")
+            if isinstance(source_hashes, Mapping)
+            else None
+        ),
+        "phase_array_sha256": (
+            source_hashes.get(f"{client}_{split}_phase")
+            if isinstance(source_hashes, Mapping)
+            else None
+        ),
+        "metadata_sha256": (
+            source_hashes.get(f"{client}_{split}_metadata")
+            if isinstance(source_hashes, Mapping)
+            else None
+        ),
+        "extractor_file_sha256": (
+            feature.get("extractor_file_sha256")
+            if isinstance(feature, Mapping)
+            else None
+        ),
+        "ordered_h1_feature_names_sha256": (
+            feature.get("ordered_h1_feature_names_sha256")
+            if isinstance(feature, Mapping)
+            else None
+        ),
+        "ordered_sensor_feature_names_sha256": (
+            feature.get("ordered_sensor_feature_names_sha256")
+            if isinstance(feature, Mapping)
+            else None
+        ),
+        "h1_dimensions": 104,
+        "sensor_dimensions": 83,
+        "created_from_canonical_arrays": True,
+        "legacy_cache_reused": False,
+        "resized_or_interpolated_after_preprocessing": False,
+        "dynamic_descriptor_interpretation": DYNAMIC_DESCRIPTOR_INTERPRETATION,
+        "sampling_rate_invariant_claim": False,
+        "legacy_10hz_5hz_numeric_equivalence_claim": False,
+    }
+    if (
+        set(manifest) != FORMAL_CACHE_MANIFEST_FIELDS
+        or type(expected_n) is not int
+        or any(manifest.get(key) != value for key, value in expected_values.items())
+        or any(
+            not isinstance(manifest.get(key), str)
+            or len(str(manifest[key])) != 64
+            for key in ("cache_sha256", "row_identities_sha256")
+        )
+    ):
+        raise RuntimeError("FAIL_CLOSED formal cache manifest contradiction")
+
+    cache_root = _reject_symlink_components(cache_root, "formal cache").resolve()
+    cache_dir = _reject_symlink_components(
+        cache_root / client / split, "formal cache"
+    ).resolve()
+    if cache_dir.is_symlink() or not cache_dir.is_dir():
+        raise RuntimeError("FAIL_CLOSED formal cache artifact type changed")
+    entries = list(cache_dir.iterdir())
+    if (
+        {path.name for path in entries} != FORMAL_CACHE_FILES
+        or any(path.is_symlink() or not path.is_file() for path in entries)
+    ):
+        raise RuntimeError("FAIL_CLOSED formal cache artifact set changed")
+    manifest_path = cache_dir / "cache_manifest.json"
+    cache_path = cache_dir / "canonical_quantitative_features.npz"
+    identity_path = cache_dir / "row_identities.json"
+    if _read_json(manifest_path) != dict(manifest):
+        raise RuntimeError("FAIL_CLOSED formal cache manifest bytes mismatch")
+    if (
+        sha256_file(cache_path) != manifest["cache_sha256"]
+        or sha256_file(identity_path) != manifest["row_identities_sha256"]
+    ):
+        raise RuntimeError("FAIL_CLOSED formal cache content hash mismatch")
+    try:
+        with np.load(cache_path, allow_pickle=False) as payload:
+            if set(payload.files) != {"sensor83", "h1"}:
+                raise RuntimeError("FAIL_CLOSED formal cache matrix keys changed")
+            sensor = np.asarray(payload["sensor83"])
+            h1 = np.asarray(payload["h1"])
+    except (OSError, ValueError) as error:
+        raise RuntimeError("FAIL_CLOSED formal cache matrix unreadable") from error
+    identities = _read_json_list(identity_path)
+    identity_rows_valid = all(
+        isinstance(row, Mapping)
+        and set(row) == ROW_IDENTITY_FIELDS
+        and row.get("client") == client
+        and row.get("split") == split
+        and row.get("sample_index") == index
+        and isinstance(row.get("physical_identity"), str)
+        and bool(row.get("physical_identity"))
+        and isinstance(row.get("filename"), str)
+        and np.isfinite(
+            [row.get("window_start_s"), row.get("window_end_s")]
+        ).all()
+        for index, row in enumerate(identities)
+    )
+    if (
+        sensor.shape != (expected_n, 83)
+        or h1.shape != (expected_n, 104)
+        or sensor.dtype != np.dtype(np.float64)
+        or h1.dtype != np.dtype(np.float64)
+        or not np.isfinite(sensor).all()
+        or not np.isfinite(h1).all()
+        or len(identities) != expected_n
+        or not identity_rows_valid
+    ):
+        raise RuntimeError("FAIL_CLOSED formal cache shape/order contradiction")
+    return dict(manifest)
 
 
 class CanonicalSourceDataProvider:
@@ -680,10 +1261,13 @@ class CanonicalSourceDataProvider:
         data_root: Path,
         output: Path,
         dataset_aggregate_sha256: str,
+        protocol: Mapping[str, Any] | None = None,
     ) -> None:
         self._data_root = Path(data_root).resolve()
+        self._output = Path(output).resolve()
         self._cache_root = Path(output).resolve() / "canonical_feature_caches"
         self._dataset_aggregate_sha256 = str(dataset_aggregate_sha256)
+        self._protocol = dict(protocol) if protocol is not None else None
 
     @staticmethod
     def _validate_request(client: str, split: str, gas_id: int | None) -> None:
@@ -702,6 +1286,13 @@ class CanonicalSourceDataProvider:
             dataset_aggregate_sha256=self._dataset_aggregate_sha256,
             extractor_path=EXTRACTOR_PATH,
             study_id=R0_V2_STUDY_ID,
+        )
+
+    def validate_source_test_after_locks(self) -> Mapping[str, Any]:
+        if self._protocol is None:
+            raise RuntimeError("FAIL_CLOSED formal source-test protocol missing")
+        return _verify_source_test_after_locks(
+            self._data_root, self._output, self._protocol
         )
 
     def gas_data(
@@ -1082,6 +1673,7 @@ def _access_audit_text(
     *,
     locks_before_test: bool,
     decision: str,
+    source_test_validation: Mapping[str, Any] | None = None,
 ) -> str:
     lines = [
         "# R0-v2 data access audit",
@@ -1100,6 +1692,20 @@ def _access_audit_text(
         lines.append(
             f"| {event['sequence']} | {event['operation']} | {event['client']} | {event['split']} | {gas} |"
         )
+    if source_test_validation is not None:
+        lines.extend(
+            (
+                "",
+                "## Post-lock source-test artifact validation",
+                "",
+                "| # | Artifact | Relative path | SHA256 | Access stage |",
+                "|---:|---|---|---|---|",
+            )
+        )
+        for event in source_test_validation.get("artifact_access_events", []):
+            lines.append(
+                f"| {event['sequence']} | {event['artifact_key']} | {event['relative_path']} | {event['sha256']} | {event['access_stage']} |"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -1149,8 +1755,18 @@ def _finalize_evidence(
     gas_rows: Sequence[Mapping[str, Any]],
     decision: str,
     locks_before_test: bool,
+    source_test_validation: Mapping[str, Any] | None = None,
     error: str | None = None,
 ) -> dict[str, Any]:
+    execution_kind = str(protocol.get("execution_kind", "synthetic_test"))
+    registered_files = (
+        REGISTERED_FORMAL_FILES
+        if execution_kind == "formal"
+        else EXPECTED_FORMAL_FILES
+    )
+    prepublication_files = EXPECTED_FORMAL_FILES[:9] + (
+        (SOURCE_TEST_RECEIPT_FILE,) if execution_kind == "formal" else ()
+    )
     environment_failure: str | None = None
     try:
         environment = _environment_metadata()
@@ -1171,7 +1787,7 @@ def _finalize_evidence(
     ]
     access_complete = observed_requests == expected_requests
     prepublication_artifacts = _artifact_type_findings(
-        output, EXPECTED_FORMAL_FILES[:9], require_present=True
+        output, prepublication_files, require_present=True
     )
     findings = _blocking_findings(
         decision,
@@ -1193,16 +1809,23 @@ def _finalize_evidence(
         "error": error,
     }
     access_audit = _access_audit_text(
-        events, locks_before_test=locks_before_test, decision=decision
+        events,
+        locks_before_test=locks_before_test,
+        decision=decision,
+        source_test_validation=source_test_validation,
     )
     experiment_audit = _experiment_audit_text(
         decision=decision,
         findings=findings,
         access_complete=access_complete,
     )
-    execution_kind = str(protocol.get("execution_kind", "synthetic_test"))
+    execution_schema = (
+        f"{SCHEMA_VERSION}.manifest.formal"
+        if execution_kind == "formal"
+        else f"{SCHEMA_VERSION}.manifest.synthetic"
+    )
     execution_manifest = {
-        "schema_version": f"{SCHEMA_VERSION}.manifest",
+        "schema_version": execution_schema,
         "study_id": R0_V2_STUDY_ID,
         "status": "PASS" if decision == R0_V2_PASS else "FAIL_CLOSED",
         "decision": decision,
@@ -1211,11 +1834,26 @@ def _finalize_evidence(
         "execution_commit": str(
             protocol.get("authorized_freeze_commit", "synthetic-test")
         ),
+        "formal_preflight_receipt": (
+            protocol.get("formal_preflight_receipt")
+            if execution_kind == "formal"
+            else None
+        ),
+        "registered_result_root": (
+            protocol.get("formal_result_root")
+            if execution_kind == "formal"
+            else None
+        ),
         "frozen_protocol_sha256": EXPECTED_PROTOCOL_FREEZE_SHA256,
         "source_clients": list(SOURCE_CLIENTS),
         "target_clients": [],
         "source_aggregation_order": list(SOURCE_CLIENTS),
         "source_test_opened_after_locks": locks_before_test,
+        "source_test_validation": (
+            dict(source_test_validation)
+            if source_test_validation is not None
+            else None
+        ),
         "access_events": list(events),
         "global_key_audit": {
             "allowed_clients": list(SOURCE_CLIENTS),
@@ -1235,7 +1873,7 @@ def _finalize_evidence(
             }
         ),
         "numerical_gates": protocol.get("numerical_gates", {}),
-        "expected_formal_files": list(EXPECTED_FORMAL_FILES),
+        "expected_formal_files": list(registered_files),
         "error": error,
     }
 
@@ -1251,7 +1889,7 @@ def _finalize_evidence(
         written_index = _write_hash_index(output)
         if decision == R0_V2_PASS:
             publication_findings = _artifact_type_findings(
-                output, EXPECTED_FORMAL_FILES, require_present=True
+                output, registered_files, require_present=True
             )
             if publication_findings:
                 raise RuntimeError(
@@ -1304,6 +1942,8 @@ def _execute_source_only(
     alpha_rows: list[dict[str, Any]] = []
     gas_rows: list[dict[str, Any]] = []
     locks_before_test = False
+    source_test_validation: Mapping[str, Any] | None = None
+    execution_kind = str(protocol.get("execution_kind", "synthetic_test"))
 
     def build_cache(client: str, split: str) -> Mapping[str, Any]:
         request = SourceRequest(client, split, None)
@@ -1316,6 +1956,14 @@ def _execute_source_only(
             or manifest.get("study_id") != R0_V2_STUDY_ID
         ):
             raise RuntimeError("FAIL_CLOSED source cache provenance mismatch")
+        if execution_kind == "formal":
+            _verify_formal_cache_artifact(
+                output / "canonical_feature_caches",
+                manifest,
+                client=client,
+                split=split,
+                protocol=protocol,
+            )
         cache_manifests.append(dict(manifest))
         return manifest
 
@@ -1420,10 +2068,6 @@ def _execute_source_only(
 
         cache_root = output / "canonical_feature_caches"
         cache_root.mkdir(parents=True, exist_ok=True)
-        _write_json(
-            cache_root / "cache_manifests.json",
-            {"study_id": R0_V2_STUDY_ID, "manifests": cache_manifests},
-        )
         _write_csv(
             output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv", feature_rows
         )
@@ -1467,8 +2111,44 @@ def _execute_source_only(
         if not locks_before_test:
             raise RuntimeError("FAIL_CLOSED source alpha/model locks missing")
 
+        validation_hook = getattr(
+            provider, "validate_source_test_after_locks", None
+        )
+        if execution_kind == "formal" and not callable(validation_hook):
+            raise RuntimeError(
+                "FAIL_CLOSED formal source-test validation hook missing"
+            )
+        if callable(validation_hook):
+            candidate = validation_hook()
+            validation_events = (
+                candidate.get("artifact_access_events")
+                if isinstance(candidate, Mapping)
+                else None
+            )
+            if (
+                not isinstance(candidate, Mapping)
+                or candidate.get("schema_version")
+                != f"{SCHEMA_VERSION}.source_test_validation"
+                or candidate.get("status") != "PASS"
+                or candidate.get("locks_verified") is not True
+                or not isinstance(validation_events, list)
+                or len(validation_events) != 10
+            ):
+                raise RuntimeError(
+                    "FAIL_CLOSED post-lock source-test validation mismatch"
+                )
+            _write_json(
+                output / SOURCE_TEST_RECEIPT_FILE,
+                candidate,
+            )
+            source_test_validation = dict(candidate)
+
         for client in SOURCE_CLIENTS:
             build_cache(client, "test")
+        _write_json(
+            cache_root / "cache_manifests.json",
+            {"study_id": R0_V2_STUDY_ID, "manifests": cache_manifests},
+        )
         for gas_id in GAS_IDS:
             source_test = {
                 client: gas_data(client, "test", gas_id)
@@ -1508,6 +2188,7 @@ def _execute_source_only(
             gas_rows=gas_rows,
             decision=decision,
             locks_before_test=locks_before_test,
+            source_test_validation=source_test_validation,
         )
     except Exception as error:
         error_text = f"{type(error).__name__}: {error}"
@@ -1541,6 +2222,7 @@ def _execute_source_only(
             gas_rows=gas_rows,
             decision=R0_V2_FAIL,
             locks_before_test=locks_before_test,
+            source_test_validation=source_test_validation,
             error=error_text,
         )
 
@@ -1565,11 +2247,15 @@ def run(
         "alpha_grid": protocol["numerical_protocol"]["alpha_grid"],
         "execution_kind": "formal",
         "authorized_freeze_commit": authorized_freeze_commit,
+        "formal_preflight_receipt": preflight_result[
+            "formal_preflight_receipt"
+        ],
     }
     provider = CanonicalSourceDataProvider(
         data_root,
         output,
         str(preflight_result["dataset_aggregate_sha256"]),
+        protocol,
     )
     return _execute_source_only(provider, output, execution_protocol)
 
@@ -1628,30 +2314,64 @@ def _rows_by_gas(
     return result
 
 
-def _execution_provenance_is_valid(execution: Mapping[str, Any]) -> bool:
+def _execution_provenance_is_valid(
+    execution: Mapping[str, Any], output: Path
+) -> bool:
     execution_kind = execution.get("execution_kind")
     commit = execution.get("execution_commit")
     if execution_kind == "synthetic_test":
         return (
-            commit == "synthetic-test"
+            execution.get("schema_version")
+            == f"{SCHEMA_VERSION}.manifest.synthetic"
+            and commit == "synthetic-test"
             and execution.get("numerical_gates")
             == asdict(registered_tolerances_v2())
+            and execution.get("formal_preflight_receipt") is None
+            and execution.get("registered_result_root") is None
         )
     if execution_kind != "formal" or not isinstance(commit, str):
         return False
-    if len(commit) != 40 or any(character not in "0123456789abcdef" for character in commit):
-        return False
-    if protocol_freeze_hash() != EXPECTED_PROTOCOL_FREEZE_SHA256:
+    if (
+        execution.get("schema_version") != f"{SCHEMA_VERSION}.manifest.formal"
+        or len(commit) != 40
+        or any(character not in "0123456789abcdef" for character in commit)
+        or output.resolve() != RESULT_ROOT.resolve()
+        or execution.get("registered_result_root")
+        != (
+            "results/iotj_canonical_v1_final/"
+            "canonical_fedridge_r0_v2_20260812"
+        )
+    ):
         return False
     try:
+        if _git_head() != commit:
+            return False
+        _verify_critical_paths_match_head(commit)
+        protocol = _verify_protocol()
+        dataset = _verify_source_dataset(DATA_ROOT, protocol)
+        _verify_original_prerequisites(output, protocol)
+        expected_receipt = _build_formal_preflight_receipt(
+            head=commit, protocol=protocol, dataset=dataset
+        )
+        expected_test_validation = _verify_source_test_after_locks(
+            DATA_ROOT, output, protocol
+        )
         committed_protocol = _git_file_bytes(commit, PROTOCOL_MANIFEST)
-    except (OSError, subprocess.CalledProcessError, ValueError):
+    except (
+        OSError,
+        RuntimeError,
+        subprocess.CalledProcessError,
+        ValueError,
+    ):
         return False
     return (
         hashlib.sha256(committed_protocol).hexdigest()
         == EXPECTED_PROTOCOL_FREEZE_SHA256
         and execution.get("numerical_gates")
-        == _read_json(PROTOCOL_MANIFEST).get("numerical_gates")
+        == protocol.get("numerical_gates")
+        and execution.get("formal_preflight_receipt") == expected_receipt
+        and execution.get("source_test_validation")
+        == expected_test_validation
     )
 
 
@@ -1664,7 +2384,12 @@ def _semantic_evidence_audit(
     gas_results = decision_payload["gas_results"]
     if (
         decision_payload.get("schema_version") != f"{SCHEMA_VERSION}.decision"
-        or execution.get("schema_version") != f"{SCHEMA_VERSION}.manifest"
+        or execution.get("schema_version")
+        != (
+            f"{SCHEMA_VERSION}.manifest.formal"
+            if execution.get("execution_kind") == "formal"
+            else f"{SCHEMA_VERSION}.manifest.synthetic"
+        )
     ):
         raise RuntimeError("FAIL_CLOSED semantic evidence schema mismatch")
 
@@ -1753,15 +2478,27 @@ def _semantic_evidence_audit(
         or any(split not in SOURCE_SPLITS for _client, split, _study in observed_cache_keys)
         or any(study != R0_V2_STUDY_ID for _client, _split, study in observed_cache_keys)
         or not isinstance(cache_record_manifests, list)
-        or cache_record_manifests != manifests[: min(4, len(manifests))]
+        or cache_record_manifests != manifests
     ):
         raise RuntimeError("FAIL_CLOSED semantic cache provenance mismatch")
+    if execution.get("execution_kind") == "formal":
+        protocol = _read_json(PROTOCOL_MANIFEST)
+        for manifest in manifests:
+            _verify_formal_cache_artifact(
+                output / "canonical_feature_caches",
+                manifest,
+                client=str(manifest["client"]),
+                split=str(manifest["split"]),
+                protocol=protocol,
+            )
 
     feature_rows = _read_csv_evidence(
         output / "H1_CANONICAL_FEATURE_NUMERICAL_AUDIT.csv"
     )
     feature_names_by_index: dict[int, str] = {}
-    feature_state_by_gas_index: dict[tuple[int, int], tuple[float, float]] = {}
+    feature_state_by_gas_index: dict[
+        tuple[int, int], tuple[float, float, float, float]
+    ] = {}
     feature_no_rows = feature_rows[0].get("status") == "NO_ROWS"
     feature_no_rows_stage_valid = bool(
         decision == R0_V2_FAIL
@@ -1867,6 +2604,8 @@ def _semantic_evidence_audit(
             feature_state_by_gas_index[key] = (
                 mean,
                 float(row["canonical_scale"]),
+                minimum,
+                maximum,
             )
         if decision == R0_V2_PASS and keys != {
             (gas_id, feature_index)
@@ -2629,7 +3368,8 @@ def _semantic_evidence_audit(
                     != [feature_names_by_index[index] for index in range(104)]
                 )
                 or (
-                    feature_state_by_gas_index
+                    route == "federated"
+                    and feature_state_by_gas_index
                     and (
                         not scaler_state_complete
                         or not np.array_equal(mean, expected_mean)
@@ -2638,6 +3378,99 @@ def _semantic_evidence_audit(
                 )
             ):
                 raise RuntimeError("FAIL_CLOSED semantic model lock contradiction")
+        scaler_row = diagnostics["scaler"].get(int(gas))
+        scaler_state = [
+            feature_state_by_gas_index.get((int(gas), index))
+            for index in range(104)
+        ]
+        if scaler_row is None or not all(
+            state is not None for state in scaler_state
+        ):
+            raise RuntimeError(
+                "FAIL_CLOSED semantic model/scaler linkage missing"
+            )
+        fed_mean = np.asarray(routes["federated"]["mean"], dtype=np.float64)
+        fed_scale = np.asarray(routes["federated"]["scale"], dtype=np.float64)
+        pooled_mean = np.asarray(routes["pooled"]["mean"], dtype=np.float64)
+        pooled_scale = np.asarray(routes["pooled"]["scale"], dtype=np.float64)
+        minimum = np.asarray([state[2] for state in scaler_state], dtype=np.float64)
+        maximum = np.asarray([state[3] for state in scaler_state], dtype=np.float64)
+        with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+            coordinate_scale = np.maximum.reduce(
+                (
+                    np.ones(104, dtype=np.float64),
+                    np.maximum(np.abs(minimum), np.abs(maximum)),
+                    maximum - minimum,
+                    np.abs(pooled_mean),
+                    pooled_scale,
+                )
+            )
+            mean_error = np.abs(fed_mean - pooled_mean)
+            scale_error = np.abs(fed_scale - pooled_scale)
+            normalized_mean = mean_error / coordinate_scale
+            normalized_scale = scale_error / coordinate_scale
+            mean_limit = tolerances.tau_moment * coordinate_scale
+            scale_limit = tolerances.tau_moment * coordinate_scale
+        linked_scaler_values = {
+            "mean_absolute_mean_error": float(
+                np.mean(mean_error, dtype=np.float64)
+            ),
+            "max_abs_mean_error": float(np.max(mean_error)),
+            "mean_absolute_scale_error": float(
+                np.mean(scale_error, dtype=np.float64)
+            ),
+            "max_abs_scale_error": float(np.max(scale_error)),
+            "coordinate_scale_max": float(np.max(coordinate_scale)),
+            "max_normalized_mean_error": float(np.max(normalized_mean)),
+            "max_normalized_scale_error": float(np.max(normalized_scale)),
+        }
+        linked_scaler_finite = bool(
+            all(
+                np.isfinite(values).all()
+                for values in (
+                    coordinate_scale,
+                    mean_error,
+                    scale_error,
+                    normalized_mean,
+                    normalized_scale,
+                    mean_limit,
+                    scale_limit,
+                )
+            )
+        )
+        linked_mean_pass = bool(
+            linked_scaler_finite and np.all(mean_error <= mean_limit)
+        )
+        linked_scale_pass = bool(
+            linked_scaler_finite and np.all(scale_error <= scale_limit)
+        )
+        stored_mask_equal = _strict_csv_bool(
+            scaler_row["safe_scale_mask_equal"]
+        )
+        if (
+            any(
+                not arithmetic_close(
+                    float(scaler_row[field]), expected
+                )
+                for field, expected in linked_scaler_values.items()
+            )
+            or _strict_csv_bool(scaler_row["finite_pass"])
+            is not linked_scaler_finite
+            or _strict_csv_bool(scaler_row["mean_pass"])
+            is not linked_mean_pass
+            or _strict_csv_bool(scaler_row["scale_pass"])
+            is not linked_scale_pass
+            or _strict_csv_bool(scaler_row["scaler_pass"])
+            is not (
+                linked_scaler_finite
+                and linked_mean_pass
+                and linked_scale_pass
+                and stored_mask_equal
+            )
+        ):
+            raise RuntimeError(
+                "FAIL_CLOSED semantic model/scaler diagnostics contradiction"
+            )
         system_row = diagnostics["system"].get(int(gas))
         if system_row is None:
             raise RuntimeError("FAIL_CLOSED semantic model/system linkage missing")
@@ -2677,8 +3510,27 @@ def _semantic_evidence_audit(
 
     events = execution["access_events"]
     locks_before_test = execution.get("source_test_opened_after_locks") is True
+    source_test_receipt_path = output / SOURCE_TEST_RECEIPT_FILE
+    stored_source_test_validation = execution.get("source_test_validation")
+    if stored_source_test_validation is None:
+        if source_test_receipt_path.exists() or source_test_receipt_path.is_symlink():
+            raise RuntimeError(
+                "FAIL_CLOSED semantic source-test receipt contradiction"
+            )
+    elif (
+        source_test_receipt_path.is_symlink()
+        or not source_test_receipt_path.is_file()
+        or _read_json(source_test_receipt_path)
+        != stored_source_test_validation
+    ):
+        raise RuntimeError(
+            "FAIL_CLOSED semantic source-test receipt contradiction"
+        )
     if (output / "DATA_ACCESS_AUDIT.md").read_text(encoding="utf-8") != _access_audit_text(
-        events, locks_before_test=locks_before_test, decision=decision
+        events,
+        locks_before_test=locks_before_test,
+        decision=decision,
+        source_test_validation=execution.get("source_test_validation"),
     ):
         raise RuntimeError("FAIL_CLOSED semantic access audit contradiction")
     access_complete = events == [
@@ -2707,7 +3559,7 @@ def audit(output: Path) -> dict[str, Any]:
     if symlinks:
         raise RuntimeError(f"FAIL_CLOSED evidence symlink violation: {symlinks}")
     wrong_types = _artifact_type_findings(
-        output, EXPECTED_FORMAL_FILES, require_present=False
+        output, REGISTERED_FORMAL_FILES, require_present=False
     )
     if wrong_types:
         raise RuntimeError(
@@ -2800,10 +3652,15 @@ def audit(output: Path) -> dict[str, Any]:
         "exact_registered_sequence": exact_access,
     }
     execution_kind = execution.get("execution_kind")
+    registered_files = (
+        REGISTERED_FORMAL_FILES
+        if execution_kind == "formal"
+        else EXPECTED_FORMAL_FILES
+    )
     valid_execution_kind = execution_kind in ("formal", "synthetic_test") and (
         execution.get("formal_execution_started") is (execution_kind == "formal")
     )
-    if not _execution_provenance_is_valid(execution):
+    if not _execution_provenance_is_valid(execution, output):
         raise RuntimeError("FAIL_CLOSED execution provenance manifest is invalid")
     if (
         not valid_prefix
@@ -2819,7 +3676,7 @@ def audit(output: Path) -> dict[str, Any]:
         or execution.get("frozen_protocol_sha256")
         != EXPECTED_PROTOCOL_FREEZE_SHA256
         or execution.get("global_key_audit") != expected_global_key_audit
-        or execution.get("expected_formal_files") != list(EXPECTED_FORMAL_FILES)
+        or execution.get("expected_formal_files") != list(registered_files)
         or (
             decision == R0_V2_PASS
             and any(request.split == "test" for request in observed)
@@ -2830,8 +3687,11 @@ def audit(output: Path) -> dict[str, Any]:
         raise RuntimeError("FAIL_CLOSED access/protocol audit validation failed")
 
     locks_before_test = execution.get("source_test_opened_after_locks") is True
+    prepublication_files = EXPECTED_FORMAL_FILES[:9] + (
+        (SOURCE_TEST_RECEIPT_FILE,) if execution_kind == "formal" else ()
+    )
     artifact_findings = _artifact_type_findings(
-        output, EXPECTED_FORMAL_FILES[:9], require_present=True
+        output, prepublication_files, require_present=True
     )
     expected_findings = _blocking_findings(
         str(decision),
@@ -2863,7 +3723,7 @@ def audit(output: Path) -> dict[str, Any]:
     if decision == R0_V2_PASS:
         missing = [
             relative
-            for relative in EXPECTED_FORMAL_FILES
+            for relative in registered_files
             if not (output / relative).exists()
         ]
         if missing:

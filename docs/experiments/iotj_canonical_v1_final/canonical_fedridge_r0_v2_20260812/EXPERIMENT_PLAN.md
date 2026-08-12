@@ -26,6 +26,12 @@
   calibration=320 for distributed source SSE/count alpha selection,
   train+calibration=2680 total/670 per gas for final refit, and test=680
   total/170 per gas opened only after source alpha/model locks.
+- Source-integrity access: the frozen map contains all 32 C1/C2 artifacts;
+  preflight reads/hashes the 22 train/calibration/stats entries and defers all
+  10 test entries. After both immutable locks, the runner validates those ten
+  bytes and atomically publishes their ordered accesses plus both prior lock
+  hashes as `source_test_validation_receipt.json` before the first source-test
+  request. C3/C4/C5 remain unopened.
 - Model/checkpoint policy: four per-gas 104D `CanonicalRidgeModelV2` models;
   no pre-run checkpoint; future immutable `source_alpha_lock.json` and
   `model_lock.json` only under the registered result path.

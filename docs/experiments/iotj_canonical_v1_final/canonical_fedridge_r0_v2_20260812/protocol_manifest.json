@@ -95,6 +95,22 @@
     "C2_test_regression_labels": "4483ac2f191291fa77ecdc95f986417161fea8a45be26dcaeb275010eea41581",
     "C2_stats": "1508af072e58cd1977672f199e713107fc9684e114babc89d5b8e6a96a71c870"
   },
+  "source_access_provenance": {
+    "registered_source_artifact_count": 32,
+    "prelock_verified_non_test_artifact_count": 22,
+    "prelock_verified_splits": ["train", "calibration"],
+    "prelock_includes_client_stats": true,
+    "preflight_opens_source_test_bytes": false,
+    "postlock_source_test_artifact_count": 10,
+    "postlock_source_test_split": "test",
+    "postlock_required_files": ["source_alpha_lock.json", "model_lock.json"],
+    "formal_preflight_receipt_schema": "iotj.canonical_v1.fedridge_r0_v2.execution.v1.preflight_receipt",
+    "source_test_validation_receipt_schema": "iotj.canonical_v1.fedridge_r0_v2.execution.v1.source_test_validation",
+    "formal_execution_manifest_schema": "iotj.canonical_v1.fedridge_r0_v2.execution.v1.manifest.formal",
+    "synthetic_execution_manifest_schema": "iotj.canonical_v1.fedridge_r0_v2.execution.v1.manifest.synthetic",
+    "formal_result_root_bound": true,
+    "formal_cache_validation": "exact manifest schema, canonical provenance, fresh flags, on-disk manifest/NPZ/row-identity bytes, hashes, shapes, dtype, and row order"
+  },
   "feature_protocol": {
     "extractor_path": "run_regression_head_ablation.py::rich_feature_dict",
     "extractor_file_sha256": "7627b72ee4e1823d24c374d41a6c931f66b5efedd6eaf4a839c62e7b5b1fa72a",
@@ -180,6 +196,7 @@
     "perform_source_only_alpha_selection",
     "refit_source_train_calibration_federated_and_pooled_models",
     "write_source_alpha_and_model_locks",
+    "verify_and_record_C1_C2_source_test_artifacts_after_locks",
     "open_C1_C2_source_test_after_locks",
     "evaluate_functional_equivalence",
     "write_diagnostics_decision_audit_and_SHA256_index",
@@ -195,6 +212,7 @@
     "source_alpha_audit.csv",
     "source_alpha_lock.json",
     "model_lock.json",
+    "source_test_validation_receipt.json",
     "DATA_ACCESS_AUDIT.md",
     "R0_V2_DECISION.json",
     "R0_V2_EXPERIMENT_AUDIT.md",

@@ -36,12 +36,14 @@ Preflight authenticates the whole `dataset_sha256.json` file at
 and the canonical preprocessing manifest at
 `6c33f0a1586653b2bfa5a43f43ab502c5bdaa3474c24ac03015e36ddd40c2c41`.
 It checks that the index's stored aggregate identity remains the frozen
-canonical-v1 aggregate, then verifies the exact 32-file C1/C2 source subset
-against both the pinned index and `canonical_source_artifact_sha256`. Only the
-C1 and C2 directories are enumerated; missing, extra, linked, wrong-type, or
-digest-drifted source files fail closed. C3/C4/C5 directories and artifacts
-are never enumerated, hashed, opened, or used to recompute a target-inclusive
-aggregate during this source-only preflight.
+canonical-v1 aggregate and that `canonical_source_artifact_sha256` registers
+the exact 32-file C1/C2 source set. Preflight reads and hashes only the 22
+non-test entries (C1/C2 train, calibration, and both client stats files). The
+10 C1/C2 test entries remain expected-but-deferred: preflight retains their
+authenticated index/hash-map identities but does not read, hash, or load their
+bytes. Missing, extra, linked, wrong-type, or digest-drifted pre-lock source
+files fail closed. C3/C4/C5 directories and artifacts are never enumerated,
+hashed, opened, or used to recompute a target-inclusive aggregate.
 
 The prerequisite indexes are independently pinned before any indexed record
 is trusted. `C0/C0_SHA256_INDEX.json` has whole-file SHA256
@@ -52,6 +54,10 @@ The anchored C0 decision remains exactly `V1_INTERLEAVED_RETAINED`; the
 anchored original R0 remains `FAIL_CLOSED` at
 `R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY`, with practical fallback, threshold
 relaxation, rerun, downstream release, and R1 release all false.
+Before trusting those semantic anchors, preflight also checks exact index/tree
+coverage and hashes every one of the 171 C0 and 34 R0 indexed artifacts;
+unsafe relative paths, missing or extra files/directories, non-regular types,
+symlinks, and reparse points fail closed.
 
 Authorization binds the working bytes of this runner, the v2 numerical
 module, the versioned cache module, and this machine-readable protocol to the
@@ -63,9 +69,12 @@ that critical-path check.
 For each gas, source train fits each candidate alpha; distributed C1/C2 source
 calibration SSE/count selects the first minimum on the registered grid. Source
 train plus calibration is then refit. Only after both source alpha and model
-locks exist may the shared C1/C2 source test rows and labels be opened for the
-functional-equivalence gates. DA, post-hoc calibration, and QC modes are
-`none`.
+locks exist does the runner hash and content-validate the 10 deferred C1/C2
+test artifacts, recording the two lock hashes before those ten ordered access
+events in an atomically and exclusively published
+`source_test_validation_receipt.json`. The first source-test cache/data
+request follows that immutable receipt. DA, post-hoc calibration, and QC modes
+are `none`.
 
 The model is four per-gas 104D `CanonicalRidgeModelV2` reconstructions. No
 checkpoint exists pre-run. A separately authorized run must create immutable
@@ -73,6 +82,15 @@ checkpoint exists pre-run. A separately authorized run must create immutable
 `results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/`.
 The authorized freeze commit supplied to the future CLI must equal current Git
 HEAD. This bundle creates no result directory.
+
+Formal evidence uses a kind-specific execution schema that cannot be upgraded
+from synthetic evidence by relabeling. It binds the registered result root,
+authorized HEAD, protocol hash, 22/10 source partition, immutable C0/R0 index
+anchors, and the real preflight/source-test receipts. Audit recomputes that
+provenance against the current frozen code/protocol and validates each of the
+six C1/C2 cache directories against its exact returned and on-disk manifest,
+canonical source/phase/metadata/extractor hashes, row count/order, fresh flags,
+NPZ bytes/shapes/dtype, and row-identity bytes.
 
 All future evidence files are immutable publications: bytes are written to a
 same-directory temporary file and linked exclusively to the official name.

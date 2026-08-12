@@ -1378,6 +1378,37 @@ def test_r0_v2_protocol_manifest_is_pre_run_target_free_and_canonical() -> None:
         "per_gas_test_count_pooled": 340,
     }
     assert len(manifest["canonical_source_artifact_sha256"]) == 32
+    assert manifest["source_access_provenance"] == {
+        "registered_source_artifact_count": 32,
+        "prelock_verified_non_test_artifact_count": 22,
+        "prelock_verified_splits": ["train", "calibration"],
+        "prelock_includes_client_stats": True,
+        "preflight_opens_source_test_bytes": False,
+        "postlock_source_test_artifact_count": 10,
+        "postlock_source_test_split": "test",
+        "postlock_required_files": [
+            "source_alpha_lock.json",
+            "model_lock.json",
+        ],
+        "formal_preflight_receipt_schema": (
+            f"{runner.SCHEMA_VERSION}.preflight_receipt"
+        ),
+        "source_test_validation_receipt_schema": (
+            f"{runner.SCHEMA_VERSION}.source_test_validation"
+        ),
+        "formal_execution_manifest_schema": (
+            f"{runner.SCHEMA_VERSION}.manifest.formal"
+        ),
+        "synthetic_execution_manifest_schema": (
+            f"{runner.SCHEMA_VERSION}.manifest.synthetic"
+        ),
+        "formal_result_root_bound": True,
+        "formal_cache_validation": (
+            "exact manifest schema, canonical provenance, fresh flags, "
+            "on-disk manifest/NPZ/row-identity bytes, hashes, shapes, "
+            "dtype, and row order"
+        ),
+    }
     assert manifest["feature_protocol"]["sensor_dimensions"] == 83
     assert manifest["feature_protocol"]["h1_dimensions"] == 104
     assert manifest["feature_protocol"]["ordered_h1_feature_names_sha256"] == (
@@ -1888,7 +1919,8 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
 
     assert result["status"] == "PASS"
     assert result["bad_files"] == []
-    assert result["checked_files"] == 32
+    assert result["checked_files"] == 22
+    assert result["source_test_files_deferred"] == 10
     assert target_poison not in opened
 
     extra_source = data_root / "client_1/unregistered.bin"
@@ -1907,8 +1939,13 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
     (data_root / "client_1/test_regression_labels.npy").write_text(
         "changed", encoding="utf-8"
     )
-    with pytest.raises(RuntimeError, match="source hash"):
-        runner._verify_source_dataset(data_root, protocol)
+    assert runner._verify_source_dataset(data_root, protocol)["status"] == "PASS"
+    lock_root = tmp_path / "post-lock"
+    lock_root.mkdir()
+    (lock_root / "source_alpha_lock.json").write_text("{}", encoding="utf-8")
+    (lock_root / "model_lock.json").write_text("{}", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="source-test hash"):
+        runner._verify_source_test_after_locks(data_root, lock_root, protocol)
 
     np.save(
         data_root / "client_1/test_regression_labels.npy",
@@ -1932,7 +1969,7 @@ def test_source_dataset_preflight_never_opens_unregistered_client_artifacts(
         rehashed.update(b"\n")
     index["aggregate_sha256"] = rehashed.hexdigest()
     index_path.write_text(json.dumps(index), encoding="utf-8")
-    with pytest.raises(RuntimeError, match="dataset index|source hash"):
+    with pytest.raises(RuntimeError, match="dataset index"):
         runner._verify_source_dataset(data_root, protocol)
 
 
@@ -1953,6 +1990,152 @@ def test_preflight_is_pure_and_accepts_only_the_frozen_source_prerequisites(
     assert result["source_clients"] == ["C1", "C2"]
     assert result["target_clients"] == []
     assert not output.exists()
+
+
+def test_preflight_defers_every_source_test_artifact_byte_until_after_locks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches hash/load/read access to any C1/C2 test artifact in preflight."""
+    output = tmp_path / "absent"
+    test_paths = {
+        path.resolve()
+        for key, path in runner._source_artifact_paths(DATA_ROOT).items()
+        if "_test_" in key
+    }
+    accessed: list[Path] = []
+    real_sha256_file = runner.sha256_file
+    real_np_load = runner.np.load
+    real_read_json = runner._read_json
+
+    def reject_test_hash(path: str | Path) -> str:
+        candidate = Path(path).resolve()
+        accessed.append(candidate)
+        if candidate in test_paths:
+            raise AssertionError(f"pre-lock source-test hash access: {candidate}")
+        return real_sha256_file(path)
+
+    def reject_test_load(
+        path: str | Path, *args: object, **kwargs: object
+    ) -> object:
+        candidate = Path(path).resolve()
+        accessed.append(candidate)
+        if candidate in test_paths:
+            raise AssertionError(f"pre-lock source-test array access: {candidate}")
+        return real_np_load(path, *args, **kwargs)
+
+    def reject_test_json(path: Path) -> dict[str, object]:
+        candidate = Path(path).resolve()
+        accessed.append(candidate)
+        if candidate in test_paths:
+            raise AssertionError(f"pre-lock source-test JSON access: {candidate}")
+        return real_read_json(path)
+
+    monkeypatch.setattr(runner, "_git_head", lambda: "authorized")
+    monkeypatch.setattr(
+        runner, "_verify_critical_paths_match_head", lambda _head: None
+    )
+    monkeypatch.setattr(runner, "sha256_file", reject_test_hash)
+    monkeypatch.setattr(runner.np, "load", reject_test_load)
+    monkeypatch.setattr(runner, "_read_json", reject_test_json)
+
+    result = runner.preflight(DATA_ROOT, output, "authorized")
+
+    assert result["prelock_source_files_verified"] == 22
+    assert result["source_test_files_deferred"] == 10
+    assert not (set(accessed) & test_paths)
+    assert not output.exists()
+
+
+def test_preflight_receipt_binds_head_registered_roots_and_source_partition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches a forgeable formal receipt missing immutable run provenance."""
+    output = tmp_path / "absent"
+    monkeypatch.setattr(runner, "_git_head", lambda: "a" * 40)
+    monkeypatch.setattr(
+        runner, "_verify_critical_paths_match_head", lambda _head: None
+    )
+
+    receipt = runner.preflight(DATA_ROOT, output, "a" * 40)[
+        "formal_preflight_receipt"
+    ]
+
+    assert receipt["schema_version"] == (
+        f"{runner.SCHEMA_VERSION}.preflight_receipt"
+    )
+    assert receipt["study_id"] == R0_V2_STUDY_ID
+    assert receipt["authorized_freeze_commit"] == "a" * 40
+    assert receipt["data_root"] == "dataset/iotj_canonical_v1"
+    assert receipt["output_root"] == (
+        "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812"
+    )
+    assert len(receipt["prelock_source_sha256"]) == 22
+    assert len(receipt["deferred_source_test_sha256"]) == 10
+    assert receipt["formal_execution_started"] is False
+    assert not output.exists()
+
+
+def test_source_test_validation_requires_locks_and_records_all_ten_artifacts(
+    tmp_path: Path,
+) -> None:
+    """Catches missing post-lock hash/content validation or access receipt rows."""
+    data_root = tmp_path / "canonical"
+    output = tmp_path / "output"
+    output.mkdir()
+    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    protocol["canonical_data"]["source_split_counts_per_client"]["test"] = 8
+    protocol["canonical_data"]["per_gas_test_count_per_client"] = 2
+    expected = protocol["canonical_source_artifact_sha256"]
+    for client in ("C1", "C2"):
+        directory = data_root / f"client_{client[1:]}"
+        directory.mkdir(parents=True)
+        arrays = {
+            "features": np.zeros((8, 50, 8), dtype=np.float64),
+            "phase": np.arange(8, dtype=np.int64),
+            "classification_labels": np.tile(
+                np.arange(4, dtype=np.int64), 2
+            ),
+            "regression_labels": np.zeros((8, 4), dtype=np.float64),
+        }
+        for kind, values in arrays.items():
+            suffix = "phase_labels" if kind == "phase" else kind
+            path = directory / f"test_{suffix}.npy"
+            np.save(path, values, allow_pickle=False)
+            expected[f"{client}_test_{kind}"] = runner.sha256_file(path)
+        metadata_path = directory / "test_experiment_info.json"
+        metadata_path.write_text(
+            json.dumps([{"sample_index": index} for index in range(8)]),
+            encoding="utf-8",
+        )
+        expected[f"{client}_test_metadata"] = runner.sha256_file(metadata_path)
+    (output / "source_alpha_lock.json").write_text("{}", encoding="utf-8")
+    (output / "model_lock.json").write_text("{}", encoding="utf-8")
+
+    receipt = runner._verify_source_test_after_locks(
+        data_root, output, protocol
+    )
+
+    assert receipt["status"] == "PASS"
+    assert receipt["locks_verified"] is True
+    assert receipt["lock_sha256"] == {
+        "source_alpha_lock.json": runner.sha256_file(
+            output / "source_alpha_lock.json"
+        ),
+        "model_lock.json": runner.sha256_file(output / "model_lock.json"),
+    }
+    assert len(receipt["artifact_access_events"]) == 10
+    assert {
+        row["artifact_key"] for row in receipt["artifact_access_events"]
+    } == {key for key in expected if "_test_" in key}
+    assert all(
+        row["access_stage"] == "after_alpha_and_model_locks"
+        for row in receipt["artifact_access_events"]
+    )
+
+    changed = data_root / "client_2/test_regression_labels.npy"
+    changed.write_bytes(b"changed")
+    with pytest.raises(RuntimeError, match="source-test hash"):
+        runner._verify_source_test_after_locks(data_root, output, protocol)
 
 
 @pytest.mark.parametrize("changed_path", ("data", "output"))
@@ -2053,54 +2236,53 @@ def test_preflight_fails_closed_on_dataset_and_extractor_hash_drift(
         runner._verify_source_dataset(DATA_ROOT, protocol)
 
 
-def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
+def materialize_original_prerequisite_fixture(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Catches rewriting/relocating the read-only C0 or original-R0 evidence."""
+) -> tuple[Path, Path, dict[str, object]]:
+    """Create tiny but complete C0/R0 indexed trees for fail-closed tests."""
     c0_root = tmp_path / "old/C0"
     r0_root = tmp_path / "old/R0"
-    c0_root.mkdir(parents=True)
-    r0_root.mkdir(parents=True)
-    (c0_root / "C0_DECISION.json").write_text(
-        json.dumps({"decision": "CHANGED"}), encoding="utf-8"
-    )
-    (c0_root / "C0_EXPERIMENT_AUDIT.md").write_text("audit", encoding="utf-8")
-    (c0_root / "C0_SHA256_INDEX.json").write_text(
-        json.dumps(
-            {
-                name: runner.sha256_file(c0_root / name)
-                for name in ("C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md")
-            }
+    semantic_files = {
+        "C0": {"C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md"},
+        "R0": {
+            "canonical_fedridge_exact_recovery.json",
+            "R0_FAILURE_AUDIT.json",
+            "R0_EXPERIMENT_AUDIT.md",
+        },
+    }
+    for label, root, source, index_name in (
+        (
+            "C0",
+            c0_root,
+            runner.ORIGINAL_C0_ROOT,
+            "C0_SHA256_INDEX.json",
         ),
-        encoding="utf-8",
-    )
-    for name, payload in (
-        ("canonical_fedridge_exact_recovery.json", '{"status":"FAIL_CLOSED"}'),
-        ("R0_FAILURE_AUDIT.json", '{"status":"FAIL_CLOSED"}'),
-        ("R0_EXPERIMENT_AUDIT.md", "audit"),
+        (
+            "R0",
+            r0_root,
+            runner.ORIGINAL_R0_ROOT,
+            "R0_SHA256_INDEX.json",
+        ),
     ):
-        (r0_root / name).write_text(payload, encoding="utf-8")
-    (r0_root / "R0_SHA256_INDEX.json").write_text(
-        json.dumps(
-            {
-                name: runner.sha256_file(r0_root / name)
-                for name in (
-                    "canonical_fedridge_exact_recovery.json",
-                    "R0_FAILURE_AUDIT.json",
-                    "R0_EXPERIMENT_AUDIT.md",
+        source_index = json.loads(
+            (source / index_name).read_text(encoding="utf-8")
+        )
+        fixture_index: dict[str, str] = {}
+        for relative in source_index:
+            destination = root / Path(relative)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            if relative in semantic_files[label]:
+                destination.write_bytes((source / relative).read_bytes())
+            else:
+                destination.write_text(
+                    f"fixture:{label}:{relative}\n", encoding="utf-8"
                 )
-            }
-        ),
-        encoding="utf-8",
-    )
-    original_protocol = tmp_path / "old_protocol.json"
-    original_protocol.write_text(
-        json.dumps({"R0": {"execution_result": {"status": "FAIL_CLOSED"}}}),
-        encoding="utf-8",
-    )
+            fixture_index[relative] = runner.sha256_file(destination)
+        (root / index_name).write_text(
+            json.dumps(fixture_index, sort_keys=True), encoding="utf-8"
+        )
     monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
     monkeypatch.setattr(runner, "ORIGINAL_R0_ROOT", r0_root)
-    monkeypatch.setattr(runner, "ORIGINAL_PROTOCOL_MANIFEST", original_protocol)
     protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
     protocol["immutable_prerequisites"] = {
         "C0": {
@@ -2114,6 +2296,98 @@ def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
             )
         },
     }
+    return c0_root, r0_root, protocol
+
+
+@pytest.mark.parametrize(
+    ("tree", "relative"),
+    (
+        ("C0", "SOURCE_LAUNCHER_TIMELINE_CORRECTION.json"),
+        ("R0", "R0_PARTIAL_FEATURE_PROVENANCE.csv"),
+    ),
+)
+def test_original_prerequisites_hash_every_indexed_artifact(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tree: str,
+    relative: str,
+) -> None:
+    """Catches trusting a fixed index without hashing its non-anchor files."""
+    c0_root, r0_root, protocol = materialize_original_prerequisite_fixture(
+        tmp_path, monkeypatch
+    )
+    root = c0_root if tree == "C0" else r0_root
+    (root / relative).write_text("tampered", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="original prerequisite hash"):
+        runner._verify_original_prerequisites(tmp_path / "new", protocol)
+
+
+@pytest.mark.parametrize(
+    "attack",
+    ("extra", "missing", "wrong_type", "reparse", "unsafe_index_key"),
+)
+def test_original_prerequisite_tree_is_exact_safe_and_regular(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    attack: str,
+) -> None:
+    """Catches coverage, path, directory/file, and reparse-point drift."""
+    c0_root, _r0_root, protocol = materialize_original_prerequisite_fixture(
+        tmp_path, monkeypatch
+    )
+    indexed_path = c0_root / "SOURCE_LAUNCHER_TIMELINE_CORRECTION.json"
+    if attack == "extra":
+        (c0_root / "unindexed.txt").write_text("extra", encoding="utf-8")
+    elif attack == "missing":
+        indexed_path.unlink()
+    elif attack == "wrong_type":
+        indexed_path.unlink()
+        indexed_path.mkdir()
+    elif attack == "reparse":
+        original = runner._is_reparse_point
+
+        def reported_reparse(path: Path) -> bool:
+            return Path(path) == indexed_path or original(path)
+
+        monkeypatch.setattr(runner, "_is_reparse_point", reported_reparse)
+    else:
+        index_path = c0_root / "C0_SHA256_INDEX.json"
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+        digest = index.pop("SOURCE_LAUNCHER_TIMELINE_CORRECTION.json")
+        index["../outside.json"] = digest
+        index_path.write_text(
+            json.dumps(index, sort_keys=True), encoding="utf-8"
+        )
+        protocol["immutable_prerequisites"]["C0"]["index_sha256"] = (
+            runner.sha256_file(index_path)
+        )
+
+    with pytest.raises(RuntimeError, match="original prerequisite"):
+        runner._verify_original_prerequisites(tmp_path / "new", protocol)
+
+
+def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches rewriting/relocating the read-only C0 or original-R0 evidence."""
+    c0_root, _r0_root, protocol = materialize_original_prerequisite_fixture(
+        tmp_path, monkeypatch
+    )
+    (c0_root / "C0_DECISION.json").write_text(
+        json.dumps({"decision": "CHANGED"}), encoding="utf-8"
+    )
+    c0_index_path = c0_root / "C0_SHA256_INDEX.json"
+    c0_index = json.loads(c0_index_path.read_text(encoding="utf-8"))
+    c0_index["C0_DECISION.json"] = runner.sha256_file(
+        c0_root / "C0_DECISION.json"
+    )
+    c0_index_path.write_text(
+        json.dumps(c0_index, sort_keys=True), encoding="utf-8"
+    )
+    protocol["immutable_prerequisites"]["C0"]["index_sha256"] = (
+        runner.sha256_file(c0_index_path)
+    )
     with pytest.raises(RuntimeError, match="original C0 decision"):
         runner._verify_original_prerequisites(tmp_path / "new", protocol)
 
@@ -2131,7 +2405,7 @@ def test_preflight_fails_closed_on_original_decision_and_path_conflicts(
         c0_root / "C0_DECISION.json"
     )
     (c0_root / "C0_SHA256_INDEX.json").write_text(
-        json.dumps(c0_index), encoding="utf-8"
+        json.dumps(c0_index, sort_keys=True), encoding="utf-8"
     )
     protocol["immutable_prerequisites"]["C0"]["index_sha256"] = (
         runner.sha256_file(c0_root / "C0_SHA256_INDEX.json")
@@ -2145,32 +2419,9 @@ def test_original_prerequisite_rehash_cannot_redefine_immutable_anchor(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Catches coordinated prerequisite-file and self-index replacement."""
-    c0_root = tmp_path / "old/C0"
-    r0_root = tmp_path / "old/R0"
-    c0_root.mkdir(parents=True)
-    r0_root.mkdir(parents=True)
-    for root, source, names in (
-        (
-            c0_root,
-            runner.ORIGINAL_C0_ROOT,
-            ("C0_SHA256_INDEX.json", "C0_DECISION.json", "C0_EXPERIMENT_AUDIT.md"),
-        ),
-        (
-            r0_root,
-            runner.ORIGINAL_R0_ROOT,
-            (
-                "R0_SHA256_INDEX.json",
-                "canonical_fedridge_exact_recovery.json",
-                "R0_FAILURE_AUDIT.json",
-                "R0_EXPERIMENT_AUDIT.md",
-            ),
-        ),
-    ):
-        for name in names:
-            shutil.copy2(source / name, root / name)
-    monkeypatch.setattr(runner, "ORIGINAL_C0_ROOT", c0_root)
-    monkeypatch.setattr(runner, "ORIGINAL_R0_ROOT", r0_root)
-    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    c0_root, r0_root, protocol = materialize_original_prerequisite_fixture(
+        tmp_path, monkeypatch
+    )
 
     assert runner._verify_original_prerequisites(tmp_path / "new", protocol)[
         "C0_decision"
@@ -2192,19 +2443,8 @@ def test_original_prerequisite_rehash_cannot_redefine_immutable_anchor(
         runner._verify_original_prerequisites(
             tmp_path / "new", semantic_protocol
         )
-    shutil.copy2(
-        runner.ROOT
-        / "results/iotj_canonical_v1_final/"
-        "canonical_regression_reconstruction_qc_20260811/"
-        "R0/R0_FAILURE_AUDIT.json",
-        failure_path,
-    )
-    shutil.copy2(
-        runner.ROOT
-        / "results/iotj_canonical_v1_final/"
-        "canonical_regression_reconstruction_qc_20260811/"
-        "R0/R0_SHA256_INDEX.json",
-        r0_index_path,
+    c0_root, r0_root, restored_protocol = (
+        materialize_original_prerequisite_fixture(tmp_path, monkeypatch)
     )
 
     decision_path = c0_root / "C0_DECISION.json"
@@ -2217,7 +2457,9 @@ def test_original_prerequisite_rehash_cannot_redefine_immutable_anchor(
     index_path.write_text(json.dumps(index), encoding="utf-8")
 
     with pytest.raises(RuntimeError, match="index anchor"):
-        runner._verify_original_prerequisites(tmp_path / "new", protocol)
+        runner._verify_original_prerequisites(
+            tmp_path / "new", restored_protocol
+        )
 
 
 @pytest.mark.parametrize(
@@ -2297,6 +2539,33 @@ class RecordingSyntheticProvider:
     ) -> tuple[np.ndarray, np.ndarray]:
         self.requests.append(runner.SourceRequest(client, split, gas_id))
         return self.data[(client, split, gas_id)]
+
+
+class Random104DProvider(RecordingSyntheticProvider):
+    """Deterministic full-rank source rows with honest float64 merge drift."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.data = {}
+        split_sizes = {"train": 64, "calibration": 32, "test": 24}
+        weights = np.linspace(-0.25, 0.25, 104, dtype=np.float64)
+        for gas_id in range(4):
+            for client_index, client in enumerate(("C1", "C2")):
+                for split_index, (split, n) in enumerate(split_sizes.items()):
+                    rng = np.random.default_rng(
+                        10_000 * gas_id + 100 * client_index + split_index
+                    )
+                    x = rng.normal(
+                        loc=0.05 * (client_index + 1),
+                        scale=1.0,
+                        size=(n, 104),
+                    ).astype(np.float64)
+                    y = (
+                        1.0
+                        + float(gas_id)
+                        + x @ weights
+                    ).astype(np.float64)
+                    self.data[(client, split, gas_id)] = (x, y)
 
 
 def expected_source_only_request_sequence() -> list[runner.SourceRequest]:
@@ -2429,6 +2698,89 @@ def test_synthetic_runner_writes_all_diagnostics_and_never_requests_target(
     ):
         with (output / filename).open(encoding="utf-8", newline="") as handle:
             assert len(list(csv.DictReader(handle))) == 4
+
+
+def test_source_test_validation_hook_runs_between_locks_and_first_test_request(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches unrecorded formal source-test validation or pre-lock timing."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "post-lock-hook"
+
+    class PostLockProvider(RecordingSyntheticProvider):
+        def __init__(self) -> None:
+            super().__init__()
+            self.validation_request_index: int | None = None
+            self.receipt_present_before_test = False
+
+        def build_fresh_cache(
+            self, client: str, split: str
+        ) -> Mapping[str, object]:
+            if split == "test":
+                self.receipt_present_before_test = (
+                    output / "source_test_validation_receipt.json"
+                ).is_file()
+            return super().build_fresh_cache(client, split)
+
+        def validate_source_test_after_locks(self) -> dict[str, object]:
+            assert (output / "source_alpha_lock.json").is_file()
+            assert (output / "model_lock.json").is_file()
+            self.validation_request_index = len(self.requests)
+            return {
+                "schema_version": f"{runner.SCHEMA_VERSION}.source_test_validation",
+                "status": "PASS",
+                "locks_verified": True,
+                "lock_sha256": {
+                    "source_alpha_lock.json": runner.sha256_file(
+                        output / "source_alpha_lock.json"
+                    ),
+                    "model_lock.json": runner.sha256_file(
+                        output / "model_lock.json"
+                    ),
+                },
+                "artifact_access_events": [
+                    {
+                        "sequence": sequence,
+                        "operation": "validate_source_test_artifact",
+                        "artifact_key": f"synthetic_test_artifact_{sequence}",
+                        "relative_path": f"synthetic/test_{sequence}",
+                        "sha256": "a" * 64,
+                        "access_stage": "after_alpha_and_model_locks",
+                    }
+                    for sequence in range(10)
+                ],
+            }
+
+    provider = PostLockProvider()
+    runner._execute_source_only(provider, output, frozen_protocol_fixture())
+
+    first_test_request = next(
+        index
+        for index, request in enumerate(provider.requests)
+        if request.split == "test"
+    )
+    assert provider.validation_request_index == first_test_request
+    assert provider.receipt_present_before_test is True
+    execution = json.loads(
+        (output / "protocol_manifest_execution.json").read_text(encoding="utf-8")
+    )
+    assert execution["source_test_validation"]["locks_verified"] is True
+    assert len(
+        execution["source_test_validation"]["artifact_access_events"]
+    ) == 10
+    access_audit = (output / "DATA_ACCESS_AUDIT.md").read_text(encoding="utf-8")
+    assert "synthetic_test_artifact_0" in access_audit
+    assert "after_alpha_and_model_locks" in access_audit
+    receipt_path = output / "source_test_validation_receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt == execution["source_test_validation"]
+    assert runner.audit(output)["decision"] == runner.R0_V2_PASS
+
+    receipt["lock_sha256"]["model_lock.json"] = "b" * 64
+    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
+    rehash_evidence_after_tamper(output)
+    with pytest.raises(RuntimeError, match="source-test receipt"):
+        runner.audit(output)
 
 
 def test_failed_synthetic_runner_preserves_evidence_without_completion(
@@ -3029,7 +3381,14 @@ def test_audit_rejects_rehashed_cache_alpha_and_model_provenance_attacks(
     alpha_output = tmp_path / "alpha"
     model_output = tmp_path / "model"
     scaler_output = tmp_path / "scaler"
-    for output in (cache_output, alpha_output, model_output, scaler_output):
+    pooled_scaler_output = tmp_path / "pooled-scaler"
+    for output in (
+        cache_output,
+        alpha_output,
+        model_output,
+        scaler_output,
+        pooled_scaler_output,
+    ):
         runner._execute_source_only(
             RecordingSyntheticProvider(), output, frozen_protocol_fixture()
         )
@@ -3082,6 +3441,40 @@ def test_audit_rejects_rehashed_cache_alpha_and_model_provenance_attacks(
     with pytest.raises(RuntimeError, match="semantic model"):
         runner.audit(scaler_output)
 
+    model_path = pooled_scaler_output / "model_lock.json"
+    model_lock = json.loads(model_path.read_text(encoding="utf-8"))
+    model_lock["models"]["0"]["pooled"]["mean"][0] += 1.0
+    model_lock["models_sha256"] = runner._json_sha256(model_lock["models"])
+    model_path.write_text(json.dumps(model_lock), encoding="utf-8")
+    rehash_evidence_after_tamper(pooled_scaler_output)
+    with pytest.raises(RuntimeError, match="model/scaler diagnostics"):
+        runner.audit(pooled_scaler_output)
+
+
+def test_audit_accepts_honest_pooled_scaler_float64_merge_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches requiring pooled scaler bytes to equal federated H1 state."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "pooled-scaler-drift"
+    result = runner._execute_source_only(
+        Random104DProvider(), output, frozen_protocol_fixture()
+    )
+    assert result["decision"] == runner.R0_V2_PASS
+
+    lock = json.loads((output / "model_lock.json").read_text(encoding="utf-8"))
+    drift = [
+        abs(fed - pooled)
+        for gas_models in lock["models"].values()
+        for fed, pooled in zip(
+            gas_models["federated"]["mean"],
+            gas_models["pooled"]["mean"],
+            strict=True,
+        )
+    ]
+    assert 0.0 < max(drift) < 1e-12
+    assert runner.audit(output)["decision"] == runner.R0_V2_PASS
+
 
 def test_audit_rejects_rehashed_execution_commit_and_gate_manifest(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -3101,6 +3494,158 @@ def test_audit_rejects_rehashed_execution_commit_and_gate_manifest(
 
     with pytest.raises(RuntimeError, match="execution provenance"):
         runner.audit(output)
+
+
+def test_synthetic_evidence_cannot_be_rehashed_and_upgraded_to_formal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Catches formal relabeling with forged self-consistent cache manifests."""
+    force_synthetic_alpha(monkeypatch)
+    output = tmp_path / "synthetic-upgrade"
+    result = runner._execute_source_only(
+        RecordingSyntheticProvider(), output, frozen_protocol_fixture()
+    )
+    assert result["decision"] == runner.R0_V2_PASS
+
+    execution_path = output / "protocol_manifest_execution.json"
+    execution = json.loads(execution_path.read_text(encoding="utf-8"))
+    execution["execution_kind"] = "formal"
+    execution["formal_execution_started"] = True
+    execution["execution_commit"] = runner._git_head()
+    execution["numerical_gates"] = json.loads(
+        PROTOCOL_MANIFEST.read_text(encoding="utf-8")
+    )["numerical_gates"]
+    for manifest in execution["cache_manifests"]:
+        manifest.update(
+            {
+                "dataset_aggregate_sha256": "0" * 64,
+                "source_array_sha256": "1" * 64,
+                "phase_array_sha256": "2" * 64,
+                "metadata_sha256": "3" * 64,
+                "extractor_file_sha256": "4" * 64,
+                "legacy_cache_reused": True,
+            }
+        )
+    execution_path.write_text(json.dumps(execution), encoding="utf-8")
+    alpha_path = output / "source_alpha_audit.csv"
+    with alpha_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        original_rows = list(reader)
+        fields = [*(reader.fieldnames or []), "source_calibration_N"]
+    formal_rows: list[dict[str, str]] = []
+    for original in original_rows:
+        for alpha in RIDGE_ALPHAS:
+            formal_rows.append(
+                {
+                    **original,
+                    "alpha": str(alpha),
+                    "source_calibration_RMSE": (
+                        "0.0" if alpha == 0.1 else "1.0"
+                    ),
+                    "source_calibration_N": "8",
+                }
+            )
+    with alpha_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(formal_rows)
+    cache_record_path = output / "canonical_feature_caches/cache_manifests.json"
+    cache_record = json.loads(cache_record_path.read_text(encoding="utf-8"))
+    cache_record["manifests"] = execution["cache_manifests"]
+    cache_record_path.write_text(json.dumps(cache_record), encoding="utf-8")
+    rehash_evidence_after_tamper(output)
+
+    with pytest.raises(RuntimeError, match="formal|execution provenance|cache"):
+        runner.audit(output)
+
+
+def test_formal_cache_artifact_validation_binds_manifest_bytes_and_row_order(
+    tmp_path: Path,
+) -> None:
+    """Catches forged formal cache fields or self-rehashed identity ordering."""
+    cache_root = tmp_path / "canonical_feature_caches"
+    cache_dir = cache_root / "C1/train"
+    cache_dir.mkdir(parents=True)
+    sensor = np.arange(6 * 83, dtype=np.float64).reshape(6, 83)
+    h1 = np.arange(6 * 104, dtype=np.float64).reshape(6, 104)
+    cache_path = cache_dir / "canonical_quantitative_features.npz"
+    np.savez_compressed(cache_path, sensor83=sensor, h1=h1)
+    identities = [
+        {
+            "client": "C1",
+            "split": "train",
+            "sample_index": index,
+            "physical_identity": f"C1|train|{index}",
+            "filename": f"sample-{index}",
+            "window_start_s": float(index),
+            "window_end_s": float(index + 10),
+        }
+        for index in range(6)
+    ]
+    identity_path = cache_dir / "row_identities.json"
+    identity_path.write_text(json.dumps(identities), encoding="utf-8")
+    protocol = json.loads(PROTOCOL_MANIFEST.read_text(encoding="utf-8"))
+    protocol["canonical_data"]["source_split_counts_per_client"]["train"] = 6
+    protocol["canonical_source_artifact_sha256"].update(
+        {
+            "C1_train_features": "b" * 64,
+            "C1_train_phase": "c" * 64,
+            "C1_train_metadata": "d" * 64,
+        }
+    )
+    feature_protocol = protocol["feature_protocol"]
+    manifest = {
+        "schema_version": "iotj.canonical_v1.quantitative_feature_cache.v1",
+        "study_id": R0_V2_STUDY_ID,
+        "client": "C1",
+        "split": "train",
+        "row_count": 6,
+        "sampling_rate_hz": 5,
+        "window_shape": [50, 8],
+        "dataset_aggregate_sha256": protocol["canonical_data"][
+            "dataset_aggregate_sha256"
+        ],
+        "source_array_sha256": "b" * 64,
+        "phase_array_sha256": "c" * 64,
+        "metadata_sha256": "d" * 64,
+        "extractor_file_sha256": feature_protocol["extractor_file_sha256"],
+        "ordered_h1_feature_names_sha256": feature_protocol[
+            "ordered_h1_feature_names_sha256"
+        ],
+        "ordered_sensor_feature_names_sha256": feature_protocol[
+            "ordered_sensor_feature_names_sha256"
+        ],
+        "h1_dimensions": 104,
+        "sensor_dimensions": 83,
+        "cache_sha256": runner.sha256_file(cache_path),
+        "row_identities_sha256": runner.sha256_file(identity_path),
+        "created_from_canonical_arrays": True,
+        "legacy_cache_reused": False,
+        "resized_or_interpolated_after_preprocessing": False,
+        "dynamic_descriptor_interpretation": (
+            "fixed-5-Hz discrete per-sample descriptors"
+        ),
+        "sampling_rate_invariant_claim": False,
+        "legacy_10hz_5hz_numeric_equivalence_claim": False,
+    }
+    manifest_path = cache_dir / "cache_manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = runner._verify_formal_cache_artifact(
+        cache_root, manifest, client="C1", split="train", protocol=protocol
+    )
+    assert result["row_count"] == 6
+
+    manifest["source_array_sha256"] = "e" * 64
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="formal cache"):
+        runner._verify_formal_cache_artifact(
+            cache_root,
+            manifest,
+            client="C1",
+            split="train",
+            protocol=protocol,
+        )
 
 
 def test_audit_rejects_rehashed_execution_environment_drift(

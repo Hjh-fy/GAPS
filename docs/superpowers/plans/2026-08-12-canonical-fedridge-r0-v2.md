@@ -752,9 +752,15 @@ C3/C4/C5 bytes violates the source-only access gate. Instead, the protocol
 manifest must pin the whole-file SHA256 of `dataset_sha256.json`, the canonical
 preprocessing manifest, and the complete exact C1/C2 source file set (all 32
 feature, phase, metadata, classification-label, regression-label, and stats
-files). Preflight verifies only those C1/C2 bytes, rejects missing/extra source
-files, and checks that the stored aggregate identity still equals the frozen
-dataset identity; it must never enumerate or hash any C3/C4/C5 artifact. The
+files). Preflight reads and hashes only the 22 non-test train/calibration/stats
+entries while retaining the ten test entries as authenticated expected hashes.
+Only after both source alpha/model locks are atomically published may the
+runner validate/hash those ten test bytes and atomically publish the two prior
+lock hashes and ten ordered accesses as
+`source_test_validation_receipt.json` before the first source-test request.
+Missing/extra source files fail closed, and the stored aggregate
+identity must still equal the frozen dataset identity; no C3/C4/C5 artifact may
+be enumerated or hashed. The
 protocol manifest must also pin the whole-file SHA256 of the original C0 and R0
 index files, and preflight must verify those anchors before trusting any
 indexed prerequisite. It must also verify the exact
