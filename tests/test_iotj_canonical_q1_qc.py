@@ -41,6 +41,17 @@ def test_q1_absolute_residual_interval_uses_fixed_90_percent_level():
     assert upper == pytest.approx([30.0, 40.0])
 
 
+def test_q1_empirical_interval_accepts_shape_compatible_per_sample_radius():
+    module = _module()
+    lower, upper = module.empirical_interval(
+        np.asarray([20.0, 30.0]), np.asarray([2.0, 5.0])
+    )
+    assert lower == pytest.approx([18.0, 25.0])
+    assert upper == pytest.approx([22.0, 35.0])
+    with pytest.raises(ValueError, match="broadcast-compatible"):
+        module.empirical_interval(np.asarray([20.0, 30.0]), np.asarray([1.0, 2.0, 3.0]))
+
+
 def test_q1_calibration_ecdf_and_equal_mean_are_fixed_without_weight_search():
     module = _module()
     calibration = np.asarray([0.1, 0.2, 0.4, 0.8])

@@ -38,10 +38,10 @@ from scripts.run_iotj_canonical_q0_qc import (  # noqa: E402
 )
 
 
-STUDY_ID = "CAN-V1-CRRQ-Q1-CONFORMAL-QC-20260812"
+STUDY_ID = "CAN-V1-CRRQ-Q1V2-CONFORMAL-QC-20260812"
 Q0_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_q0_qc_necessity_20260812"
-DOC_ROOT = ROOT / "docs/experiments/iotj_canonical_v1_final/canonical_q1_conformal_qc_20260812"
-FORMAL_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_q1_conformal_qc_20260812"
+DOC_ROOT = ROOT / "docs/experiments/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812"
+FORMAL_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812"
 NOMINAL_INTERVAL_COVERAGE = 0.90
 SUPPORT_THRESHOLD = 0.05
 
@@ -107,9 +107,16 @@ def conformal_radius(absolute_residuals, coverage: float = NOMINAL_INTERVAL_COVE
     return float(np.partition(residuals, rank - 1)[rank - 1])
 
 
-def empirical_interval(prediction, radius: float):
+def empirical_interval(prediction, radius):
     prediction = np.asarray(prediction, dtype=np.float64)
-    return prediction - float(radius), prediction + float(radius)
+    radius = np.asarray(radius, dtype=np.float64)
+    if not np.isfinite(radius).all() or np.any(radius < 0):
+        raise ValueError("interval radius must be finite and non-negative")
+    try:
+        radius = np.broadcast_to(radius, prediction.shape)
+    except ValueError as exc:
+        raise ValueError("interval radius must be broadcast-compatible with prediction") from exc
+    return prediction - radius, prediction + radius
 
 
 def calibration_ecdf(calibration_values, values):
