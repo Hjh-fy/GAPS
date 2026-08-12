@@ -89,3 +89,12 @@ def test_oof_clip_bounds_do_not_use_held_out_truth(monkeypatch):
     groups = np.repeat([f"f{i}" for i in range(5)], 2)
     grouped_shrinkage_oof_predictions(x, y, np.zeros(10), groups, [0.0], 5)
     assert all((lo, hi) == (train_lo, train_hi) for lo, hi, train_lo, train_hi in observed)
+
+
+def test_runner_uses_independent_v2_identity_and_preserves_protocol():
+    import scripts.run_iotj_canonical_r2_transfer as runner
+    assert runner.STUDY_ID == "CAN-V1-CRRQ-R2-TRANSFER-SAFE-V2-20260812"
+    assert runner.FORMAL_ROOT.name == "canonical_r2_transfer_safe_v2_20260812"
+    assert runner.DOC_ROOT.name == "canonical_r2_transfer_safe_v2_20260812"
+    assert runner.ALPHAS == (0.0, .01, .1, 1.0, 10.0, 100.0, 1000.0)
+    assert runner.BETAS == (0.0, 0.25, 0.5, 0.75, 1.0)

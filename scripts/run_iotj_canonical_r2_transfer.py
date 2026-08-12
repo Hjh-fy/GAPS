@@ -16,11 +16,11 @@ from gaps_flower.canonical_r2_transfer import (BETAS, decide_transfer_candidate,
     shrinkage_transfer_prediction)
 from gaps_flower.canonical_quantitative_features import load_feature_cache
 
-STUDY_ID = "CAN-V1-CRRQ-R2-TRANSFER-SAFE-20260812"
+STUDY_ID = "CAN-V1-CRRQ-R2-TRANSFER-SAFE-V2-20260812"
 R1_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812"
 R0_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812"
-FORMAL_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_r2_transfer_safe_20260812"
-DOC_ROOT = ROOT / "docs/experiments/iotj_canonical_v1_final/canonical_r2_transfer_safe_20260812"
+FORMAL_ROOT = ROOT / "results/iotj_canonical_v1_final/canonical_r2_transfer_safe_v2_20260812"
+DOC_ROOT = ROOT / "docs/experiments/iotj_canonical_v1_final/canonical_r2_transfer_safe_v2_20260812"
 DATA_ROOT = ROOT / "dataset/iotj_canonical_v1"
 ALPHAS = (0.0, .01, .1, 1.0, 10.0, 100.0, 1000.0)
 GAS_NAMES = {0:"Ethanol",1:"CO",2:"Ethylene",3:"Methane"}
