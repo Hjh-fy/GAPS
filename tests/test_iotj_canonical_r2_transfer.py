@@ -8,6 +8,7 @@ from gaps_flower.canonical_r2_transfer import (
     decide_transfer_candidate,
     select_grouped_residual_alpha,
     select_grouped_shrinkage_beta,
+    grouped_shrinkage_oof_predictions,
 )
 
 
@@ -61,4 +62,15 @@ def test_protocol_has_only_two_candidates_and_fixed_grids():
     manifest = json.loads(Path("docs/experiments/iotj_canonical_v1_final/canonical_r2_transfer_safe_20260812/protocol_manifest.json").read_text())
     assert set(manifest["candidates"]) == {"RESIDUAL_TRANSFER", "SHRINKAGE_TRANSFER"}
     assert manifest["beta_grid"] == [0.0, 0.25, 0.5, 0.75, 1.0]
+    assert manifest["alpha_grid"] == [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0]
     assert manifest["retention_rule"]["pooled_s_all_rmse_improvement_min"] == 0.03
+
+
+def test_shrinkage_selection_uses_held_out_oof_predictions():
+    x = np.arange(10.0)[:, None]
+    y = np.arange(10.0)
+    source = np.zeros(10)
+    groups = np.repeat([f"f{i}" for i in range(5)], 2)
+    oof, folds = grouped_shrinkage_oof_predictions(x, y, source, groups, [0.0], 5)
+    assert oof.shape == (10,)
+    assert len(set(folds.values())) == 5

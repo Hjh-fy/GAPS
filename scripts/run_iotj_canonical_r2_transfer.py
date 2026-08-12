@@ -12,7 +12,8 @@ from gaps_flower.canonical_r1_v1 import (bootstrap_paired_group_deltas, fit_ridg
     predict_ridge_model, metric_rows_for_slices)
 from gaps_flower.canonical_r2_transfer import (BETAS, decide_transfer_candidate,
     residual_transfer_prediction, select_grouped_residual_alpha,
-    select_grouped_shrinkage_beta, shrinkage_transfer_prediction)
+    grouped_shrinkage_oof_predictions, select_grouped_shrinkage_beta,
+    shrinkage_transfer_prediction)
 from gaps_flower.canonical_quantitative_features import load_feature_cache
 
 STUDY_ID = "CAN-V1-CRRQ-R2-TRANSFER-SAFE-20260812"
@@ -23,6 +24,7 @@ DOC_ROOT = ROOT / "docs/experiments/iotj_canonical_v1_final/canonical_r2_transfe
 DATA_ROOT = ROOT / "dataset/iotj_canonical_v1"
 ALPHAS = (0.0, .01, .1, 1.0, 10.0, 100.0, 1000.0)
 GAS_NAMES = {0:"Ethanol",1:"CO",2:"Ethylene",3:"Methane"}
+R0_MODEL_SHA256 = "40c06848f19d211920b200946328e6e95cae9656a17ae0d18036951b7c5d67f6"
 
 
 def sha256(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -44,6 +46,7 @@ def validate_trigger():
     index=read_json(R1_ROOT/"sha256_index.json")
     for name,digest in index.items():
         if not (R1_ROOT/name).is_file() or sha256(R1_ROOT/name)!=digest: raise RuntimeError(f"R1 hash mismatch: {name}")
+    if sha256(R0_ROOT/"model_lock.json") != R0_MODEL_SHA256: raise RuntimeError("R0 source model lock mismatch")
     return index
 
 
@@ -97,7 +100,8 @@ def run(authorized_head):
             mask=cls==gas; cv=select_grouped_residual_alpha(sensor[mask],y4[mask,gas],source[mask,gas],groups[mask],ALPHAS)
             residual=y4[mask,gas]-source[mask,gas]
             model=fit_ridge_model(sensor[mask],residual,cv.alpha,residual.min(),residual.max()); models[target]["residual"][str(gas)]=model
-            b=select_grouped_shrinkage_beta(y4[mask,gas],target83[mask,gas],source[mask,gas],groups[mask],BETAS)
+            oof83,_=grouped_shrinkage_oof_predictions(sensor[mask],y4[mask,gas],source[mask,gas],groups[mask],ALPHAS,5)
+            b=select_grouped_shrinkage_beta(y4[mask,gas],oof83,source[mask,gas],groups[mask],BETAS)
             models[target]["beta"][str(gas)]=b["selected_beta"]
             selections += [{"target":target,"candidate":"RESIDUAL_TRANSFER","gas_id":gas,"selected":cv.alpha,"parameter":"alpha","scores":json.dumps(cv.pooled_rmse,sort_keys=True),"group_folds":json.dumps(cv.fold_by_group,sort_keys=True)},
                            {"target":target,"candidate":"SHRINKAGE_TRANSFER","gas_id":gas,"selected":b["selected_beta"],"parameter":"beta","scores":json.dumps(b["pooled_rmse"],sort_keys=True),"group_folds":json.dumps(b["fold_by_group"],sort_keys=True)}]
