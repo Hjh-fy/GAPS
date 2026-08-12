@@ -1,2 +1,2 @@
-study_id,dataset,source,target,seed,status,result_path
-CAN-V1-CRRQ-R1-CANONICAL-83D-R84-20260812,canonical-v1,C1;C2,C3;C4;C5,42,registered_not_executed,results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812
+study_id,dataset,source,target,seed,status,audit_status,decision,result_path,provenance
+CAN-V1-CRRQ-R1-CANONICAL-83D-R84-20260812,canonical-v1,C1;C2,C3;C4;C5,42,completed,audit_pass,CANONICAL_R84_DEVICE_DEPENDENT,results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812,"COMPLETE.json; R1_DECISION.json; sha256_index.json (34 indexed evidence files; 0 hash mismatches)"
