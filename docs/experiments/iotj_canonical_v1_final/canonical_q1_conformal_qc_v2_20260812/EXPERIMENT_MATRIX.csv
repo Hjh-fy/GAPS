@@ -1,0 +1,4 @@
+experiment_id,source_clients,target_clients,split_protocol,model,seed,status,result_path,notes
+CAN-V1-Q1V2-CONFIDENCE,C1;C2,C3;C4;C5,canonical-v1 role-aware 20:80,CLASSIFICATION_CONFIDENCE_ONLY,42,completed,results/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812/,retained final QC; authoritative v2
+CAN-V1-Q1V2-INTERVAL,C1;C2,C3;C4;C5,canonical-v1 role-aware 20:80,INTERVAL_WIDTH_ONLY,42,completed,results/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812/,fixed 90% group-aware empirical interval; not retained as final QC
+CAN-V1-Q1V2-EQUAL-MEAN,C1;C2,C3;C4;C5,canonical-v1 role-aware 20:80,EQUAL_MEAN_CDF,42,completed,results/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812/,failed C5 and pooled 5% support gates; no weight search
