@@ -107,6 +107,10 @@ def _identity(
         "filename": filename,
         "window_start_s": start,
         "window_end_s": end,
+        "repeat_id": int(metadata.get("repeat_id", -1)),
+        "gas_code": str(metadata.get("gas_code", "")),
+        "class_id": int(metadata.get("class_id", metadata.get("classification_label", -1))),
+        "concentration": float(metadata.get("concentration", 0.0)),
     }
 
 
@@ -155,6 +159,8 @@ def validate_cache_manifest(
     *,
     expected_dataset_sha256: str,
     expected_study_id: str = STUDY_ID,
+    expected_wrapper_sha256: str | None = None,
+    expected_extractor_sha256: str | None = None,
 ) -> None:
     required_hashes = (
         "dataset_aggregate_sha256",
@@ -177,6 +183,8 @@ def validate_cache_manifest(
             isinstance(manifest.get(key), str) and len(str(manifest[key])) == 64
             for key in required_hashes
         )
+        and (expected_wrapper_sha256 is None or manifest.get("wrapper_file_sha256") == expected_wrapper_sha256)
+        and (expected_extractor_sha256 is None or manifest.get("extractor_file_sha256") == expected_extractor_sha256)
     )
     if not valid:
         raise RuntimeError("canonical cache provenance mismatch")
@@ -191,6 +199,7 @@ def build_feature_cache(
     dataset_aggregate_sha256: str,
     extractor_path: str | Path,
     study_id: str = STUDY_ID,
+    wrapper_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """Recompute one content-bound 83D/H1 cache; never load a prior cache."""
     dataset_root = Path(dataset_root)
@@ -247,6 +256,8 @@ def build_feature_cache(
         "phase_array_sha256": sha256_file(phase_path),
         "metadata_sha256": sha256_file(metadata_path),
         "extractor_file_sha256": sha256_file(extractor_path),
+        "wrapper_file_sha256": sha256_file(wrapper_path or Path(__file__)),
+        "schema_bundle_sha256": sha256_strings([sha256_file(wrapper_path or Path(__file__)), sha256_file(extractor_path), sha256_strings(H1_FEATURE_NAMES), sha256_strings(SENSOR_FEATURE_NAMES)]),
         "ordered_h1_feature_names_sha256": sha256_strings(H1_FEATURE_NAMES),
         "ordered_sensor_feature_names_sha256": sha256_strings(SENSOR_FEATURE_NAMES),
         "h1_dimensions": len(H1_FEATURE_NAMES),
@@ -275,6 +286,8 @@ def load_feature_cache(
     *,
     expected_dataset_sha256: str,
     expected_study_id: str = STUDY_ID,
+    expected_wrapper_sha256: str | None = None,
+    expected_extractor_sha256: str | None = None,
 ) -> tuple[np.ndarray, np.ndarray, list[dict[str, Any]], dict[str, Any]]:
     cache_dir = Path(cache_dir)
     manifest = json.loads((cache_dir / "cache_manifest.json").read_text(encoding="utf-8"))
@@ -282,6 +295,8 @@ def load_feature_cache(
         manifest,
         expected_dataset_sha256=expected_dataset_sha256,
         expected_study_id=expected_study_id,
+        expected_wrapper_sha256=expected_wrapper_sha256,
+        expected_extractor_sha256=expected_extractor_sha256,
     )
     cache_path = cache_dir / "canonical_quantitative_features.npz"
     identity_path = cache_dir / "row_identities.json"

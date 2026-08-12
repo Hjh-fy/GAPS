@@ -15,7 +15,11 @@ from gaps_flower.canonical_r1_v1 import (
     assert_test_access_released,
     validate_evidence_bundle,
     predicted_classes_from_rows,
+    validate_r0_bundle,
+    metric_rows_for_slices,
+    summarize_bootstrap,
 )
+from gaps_flower.canonical_quantitative_features import extract_canonical_features, build_feature_cache, load_feature_cache
 
 
 def test_group_folds_are_stable_balanced_and_disjoint():
@@ -122,3 +126,77 @@ def test_classifier_stream_uses_registered_pred_class_field():
     assert predicted_classes_from_rows([{"pred_class": 2}, {"pred_class": 1}]).tolist() == [2, 1]
     with pytest.raises(RuntimeError):
         predicted_classes_from_rows([{"predicted_class": 2}])
+
+
+def test_r0_bundle_rejects_indexed_model_semantic_tamper(tmp_path):
+    import shutil, hashlib
+    source = Path("results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812")
+    shutil.copytree(source, tmp_path / "r0")
+    root = tmp_path / "r0"
+    lock = json.loads((root / "model_lock.json").read_text())
+    lock["models"]["0"]["federated"]["alpha"] = 1000
+    (root / "model_lock.json").write_text(json.dumps(lock))
+    index = json.loads((root / "sha256_index.json").read_text())
+    index["model_lock.json"] = hashlib.sha256((root / "model_lock.json").read_bytes()).hexdigest()
+    (root / "sha256_index.json").write_text(json.dumps(index))
+    with pytest.raises(RuntimeError, match="R0-v2"):
+        validate_r0_bundle(root, expected_index_sha256=hashlib.sha256((root / "sha256_index.json").read_bytes()).hexdigest())
+
+
+def test_slice_metrics_include_four_scopes_and_joint_gas_concentration():
+    rows = metric_rows_for_slices("C5", "R84_CONCAT", np.array([225.,225.,50.,50.]),
+        np.array([3,3,0,0]), np.array([3,0,0,0]),
+        np.array([[20,20,20,24],[20,20,20,26],[49,80,80,80],[51,80,80,80.]]),
+        {0:100.,3:225.}, np.array([1,1,2,2]))
+    assert {r["scope"] for r in rows["overall"]} == {"S_ALL","S_CC","Oracle_ALL","Oracle_CC"}
+    assert all("gas_id" in r and "concentration" in r for r in rows["concentration"])
+    special = rows["special"]
+    assert special and all(r["target"] == "C5" and r["gas_id"] == 3 and r["concentration"] == 225 for r in special)
+
+
+def test_bootstrap_summary_records_exact_design_and_groups():
+    out={"rmse_delta":[-2,-1],"mae_delta":[-1,-.5],"nrmse_range_delta":[-.2,-.1]}
+    rows=summarize_bootstrap("C3",out,point={"RMSE":-1.5,"MAE":-.75,"NRMSE_range":-.15},n_groups=7,n_replicates=2)
+    assert {r["metric"] for r in rows} == {"RMSE","MAE","NRMSE_range"}
+    assert all(r["n_groups"] == 7 and r["n_replicates"] == 2 for r in rows)
+
+
+def test_r1_identity_retains_registered_slice_fields():
+    rec=extract_canonical_features(np.zeros((50,8)),phase=2,metadata={"filename":"f.txt","repeat_id":1,"gas_code":"Me","class_id":3,"concentration":225},client="C5",split="test",sample_index=0)
+    assert {k:rec.identity[k] for k in ("repeat_id","gas_code","class_id","concentration")} == {"repeat_id":1,"gas_code":"Me","class_id":3,"concentration":225.0}
+
+
+def test_r1_cache_binds_wrapper_and_extractor_hashes(tmp_path):
+    canonical_dataset=tmp_path/"dataset"; client=canonical_dataset/"client_3"; client.mkdir(parents=True)
+    np.save(client/"calibration_features.npy",np.zeros((2,50,8)))
+    np.save(client/"calibration_phase_labels.npy",np.array([1,2]))
+    (client/"calibration_experiment_info.json").write_text(json.dumps([{"filename":"a","repeat_id":1,"gas_code":"CO","class_id":1,"concentration":25},{"filename":"b","repeat_id":2,"gas_code":"CO","class_id":1,"concentration":25}]))
+    wrapper=Path("gaps_flower/canonical_quantitative_features.py")
+    extractor=Path("run_regression_head_ablation.py")
+    manifest=build_feature_cache(canonical_dataset,tmp_path/"cache",client="C3",split="calibration",dataset_aggregate_sha256="a"*64,extractor_path=extractor,study_id="R1",wrapper_path=wrapper)
+    assert len(manifest["wrapper_file_sha256"])==64 and len(manifest["extractor_file_sha256"])==64
+    with pytest.raises(RuntimeError):
+        load_feature_cache(tmp_path/"cache"/"C3"/"calibration",expected_dataset_sha256="a"*64,expected_study_id="R1",expected_wrapper_sha256="0"*64,expected_extractor_sha256=manifest["extractor_file_sha256"])
+
+
+def test_access_receipt_must_precede_first_test_event():
+    from gaps_flower.canonical_r1_v1 import validate_access_chronology
+    locks={name:"h"*64 for name in ("target_alpha_lock.json","target_model_lock.json","classifier_lock.json","bootstrap_design_lock.json")}
+    events=[{"sequence":0,"target":"C3","split":"test","artifact":"test_features.npy","operation":"load"}]
+    with pytest.raises(RuntimeError,match="receipt"):
+        validate_access_chronology(events,locks,{"published_before_sequence":1,"lock_sha256":locks})
+    assert validate_access_chronology(events,locks,{"published_before_sequence":0,"lock_sha256":locks})
+
+
+def test_semantic_audit_recomputes_prediction_metrics_after_coordinated_rehash(tmp_path):
+    from gaps_flower.canonical_r1_v1 import write_synthetic_semantic_bundle
+    root=tmp_path/"bundle"; write_synthetic_semantic_bundle(root)
+    assert validate_evidence_bundle(root)
+    rows=list(__import__("csv").DictReader((root/"predictions.csv").open()))
+    rows[0]["prediction"]="999"; rows[0]["route_0"]="999"
+    with (root/"predictions.csv").open("w",newline="") as f:
+        w=__import__("csv").DictWriter(f,fieldnames=list(rows[0])); w.writeheader(); w.writerows(rows)
+    import hashlib
+    index=json.loads((root/"sha256_index.json").read_text()); index["predictions.csv"]=hashlib.sha256((root/"predictions.csv").read_bytes()).hexdigest(); (root/"sha256_index.json").write_text(json.dumps(index))
+    with pytest.raises(RuntimeError,match="semantic"):
+        validate_evidence_bundle(root)
