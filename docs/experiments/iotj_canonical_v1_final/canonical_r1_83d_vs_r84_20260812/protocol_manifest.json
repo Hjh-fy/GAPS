@@ -1,0 +1,22 @@
+{
+  "schema_version": "iotj.canonical_v1.r1.pre_run.v1",
+  "study_id": "CAN-V1-CRRQ-R1-CANONICAL-83D-R84-20260812",
+  "status": "DESIGN_IMPLEMENTED_FORMAL_NOT_STARTED",
+  "formal_execution_started": false,
+  "formal_result_root": "results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812",
+  "dataset": "canonical-v1",
+  "preprocessing": "HZ5_MEAN_W10S",
+  "targets": ["C3", "C4", "C5"],
+  "methods": ["SOURCE_ONLY_FEDRIDGE", "TARGET_ONLY_83D_RIDGE", "R84_CONCAT"],
+  "routes": ["S_ALL", "S_CC", "Oracle_ALL", "Oracle_CC"],
+  "alpha_grid": [0, 0.01, 0.1, 1, 10, 100, 1000],
+  "alpha_selection": "deterministic five-fold raw-filename-grouped target-calibration CV; pooled RMSE; first tie",
+  "bootstrap": {"replicates": 5000, "seed": 42, "unit": "target|raw_filename", "pooled_stratified_by_target": true},
+  "r0_v2_index_sha256": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82",
+  "classifier_sha256": {"C3":"e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414","C4":"422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3","C5":"3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93"},
+  "test_access": "only after all per-target cache/classifier/alpha/model/bootstrap locks",
+  "difficult_case": "C5 Methane 225 ppm repeat1",
+  "known_limitation": "frozen calibration and test windows may share raw-file/time neighborhoods",
+  "resource_budget": "unknown before formal execution",
+  "blas_environment": "unknown before formal execution"
+}
