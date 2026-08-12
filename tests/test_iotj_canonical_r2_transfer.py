@@ -74,3 +74,18 @@ def test_shrinkage_selection_uses_held_out_oof_predictions():
     oof, folds = grouped_shrinkage_oof_predictions(x, y, source, groups, [0.0], 5)
     assert oof.shape == (10,)
     assert len(set(folds.values())) == 5
+
+
+def test_oof_clip_bounds_do_not_use_held_out_truth(monkeypatch):
+    import gaps_flower.canonical_r2_transfer as module
+    observed = []
+    real_fit = module.fit_ridge_model
+    def spy(x, y, alpha, clip_min, clip_max):
+        observed.append((float(clip_min), float(clip_max), float(np.min(y)), float(np.max(y))))
+        return real_fit(x, y, alpha, clip_min, clip_max)
+    monkeypatch.setattr(module, "fit_ridge_model", spy)
+    x = np.arange(10.0)[:, None]
+    y = np.arange(10.0)
+    groups = np.repeat([f"f{i}" for i in range(5)], 2)
+    grouped_shrinkage_oof_predictions(x, y, np.zeros(10), groups, [0.0], 5)
+    assert all((lo, hi) == (train_lo, train_hi) for lo, hi, train_lo, train_hi in observed)

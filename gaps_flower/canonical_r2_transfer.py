@@ -44,7 +44,8 @@ def grouped_shrinkage_oof_predictions(x, truth, source_prior, groups, alphas,
     for fold in range(n_folds):
         valid=folds==fold
         cv=select_grouped_cv_alpha(x[~valid],truth[~valid],groups[~valid],alphas,n_folds=min(n_folds,len(np.unique(groups[~valid]))))
-        model=fit_ridge_model(x[~valid],truth[~valid],cv.alpha,float(truth.min()),float(truth.max()))
+        train_truth=truth[~valid]
+        model=fit_ridge_model(x[~valid],train_truth,cv.alpha,float(train_truth.min()),float(train_truth.max()))
         oof[valid]=predict_ridge_model(model,x[valid])
     return oof,{g:int(folds[np.flatnonzero(groups==g)[0]]) for g in np.unique(groups)}
 
