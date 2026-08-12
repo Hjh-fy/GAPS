@@ -1,0 +1,23 @@
+{
+  "study_id": "CAN-V1-CRRQ-R2-TRANSFER-SAFE-20260812",
+  "status": "registered",
+  "trigger": "CANONICAL_R84_DEVICE_DEPENDENT",
+  "dataset": "canonical-v1",
+  "targets": ["C3", "C4", "C5"],
+  "baseline": "R84_CONCAT from frozen R1",
+  "candidates": {
+    "RESIDUAL_TRANSFER": "source prior + Ridge83D(target residual)",
+    "SHRINKAGE_TRANSFER": "(1-beta)*target83D + beta*source prior"
+  },
+  "alpha_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+  "beta_grid": [0.0, 0.25, 0.5, 0.75, 1.0],
+  "selection": "five-fold raw-filename-grouped target-calibration RMSE; earliest grid value wins ties",
+  "test_policy": "sealed until selection_lock.json",
+  "bootstrap": {"replicates": 5000, "seed": 42, "unit": "target|raw_filename", "paired": true},
+  "retention_rule": {
+    "pooled_s_all_rmse_improvement_min": 0.03,
+    "max_gas_relative_rmse_degradation": 0.05,
+    "paired_rmse_delta_ci_high_max_exclusive": 0.0
+  },
+  "forbidden": ["new model", "new feature", "new split", "test selection", "extra search", "anomaly exemption"]
+}
