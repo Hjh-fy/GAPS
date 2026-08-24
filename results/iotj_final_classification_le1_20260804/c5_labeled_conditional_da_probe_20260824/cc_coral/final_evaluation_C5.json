@@ -1,0 +1,175 @@
+{
+  "comparison_row": {
+    "accuracy": 0.38382352941176473,
+    "alignment_scope": "true_class_conditional",
+    "alignment_weight": 0.5,
+    "calculation_status": "recomputed",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\c5_labeled_conditional_da_probe_20260824\\cc_coral\\adapted_step_100.pth",
+    "checkpoint_selection": "fixed_step_100",
+    "checkpoint_sha256": "61fbf110abf50442fc8323319499ef914382c06741824a3863545e0b7bafa5f8",
+    "commissioning_seconds": 7.962773600127548,
+    "confusion_matrix": "[[21,4,315,0],[0,0,146,194],[0,4,164,172],[1,1,1,337]]",
+    "ece": 0.6021895144123584,
+    "experiment_id": "C5LCD-CC-CORAL-S42",
+    "group": "true_class_conditional_no_target_ce",
+    "macro_f1": 0.27544486511505006,
+    "method": "CC-CORAL",
+    "method_key": "cc_coral",
+    "nll": 4.657001533382337,
+    "num_examples": 1360,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "per_class": "[{\"class_id\":0,\"precision\":0.9545454545454546,\"recall\":0.061764705882352944,\"f1\":0.11602209944751381,\"support\":340},{\"class_id\":1,\"precision\":0.0,\"recall\":0.0,\"f1\":0.0,\"support\":340},{\"class_id\":2,\"precision\":0.26198083067092653,\"recall\":0.4823529411764706,\"f1\":0.33954451345755693,\"support\":340},{\"class_id\":3,\"precision\":0.4793741109530583,\"recall\":0.9911764705882353,\"f1\":0.6462128475551294,\"support\":340}]",
+    "seed": 42,
+    "source_accuracy": 0.9970588235294118,
+    "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+    "source_macro_f1": 0.9970588108079502,
+    "source_target_f1_gap": 0.7216139456929002,
+    "steps": 100,
+    "target": "C5",
+    "target_ce_weight": 0.0,
+    "target_label_role": "class_grouping_only_no_target_CE",
+    "target_test_selection": false
+  },
+  "selection_role": "none_fixed_endpoint_only",
+  "source_metrics": {
+    "accuracy": 0.9970588235294118,
+    "class_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "confusion_matrix": [
+      [
+        338,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        338,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        340,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        340
+      ]
+    ],
+    "ece": 0.001402355360565781,
+    "ece_bins": 15,
+    "macro_f1": 0.9970588108079502,
+    "nll": 0.018284726174336494,
+    "num_examples": 1360,
+    "per_class": [
+      {
+        "class_id": 0,
+        "f1": 0.9970501474926253,
+        "precision": 1.0,
+        "recall": 0.9941176470588236,
+        "support": 340
+      },
+      {
+        "class_id": 1,
+        "f1": 0.9941176470588236,
+        "precision": 0.9941176470588236,
+        "recall": 0.9941176470588236,
+        "support": 340
+      },
+      {
+        "class_id": 2,
+        "f1": 0.9970674486803519,
+        "precision": 0.9941520467836257,
+        "recall": 1.0,
+        "support": 340
+      },
+      {
+        "class_id": 3,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 340
+      }
+    ]
+  },
+  "target_metrics": {
+    "accuracy": 0.38382352941176473,
+    "class_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "confusion_matrix": [
+      [
+        21,
+        4,
+        315,
+        0
+      ],
+      [
+        0,
+        0,
+        146,
+        194
+      ],
+      [
+        0,
+        4,
+        164,
+        172
+      ],
+      [
+        1,
+        1,
+        1,
+        337
+      ]
+    ],
+    "ece": 0.6021895144123584,
+    "ece_bins": 15,
+    "macro_f1": 0.27544486511505006,
+    "nll": 4.657001533382337,
+    "num_examples": 1360,
+    "per_class": [
+      {
+        "class_id": 0,
+        "f1": 0.11602209944751381,
+        "precision": 0.9545454545454546,
+        "recall": 0.061764705882352944,
+        "support": 340
+      },
+      {
+        "class_id": 1,
+        "f1": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "support": 340
+      },
+      {
+        "class_id": 2,
+        "f1": 0.33954451345755693,
+        "precision": 0.26198083067092653,
+        "recall": 0.4823529411764706,
+        "support": 340
+      },
+      {
+        "class_id": 3,
+        "f1": 0.6462128475551294,
+        "precision": 0.4793741109530583,
+        "recall": 0.9911764705882353,
+        "support": 340
+      }
+    ]
+  }
+}

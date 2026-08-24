@@ -1,0 +1,129 @@
+{
+  "batch_size": 32,
+  "calibration_examples": 320,
+  "checkpoint_selection": "fixed_step_100_only",
+  "dataset_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "early_stopping": false,
+  "hyperparameter_search": false,
+  "methods": {
+    "cc_coral": {
+      "alignment": "coral",
+      "alignment_scope": "true_class_conditional",
+      "alignment_weight": 0.5,
+      "checkpoint_selection": "fixed_step_100",
+      "hyperparameter_search": false,
+      "optimizer": "Adam",
+      "optimizer_lr": 0.0005,
+      "seed": 42,
+      "steps": 100,
+      "target_ce_weight": 0.0,
+      "target_fields": [
+        "x",
+        "class"
+      ],
+      "target_label_role": "class_grouping_only_no_target_CE"
+    },
+    "cc_dann": {
+      "alignment": "dann_grl_binary_bce",
+      "alignment_scope": "true_class_conditional",
+      "alignment_weight": 0.5,
+      "checkpoint_selection": "fixed_step_100",
+      "hyperparameter_search": false,
+      "optimizer": "Adam",
+      "optimizer_lr": 0.0005,
+      "seed": 42,
+      "steps": 100,
+      "target_ce_weight": 0.0,
+      "target_fields": [
+        "x",
+        "class"
+      ],
+      "target_label_role": "class_grouping_only_no_target_CE"
+    },
+    "class_mmd": {
+      "alignment": "mmd2",
+      "alignment_scope": "true_class_conditional",
+      "alignment_weight": 0.5,
+      "checkpoint_selection": "fixed_step_100",
+      "hyperparameter_search": false,
+      "optimizer": "Adam",
+      "optimizer_lr": 0.0005,
+      "seed": 42,
+      "steps": 100,
+      "target_ce_weight": 0.0,
+      "target_fields": [
+        "x",
+        "class"
+      ],
+      "target_label_role": "class_grouping_only_no_target_CE"
+    },
+    "coral_tce": {
+      "alignment": "coral",
+      "alignment_scope": "unconditional_global",
+      "alignment_weight": 0.5,
+      "checkpoint_selection": "fixed_step_100",
+      "hyperparameter_search": false,
+      "optimizer": "Adam",
+      "optimizer_lr": 0.0005,
+      "seed": 42,
+      "steps": 100,
+      "target_ce_weight": 1.0,
+      "target_fields": [
+        "x",
+        "class"
+      ],
+      "target_label_role": "classification_CE_and_available_training_labels"
+    },
+    "dann_tce": {
+      "alignment": "dann_grl_binary_bce",
+      "alignment_scope": "unconditional_global",
+      "alignment_weight": 0.5,
+      "checkpoint_selection": "fixed_step_100",
+      "hyperparameter_search": false,
+      "optimizer": "Adam",
+      "optimizer_lr": 0.0005,
+      "seed": 42,
+      "steps": 100,
+      "target_ce_weight": 1.0,
+      "target_fields": [
+        "x",
+        "class"
+      ],
+      "target_label_role": "classification_CE_and_available_training_labels"
+    },
+    "mmd_tce": {
+      "alignment": "mmd2",
+      "alignment_scope": "unconditional_global",
+      "alignment_weight": 0.5,
+      "checkpoint_selection": "fixed_step_100",
+      "hyperparameter_search": false,
+      "optimizer": "Adam",
+      "optimizer_lr": 0.0005,
+      "seed": 42,
+      "steps": 100,
+      "target_ce_weight": 1.0,
+      "target_fields": [
+        "x",
+        "class"
+      ],
+      "target_label_role": "classification_CE_and_available_training_labels"
+    }
+  },
+  "purpose": "mechanism_diagnostic_not_table_ii_replacement",
+  "schema_version": "iotj.c5_labeled_conditional_da.protocol.v1",
+  "seed": 42,
+  "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\inputs\\P0A_round25_source.pth",
+  "source_checkpoint_ordered_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+  "source_checkpoint_role": "P0A_round25_pure_FedAvg_LE1_seed42",
+  "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "split_protocol": "existing C5 calibration 320 / sealed test 1360",
+  "study_id": "C5-LABELED-CONDITIONAL-DA-PROBE-20260824",
+  "table_ii_mutated": false,
+  "target": "C5",
+  "target_test_selection": false,
+  "test_examples": 1360
+}

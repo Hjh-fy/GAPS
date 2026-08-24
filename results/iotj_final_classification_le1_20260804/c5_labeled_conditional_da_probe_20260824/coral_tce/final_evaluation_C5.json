@@ -1,0 +1,175 @@
+{
+  "comparison_row": {
+    "accuracy": 0.9683823529411765,
+    "alignment_scope": "unconditional_global",
+    "alignment_weight": 0.5,
+    "calculation_status": "recomputed",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\c5_labeled_conditional_da_probe_20260824\\coral_tce\\adapted_step_100.pth",
+    "checkpoint_selection": "fixed_step_100",
+    "checkpoint_sha256": "462b9bf1c7c4b35c5c36e4a7b13f5724887e2b2baadbd00a5fa87064b54cfffe",
+    "commissioning_seconds": 11.020164399873465,
+    "confusion_matrix": "[[321,8,11,0],[1,331,1,7],[1,12,327,0],[0,1,1,338]]",
+    "ece": 0.018077284278930832,
+    "experiment_id": "C5LCD-CORAL-TCE-S42",
+    "group": "supervised_global_alignment",
+    "macro_f1": 0.9683998026125251,
+    "method": "CORAL+TCE",
+    "method_key": "coral_tce",
+    "nll": 0.14369846159315425,
+    "num_examples": 1360,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "per_class": "[{\"class_id\":0,\"precision\":0.9938080495356038,\"recall\":0.9441176470588235,\"f1\":0.9683257918552036,\"support\":340},{\"class_id\":1,\"precision\":0.9403409090909091,\"recall\":0.9735294117647059,\"f1\":0.9566473988439306,\"support\":340},{\"class_id\":2,\"precision\":0.961764705882353,\"recall\":0.961764705882353,\"f1\":0.961764705882353,\"support\":340},{\"class_id\":3,\"precision\":0.9797101449275363,\"recall\":0.9941176470588236,\"f1\":0.9868613138686132,\"support\":340}]",
+    "seed": 42,
+    "source_accuracy": 0.9830882352941176,
+    "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+    "source_macro_f1": 0.9831721019471406,
+    "source_target_f1_gap": 0.014772299334615435,
+    "steps": 100,
+    "target": "C5",
+    "target_ce_weight": 1.0,
+    "target_label_role": "classification_CE_and_available_training_labels",
+    "target_test_selection": false
+  },
+  "selection_role": "none_fixed_endpoint_only",
+  "source_metrics": {
+    "accuracy": 0.9830882352941176,
+    "class_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "confusion_matrix": [
+      [
+        336,
+        4,
+        0,
+        0
+      ],
+      [
+        2,
+        337,
+        1,
+        0
+      ],
+      [
+        0,
+        13,
+        327,
+        0
+      ],
+      [
+        0,
+        2,
+        1,
+        337
+      ]
+    ],
+    "ece": 0.005592183650734055,
+    "ece_bins": 15,
+    "macro_f1": 0.9831721019471406,
+    "nll": 0.05522528105524907,
+    "num_examples": 1360,
+    "per_class": [
+      {
+        "class_id": 0,
+        "f1": 0.9911504424778761,
+        "precision": 0.9940828402366864,
+        "recall": 0.9882352941176471,
+        "support": 340
+      },
+      {
+        "class_id": 1,
+        "f1": 0.9683908045977013,
+        "precision": 0.9466292134831461,
+        "recall": 0.9911764705882353,
+        "support": 340
+      },
+      {
+        "class_id": 2,
+        "f1": 0.9775784753363229,
+        "precision": 0.993920972644377,
+        "recall": 0.961764705882353,
+        "support": 340
+      },
+      {
+        "class_id": 3,
+        "f1": 0.9955686853766618,
+        "precision": 1.0,
+        "recall": 0.9911764705882353,
+        "support": 340
+      }
+    ]
+  },
+  "target_metrics": {
+    "accuracy": 0.9683823529411765,
+    "class_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "confusion_matrix": [
+      [
+        321,
+        8,
+        11,
+        0
+      ],
+      [
+        1,
+        331,
+        1,
+        7
+      ],
+      [
+        1,
+        12,
+        327,
+        0
+      ],
+      [
+        0,
+        1,
+        1,
+        338
+      ]
+    ],
+    "ece": 0.018077284278930832,
+    "ece_bins": 15,
+    "macro_f1": 0.9683998026125251,
+    "nll": 0.14369846159315425,
+    "num_examples": 1360,
+    "per_class": [
+      {
+        "class_id": 0,
+        "f1": 0.9683257918552036,
+        "precision": 0.9938080495356038,
+        "recall": 0.9441176470588235,
+        "support": 340
+      },
+      {
+        "class_id": 1,
+        "f1": 0.9566473988439306,
+        "precision": 0.9403409090909091,
+        "recall": 0.9735294117647059,
+        "support": 340
+      },
+      {
+        "class_id": 2,
+        "f1": 0.961764705882353,
+        "precision": 0.961764705882353,
+        "recall": 0.961764705882353,
+        "support": 340
+      },
+      {
+        "class_id": 3,
+        "f1": 0.9868613138686132,
+        "precision": 0.9797101449275363,
+        "recall": 0.9941176470588236,
+        "support": 340
+      }
+    ]
+  }
+}

@@ -268,4 +268,4 @@ def test_direct_script_entrypoint_can_inspect_without_pythonpath() -> None:
     )
 
     assert completed.returncode == 0, completed.stdout
-    assert '"output_exists": false' in completed.stdout.lower()
+    assert '"source_checkpoint_exists": true' in completed.stdout.lower()

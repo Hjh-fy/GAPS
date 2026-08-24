@@ -1,0 +1,150 @@
+{
+  "calibration_fields": [
+    "x",
+    "class"
+  ],
+  "events": [
+    {
+      "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+      "concentration_access": false,
+      "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+      "feature_shape": [
+        320,
+        100,
+        8
+      ],
+      "fields": [
+        "x",
+        "class"
+      ],
+      "method": "coral_tce",
+      "num_examples": 320,
+      "phase_access": false,
+      "sequence": 1,
+      "split": "C5_calibration",
+      "stage": "adaptation",
+      "target_test_access": false
+    },
+    {
+      "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+      "concentration_access": false,
+      "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+      "feature_shape": [
+        320,
+        100,
+        8
+      ],
+      "fields": [
+        "x",
+        "class"
+      ],
+      "method": "mmd_tce",
+      "num_examples": 320,
+      "phase_access": false,
+      "sequence": 2,
+      "split": "C5_calibration",
+      "stage": "adaptation",
+      "target_test_access": false
+    },
+    {
+      "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+      "concentration_access": false,
+      "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+      "feature_shape": [
+        320,
+        100,
+        8
+      ],
+      "fields": [
+        "x",
+        "class"
+      ],
+      "method": "dann_tce",
+      "num_examples": 320,
+      "phase_access": false,
+      "sequence": 3,
+      "split": "C5_calibration",
+      "stage": "adaptation",
+      "target_test_access": false
+    },
+    {
+      "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+      "concentration_access": false,
+      "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+      "feature_shape": [
+        320,
+        100,
+        8
+      ],
+      "fields": [
+        "x",
+        "class"
+      ],
+      "method": "cc_coral",
+      "num_examples": 320,
+      "phase_access": false,
+      "sequence": 4,
+      "split": "C5_calibration",
+      "stage": "adaptation",
+      "target_test_access": false
+    },
+    {
+      "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+      "concentration_access": false,
+      "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+      "feature_shape": [
+        320,
+        100,
+        8
+      ],
+      "fields": [
+        "x",
+        "class"
+      ],
+      "method": "class_mmd",
+      "num_examples": 320,
+      "phase_access": false,
+      "sequence": 5,
+      "split": "C5_calibration",
+      "stage": "adaptation",
+      "target_test_access": false
+    },
+    {
+      "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+      "concentration_access": false,
+      "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+      "feature_shape": [
+        320,
+        100,
+        8
+      ],
+      "fields": [
+        "x",
+        "class"
+      ],
+      "method": "cc_dann",
+      "num_examples": 320,
+      "phase_access": false,
+      "sequence": 6,
+      "split": "C5_calibration",
+      "stage": "adaptation",
+      "target_test_access": false
+    },
+    {
+      "all_six_endpoints_complete": true,
+      "fields": [
+        "x",
+        "class"
+      ],
+      "purpose": "fixed_endpoint_metrics_only",
+      "sequence": 7,
+      "split": "C5_test",
+      "stage": "final_evaluation_release",
+      "target_test_selection": false
+    }
+  ],
+  "phase_or_concentration_loaded_for_adaptation": false,
+  "status": "PASS",
+  "target_test_used_for_selection": false,
+  "test_opened_only_after_all_six_fixed_endpoints": true
+}
