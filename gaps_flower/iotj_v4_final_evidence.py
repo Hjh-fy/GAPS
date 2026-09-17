@@ -26,6 +26,12 @@ def pooled_classification_metrics(rows: Sequence[Mapping[str, Any]]) -> dict[str
     """Compute one classification metric after merging all target predictions."""
     if not rows:
         raise ValueError("classification rows must be non-empty")
+    required_targets = {"C3", "C4", "C5"}
+    targets = {row.get("target") for row in rows}
+    if targets != required_targets:
+        raise ValueError(
+            "target population must contain exactly non-empty C3, C4, and C5 rows"
+        )
     try:
         truth = np.asarray([row["true_class"] for row in rows])
         prediction = np.asarray([row["predicted_class"] for row in rows])
@@ -68,6 +74,18 @@ def _reject_nonfinite(row: Mapping[str, Any]) -> None:
         if isinstance(value, Number) and not isinstance(value, (bool, np.bool_)):
             if not np.isfinite(value):
                 raise ValueError(f"non-finite value for {key}")
+        elif isinstance(value, str) and value.strip().casefold() in {
+            "nan",
+            "+nan",
+            "-nan",
+            "inf",
+            "+inf",
+            "-inf",
+            "infinity",
+            "+infinity",
+            "-infinity",
+        }:
+            raise ValueError(f"non-finite value for {key}")
 
 
 def match_budget_identities(
@@ -106,7 +124,7 @@ def match_budget_identities(
         seen.add(key)
         _reject_nonfinite(row)
         canonical_row = canonical[identity][1]
-        for label_key in ("true_class", "label"):
+        for label_key in ("class_id", "true_class", "label"):
             if label_key in row or label_key in canonical_row:
                 if label_key not in row or label_key not in canonical_row or row[label_key] != canonical_row[label_key]:
                     raise ValueError(f"reordered label for physical_identity: {identity}")
@@ -117,6 +135,16 @@ def match_budget_identities(
     missing_identities = sorted(set(canonical) - present_identities)
     if missing_identities:
         raise ValueError(f"missing budget identities: {missing_identities}")
+    by_budget: dict[int, dict[str, set[str]]] = {}
+    for _, budget, method, row in validated:
+        by_budget.setdefault(budget, {}).setdefault(method, set()).add(
+            row["physical_identity"]
+        )
+    for budget, method_rows in by_budget.items():
+        if set(method_rows) != _METHODS:
+            raise ValueError(f"budget {budget} must contain exactly both methods")
+        if method_rows["R83_TARGET_ONLY"] != method_rows["R84_CONCAT"]:
+            raise ValueError(f"budget {budget} method identity sets differ")
     validated.sort(key=lambda item: (item[1], item[2], item[0]))
     return [row for _, _, _, row in validated]
 
@@ -139,31 +167,46 @@ def _paired_points(truth, pred_r83, pred_r84, gas_range) -> dict[str, float]:
 
 
 def paired_grouped_interval(truth, pred_r83, pred_r84, gas_range, groups):
-    arrays = [np.asarray(value) for value in (truth, pred_r83, pred_r84, gas_range, groups)]
-    lengths = {array.size for array in arrays}
-    if len(lengths) != 1 or not lengths or next(iter(lengths)) == 0:
-        raise ValueError("paired bootstrap inputs must be non-empty and aligned")
-    groups_array = np.asarray(groups, dtype=str)
-    if any(not value.strip() for value in groups_array):
-        raise RuntimeError("FAIL_CLOSED bootstrap grouping key is missing")
-    numeric = [np.asarray(value, dtype=np.float64) for value in (truth, pred_r83, pred_r84, gas_range)]
+    raw_groups = np.asarray(groups)
+    numeric = [
+        np.asarray(value, dtype=np.float64)
+        for value in (truth, pred_r83, pred_r84, gas_range)
+    ]
+    arrays = [*numeric, raw_groups]
+    if any(array.ndim != 1 for array in arrays):
+        raise ValueError("paired bootstrap inputs must be one-dimensional")
+    if not arrays[0].size or any(array.shape != arrays[0].shape for array in arrays[1:]):
+        raise ValueError("paired bootstrap inputs must have identical non-empty shape")
+    for value in raw_groups.tolist():
+        if value is None or (
+            isinstance(value, Number)
+            and not isinstance(value, (bool, np.bool_))
+            and not np.isfinite(value)
+        ):
+            raise RuntimeError("FAIL_CLOSED bootstrap grouping key is missing")
+    groups_array = raw_groups.astype(str)
+    if any(
+        not value.startswith("C5|") or not value.removeprefix("C5|").strip()
+        for value in groups_array
+    ):
+        raise RuntimeError("FAIL_CLOSED bootstrap grouping key must be C5|<filename>")
     if not all(np.isfinite(value).all() for value in numeric):
         raise ValueError("paired bootstrap inputs contain non-finite values")
     if np.any(numeric[3] <= 0):
         raise ValueError("gas_range must be positive")
     output = bootstrap_paired_group_deltas(
-        truth,
-        pred_r83,
-        pred_r84,
+        numeric[0],
+        numeric[1],
+        numeric[2],
         groups_array,
-        gas_range,
+        numeric[3],
         replicates=BOOTSTRAP_REPLICATES,
         seed=BOOTSTRAP_SEED,
     )
     return summarize_bootstrap(
         "C5",
         output,
-        point=_paired_points(truth, pred_r83, pred_r84, gas_range),
+        point=_paired_points(*numeric),
         n_groups=len(np.unique(groups_array)),
         n_replicates=BOOTSTRAP_REPLICATES,
     )
