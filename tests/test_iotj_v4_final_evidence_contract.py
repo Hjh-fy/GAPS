@@ -135,6 +135,33 @@ def test_identity_matching_rejects_string_nonfinite_without_rejecting_identity_t
     assert match_budget_identities(valid, _canonical_rows())
 
 
+@pytest.mark.parametrize("token", ["1e309", "+1e309", "-1e309"])
+def test_identity_matching_rejects_numeric_strings_that_overflow(token):
+    rows = _budget_rows()
+    rows[0] = {**rows[0], "metric": token}
+    with pytest.raises(ValueError, match="non-finite"):
+        match_budget_identities(rows, _canonical_rows())
+
+
+def test_identity_matching_normalizes_label_aliases_and_rejects_conflicts():
+    cross_alias = []
+    for row in _budget_rows():
+        normalized = dict(row)
+        normalized["true_class"] = normalized.pop("class_id")
+        cross_alias.append(normalized)
+    assert match_budget_identities(cross_alias, _canonical_rows())
+
+    conflicting = _budget_rows()
+    conflicting[0] = {**conflicting[0], "true_class": 0}
+    with pytest.raises(ValueError, match="label"):
+        match_budget_identities(conflicting, _canonical_rows())
+
+    conflicting_canonical = _canonical_rows()
+    conflicting_canonical[0] = {**conflicting_canonical[0], "true_class": 1}
+    with pytest.raises(ValueError, match="label"):
+        match_budget_identities(_budget_rows(), conflicting_canonical)
+
+
 def test_grouped_bootstrap_rejects_broadcastable_2d_input():
     with pytest.raises(ValueError, match="one-dimensional|1-D|shape"):
         paired_grouped_interval(
@@ -154,6 +181,12 @@ def test_grouped_bootstrap_rejects_broadcastable_2d_input():
         np.array(["file-a", "file-b"]),
         np.array(["C5|", "C5|file-b"]),
         np.array(["C4|file-a", "C4|file-b"]),
+        np.array(["C5| file-a ", "C5|file-b"]),
+        np.array(["C5|file|a", "C5|file-b"]),
+        np.array(["C5|none", "C5|file-b"]),
+        np.array(["C5|NULL", "C5|file-b"]),
+        np.array(["C5|Nan", "C5|file-b"]),
+        np.array(["C5|NaT", "C5|file-b"]),
     ],
 )
 def test_grouped_bootstrap_rejects_unreliable_group_keys(groups):

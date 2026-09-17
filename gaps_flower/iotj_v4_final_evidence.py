@@ -74,18 +74,34 @@ def _reject_nonfinite(row: Mapping[str, Any]) -> None:
         if isinstance(value, Number) and not isinstance(value, (bool, np.bool_)):
             if not np.isfinite(value):
                 raise ValueError(f"non-finite value for {key}")
-        elif isinstance(value, str) and value.strip().casefold() in {
-            "nan",
-            "+nan",
-            "-nan",
-            "inf",
-            "+inf",
-            "-inf",
-            "infinity",
-            "+infinity",
-            "-infinity",
-        }:
-            raise ValueError(f"non-finite value for {key}")
+        elif isinstance(value, str):
+            try:
+                parsed = float(value)
+            except ValueError:
+                continue
+            if not np.isfinite(parsed):
+                raise ValueError(f"non-finite value for {key}")
+
+
+def _semantic_label(row: Mapping[str, Any], *, source: str) -> float:
+    aliases = [key for key in ("class_id", "true_class", "label") if key in row]
+    if not aliases:
+        raise ValueError(f"{source} row has no label alias")
+    normalized: list[float] = []
+    for key in aliases:
+        value = row[key]
+        if isinstance(value, (bool, np.bool_)):
+            raise ValueError(f"{source} row has invalid label")
+        try:
+            label = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{source} row has invalid label") from exc
+        if not np.isfinite(label):
+            raise ValueError(f"{source} row has non-finite label")
+        normalized.append(label)
+    if any(label != normalized[0] for label in normalized[1:]):
+        raise ValueError(f"{source} row has conflicting label aliases")
+    return normalized[0]
 
 
 def match_budget_identities(
@@ -100,6 +116,7 @@ def match_budget_identities(
             raise ValueError(f"duplicate canonical physical_identity: {identity}")
         _reject_nonfinite(row)
         canonical[identity] = (index, row)
+        _semantic_label(row, source="canonical")
     if not canonical:
         raise ValueError("canonical rows must be non-empty")
 
@@ -124,10 +141,10 @@ def match_budget_identities(
         seen.add(key)
         _reject_nonfinite(row)
         canonical_row = canonical[identity][1]
-        for label_key in ("class_id", "true_class", "label"):
-            if label_key in row or label_key in canonical_row:
-                if label_key not in row or label_key not in canonical_row or row[label_key] != canonical_row[label_key]:
-                    raise ValueError(f"reordered label for physical_identity: {identity}")
+        if _semantic_label(row, source="budget") != _semantic_label(
+            canonical_row, source="canonical"
+        ):
+            raise ValueError(f"reordered label for physical_identity: {identity}")
         validated.append((canonical[identity][0], budget, method, dict(row)))
     if not validated:
         raise ValueError("budget rows must be non-empty")
@@ -185,11 +202,17 @@ def paired_grouped_interval(truth, pred_r83, pred_r84, gas_range, groups):
         ):
             raise RuntimeError("FAIL_CLOSED bootstrap grouping key is missing")
     groups_array = raw_groups.astype(str)
-    if any(
-        not value.startswith("C5|") or not value.removeprefix("C5|").strip()
-        for value in groups_array
-    ):
-        raise RuntimeError("FAIL_CLOSED bootstrap grouping key must be C5|<filename>")
+    serialized_nulls = {"none", "null", "nan", "nat"}
+    for value in groups_array:
+        if not value.startswith("C5|") or value.count("|") != 1:
+            raise RuntimeError("FAIL_CLOSED bootstrap grouping key must be C5|<filename>")
+        suffix = value.removeprefix("C5|")
+        if (
+            not suffix
+            or suffix != suffix.strip()
+            or suffix.casefold() in serialized_nulls
+        ):
+            raise RuntimeError("FAIL_CLOSED bootstrap grouping key has invalid suffix")
     if not all(np.isfinite(value).all() for value in numeric):
         raise ValueError("paired bootstrap inputs contain non-finite values")
     if np.any(numeric[3] <= 0):
