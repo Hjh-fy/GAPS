@@ -1,0 +1,5 @@
+budget_pct,calibration_n,metric,point_delta_NRMSE,ci_low,ci_high,n_groups,replicates,seed,interpretation
+5,80,delta_NRMSE_R84_minus_R83,-0.00118366731872524,-0.0018099962825252757,-0.0006495329182935217,80,1000,42,conditional on the single frozen calibration subset
+10,160,delta_NRMSE_R84_minus_R83,-0.001839494130577768,-0.0068962219545830854,0.002288497056638253,80,1000,42,conditional on the single frozen calibration subset
+15,240,delta_NRMSE_R84_minus_R83,-0.001006256426424268,-0.003814917303545596,0.0015842241766199242,80,1000,42,conditional on the single frozen calibration subset
+20,320,delta_NRMSE_R84_minus_R83,0.002025638703649607,-0.006319635898172559,0.012806200779357612,80,1000,42,conditional on the single frozen calibration subset

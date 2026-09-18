@@ -1,0 +1,47 @@
+{
+  "bootstrap": {
+    "grouped": true,
+    "replicates": 1000,
+    "seed": 42
+  },
+  "checks": {
+    "1_frozen_budget_counts": "PASS",
+    "2_nested_5_10_15_20": "PASS",
+    "3_same_calibration_rows_R83_R84": "PASS_BY_SINGLE_SHARED_INDEX_SET",
+    "4_same_test_set": "PASS_1360_IDENTITIES",
+    "5_R83_feature_definition": "PASS_83D",
+    "6_R84_definition": "PASS_R83_PLUS_ONE_FROZEN_R0V2_SCALAR",
+    "7_Ridge_alpha_and_fit_rule": "PASS_FIXED_RULE",
+    "8_preprocessing_unchanged": "PASS_CANONICAL_V1_5HZ_50X8"
+  },
+  "hc90_hc95_compatible": true,
+  "mode": "Minimal Scientific Execution Mode",
+  "new_model_fit_count": 6,
+  "new_model_fits": [
+    "IOTJ-V4-C5-B15-R83-S42",
+    "IOTJ-V4-C5-B15-R84-S42",
+    "IOTJ-V4-C5-B10-R83-S42",
+    "IOTJ-V4-C5-B10-R84-S42",
+    "IOTJ-V4-C5-B05-R83-S42",
+    "IOTJ-V4-C5-B05-R84-S42"
+  ],
+  "random_retention_band": "SKIPPED_OPTIONAL",
+  "reused_20pct": "results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812/predictions.csv",
+  "source_sha256": {
+    "docs/experiments/iotj_canonical_v1_final/canonical_classification_comparison.csv": "219591666d38bbe903c2bd94afae7baf6b550b91446f963e529cb184378acbc4",
+    "results/iotj_canonical_v1_c5_budget_20260810/c5_calibration_budget_05pct.csv": "41200cda7b70029a7a6bf7611b4f780e6a0a0a3195caee4c3fd11b45a415baef",
+    "results/iotj_canonical_v1_c5_budget_20260810/c5_calibration_budget_10pct.csv": "996bfef4084959797b6d3d647d7dba6660d49150d5d9c3dfbe0333a149eceaf3",
+    "results/iotj_canonical_v1_c5_budget_20260810/c5_calibration_budget_15pct.csv": "d5c4fe99aed03a02e8954528c740d7c1d0f1c9752eb4382092aa86fd54ab5ff2",
+    "results/iotj_canonical_v1_c5_budget_20260810/c5_calibration_budget_20pct.csv": "a3e2905b4b3e610c9fa1c329de965705fb833639b6c97d3fabbebde7eab72d77",
+    "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/sha256_index.json": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82",
+    "results/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812/q1_risk_coverage_curves.csv": "c15b79be06d40aa41c017b2871f031de56e2218ac2137dc7971cfe6aa9e31f9c",
+    "results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812/canonical_regression_comparison.csv": "e9e6a193f2a48f0468d5d6d6ce4449f50df9eb30158f6e38d7d7bb2e35d6d67f",
+    "results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812/canonical_regression_per_gas.csv": "c0da8b04e8d47125393b78223d3a89541400b601c84c67df45a2827469037197",
+    "results/iotj_canonical_v1_final/canonical_r1_83d_vs_r84_20260812/predictions.csv": "87ca9dc7308bdcac055c539828de9fef34abfa17fa56d8fdae35a83c7e39bdac",
+    "results/iotj_canonical_v1_final/current_authoritative_summary_20260812/FINAL_CONFIDENCE_QC_METRICS.csv": "637e7293c5e51a56b642b3179c471ef72af68b3e444a8ea0cfecd88234001f10",
+    "results/iotj_canonical_v1_final/current_authoritative_summary_20260812/FINAL_CONFIDENCE_QC_THRESHOLDS.csv": "7d70b01e37905584b0578362af54087b5f37ea472b54409eec5972e90893e3c6",
+    "results/iotj_v4_evidence_completion_20260912/classification_round_accuracy.csv": "4a4728a35307a298293a7c32d30556e7eee6a771256535a07f25d4f55e6fc6f2",
+    "results/iotj_v4_evidence_completion_20260912/file_disjoint_analysis.md": "7adcd1e7b0bd439384cefc87a8dc0b14ee90176f82f8d7d1781f35514b8d022e"
+  },
+  "status": "COMPLETE"
+}
