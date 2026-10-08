@@ -1,0 +1,45 @@
+{
+  "alignment": "dann_grl_binary_bce",
+  "alignment_scope": "unconditional_global",
+  "alignment_weight": 0.5,
+  "calibration": {
+    "class_label_sha256": "3a50a98d023b8f4574e2ca9ea2ceffb4f608fe17f40d9bd29afe50b9a4d45544",
+    "concentration_access": false,
+    "feature_sha256": "39be3e82aedc01f382c6e5c07a95c2d9c63d3307d2958ef76fcc49be1012d8ee",
+    "feature_shape": [
+      160,
+      100,
+      8
+    ],
+    "fields": [
+      "x",
+      "class"
+    ],
+    "num_examples": 160,
+    "phase_access": false,
+    "split": "C4_calibration",
+    "target_test_access": false
+  },
+  "calibration_examples": 160,
+  "checkpoint_selection": "fixed_step_100",
+  "checkpoint_sha256": "d0e02db76938220df487574d47ffb9b21632de45e4c0de5194299ad5c18c12c2",
+  "commissioning_seconds": 5.330245699966326,
+  "experiment_id": "C4LCD-DANN-TCE-S42-20261008",
+  "hyperparameter_search": false,
+  "method": "DANN+TCE",
+  "method_key": "dann_tce",
+  "optimizer": "Adam",
+  "optimizer_lr": 0.0005,
+  "seed": 42,
+  "source_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+  "steps": 100,
+  "target": "C4",
+  "target_ce_weight": 1.0,
+  "target_fields": [
+    "x",
+    "class"
+  ],
+  "target_label_role": "classification_CE_and_available_training_labels",
+  "target_test_opened": false,
+  "test_examples": 320
+}

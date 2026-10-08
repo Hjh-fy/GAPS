@@ -1,0 +1,176 @@
+{
+  "comparison_row": {
+    "accuracy": 0.9955882352941177,
+    "alignment_scope": "unconditional_global",
+    "alignment_weight": 0.5,
+    "calculation_status": "recomputed",
+    "calibration_examples": 320,
+    "checkpoint": "results\\c34_tce_da_extension_20261008\\C3\\coral_tce\\adapted_step_100.pth",
+    "checkpoint_selection": "fixed_step_100",
+    "checkpoint_sha256": "008072bcff2613faa1aa235c5339045fce3ce40f29c23ad81a97b609c81bf3df",
+    "commissioning_seconds": 11.580753499874845,
+    "confusion_matrix": "[[170,0,0,0],[0,169,1,0],[0,1,168,1],[0,0,0,170]]",
+    "ece": 0.004533408776942201,
+    "experiment_id": "C3LCD-CORAL-TCE-S42-20261008",
+    "group": "supervised_global_alignment",
+    "macro_f1": 0.9955838845542628,
+    "method": "CORAL+TCE",
+    "method_key": "coral_tce",
+    "nll": 0.022816808629770865,
+    "num_examples": 680,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "per_class": "[{\"class_id\":0,\"precision\":1.0,\"recall\":1.0,\"f1\":1.0,\"support\":170},{\"class_id\":1,\"precision\":0.9941176470588236,\"recall\":0.9941176470588236,\"f1\":0.9941176470588236,\"support\":170},{\"class_id\":2,\"precision\":0.9940828402366864,\"recall\":0.9882352941176471,\"f1\":0.9911504424778761,\"support\":170},{\"class_id\":3,\"precision\":0.9941520467836257,\"recall\":1.0,\"f1\":0.9970674486803519,\"support\":170}]",
+    "seed": 42,
+    "source_accuracy": 0.9963235294117647,
+    "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+    "source_macro_f1": 0.9963224369773305,
+    "source_target_f1_gap": 0.0007385524230676399,
+    "steps": 100,
+    "target": "C3",
+    "target_ce_weight": 1.0,
+    "target_label_role": "classification_CE_and_available_training_labels",
+    "target_test_selection": false
+  },
+  "selection_role": "none_fixed_step100",
+  "source_metrics": {
+    "accuracy": 0.9963235294117647,
+    "class_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "confusion_matrix": [
+      [
+        339,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        337,
+        2,
+        0
+      ],
+      [
+        0,
+        0,
+        340,
+        0
+      ],
+      [
+        0,
+        1,
+        0,
+        339
+      ]
+    ],
+    "ece": 0.0015729875462398187,
+    "ece_bins": 15,
+    "macro_f1": 0.9963224369773305,
+    "nll": 0.023793048473731926,
+    "num_examples": 1360,
+    "per_class": [
+      {
+        "class_id": 0,
+        "f1": 0.9970588235294118,
+        "precision": 0.9970588235294118,
+        "recall": 0.9970588235294118,
+        "support": 340
+      },
+      {
+        "class_id": 1,
+        "f1": 0.9926362297496317,
+        "precision": 0.9941002949852508,
+        "recall": 0.9911764705882353,
+        "support": 340
+      },
+      {
+        "class_id": 2,
+        "f1": 0.9970674486803519,
+        "precision": 0.9941520467836257,
+        "recall": 1.0,
+        "support": 340
+      },
+      {
+        "class_id": 3,
+        "f1": 0.9985272459499264,
+        "precision": 1.0,
+        "recall": 0.9970588235294118,
+        "support": 340
+      }
+    ]
+  },
+  "target_metrics": {
+    "accuracy": 0.9955882352941177,
+    "class_order": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "confusion_matrix": [
+      [
+        170,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        169,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        168,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        170
+      ]
+    ],
+    "ece": 0.004533408776942201,
+    "ece_bins": 15,
+    "macro_f1": 0.9955838845542628,
+    "nll": 0.022816808629770865,
+    "num_examples": 680,
+    "per_class": [
+      {
+        "class_id": 0,
+        "f1": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "support": 170
+      },
+      {
+        "class_id": 1,
+        "f1": 0.9941176470588236,
+        "precision": 0.9941176470588236,
+        "recall": 0.9941176470588236,
+        "support": 170
+      },
+      {
+        "class_id": 2,
+        "f1": 0.9911504424778761,
+        "precision": 0.9940828402366864,
+        "recall": 0.9882352941176471,
+        "support": 170
+      },
+      {
+        "class_id": 3,
+        "f1": 0.9970674486803519,
+        "precision": 0.9941520467836257,
+        "recall": 1.0,
+        "support": 170
+      }
+    ]
+  }
+}

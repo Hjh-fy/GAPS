@@ -1,0 +1,7 @@
+experiment_id,target,method_key,method,calibration_examples,test_examples,steps,optimizer,optimizer_lr,alignment_weight,seed,checkpoint_selection,hyperparameter_search,target_fields,alignment,alignment_scope,target_ce_weight,target_label_role
+C3LCD-CORAL-TCE-S42-20261008,C3,coral_tce,CORAL+TCE,320,680,100,Adam,0.0005,0.5,42,fixed_step_100,False,"['x', 'class']",coral,unconditional_global,1.0,classification_CE_and_available_training_labels
+C3LCD-MMD-TCE-S42-20261008,C3,mmd_tce,MMD+TCE,320,680,100,Adam,0.0005,0.5,42,fixed_step_100,False,"['x', 'class']",mmd2,unconditional_global,1.0,classification_CE_and_available_training_labels
+C3LCD-DANN-TCE-S42-20261008,C3,dann_tce,DANN+TCE,320,680,100,Adam,0.0005,0.5,42,fixed_step_100,False,"['x', 'class']",dann_grl_binary_bce,unconditional_global,1.0,classification_CE_and_available_training_labels
+C4LCD-CORAL-TCE-S42-20261008,C4,coral_tce,CORAL+TCE,160,320,100,Adam,0.0005,0.5,42,fixed_step_100,False,"['x', 'class']",coral,unconditional_global,1.0,classification_CE_and_available_training_labels
+C4LCD-MMD-TCE-S42-20261008,C4,mmd_tce,MMD+TCE,160,320,100,Adam,0.0005,0.5,42,fixed_step_100,False,"['x', 'class']",mmd2,unconditional_global,1.0,classification_CE_and_available_training_labels
+C4LCD-DANN-TCE-S42-20261008,C4,dann_tce,DANN+TCE,160,320,100,Adam,0.0005,0.5,42,fixed_step_100,False,"['x', 'class']",dann_grl_binary_bce,unconditional_global,1.0,classification_CE_and_available_training_labels
