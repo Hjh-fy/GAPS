@@ -192,7 +192,8 @@ def finish(commit):
     stage.append((STUDY/'COMPACT_EVIDENCE_SHA256.json').relative_to(ROOT).as_posix())
     existing=frozen._run(['git','diff','--cached','--name-only']).stdout.strip()
     if existing: raise RuntimeError('Unrelated staged changes; do not commit automatically')
-    for i in range(0,len(stage),50): frozen._run(['git','add','--',*stage[i:i+50]])
+    # Results/CSV are ignored globally; force only the explicit compact whitelist.
+    for i in range(0,len(stage),50): frozen._run(['git','add','-f','--',*stage[i:i+50]])
     frozen._run(['git','commit','-m','results: close FedOnGas C5 27-run budget and multiseed study'])
     frozen._run(['git','push','origin','HEAD:codex/iotj-final-classification-le1'],timeout=300)
     progress('COMPLETE_PUSHED',[r['experiment_id'] for r in run_matrix()],result_commit=frozen._run(['git','rev-parse','HEAD']).stdout.strip())

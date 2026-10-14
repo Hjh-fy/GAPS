@@ -14,3 +14,4 @@ Final review fixed：完成gate只检查身份/hash — 增加PASS、updates、t
 Reviewer未评价的正式数值收敛/远程执行结果须待实际运行；网络/数据已核验，不预先声称精度或完成。
 完整仓库pytest已执行：228 passed，1 failed，2 errors（--maxfail=3停止）。历史失败：test_close_iotj_manuscript_protocol_safety.py::test_default_mode_verifies_formal_files_without_writing 的旧index hash不同；test_deployment_git_closure.py 两项tracked checkout fixture因Windows路径太长失败。详细日志 results/fedongas_c5_budget_multiseed_20261014/repository_pytest.log。不修改历史论文资产或部署模块来使本任务全仓测试变绿。
 最终启动验证：新测试22/22及相关协议/runner测试共46/46 PASS；compileall PASS；两项review修复均RED→GREEN。固定输入三机逐文件71项hash PASS。正式训练仅用新freeze commit，不含未提交核心改动。
+运行清单/紧凑结果属于仓库全局ignore规则，git add仅对明确列出的本任务CSV/JSON/MD使用-f；绝不强制添加inputs/data或checkpoint。
