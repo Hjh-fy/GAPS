@@ -1,0 +1,153 @@
+{
+  "prototype_scope": "CLASS",
+  "prototype_count": 4,
+  "true_phase_used": false,
+  "seed": 42,
+  "loss_activity": [
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "adversarial",
+      "configured_weight": 0.5,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 0.0974517373740673,
+      "mean_weighted_loss": 0.04872586868703365,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "align_reg_legacy",
+      "configured_weight": 0.05,
+      "input_available": false,
+      "active_steps": 0,
+      "mean_raw_loss": 0.0,
+      "mean_weighted_loss": 0.0,
+      "inactive_reason": "align_reg_legacy_disabled"
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "class_mmd",
+      "configured_weight": 0.5,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 0.08965186916291713,
+      "mean_weighted_loss": 0.04482593458145857,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "consistency",
+      "configured_weight": 2.0,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 403.1527146911621,
+      "mean_weighted_loss": 806.3054293823242,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "coral",
+      "configured_weight": 0.5,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 1.2921450115754852e-06,
+      "mean_weighted_loss": 6.460725057877426e-07,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "device_residual",
+      "configured_weight": 0.1,
+      "input_available": false,
+      "active_steps": 0,
+      "mean_raw_loss": 0.0,
+      "mean_weighted_loss": 0.0,
+      "inactive_reason": "client_residual_unavailable"
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "global_mmd",
+      "configured_weight": 0.5,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 0.03890361547470093,
+      "mean_weighted_loss": 0.019451807737350463,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "proto_anchor",
+      "configured_weight": 0.3,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 813.7869561767578,
+      "mean_weighted_loss": 244.13608685302748,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "proto_loss",
+      "configured_weight": 0.05,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 17782.9621875,
+      "mean_weighted_loss": 889.1481093750003,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "proto_mmd",
+      "configured_weight": 0.2,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 7.030752658843994,
+      "mean_weighted_loss": 1.4061505317687997,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "source_ce",
+      "configured_weight": 1.0,
+      "input_available": true,
+      "active_steps": 100,
+      "mean_raw_loss": 0.43391841650009155,
+      "mean_weighted_loss": 0.43391841650009155,
+      "inactive_reason": ""
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "stage_mmd",
+      "configured_weight": 0.0,
+      "input_available": true,
+      "active_steps": 0,
+      "mean_raw_loss": 0.0,
+      "mean_weighted_loss": 0.0,
+      "inactive_reason": "configured_weight_zero"
+    },
+    {
+      "variant": "A4",
+      "scope": "server_da",
+      "loss_name": "target_ce",
+      "configured_weight": 0.0,
+      "input_available": true,
+      "active_steps": 0,
+      "mean_raw_loss": 0.0,
+      "mean_weighted_loss": 0.0,
+      "inactive_reason": "configured_weight_zero"
+    }
+  ],
+  "changed_tensors": 76,
+  "steps": 100
+}

@@ -1,0 +1,21 @@
+{
+  "run": {
+    "experiment_id": "FONG-CLASS-B05-S43",
+    "method": "CLASS",
+    "seed": 43,
+    "budget_pct": 5,
+    "calibration_n": 80,
+    "initialization_run": "random-S43",
+    "rounds": 25,
+    "target_updates": 2500
+  },
+  "freeze_commit": "dc73318636335e0d2317613dff00ef73e6c798f1",
+  "checkpoint": "remote_server/server_round_025_adapted.pth",
+  "checkpoint_sha256": "247141ed3b7f15b6ecccff4e6d74c8ed91e1623ff301df2cb5ba054c8ef037e6",
+  "state_fingerprint": "3f696ad2ec8abf30b33909288f1f6c57c082343f8de4beed6742a07f9cdc1324",
+  "initial_fingerprint": "359498ab48958c309476df75c4d36af2d8c906cf6283ed8022262c5fac6e7ea8",
+  "wall_seconds": 1347.8663780999996,
+  "target_updates": 2500,
+  "target_test_opened": false,
+  "status": "PASS"
+}

@@ -1,0 +1,56 @@
+{
+  "run_name": "FONG-CLASS-B05-S43",
+  "round": 17,
+  "summary": {
+    "mean_client_to_ema_drift": 2.634686693549156,
+    "max_client_to_ema_drift": 2.86263570189476,
+    "mean_inter_client_divergence": 1.3605429828166962,
+    "max_inter_client_divergence": 2.022914409637451,
+    "n_drift_clients": 2,
+    "n_divergence_keys": 4
+  },
+  "client_to_ema_drift": {
+    "1": {
+      "avg_l2_drift": 2.86263570189476,
+      "n_keys": 4,
+      "per_key": {
+        "0,0": 1.8415478467941284,
+        "1,0": 2.8275787830352783,
+        "2,0": 3.3521926403045654,
+        "3,0": 3.4292235374450684
+      }
+    },
+    "2": {
+      "avg_l2_drift": 2.4067376852035522,
+      "n_keys": 4,
+      "per_key": {
+        "0,0": 1.8415478467941284,
+        "1,0": 1.339161992073059,
+        "2,0": 2.871676206588745,
+        "3,0": 3.5745646953582764
+      }
+    }
+  },
+  "inter_client_divergence": {
+    "0,0": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "1,0": {
+      "avg_pairwise_l2": 2.022914409637451,
+      "max_pairwise_l2": 2.022914409637451,
+      "n_clients": 2
+    },
+    "2,0": {
+      "avg_pairwise_l2": 1.5784657001495361,
+      "max_pairwise_l2": 1.5784657001495361,
+      "n_clients": 2
+    },
+    "3,0": {
+      "avg_pairwise_l2": 1.8407918214797974,
+      "max_pairwise_l2": 1.8407918214797974,
+      "n_clients": 2
+    }
+  }
+}

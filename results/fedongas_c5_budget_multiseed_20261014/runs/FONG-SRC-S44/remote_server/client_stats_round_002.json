@@ -1,0 +1,143 @@
+{
+  "run_name": "FONG-SRC-S44",
+  "round": 2,
+  "clients": [
+    {
+      "client_id": 1,
+      "num_examples": 2360,
+      "proto_examples": 0,
+      "local_epochs": 1,
+      "fit_seconds": 3.4430752889984433,
+      "train_ce_mean": 0.5866879382375944,
+      "train_accuracy": 0.9792372881355932,
+      "train_metric_examples": 2360,
+      "train_ce_averaging": "sample_weighted_over_local_minibatches",
+      "feature_norm": 0.0,
+      "feature_mean": 0.0,
+      "feature_std": 0.0,
+      "class_phase_counts": {},
+      "prototype_count": 0,
+      "prototype_var_count": 0,
+      "received_global_prototypes": 0,
+      "use_align": 0,
+      "use_replay_distill": 0,
+      "device_residual_norm": 0.0,
+      "server_parameters_fingerprint": "636b9000c91537d00c938db5111c948cf59164cf97a17e89609c1a4108c2f6d4",
+      "loss_activity": [
+        {
+          "active_steps": 0,
+          "configured_weight": 0.05,
+          "inactive_reason": "regression_disabled",
+          "input_available": true,
+          "loss_name": "regression",
+          "mean_raw_loss": 0.0,
+          "mean_weighted_loss": 0.0,
+          "scope": "client",
+          "variant": "unspecified"
+        },
+        {
+          "active_steps": 0,
+          "configured_weight": 2.0,
+          "inactive_reason": "module_disabled",
+          "input_available": false,
+          "loss_name": "replay_distillation",
+          "mean_raw_loss": 0.0,
+          "mean_weighted_loss": 0.0,
+          "scope": "client",
+          "variant": "unspecified"
+        },
+        {
+          "active_steps": 0,
+          "configured_weight": 0.05,
+          "inactive_reason": "module_disabled",
+          "input_available": false,
+          "loss_name": "semantic_alignment",
+          "mean_raw_loss": 0.0,
+          "mean_weighted_loss": 0.0,
+          "scope": "client",
+          "variant": "unspecified"
+        },
+        {
+          "active_steps": 74,
+          "configured_weight": 1.0,
+          "inactive_reason": "",
+          "input_available": true,
+          "loss_name": "source_ce",
+          "mean_raw_loss": 0.5861484452679351,
+          "mean_weighted_loss": 0.5861484452679351,
+          "scope": "client",
+          "variant": "unspecified"
+        }
+      ]
+    },
+    {
+      "client_id": 2,
+      "num_examples": 2360,
+      "proto_examples": 0,
+      "local_epochs": 1,
+      "fit_seconds": 5.699333404190838,
+      "train_ce_mean": 0.6334043320962939,
+      "train_accuracy": 0.9813559322033898,
+      "train_metric_examples": 2360,
+      "train_ce_averaging": "sample_weighted_over_local_minibatches",
+      "feature_norm": 0.0,
+      "feature_mean": 0.0,
+      "feature_std": 0.0,
+      "class_phase_counts": {},
+      "prototype_count": 0,
+      "prototype_var_count": 0,
+      "received_global_prototypes": 0,
+      "use_align": 0,
+      "use_replay_distill": 0,
+      "device_residual_norm": 0.0,
+      "server_parameters_fingerprint": "636b9000c91537d00c938db5111c948cf59164cf97a17e89609c1a4108c2f6d4",
+      "loss_activity": [
+        {
+          "active_steps": 0,
+          "configured_weight": 0.05,
+          "inactive_reason": "regression_disabled",
+          "input_available": true,
+          "loss_name": "regression",
+          "mean_raw_loss": 0.0,
+          "mean_weighted_loss": 0.0,
+          "scope": "client",
+          "variant": "unspecified"
+        },
+        {
+          "active_steps": 0,
+          "configured_weight": 2.0,
+          "inactive_reason": "module_disabled",
+          "input_available": false,
+          "loss_name": "replay_distillation",
+          "mean_raw_loss": 0.0,
+          "mean_weighted_loss": 0.0,
+          "scope": "client",
+          "variant": "unspecified"
+        },
+        {
+          "active_steps": 0,
+          "configured_weight": 0.05,
+          "inactive_reason": "module_disabled",
+          "input_available": false,
+          "loss_name": "semantic_alignment",
+          "mean_raw_loss": 0.0,
+          "mean_weighted_loss": 0.0,
+          "scope": "client",
+          "variant": "unspecified"
+        },
+        {
+          "active_steps": 74,
+          "configured_weight": 1.0,
+          "inactive_reason": "",
+          "input_available": true,
+          "loss_name": "source_ce",
+          "mean_raw_loss": 0.6327794689584423,
+          "mean_weighted_loss": 0.6327794689584423,
+          "scope": "client",
+          "variant": "unspecified"
+        }
+      ]
+    }
+  ],
+  "global_summary": {}
+}

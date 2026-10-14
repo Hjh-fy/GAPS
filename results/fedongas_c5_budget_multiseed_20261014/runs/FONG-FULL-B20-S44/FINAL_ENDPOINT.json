@@ -1,0 +1,21 @@
+{
+  "run": {
+    "experiment_id": "FONG-FULL-B20-S44",
+    "method": "FULL",
+    "seed": 44,
+    "budget_pct": 20,
+    "calibration_n": 320,
+    "initialization_run": "random-S44",
+    "rounds": 25,
+    "target_updates": 2500
+  },
+  "freeze_commit": "dc73318636335e0d2317613dff00ef73e6c798f1",
+  "checkpoint": "remote_server/server_round_025_adapted.pth",
+  "checkpoint_sha256": "a56b051afe437c0485766ee59b713bdae8d3aa161a06f43812a4798ba8c32dd5",
+  "state_fingerprint": "4780ef993b492fa5d3bb7a259e39eed27737b66b6eee312c1be5630beba89f78",
+  "initial_fingerprint": "e02db31581a402a9ba930d4439396c7f252cbfc68c4661c1ed7030e23765ae01",
+  "wall_seconds": 1315.139943400005,
+  "target_updates": 2500,
+  "target_test_opened": false,
+  "status": "PASS"
+}

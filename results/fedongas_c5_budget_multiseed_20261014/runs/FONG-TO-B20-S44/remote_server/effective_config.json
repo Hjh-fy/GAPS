@@ -1,0 +1,18 @@
+{
+  "method": "TO",
+  "seed": 44,
+  "data": "/root/GAPS/fedongas27_inputs_20261014/target_xy/budget_20",
+  "initial_state": "/root/GAPS/fedongas27_inputs_20261014/initial/random-S44.pth",
+  "output": "/root/GAPS/iotj_final_classification_le1_20260804/FONG-TO-B20-S44",
+  "initial_fingerprint": "e02db31581a402a9ba930d4439396c7f252cbfc68c4661c1ed7030e23765ae01",
+  "fields": [
+    "x",
+    "class"
+  ],
+  "source_ce": false,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "blocks": 25,
+  "steps_per_block": 100,
+  "initial_checkpoint_sha256": "d07d098e3de3389b9aeb5ff7a3225c33c2e2a9f1c3365fdc28999d855b7e215a"
+}

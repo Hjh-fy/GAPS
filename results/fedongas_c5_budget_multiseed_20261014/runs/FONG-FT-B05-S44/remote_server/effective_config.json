@@ -1,0 +1,18 @@
+{
+  "method": "FT",
+  "seed": 44,
+  "data": "/root/GAPS/fedongas27_inputs_20261014/target_xy/budget_05",
+  "initial_state": "/root/GAPS/iotj_final_classification_le1_20260804/FONG-SRC-S44/server_round_025.pth",
+  "output": "/root/GAPS/iotj_final_classification_le1_20260804/FONG-FT-B05-S44",
+  "initial_fingerprint": "f99258c080d4db29a065325ffe128f7f7c327c5e65b18717d664cb5c33918c66",
+  "fields": [
+    "x",
+    "class"
+  ],
+  "source_ce": false,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "blocks": 25,
+  "steps_per_block": 100,
+  "initial_checkpoint_sha256": "19f92d687cdb0798c7b87ba9db8c6c9db956ca99e58e2191e8877b0cde8268a8"
+}
