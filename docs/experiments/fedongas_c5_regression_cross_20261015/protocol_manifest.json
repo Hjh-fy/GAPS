@@ -1,0 +1,265 @@
+{
+  "study_id": "fedongas_c5_regression_cross_20261015",
+  "neural_training": false,
+  "pipelines": 36,
+  "shared_banks": 4,
+  "final_gas_fits": 16,
+  "classifiers": [
+    "TO",
+    "FT",
+    "CLASS"
+  ],
+  "regressors": [
+    "TARGET_RIDGE_83D",
+    "R84_CONCAT"
+  ],
+  "budgets": [
+    5,
+    20
+  ],
+  "calibration_n": [
+    80,
+    320
+  ],
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "test_n": 1360,
+  "alpha_candidates": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "alpha_selection": "fivefold_raw_filename_grouped_calibration_pooled_RMSE_first_tie",
+  "source_prior_index_sha256": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82",
+  "prediction_cache_sha256": "150694bdf5df22c164d939a754460b68a2ea3ee7c5ad1d9be186332c1ba7c5de",
+  "source_prior": "frozen_C1_C2_canonical_H1_FedRidge; reused across all classifier seeds",
+  "features": "fresh_fixed_5Hz_50x8_sensor83; H1_104_with_protocol_metadata",
+  "solver": "numpy.linalg.pinv; float64; fold-local standardization; unregularized intercept",
+  "clipping": "per-gas target calibration min/max; same rule for both regressors",
+  "primary_scope": "S_ALL predicted-class routing, all test samples",
+  "diagnostic_scopes": [
+    "S_CC",
+    "Oracle_ALL",
+    "Oracle_CC"
+  ],
+  "gas_ranges": {
+    "0": 112.5,
+    "1": 225.0,
+    "2": 112.5,
+    "3": 225.0
+  },
+  "overall_NRMSE": "sqrt(mean((prediction_error/range_true_gas)^2))",
+  "QC": "none",
+  "sample_sd_ddof": 1,
+  "significance_claim": false,
+  "training_concentrations": "original canonical budget regression_labels, not classifier zero placeholders",
+  "stopping_rule": "evaluate exactly 36 fixed pipelines; report all positive/zero/negative outcomes; stop",
+  "inputs": {
+    "status": "PASS",
+    "input_hashes": {
+      "dataset\\iotj_canonical_v1\\dataset_sha256.json": "4aa511a59e62cf878a1b230b637591f5509728da149a7dff9876fa8f303e1486",
+      "dataset\\iotj_canonical_v1\\canonical_preprocessing_manifest.json": "6c33f0a1586653b2bfa5a43f43ab502c5bdaa3474c24ac03015e36ddd40c2c41",
+      "dataset/iotj_canonical_v1/client_5/test_features.npy": "b337dead1e0d6d27198cb6455b5d90372ff87c668a71c6177e0560df3584dd9d",
+      "dataset/iotj_canonical_v1/client_5/test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+      "dataset/iotj_canonical_v1/client_5/test_experiment_info.json": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\budget_data\\client_5_budget_05\\calibration_features.npy": "d876d77f88a7a6857d7bce5d82ba15d5bf4e44f79e50f811148adba245eb335e",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\budget_data\\client_5_budget_05\\calibration_classification_labels.npy": "57814046472cc00432ffd3a8959e00abfcd93c9864d264cc8d0a848623be8c8f",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\budget_data\\client_5_budget_05\\calibration_phase_labels.npy": "bb5d6ded60fb7441e9db2ac907e79e7a7eff65858c96d837c2490429658f2621",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\c5_calibration_budget_05pct.csv": "41200cda7b70029a7a6bf7611b4f780e6a0a0a3195caee4c3fd11b45a415baef",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\budget_data\\client_5_budget_20\\calibration_features.npy": "ffac24a3d4b79d6bd991d041266784195241c6991d7f9e9f7fb1d8b0d6816ecb",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\budget_data\\client_5_budget_20\\calibration_classification_labels.npy": "eb9e9b32e2c557ab43edff86a0d067024adce1f8d179db3f146dfc03a6135434",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\budget_data\\client_5_budget_20\\calibration_phase_labels.npy": "fc459637354518e2d4eeb26b89648b2735797555e88bdd7bacc482179c7608fd",
+      "results\\iotj_canonical_v1_c5_budget_20260810\\c5_calibration_budget_20pct.csv": "a3e2905b4b3e610c9fa1c329de965705fb833639b6c97d3fabbebde7eab72d77",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_05/calibration_classification_labels.npy": "57814046472cc00432ffd3a8959e00abfcd93c9864d264cc8d0a848623be8c8f",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_05/calibration_experiment_info.json": "1024ba468e7afa54be08db075a490836ba11f42c8bb08be2fb140b8c73173d28",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_05/calibration_features.npy": "d876d77f88a7a6857d7bce5d82ba15d5bf4e44f79e50f811148adba245eb335e",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_05/calibration_phase_labels.npy": "bb5d6ded60fb7441e9db2ac907e79e7a7eff65858c96d837c2490429658f2621",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_05/calibration_regression_labels.npy": "e93a444f090e1b03967da81f30b7dce20145ce8738a4606c74354f5aab434299",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_20/calibration_classification_labels.npy": "eb9e9b32e2c557ab43edff86a0d067024adce1f8d179db3f146dfc03a6135434",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_20/calibration_experiment_info.json": "b10ac3afc74ecb4252ff35fc87ed8dbb94fe90c1b58dba7319301decaa7b2160",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_20/calibration_features.npy": "ffac24a3d4b79d6bd991d041266784195241c6991d7f9e9f7fb1d8b0d6816ecb",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_20/calibration_phase_labels.npy": "fc459637354518e2d4eeb26b89648b2735797555e88bdd7bacc482179c7608fd",
+      "results/iotj_canonical_v1_c5_budget_20260810/budget_data/client_5_budget_20/calibration_regression_labels.npy": "10d50355a8476234476c5d6b776278ceb69c715b7fd58f1c0da7f533b0c25ba5",
+      "dataset/iotj_canonical_v1/client_5/test_phase_labels.npy": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+      "dataset/iotj_canonical_v1/client_5/test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+      "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/sha256_index.json": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82",
+      "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/model_lock.json": "40c06848f19d211920b200946328e6e95cae9656a17ae0d18036951b7c5d67f6",
+      "results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812/source_alpha_lock.json": "8263be2e8f3bd669e37e593fc07129eb43dfad278aa9b119ed1e19cfd94e5390",
+      "results/fedongas_c5_budget_multiseed_20261014/evaluation/predictions.csv": "150694bdf5df22c164d939a754460b68a2ea3ee7c5ad1d9be186332c1ba7c5de",
+      "results/fedongas_c5_budget_multiseed_20261014/evaluation/target_results_24.csv": "d1485979a3cf3ddc500ed3820183476da7b3ac5784e393700a257b425bd49946",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S42/remote_server/server_round_025_adapted.pth": "40b80f428408ecb5a09b839bfaaa8e0136d6dad284885a9a63f5fd05bd648d48",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S42/FINAL_ENDPOINT.json": "f02631e87c419ec3eb4c90e09fd1db8b043a9f1b98d878dd0503d66c1b07a29b",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S43/remote_server/server_round_025_adapted.pth": "247141ed3b7f15b6ecccff4e6d74c8ed91e1623ff301df2cb5ba054c8ef037e6",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S43/FINAL_ENDPOINT.json": "241231b112fda855aa457418a15c9cf60fae22c139321821e1333e27e031a641",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S44/remote_server/server_round_025_adapted.pth": "6838c7ce01480e9ca47885bc8ca0c83db101230b806a9291376a05af3f7d9f18",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S44/FINAL_ENDPOINT.json": "73e55936072fe65b1de8b79b94145e8f776cdb193f73cd952d6a79a4bbff688a",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S42/remote_server/server_round_025_adapted.pth": "5c49f90a5e5a73f4cd4f9926c8f68c8d741645d48bd9de0186b4b20a3f7ecf07",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S42/FINAL_ENDPOINT.json": "aa033af97a86050f94f1be6d2319dac52080280dee6849f44cd9a913a8b40f48",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S43/remote_server/server_round_025_adapted.pth": "11f812d0da299f2935a958c11bbf8ef3534fc4007b00333fcfdfa3d6cd1dcc2b",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S43/FINAL_ENDPOINT.json": "36580256dacbe14e9e8371aed89e7cd1cfaac608b6b23cad4266452a9588524a",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S44/remote_server/server_round_025_adapted.pth": "1479f7cd2c55b56d41a7b03a7340c914838759d59e5fbc48f1a5688fd1ddbbf9",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S44/FINAL_ENDPOINT.json": "f05259f0b5167533ac2f074795b8168376f77baecc169873189b29830a61b4d7",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S42/remote_server/update_2500.pth": "a258ede6568ecffe02ce7538580e7cee5b09b40acc8a6da1120d37112cd6293e",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S42/FINAL_ENDPOINT.json": "85c4633cf057c3db2aff848674094e2dca30a6132fef44b1a531308c8175dd91",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S43/remote_server/update_2500.pth": "8c8c1b20bd7bc3dadd4200332da0eaa5bf4bb4682f16d784db4839701e379e7f",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S43/FINAL_ENDPOINT.json": "befde8995ac90b98171c8cf539df7ceb8a21ac30ddb6e57fc08ca0514c799aae",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S44/remote_server/update_2500.pth": "36dfe92e7f47a26b07215923943739461cac6f4554d6cb23bd39d18fbe14371b",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S44/FINAL_ENDPOINT.json": "c6fd277daf7ed584e5088526add946b97befe761f5864b6c9490eafe78bf7e54",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S42/remote_server/update_2500.pth": "1e30166f3aa3d61d0718834f17602731023893dc667b3880e6353ed47cdc5f4d",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S42/FINAL_ENDPOINT.json": "fa4a5f4ae38d3a0e2f979623c21c5a2b92a5941c25479418ce001e774354fc34",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S43/remote_server/update_2500.pth": "cc79521e42b914db5bd8a28773532c9f4999704df906464927c9e4220afe1940",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S43/FINAL_ENDPOINT.json": "5268ec1d83454c5ebbe7034d8a9c971fe2c01bde238d9887bae1c9176906bdcf",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S44/remote_server/update_2500.pth": "172399aff367549205f4d203a17b5affe9752df49aa61530e63ec3ea29fc31fd",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S44/FINAL_ENDPOINT.json": "9341e7f62f96ebae68284a55502e056b9717801eb1181f80577e6e5ef772bb52",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S42/remote_server/update_2500.pth": "20a6ef7c859eedfa6408dc49104e9130d360a294c5c9ef80ff5c8f6e6def3689",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S42/FINAL_ENDPOINT.json": "3580c0d923bcb0fd44d3e813486a6ebbbb0e907b62879d5330fcaa83d6ea78b6",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S43/remote_server/update_2500.pth": "991d68ff6b6bca238c5996203c11de8accb03461ae6ba8caddef703a4cbe055d",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S43/FINAL_ENDPOINT.json": "ce9bac7d20298311aa1a9f9f272f680b25e4cc1b84aa04783eb6383544f69818",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S44/remote_server/update_2500.pth": "b6e4bfb1b8a85bf81c3fa0c74e8f97188ec31800f1068fbd80be3a4c5218ded4",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S44/FINAL_ENDPOINT.json": "c505499974b460d24596da730790d59c0cf7de9954606d01a5280b9f144e6318",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S42/remote_server/update_2500.pth": "a56feec9960728609c3117a9046043bb159ffe5f375e3441b723682844794a02",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S42/FINAL_ENDPOINT.json": "98ab1909facf15c2605032b828735a58e01def02b519ffef6587fc91d2681321",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S43/remote_server/update_2500.pth": "fcfd89f5fcf1d46404b29425cbd13b8e8cca2577a592a515b50a030f1d4a0b64",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S43/FINAL_ENDPOINT.json": "f203dce8623058c2e453d19e0dc16205c995ead6d417a2e2c6631feb9736daab",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S44/remote_server/update_2500.pth": "0e0c17ba6e76d68a58c2f254aeff70ae32bd1a23d89389d7aa6f764a0d42fb33",
+      "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S44/FINAL_ENDPOINT.json": "aa3dd6e70f7ab4f0275e5a6ec7e856f5fdacfb06ecaffb218a443b921053efc0"
+    },
+    "classifiers": {
+      "FONG-CLASS-B05-S42": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S42/remote_server/server_round_025_adapted.pth",
+        "sha256": "40b80f428408ecb5a09b839bfaaa8e0136d6dad284885a9a63f5fd05bd648d48",
+        "ordered_state_fingerprint": "08baef2968d70a73187960be97e88902928b3fea2912e678fa14356e04cac177",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S42/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "f02631e87c419ec3eb4c90e09fd1db8b043a9f1b98d878dd0503d66c1b07a29b"
+      },
+      "FONG-CLASS-B05-S43": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S43/remote_server/server_round_025_adapted.pth",
+        "sha256": "247141ed3b7f15b6ecccff4e6d74c8ed91e1623ff301df2cb5ba054c8ef037e6",
+        "ordered_state_fingerprint": "3f696ad2ec8abf30b33909288f1f6c57c082343f8de4beed6742a07f9cdc1324",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S43/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "241231b112fda855aa457418a15c9cf60fae22c139321821e1333e27e031a641"
+      },
+      "FONG-CLASS-B05-S44": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S44/remote_server/server_round_025_adapted.pth",
+        "sha256": "6838c7ce01480e9ca47885bc8ca0c83db101230b806a9291376a05af3f7d9f18",
+        "ordered_state_fingerprint": "19659b80295611bb0d2ad2860115d93e1ecd3b59f2ce5e3353443fffcc47118a",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B05-S44/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "73e55936072fe65b1de8b79b94145e8f776cdb193f73cd952d6a79a4bbff688a"
+      },
+      "FONG-CLASS-B20-S42": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S42/remote_server/server_round_025_adapted.pth",
+        "sha256": "5c49f90a5e5a73f4cd4f9926c8f68c8d741645d48bd9de0186b4b20a3f7ecf07",
+        "ordered_state_fingerprint": "b8f15fe7541fc44a48f9385140c33b3168eb63d6eb429786848342501073a01b",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S42/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "aa033af97a86050f94f1be6d2319dac52080280dee6849f44cd9a913a8b40f48"
+      },
+      "FONG-CLASS-B20-S43": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S43/remote_server/server_round_025_adapted.pth",
+        "sha256": "11f812d0da299f2935a958c11bbf8ef3534fc4007b00333fcfdfa3d6cd1dcc2b",
+        "ordered_state_fingerprint": "63c82ef6092c4c219c693233981d0cd3f1d8ad72c08b1cdc326f9c23a8ae0bac",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S43/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "36580256dacbe14e9e8371aed89e7cd1cfaac608b6b23cad4266452a9588524a"
+      },
+      "FONG-CLASS-B20-S44": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S44/remote_server/server_round_025_adapted.pth",
+        "sha256": "1479f7cd2c55b56d41a7b03a7340c914838759d59e5fbc48f1a5688fd1ddbbf9",
+        "ordered_state_fingerprint": "d29bd5541d4edf254819d110e9166e9265d5fb6e6d184c36eb40277ea7a9d742",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-CLASS-B20-S44/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "f05259f0b5167533ac2f074795b8168376f77baecc169873189b29830a61b4d7"
+      },
+      "FONG-FT-B05-S42": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S42/remote_server/update_2500.pth",
+        "sha256": "a258ede6568ecffe02ce7538580e7cee5b09b40acc8a6da1120d37112cd6293e",
+        "ordered_state_fingerprint": "e23d1362931d0b397f0766a7fcaf1e00012d9a05a8150df17066e56325c410ca",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S42/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "85c4633cf057c3db2aff848674094e2dca30a6132fef44b1a531308c8175dd91"
+      },
+      "FONG-FT-B05-S43": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S43/remote_server/update_2500.pth",
+        "sha256": "8c8c1b20bd7bc3dadd4200332da0eaa5bf4bb4682f16d784db4839701e379e7f",
+        "ordered_state_fingerprint": "a3e30b254b747bffdbadedc87ace3e505f85636612d0793e74590bc121339492",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S43/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "befde8995ac90b98171c8cf539df7ceb8a21ac30ddb6e57fc08ca0514c799aae"
+      },
+      "FONG-FT-B05-S44": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S44/remote_server/update_2500.pth",
+        "sha256": "36dfe92e7f47a26b07215923943739461cac6f4554d6cb23bd39d18fbe14371b",
+        "ordered_state_fingerprint": "191372020879302777c6a930b8afbfe13f7d211a502a61be272d0e23f50fae23",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B05-S44/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "c6fd277daf7ed584e5088526add946b97befe761f5864b6c9490eafe78bf7e54"
+      },
+      "FONG-FT-B20-S42": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S42/remote_server/update_2500.pth",
+        "sha256": "1e30166f3aa3d61d0718834f17602731023893dc667b3880e6353ed47cdc5f4d",
+        "ordered_state_fingerprint": "b1d6893d55a94d0fb209ba851f83a46ec3be066534c3faeed1785d2aaef8701f",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S42/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "fa4a5f4ae38d3a0e2f979623c21c5a2b92a5941c25479418ce001e774354fc34"
+      },
+      "FONG-FT-B20-S43": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S43/remote_server/update_2500.pth",
+        "sha256": "cc79521e42b914db5bd8a28773532c9f4999704df906464927c9e4220afe1940",
+        "ordered_state_fingerprint": "28946d859be0e64a2764e51b30eee8d6eccefde823b4a497a9c83f50d13cb343",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S43/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "5268ec1d83454c5ebbe7034d8a9c971fe2c01bde238d9887bae1c9176906bdcf"
+      },
+      "FONG-FT-B20-S44": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S44/remote_server/update_2500.pth",
+        "sha256": "172399aff367549205f4d203a17b5affe9752df49aa61530e63ec3ea29fc31fd",
+        "ordered_state_fingerprint": "233f29380ccf0fd3f7d692da6b13dcbacd3dd2cdc3a4c6d923299cea15a8319d",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-FT-B20-S44/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "9341e7f62f96ebae68284a55502e056b9717801eb1181f80577e6e5ef772bb52"
+      },
+      "FONG-TO-B05-S42": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S42/remote_server/update_2500.pth",
+        "sha256": "20a6ef7c859eedfa6408dc49104e9130d360a294c5c9ef80ff5c8f6e6def3689",
+        "ordered_state_fingerprint": "0c7e082c49995cfb0f3319c8311acd39c7bd44e61c0b228d083240b7b48d5449",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S42/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "3580c0d923bcb0fd44d3e813486a6ebbbb0e907b62879d5330fcaa83d6ea78b6"
+      },
+      "FONG-TO-B05-S43": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S43/remote_server/update_2500.pth",
+        "sha256": "991d68ff6b6bca238c5996203c11de8accb03461ae6ba8caddef703a4cbe055d",
+        "ordered_state_fingerprint": "5e250d60c3b484b5ebc6e1ca400a67196f31185c3658f99081c050af5a598ed6",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S43/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "ce9bac7d20298311aa1a9f9f272f680b25e4cc1b84aa04783eb6383544f69818"
+      },
+      "FONG-TO-B05-S44": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S44/remote_server/update_2500.pth",
+        "sha256": "b6e4bfb1b8a85bf81c3fa0c74e8f97188ec31800f1068fbd80be3a4c5218ded4",
+        "ordered_state_fingerprint": "2ca39d1cfe5d68938d654f2694a2707b969b1c7b041ff981ebde9a751bb3f1bc",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B05-S44/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "c505499974b460d24596da730790d59c0cf7de9954606d01a5280b9f144e6318"
+      },
+      "FONG-TO-B20-S42": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S42/remote_server/update_2500.pth",
+        "sha256": "a56feec9960728609c3117a9046043bb159ffe5f375e3441b723682844794a02",
+        "ordered_state_fingerprint": "0a284197d6f1988be322d2b784138d3612cce8cd079cdd844f6f912bcceebb45",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S42/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "98ab1909facf15c2605032b828735a58e01def02b519ffef6587fc91d2681321"
+      },
+      "FONG-TO-B20-S43": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S43/remote_server/update_2500.pth",
+        "sha256": "fcfd89f5fcf1d46404b29425cbd13b8e8cca2577a592a515b50a030f1d4a0b64",
+        "ordered_state_fingerprint": "ce62374e15bdb22f3dc8a736ba7e796189ba7176efe3fbdf0b481d2d02aa724b",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S43/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "f203dce8623058c2e453d19e0dc16205c995ead6d417a2e2c6631feb9736daab"
+      },
+      "FONG-TO-B20-S44": {
+        "checkpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S44/remote_server/update_2500.pth",
+        "sha256": "0e0c17ba6e76d68a58c2f254aeff70ae32bd1a23d89389d7aa6f764a0d42fb33",
+        "ordered_state_fingerprint": "7c0155cfad906837a49dc6554ce33a030855929063f0d46c5ecb98bc0550daaa",
+        "endpoint": "results/fedongas_c5_budget_multiseed_20261014/runs/FONG-TO-B20-S44/FINAL_ENDPOINT.json",
+        "endpoint_sha256": "aa3dd6e70f7ab4f0275e5a6ec7e856f5fdacfb06ecaffb218a443b921053efc0"
+      }
+    },
+    "budget_nesting": "PASS",
+    "test_n": 1360
+  }
+}
