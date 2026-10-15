@@ -1,0 +1,19 @@
+{
+  "method": "TO",
+  "target": "C3",
+  "data": "/root/GAPS/fong_c34_inputs_20261015/target_xy/client_3",
+  "initial_state": "/root/GAPS/fong_c34_inputs_20261015/initial/random-S42.pth",
+  "initial_sha256": "97cc719ddc931376844c8d803e84c21bad570915f17fcee1ef48039b31ea37c6",
+  "output": "/root/GAPS/iotj_final_classification_le1_20260804/XVAL-C3-TO-MAIN-S42",
+  "seed": 42,
+  "initial_fingerprint": "297af6fa38338d767bca33009ba37d6f765b68a9b9c0f86c95c9efd5e72eb564",
+  "fields": [
+    "x",
+    "class"
+  ],
+  "source_ce": false,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "blocks": 25,
+  "steps_per_block": 100
+}

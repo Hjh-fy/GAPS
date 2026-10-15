@@ -1,0 +1,19 @@
+{
+  "method": "FT",
+  "target": "C4",
+  "data": "/root/GAPS/fong_c34_inputs_20261015/target_xy/client_4",
+  "initial_state": "/root/GAPS/fong_c34_inputs_20261015/initial/source-S42.pth",
+  "initial_sha256": "377bf883c59438c4b59a40d68a043560fb4eb902ef3f8313b9f7f90a9654d0d6",
+  "output": "/root/GAPS/iotj_final_classification_le1_20260804/XVAL-C4-FT-MAIN-S42",
+  "seed": 42,
+  "initial_fingerprint": "7c89b509f1f712a54ae9247a9491be5acf7b4938fcad14381d47e9c94d797461",
+  "fields": [
+    "x",
+    "class"
+  ],
+  "source_ce": false,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "blocks": 25,
+  "steps_per_block": 100
+}

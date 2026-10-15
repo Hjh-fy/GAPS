@@ -1,0 +1,33 @@
+{
+  "run": {
+    "experiment_id": "XVAL-C3-TO-MAIN-S42",
+    "target": "C3",
+    "method": "TO",
+    "seed": 42,
+    "budget_pct": 20,
+    "calibration_n": 678,
+    "test_n": 2677,
+    "initialization_run": "random-S42",
+    "rounds": 0,
+    "target_updates": 2500
+  },
+  "command": [
+    "/root/gaps_env/bin/python",
+    "-u",
+    "-m",
+    "gaps_flower.fedongas_extension_target",
+    "--target",
+    "C3",
+    "--method",
+    "TO",
+    "--data",
+    "/root/GAPS/fong_c34_inputs_20261015/target_xy/client_3",
+    "--initial-state",
+    "/root/GAPS/fong_c34_inputs_20261015/initial/random-S42.pth",
+    "--initial-sha256",
+    "97cc719ddc931376844c8d803e84c21bad570915f17fcee1ef48039b31ea37c6",
+    "--output",
+    "/root/GAPS/iotj_final_classification_le1_20260804/XVAL-C3-TO-MAIN-S42"
+  ],
+  "freeze_commit": "20007966527949309a094605aebfb710b57eed2d"
+}

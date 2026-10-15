@@ -1,0 +1,23 @@
+{
+  "run": {
+    "experiment_id": "XVAL-C4-CLASS-MAIN-S42",
+    "target": "C4",
+    "method": "CLASS",
+    "seed": 42,
+    "budget_pct": 20,
+    "calibration_n": 320,
+    "test_n": 1360,
+    "initialization_run": "random-S42",
+    "rounds": 25,
+    "target_updates": 2500
+  },
+  "freeze_commit": "20007966527949309a094605aebfb710b57eed2d",
+  "checkpoint": "remote_server/server_round_025_adapted.pth",
+  "checkpoint_sha256": "8f2d7d3fa7fabd0da7eabdc879155fc6c63b64bf33fa3e17cb3c2c634868876e",
+  "state_fingerprint": "af3acc41ff3a26d3d237c8a2279a28060abf3ddee356e58864d42568187c1954",
+  "initial_fingerprint": "297af6fa38338d767bca33009ba37d6f765b68a9b9c0f86c95c9efd5e72eb564",
+  "wall_seconds": 1347.4303632999945,
+  "target_updates": 2500,
+  "target_test_opened": false,
+  "status": "PASS"
+}

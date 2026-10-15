@@ -1,0 +1,24 @@
+{
+  "values": {
+    "experiment_id": "XVAL-C4-TO-MAIN-S42",
+    "target": "C4",
+    "method": "TO",
+    "seed": 42,
+    "budget_pct": 20,
+    "calibration_n": 320,
+    "test_n": 1360,
+    "initialization_run": "random-S42",
+    "rounds": 0,
+    "target_updates": 2500,
+    "accuracy": 0.9985294117647059,
+    "macro_f1": 0.9985283224825543,
+    "nll": 0.01640679751660703,
+    "ece": 0.001442667249707763,
+    "num_examples": 1360,
+    "checkpoint_sha256": "0ddae08f406c021f7e88271eab6ae8e3011effd3736adf4083b61ec11aa02d13",
+    "calculation_status": "new_fixed_endpoint",
+    "wall_seconds": 82.2047401000018
+  },
+  "checkpoint_sha256": "0ddae08f406c021f7e88271eab6ae8e3011effd3736adf4083b61ec11aa02d13",
+  "prediction_sha256": "e36fe977f05a0bd363a4b92b3ee15c7646cfb906f7244990750ffdfd89b2b25b"
+}

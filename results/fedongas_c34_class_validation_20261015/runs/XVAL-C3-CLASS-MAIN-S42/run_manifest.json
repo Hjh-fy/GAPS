@@ -1,0 +1,50 @@
+{
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\fedongas_c34_class_validation_20261015\\runs\\XVAL-C3-CLASS-MAIN-S42\\remote_server\\server_latest_adapted.pth",
+  "checkpoint_sha256": "3badcf531b64e16e1b15deb4db5f62d3f866c972bbae09d4cb1aa34a8b29baa5",
+  "experiment_id": "XVAL-C3-CLASS-MAIN-S42",
+  "protocol": {
+    "adaptation_target_fields": [
+      "x",
+      "class"
+    ],
+    "adaptation_target_split": "calibration",
+    "batch_size": 32,
+    "budget_pct": 20,
+    "calibration_n": 678,
+    "checkpoint_reuse": false,
+    "checkpoint_selection": "fixed_round_25",
+    "classifier_router": "CLASS",
+    "da_window_shape": [
+      50,
+      8
+    ],
+    "dataset": "iotj_canonical_v1",
+    "experiment_id": "XVAL-C3-CLASS-MAIN-S42",
+    "frozen_base_experiment": "FCL-E4-A4",
+    "hyperparameter_search": false,
+    "initialization": "common_random_seed42",
+    "initialization_run": "random-S42",
+    "local_epochs": 1,
+    "method": "CLASS",
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "optimizer_note": "proposed method protocol",
+    "prototype_scope": "class_only",
+    "rounds": 25,
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "study_id": "FEDONGAS-C34-CLASS-VALIDATION-20261015",
+    "target": "C3",
+    "target_test_selection": false,
+    "target_updates": 2500,
+    "test_n": 2677
+  },
+  "protocol_hash": "c07f494493ff1d3970874abc8c1e67adda149947d628171efb7687598ae87f52",
+  "schema_version": "iotj.final_classification.full_fl.v1",
+  "source_archive_sha256": "3779ddbba64fda01ea2ce0b804ed6b5f65b1cee529c9e37e0e4da82c78d728f6",
+  "target_test_opened": false,
+  "wall_seconds": 1311.1119101000077
+}

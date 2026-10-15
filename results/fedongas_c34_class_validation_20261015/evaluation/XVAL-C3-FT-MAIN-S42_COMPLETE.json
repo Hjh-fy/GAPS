@@ -1,0 +1,24 @@
+{
+  "values": {
+    "experiment_id": "XVAL-C3-FT-MAIN-S42",
+    "target": "C3",
+    "method": "FT",
+    "seed": 42,
+    "budget_pct": 20,
+    "calibration_n": 678,
+    "test_n": 2677,
+    "initialization_run": "FONG-SRC-S42",
+    "rounds": 0,
+    "target_updates": 2500,
+    "accuracy": 0.9970115801270079,
+    "macro_f1": 0.9970110215440877,
+    "nll": 0.028079674608720705,
+    "ece": 0.002729576082054401,
+    "num_examples": 2677,
+    "checkpoint_sha256": "8974f6362de8e005c0562904a7c73542585ab6bd4e840e15f8baf6fcede5c20e",
+    "calculation_status": "new_fixed_endpoint",
+    "wall_seconds": 93.37500860000728
+  },
+  "checkpoint_sha256": "8974f6362de8e005c0562904a7c73542585ab6bd4e840e15f8baf6fcede5c20e",
+  "prediction_sha256": "75d53e3d1a553e65e565d54247279e3ce6fd7b81cb88e6e42d6c2cbee32c57b4"
+}
