@@ -1,0 +1,18 @@
+{
+  "schema_version": "iotj.p0.roundwise_commissioning.v1",
+  "seed": 42,
+  "source_run_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_p0_routing_simplification_20260803\\P0A_PURE_FEDAVG_LE1_S42\\protocol_manifest.json",
+  "source_checkpoint_count": 25,
+  "methods": [
+    "source_only",
+    "simple_target_ce",
+    "full_target_adapter"
+  ],
+  "commissioning_steps": 100,
+  "commissioning_lr": 0.0005,
+  "formal_comparison_round": 25,
+  "checkpoint_reload_policy": "each method/round starts from matching original source checkpoint",
+  "adapted_checkpoint_inheritance": false,
+  "target_test_role": "post_hoc_evaluation_only",
+  "target_test_used_for_selection": false
+}

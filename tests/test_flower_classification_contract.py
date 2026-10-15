@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -9,6 +10,10 @@ from torch.utils.data import DataLoader, TensorDataset
 
 import gaps_flower.client_app as flower_client_module
 from gaps_flower.client_app import GapsFlowerClient
+from gaps_flower.domain_adaptation_inputs import (
+    load_domain_adaptation_arrays,
+    validate_domain_adaptation_request,
+)
 from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy
 from gaps_flower.task import create_model, evaluate, get_parameters, make_config, set_parameters
 from scripts.generate_iotj_classification_ablation_commands import (
@@ -17,6 +22,157 @@ from scripts.generate_iotj_classification_ablation_commands import (
     build_run_manifest,
     generate_manifests,
 )
+
+
+def _write_da_split(
+    directory: Path,
+    *,
+    rows: int = 2,
+    feature_shape: tuple[int, int] = (100, 8),
+    cls: np.ndarray | None = None,
+    phase: np.ndarray | None = None,
+) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    np.save(
+        directory / "calibration_features.npy",
+        np.zeros((rows, *feature_shape), dtype=np.float32),
+    )
+    np.save(
+        directory / "calibration_classification_labels.npy",
+        np.zeros(rows, dtype=np.int64) if cls is None else cls,
+    )
+    np.save(
+        directory / "calibration_phase_labels.npy",
+        np.zeros(rows, dtype=np.int64) if phase is None else phase,
+    )
+    return directory
+
+
+def test_domain_adaptation_request_rejects_fedavg_and_missing_or_overlapping_paths(
+    tmp_path,
+) -> None:
+    source = _write_da_split(tmp_path / "source")
+    target = _write_da_split(tmp_path / "target")
+
+    with pytest.raises(ValueError, match="FedAvg|strategy"):
+        validate_domain_adaptation_request("fedavg", True, str(source), str(target))
+    with pytest.raises(ValueError, match="source|server_val_data"):
+        validate_domain_adaptation_request("gaps", True, None, str(target))
+    with pytest.raises(ValueError, match="target|server_calib_data"):
+        validate_domain_adaptation_request("gaps", True, str(source), None)
+    with pytest.raises(ValueError, match="overlap"):
+        validate_domain_adaptation_request("gaps", True, str(source), str(source))
+
+
+@pytest.mark.parametrize(
+    "missing_name",
+    ["calibration_classification_labels.npy", "calibration_phase_labels.npy"],
+)
+def test_strict_da_split_requires_prefixed_labels_and_phases(
+    tmp_path, missing_name: str
+) -> None:
+    directory = _write_da_split(tmp_path / "client")
+    (directory / missing_name).unlink()
+    np.save(directory / missing_name.removeprefix("calibration_"), np.zeros(2, dtype=np.int64))
+
+    with pytest.raises(ValueError, match=missing_name):
+        load_domain_adaptation_arrays(str(directory), strict=True)
+
+
+def test_da_arrays_reject_invalid_shape_rows_and_nonfinite_features(tmp_path) -> None:
+    wrong_shape = _write_da_split(tmp_path / "shape", feature_shape=(99, 8))
+    with pytest.raises(ValueError, match="shape"):
+        load_domain_adaptation_arrays(str(wrong_shape), strict=True)
+
+    wrong_rows = _write_da_split(tmp_path / "rows")
+    np.save(
+        wrong_rows / "calibration_classification_labels.npy",
+        np.zeros(1, dtype=np.int64),
+    )
+    with pytest.raises(ValueError, match="rows|length"):
+        load_domain_adaptation_arrays(str(wrong_rows), strict=True)
+
+    nonfinite = _write_da_split(tmp_path / "nonfinite")
+    features = np.load(nonfinite / "calibration_features.npy")
+    features[0, 0, 0] = np.nan
+    np.save(nonfinite / "calibration_features.npy", features)
+    with pytest.raises(ValueError, match="finite"):
+        load_domain_adaptation_arrays(str(nonfinite), strict=True)
+
+
+@pytest.mark.parametrize(
+    ("filename", "values", "message"),
+    [
+        ("calibration_classification_labels.npy", np.asarray([0.0, 1.0]), "integer"),
+        ("calibration_classification_labels.npy", np.asarray([0, 4]), "range"),
+        ("calibration_phase_labels.npy", np.asarray([0.0, 1.0]), "integer"),
+        ("calibration_phase_labels.npy", np.asarray([0, 3]), "range"),
+    ],
+)
+def test_da_arrays_reject_invalid_class_and_phase_labels(
+    tmp_path, filename: str, values: np.ndarray, message: str
+) -> None:
+    directory = _write_da_split(tmp_path / "labels")
+    np.save(directory / filename, values)
+
+    with pytest.raises(ValueError, match=message):
+        load_domain_adaptation_arrays(str(directory), strict=True)
+
+
+def test_da_arrays_reject_empty_split(tmp_path) -> None:
+    directory = _write_da_split(tmp_path / "empty", rows=0)
+
+    with pytest.raises(ValueError, match="empty"):
+        load_domain_adaptation_arrays(str(directory), strict=True)
+
+
+def test_valid_da_directories_are_merged_with_exact_row_counts(tmp_path) -> None:
+    source_a = _write_da_split(tmp_path / "source_a", rows=2)
+    source_b = _write_da_split(tmp_path / "source_b", rows=3)
+
+    features, labels, phases = load_domain_adaptation_arrays(
+        f"{source_a},{source_b}", strict=True
+    )
+
+    assert features.shape == (5, 100, 8)
+    assert labels.shape == (5,)
+    assert phases.shape == (5,)
+
+
+def test_da_arrays_accept_explicit_canonical_50x8_window_shape(tmp_path) -> None:
+    canonical = _write_da_split(tmp_path / "canonical", rows=3, feature_shape=(50, 8))
+
+    features, labels, phases = load_domain_adaptation_arrays(
+        str(canonical),
+        strict=True,
+        expected_window_shape=(50, 8),
+    )
+
+    assert features.shape == (3, 50, 8)
+    assert labels.shape == (3,)
+    assert phases.shape == (3,)
+
+
+def test_production_da_rejects_non_strict_calibration_split(tmp_path) -> None:
+    cfg = make_config(device="cpu", local_epochs=1, batch_size=4)
+    model = create_model(cfg)
+    _arrays, keys = get_parameters(model)
+    source = _write_da_split(tmp_path / "source")
+    target = _write_da_split(tmp_path / "target")
+
+    with pytest.raises(ValueError, match="strict.*calibration|calibration.*strict"):
+        GapsStrategy(
+            parameter_keys=keys,
+            reference_state=model.state_dict(),
+            output_dir=str(tmp_path / "output"),
+            run_name="unsafe_non_strict_da",
+            use_selective_agg=False,
+            use_proto_mmd=False,
+            use_domain_adapt=True,
+            server_val_data=str(source),
+            server_calib_data=str(target),
+            strict_calibration_split=False,
+        )
 
 
 def test_flower_config_is_simplified_classifier_only() -> None:
@@ -41,14 +197,15 @@ def test_flower_config_is_simplified_classifier_only() -> None:
 
 
 @pytest.mark.parametrize(
-    ("profile", "use_align", "use_replay", "use_decouple"),
+    ("profile", "use_align", "use_replay", "use_decouple", "upload_stats"),
     [
-        ("ce_only", False, False, False),
-        ("align_only", True, False, False),
-        ("align_replay", True, True, False),
-        ("proto_only", True, False, True),
-        ("replay_only", False, True, False),
-        ("proto_replay", True, True, True),
+        ("ce_only", False, False, False, False),
+        ("ce_stats", False, False, False, True),
+        ("align_only", True, False, False, True),
+        ("align_replay", True, True, False, True),
+        ("proto_only", True, False, True, True),
+        ("replay_only", False, True, False, False),
+        ("proto_replay", True, True, True, True),
     ],
 )
 def test_classification_ablation_profiles_have_exact_switches(
@@ -56,6 +213,7 @@ def test_classification_ablation_profiles_have_exact_switches(
     use_align: bool,
     use_replay: bool,
     use_decouple: bool,
+    upload_stats: bool,
 ) -> None:
     cfg = make_config(profile=profile, seed=47)
 
@@ -65,7 +223,14 @@ def test_classification_ablation_profiles_have_exact_switches(
     assert cfg.USE_CONTRASTIVE_ALIGN is use_align
     assert cfg.USE_REPLAY_DISTILL is use_replay
     assert cfg.USE_PROTO_DECOUPLING is use_decouple
-    assert cfg.UPLOAD_PROTO_STATS is (use_align or use_decouple)
+    assert cfg.UPLOAD_PROTO_STATS is upload_stats
+
+
+def test_fedprox_mu_is_explicit_and_non_negative() -> None:
+    cfg = make_config(profile="ce_only", proximal_mu=0.01)
+    assert cfg.FEDPROX_MU == pytest.approx(0.01)
+    with pytest.raises(ValueError, match="non-negative"):
+        make_config(profile="ce_only", proximal_mu=-0.01)
 
 
 @pytest.mark.parametrize("alias", ["smoke", "strong_cls", "gaps_cls"])
@@ -121,6 +286,8 @@ def test_domain_adapted_arrays_can_be_returned_as_next_global_parameters(tmp_pat
     arrays, keys = get_parameters(model)
     adapted_arrays = [array.copy() for array in arrays]
     adapted_arrays[0] = adapted_arrays[0] + np.ones_like(adapted_arrays[0], dtype=adapted_arrays[0].dtype)
+    source = _write_da_split(tmp_path / "source")
+    target = _write_da_split(tmp_path / "target")
 
     strategy = GapsStrategy(
         parameter_keys=keys,
@@ -130,6 +297,8 @@ def test_domain_adapted_arrays_can_be_returned_as_next_global_parameters(tmp_pat
         use_selective_agg=False,
         use_proto_mmd=False,
         use_domain_adapt=True,
+        server_val_data=str(source),
+        server_calib_data=str(target),
         domain_adapt_warmup=0,
         use_adapted_as_global=True,
     )

@@ -1,0 +1,68 @@
+{
+  "M83_H1_minus_M104_H1": {
+    "mean_delta_S_CC_NRMSE": 4.029544475869784e-11,
+    "mean_relative_delta_S_CC_NRMSE": 5.902498947069321e-10,
+    "sample_std_delta": 1.2393243494282683e-12,
+    "descriptive_t95_CI": [
+      3.875662033191545e-11,
+      4.183426918548022e-11
+    ],
+    "left_wins": 0,
+    "right_wins": 5
+  },
+  "M91_H1_minus_M104_H1": {
+    "mean_delta_S_CC_NRMSE": 1.1832715363091495e-11,
+    "mean_relative_delta_S_CC_NRMSE": 1.7330261743678043e-10,
+    "sample_std_delta": 5.457163743702085e-13,
+    "descriptive_t95_CI": [
+      1.1155118987805718e-11,
+      1.2510311738377272e-11
+    ],
+    "left_wins": 0,
+    "right_wins": 5
+  },
+  "H1_effect_M83": {
+    "mean_delta_S_CC_NRMSE": -0.009997638142784235,
+    "mean_relative_delta_S_CC_NRMSE": -0.12770060924944385,
+    "sample_std_delta": 0.00014803930280818042,
+    "descriptive_t95_CI": [
+      -0.010181453215400338,
+      -0.009813823070168133
+    ],
+    "left_wins": 5,
+    "right_wins": 0
+  },
+  "H1_effect_M91": {
+    "mean_delta_S_CC_NRMSE": -0.009997638165071609,
+    "mean_relative_delta_S_CC_NRMSE": -0.1277006095443845,
+    "sample_std_delta": 0.00014803930448316005,
+    "descriptive_t95_CI": [
+      -0.010181453239767473,
+      -0.009813823090375744
+    ],
+    "left_wins": 5,
+    "right_wins": 0
+  },
+  "H1_effect_M104": {
+    "mean_delta_S_CC_NRMSE": -0.009997638116012137,
+    "mean_relative_delta_S_CC_NRMSE": -0.12770060901706148,
+    "sample_std_delta": 0.00014803930301152883,
+    "descriptive_t95_CI": [
+      -0.01018145318888073,
+      -0.009813823043143544
+    ],
+    "left_wins": 5,
+    "right_wins": 0
+  },
+  "H-FMETA-02_gate": {
+    "mean_relative_degradation_le_5pct": true,
+    "no_gas_gt_10pct_worse_in_at_least_3_seeds": true,
+    "gas_gt_10pct_worse_seed_counts": {
+      "Ethanol": 0,
+      "CO": 0,
+      "Ethylene": 0,
+      "Methane": 0
+    },
+    "all_pass": true
+  }
+}

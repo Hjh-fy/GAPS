@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GAPS：真实设备联邦分类、充分统计量回归参考与轻量目标个性化</title><style>
+body{margin:0;background:#e8eaed;color:#111;font-family:"Times New Roman","Noto Serif CJK SC",serif;line-height:1.48}
+.paper{width:min(216mm,calc(100vw - 24px));margin:20px auto;padding:14mm 16mm;background:#fff;box-shadow:0 2px 14px #999}
+.preprint{display:flex;justify-content:space-between;border-bottom:1px solid #aaa;font:8pt Arial;padding-bottom:5px}
+h1{text-align:center;font-size:20pt}h2{text-align:center;font:700 11pt Arial;margin-top:16px}h3{font:700 10pt Arial;margin-top:12px}
+p{text-align:justify;margin:5px 0}.abstract{border:1px solid #bbb;padding:9px}.contributions li{margin:4px 0}
+table{width:100%;border-collapse:collapse;font:8pt Arial;margin:8px 0 12px}th,td{border:1px solid #aaa;padding:4px;text-align:left;vertical-align:top}
+.table-title{font-weight:bold;font-size:9pt}.note{font-size:8.5pt;color:#444}
+figure{margin:12px 0;break-inside:avoid}figure img{display:block;max-width:100%;max-height:105mm;margin:auto}figcaption{font-size:8.5pt;text-align:justify}
+.status{background:#eef6ee;border-left:4px solid #2b7a2b;padding:8px}.appendix{border-top:2px solid #333;margin-top:20px}
+</style></head>
+<body><main class="paper"><div class="preprint"><span>GAPS · IoTJ-STYLE EVIDENCE-FROZEN MANUSCRIPT</span><span>2026-07-26</span></div>
+<header><h1>GAPS：真实设备联邦分类、充分统计量回归参考与轻量目标个性化的跨设备气体感知系统</h1>
+<p style="text-align:center"><em>GAPS: Cross-Device Gas Sensing with Real-Device Federated Classification, a Sufficient-Statistics Regression Reference, and Lightweight Target Personalization</em></p></header>
+<section class="abstract"><h2>摘要</h2>
+<p>跨设备气体感知需要同时处理类别识别、浓度估计和可靠输出中的设备偏移。本文提出 GAPS：源设备在真实三机拓扑上训练 B5 联邦分类器，服务器执行域适应；随后 C1/C2 在不上传原始样本行的条件下交换特征矩与正规方程等充分统计量，重构一个共享的分气体 Ridge 回归参考；目标设备 C5 使用 104 维 rich features 与 1 维 Federated H1 预测训练 105 维轻量个性化 Ridge。五个训练种子上，B5 accuracy 为 0.989118 ± 0.005983。Federated-H1 个性化的五种子 S_CC RMSE 为 11.6339 ± 0.3142 ppm；其相对 all-prior 方法的退化为 0.981637%，满足预注册 1% 非劣标准，但 all-prior 的绝对均值略低。正式 seed-42 frozen target 结果为 11.3416 ppm。v5 回归核心将回归参数从 28,737 降至 844，Raspberry Pi 5 p50 延迟从 4.571 ms 降至 3.725 ms；v4 仍是正式 selective-output baseline，v5 QC2 因覆盖率和 CO guards 未通过而未晋级。统一 group-aware 分析显示，将 C5 calibration 从 320 减至 160 个窗口时，mean S_CC RMSE 从 10.8724 增至 23.9156 ppm，说明目标个性化对 calibration coverage 高度敏感。</p>
+<p><strong>关键词：</strong>真实设备联邦分类；服务器端域适应；充分统计量 Federated Ridge；目标个性化；选择性输出；校准预算敏感性</p>
+<h2>Abstract</h2><p>GAPS combines real-device federated classification with source-side sufficient-statistics aggregation for a shared per-gas Ridge reference and lightweight target-device personalization. Across five training seeds, B5 achieved 0.989118 ± 0.005983 accuracy. Federated-H1 personalization obtained 11.6339 ± 0.3142 ppm correct-route RMSE and met the preregistered 1% non-inferiority margin relative to the all-prior model, although the latter had a slightly lower absolute mean. The frozen seed-42 target result remains 11.3416 ppm. The simplified regression core reduced regression parameters from 28,737 to 844 and Raspberry Pi 5 median latency from 4.571 to 3.725 ms. Runtime v4 remains the formal selective-output baseline because the v5 QC2 candidate reduced accepted error at lower coverage and failed HC90 CO guards. Group-aware calibration analysis further showed that halving target calibration from 320 to 160 windows more than doubled mean correct-route RMSE, exposing a major deployment limitation.</p></section>
+
+<h2>I. 引言</h2>
+<p>金属氧化物半导体阵列易受制造差异、漂移和工作环境影响，使源设备模型难以直接迁移到新设备 [1], [2], [20]。对于气体感知，分类错误还会改变浓度专家路由，因此分类、回归和选择性输出必须在同一部署合同中评价。已有联邦学习与边云协同研究提供了去中心化优化基础 [3], [4], [17]–[19]，但目标设备仍需要透明的 calibration 资源与可审计的可靠性边界。</p>
+<p>GAPS 将系统划分为四个证据一致的阶段：真实设备联邦分类与服务器端域适应；源端充分统计量聚合得到共享回归参考；目标端轻量 Ridge 个性化；以及 accept/review/reject 三态输出。本研究不声称完整端到端回归在网络中联邦训练，也不为充分统计量交换提供形式化隐私保证。</p>
+<p>本文贡献为：</p><ol class="contributions">
+<li>在 Raspberry Pi C1、ECS C2 与 Alibaba ECS server 的真实拓扑上完成 25 轮联邦分类，并用 seeds 42–46 验证 B5 稳定性。</li>
+<li>以源端局部特征矩、正规方程和校准分数构建共享分气体 Ridge reference；原始源样本行不上传。</li>
+<li>将 Federated H1 prediction 与 rich features 结合为 105D 目标个性化输入，并在预注册 1% S_CC margin 下证明相对 all-prior 的非劣性。</li>
+<li>实现并审计 runtime，联合报告 selective-output trade-off、PC/Pi 效率、application payload 与 calibration-budget sensitivity。</li>
+</ol>
+
+<h2>II. 相关工作</h2>
+<p>传统传感器漂移与校准迁移方法通常依赖匹配样本、特征映射或重新标定 [1], [2], [16], [20]。FedAvg、FedProx 与 federated sensing 研究分别讨论模型聚合、系统异质性和边云协同 [3], [4], [17]–[19]。域适应和原型学习为目标偏移提供语义约束 [5]–[9]，选择性预测则强调在误差与覆盖率之间建立显式工作点 [10]–[12]。GAPS 的区别在于：把真实设备分类、充分统计量回归 reference、目标个性化及三态输出绑定为一条可审计部署链。</p>
+
+<h2>III. 系统与数据协议</h2>
+<p class='table-title'>Table I. Dataset, gas classes, devices, and split roles.</p><table><thead><tr><th>Device/role</th><th>Platform</th><th>Role</th><th>Paper split</th></tr></thead><tbody><tr><td>C1</td><td>Raspberry Pi 5</td><td>source classifier + local H1 statistics</td><td>local source train/validation</td></tr><tr><td>C2</td><td>ECS client</td><td>source classifier + local H1 statistics</td><td>local source train/validation</td></tr><tr><td>Server</td><td>Alibaba ECS</td><td>FedAvg, server-side DA, H1 statistics aggregation</td><td>no raw C1/C2 training rows</td></tr><tr><td>C5</td><td>target device</td><td>target personalization and deployment test</td><td>320 calibration / 1360 test windows</td></tr><tr><td>Sensors</td><td>8 MOS channels</td><td>Ethanol, CO, Ethylene, Methane</td><td>100×8 response windows</td></tr></tbody></table>
+<p>C1/C2 是源设备，C5 是目标设备；四类气体为 Ethanol、CO、Ethylene 和 Methane。每个窗口包含 100 个时间步与 8 个 MOS 通道。C5 calibration/test 为 320/1360 行。历史 calibration 内部的 240/80 split 是 window-level：80 个 fit filenames、61 个 validation filenames，且全部 61 个 validation filenames 也出现在 fit 中。该事实是 calibration-internal overlap，不等同于使用 test labels 训练。</p>
+<figure id='fig1'><img src='../paper_evidence_freeze/figures/fig1_architecture.svg' alt='Cloud–edge–device architecture. Raw C1/C2 rows remain local; the server aggregates classifier updates and source-side sufficient statistics, while C5 supplies target calibration and deployment windows.'><figcaption><strong>Fig. 1.</strong> Cloud–edge–device architecture. Raw C1/C2 rows remain local; the server aggregates classifier updates and source-side sufficient statistics, while C5 supplies target calibration and deployment windows.</figcaption></figure>
+
+<h2>IV. 方法</h2>
+<h3>A. 真实设备联邦分类</h3>
+<p>B5 使用卷积—注意力分类骨干，在 C1/C2 上以 Client Adam（learning rate 5×10<sup>−4</sup>）、batch size 32、每轮五个 local epochs 训练。服务器执行 25 个 communication rounds，并在每轮执行 100 个 server-side domain-adaptation steps。五种子仅改变随机种子；拓扑、数据、优化器和 B5 开关保持冻结。</p>
+<figure id='fig2'><img src='../paper_evidence_freeze/figures/fig2_federated_classification.svg' alt='B5 federated classification and server-side domain adaptation on the real three-host topology.'><figcaption><strong>Fig. 2.</strong> B5 federated classification and server-side domain adaptation on the real three-host topology.</figcaption></figure>
+<h3>B. Sufficient-statistics Federated Ridge</h3>
+<p>四类气体独立拟合。客户端首先计算局部特征计数、均值及二阶矩，服务器聚合后重构 global scaler。对每个候选 Ridge 系数 α，客户端在标准化特征上构造带截距的正规方程 X<sup>T</sup>X 与 X<sup>T</sup>y；服务器求解候选模型，再由客户端返回 clipped validation SSE 与计数用于 calibration-only α 选择。选定 α 后聚合完整 source fit statistics 并重构最终 H1。交换内容不包含原始 source rows、X/y 表或逐样本预测；但统计量没有安全聚合或差分隐私保护。</p>
+<h3>C. 目标个性化</h3>
+<p>C5 为每个窗口提取 104D rich features，并附加 1D Federated H1 prediction，形成 105D 输入。根据冻结 B5 predicted class 路由到四个独立 target Ridge。α 仅由 C5 calibration 内部 fit/validation 或 group-aware folds 选择，随后在当前完整 calibration subset 上 refit；test 不参与 fit、select 或 refit。</p>
+<figure id='fig3'><img src='../paper_evidence_freeze/figures/fig3_h1_target_personalization.svg' alt='Source sufficient-statistics aggregation, shared H1 reconstruction, and lightweight C5 personalization.'><figcaption><strong>Fig. 3.</strong> Source sufficient-statistics aggregation, shared H1 reconstruction, and lightweight C5 personalization.</figcaption></figure>
+<h3>D. Runtime 与 QC 角色</h3>
+<p>Runtime v4 是包含多 reference/multi-expert 风险语义的正式 selective-output baseline。Runtime v5 core 只实现 B5→Federated H1→105D target Ridge 的简化回归链。v5 QC2 使用 confidence 与 prototype/support distance 构建独立候选风险。HC95/HC90 均产生 accept、review、reject；只有 accept 行输出 auto_output_ppm。v4 与 v5 的风险语义和部署角色不互换。</p>
+
+<h2>V. 实验协议</h2>
+<p>分类标准差来自五个训练 seeds 42–46；回归标准差来自五个冻结 B5 classifiers/routes。Correct-route RMSE (S_CC) 只统计 B5 分类路由正确的行，end-to-end RMSE (S_ALL) 则统计全部 test 行，两者不能互换。Group-aware 320 的标准差来自 fold/alpha-selection variability，160/80/40 来自 subset + fold variability。Historical holdout 320 是固定单次 reference，低预算标准差来自 holdout subset variability。Filename grouping 只用于 calibration-internal folds/subsets；历史 calibration/test split 仍为 window-level。Low-calibration 与 harmonization 是对已冻结方法及此前已使用 C5 test 的 post-freeze 描述性分析，不用于重新选择方法。</p>
+
+<h2>VI. 结果</h2>
+<h3>4.1 Federated classification performance</h3>
+<p class='table-title'>Table II. B5 five-seed classification performance.</p><table><thead><tr><th>Metric</th><th>Mean</th><th>Sample SD</th><th>Min</th><th>Max</th></tr></thead><tbody><tr><td>Accuracy</td><td>0.989118</td><td>0.005983</td><td>0.980147</td><td>0.994853</td></tr><tr><td>Macro-F1</td><td>0.989134</td><td>0.005960</td><td>0.980220</td><td>0.994852</td></tr><tr><td>NLL</td><td>0.100237</td><td>0.037833</td><td>0.054088</td><td>0.150294</td></tr><tr><td>ECE</td><td>0.010607</td><td>0.005774</td><td>0.005050</td><td>0.019368</td></tr></tbody></table>
+<p>B5 在五个训练种子上的 accuracy 与 macro-F1 均约为 0.989，且 NLL/ECE 波动有限。这支持“在当前 C1/C2→C5 协议和 seeds 42–46 下稳定”的限定结论，而非跨任意设备或随机种子的普遍鲁棒性。</p>
+<h3>4.2 Regression method selection</h3>
+<p class='table-title'>Table III. Five-seed regression comparison and non-inferiority.</p><table><thead><tr><th>Method</th><th>Input/dependency</th><th>S_CC RMSE (ppm)</th><th>S_ALL RMSE (ppm)</th><th>Decision</th></tr></thead><tbody><tr><td>Rich features only</td><td>104D</td><td>14.4546 ± 0.2621</td><td>20.4668 ± 3.4577</td><td>baseline</td></tr><tr><td>Federated-H1 personalization</td><td>104D + one source reference</td><td>11.6339 ± 0.3142</td><td>18.5080 ± 4.3211</td><td>selected: 1% non-inferior</td></tr><tr><td>All-prior personalization</td><td>104D + three source references</td><td>11.5208 ± 0.3148</td><td>18.5982 ± 4.4192</td><td>absolute S_CC lower</td></tr></tbody></table>
+<p>All-prior 的 absolute mean S_CC 略低，并在 5/5 seeds 上优于 Federated H1。Federated H1 的 paired relative degradation 为 0.981637%，通过预注册 1% 非劣标准，同时把 source regression references 从三个减少到一个，因此被选为最终简化回归依赖。该选择是“非劣 + 简化”，不是精度优越。</p>
+<figure id='fig4'><img src='../paper_evidence_freeze/figures/fig4_regression_five_seed.png' alt='Five-seed S_CC RMSE for rich-only, Federated-H1, and all-prior target personalization. Error bars show sample standard deviations.'><figcaption><strong>Fig. 4.</strong> Five-seed S_CC RMSE for rich-only, Federated-H1, and all-prior target personalization. Error bars show sample standard deviations.</figcaption></figure>
+<h3>4.3 Sufficient-statistics equivalence</h3>
+<p>Federated H1 与 pooled reference 的 4/4 gas α 一致，C5 H1 prediction 最大绝对差为 6.2532×10<sup>−8</sup> ppm，S_CC RMSE 差为 6.7040×10<sup>−12</sup> ppm，审计状态为 PRACTICAL_EQUIVALENCE。源端上传 moments、normal equations 与 clipped validation SSE/count，服务器返回 scaler 与 Ridge candidates；这些证据支持 raw source rows remain local，但不支持更强的安全性表述。</p>
+<h3>4.4 Selective-output quality–coverage</h3>
+<p class='table-title'>Table IV. Selective-output quality–coverage trade-off.</p><table><thead><tr><th>Runtime/workpoint</th><th>A/R/R</th><th>Accepted yield</th><th>Accepted RMSE (ppm)</th><th>CO yield</th><th>CO RMSE (ppm)</th><th>Status</th></tr></thead><tbody><tr><td>V4 HC95</td><td>1323/33/4</td><td>97.28%</td><td>18.8520</td><td>96.76%</td><td>19.7767</td><td>FORMAL_BASELINE</td></tr><tr><td>V4 HC90</td><td>1235/107/18</td><td>90.81%</td><td>15.8328</td><td>84.71%</td><td>19.7243</td><td>FORMAL_BASELINE</td></tr><tr><td>V5 HC95</td><td>1275/41/44</td><td>93.75%</td><td>13.9178</td><td>85.88%</td><td>19.6774</td><td>VALID_CANDIDATE_NOT_PROMOTED</td></tr><tr><td>V5 HC90</td><td>1183/113/64</td><td>86.99%</td><td>12.7723</td><td>64.12%</td><td>20.8318</td><td>VALID_CANDIDATE_NOT_PROMOTED</td></tr></tbody></table>
+<p>v5 QC2 在 HC95/HC90 上分别取得 13.9178/12.7723 ppm accepted RMSE，但 accepted yield 仅为 93.75%/86.99%。相对 v4，yield 分别下降 3.53/3.82 percentage points。HC90 CO yield 从 84.71% 降至 64.12%，CO accepted RMSE 从 19.7243 增至 20.8318 ppm，因此 v5 QC2 未晋级，v4 保持正式 baseline。</p>
+<figure id='fig5'><img src='../paper_evidence_freeze/figures/fig5_qc_quality_coverage.png' alt='Frozen HC95/HC90 quality–coverage points. Lower accepted RMSE is interpreted jointly with accepted yield; no curve or threshold was fitted.'><figcaption><strong>Fig. 5.</strong> Frozen HC95/HC90 quality–coverage points. Lower accepted RMSE is interpreted jointly with accepted yield; no curve or threshold was fitted.</figcaption></figure>
+<h3>4.5 System efficiency</h3>
+<p class='table-title'>Table V. System efficiency on PC and Raspberry Pi 5.</p><table><thead><tr><th>Runtime</th><th>Regression params</th><th>Bundle bytes</th><th>p50 / p95 (ms)</th><th>Throughput (window/s)</th><th>Peak RSS (MiB)</th><th>Peak temp. (°C)</th><th>Status</th></tr></thead><tbody><tr><td>V4 FULL</td><td>28,737</td><td>2,971,538</td><td>5.434 / 13.945</td><td>144.3</td><td>199.8</td><td>—</td><td>FORMAL_BASELINE</td></tr><tr><td>V5 REGRESSION CORE</td><td>844</td><td>289,916</td><td>4.072 / 14.786</td><td>159.3</td><td>195.7</td><td>—</td><td>FINAL_SIMPLIFIED_REGRESSION</td></tr><tr><td>V5 QC2 CANDIDATE</td><td>844</td><td>1,065,632</td><td>5.477 / 19.312</td><td>125.8</td><td>197.9</td><td>—</td><td>VALID_CANDIDATE_NOT_PROMOTED</td></tr><tr><td>V4 FULL</td><td>28,737</td><td>2,971,538</td><td>4.571 / 4.621</td><td>209.1</td><td>237.9</td><td>54.00</td><td>FORMAL_BASELINE</td></tr><tr><td>V5 REGRESSION CORE</td><td>844</td><td>289,916</td><td>3.725 / 3.765</td><td>254.2</td><td>234.2</td><td>52.35</td><td>FINAL_SIMPLIFIED_REGRESSION</td></tr><tr><td>V5 QC2 CANDIDATE</td><td>844</td><td>1,065,632</td><td>4.523 / 4.571</td><td>211.4</td><td>235.1</td><td>54.55</td><td>VALID_CANDIDATE_NOT_PROMOTED</td></tr></tbody></table>
+<p>v5 core bundle 为 289,916 bytes，v4 为 2,971,538 bytes，v5 QC2 为 1,065,632 bytes。Pi 三次正式对象均 throttled=0x0，峰值温度 54.55 °C。B5 25-round measured application payload 为 17,572,650 bytes；该值包含应用层序列化开销，但未采集 transport bytes。</p>
+<figure id='fig6'><img src='../paper_evidence_freeze/figures/fig6_system_efficiency.png' alt='Raspberry Pi median latency, bundle size, and regression parameter comparison for v4, v5 core, and v5 QC2.'><figcaption><strong>Fig. 6.</strong> Raspberry Pi median latency, bundle size, and regression parameter comparison for v4, v5 core, and v5 QC2.</figcaption></figure>
+<h3>4.6 Calibration-budget sensitivity</h3>
+<p class='table-title'>Table VI. Group-aware calibration-budget sensitivity.</p><table><thead><tr><th>Calibration windows</th><th>S_CC RMSE (ppm)</th><th>S_ALL RMSE (ppm)</th><th>Variability source</th></tr></thead><tbody><tr><td>320</td><td>10.8724 ± 0.4391</td><td>25.2525 ± 0.4934</td><td>fold/alpha-selection</td></tr><tr><td>160</td><td>23.9156 ± 5.2550</td><td>33.5489 ± 4.4420</td><td>subset + fold</td></tr><tr><td>80</td><td>30.4799 ± 4.3262</td><td>37.5764 ± 3.1809</td><td>subset + fold</td></tr><tr><td>40</td><td>36.4992 ± 2.7156</td><td>41.1598 ± 1.8896</td><td>subset + fold</td></tr></tbody></table>
+<p>统一 group-aware protocol 下，320→160 windows 使 mean S_CC RMSE 从 10.8724 增至 23.9156 ppm，超过两倍；CO-high 与 Methane 尤其敏感。10.8724 ppm 是 group-aware fold-selection 均值，不能替代正式 historical protocol 下的 frozen seed-42 RG1 结果 11.3416 ppm。</p>
+<figure id='fig7'><img src='../paper_evidence_freeze/figures/fig7_groupaware_calibration.png' alt='Group-aware S_CC RMSE versus calibration budget. Error bars retain the registered fold/subset variability; lines only connect observed budgets.'><figcaption><strong>Fig. 7.</strong> Group-aware S_CC RMSE versus calibration budget. Error bars retain the registered fold/subset variability; lines only connect observed budgets.</figcaption></figure>
+<h3>4.7 Calibration-protocol harmonization audit</h3>
+<p>Historical holdout 与 group-aware 两条轨迹均随预算下降而退化，但幅度随 protocol 和 budget 改变，最终描述为 SENSITIVITY_PARTLY_PROTOCOL_DEPENDENT。Historical 240/80 保留 window-level membership；harmonization 不选择更优 protocol，也不覆盖正式 11.3416 ppm 主结果。</p>
+
+<h2>VII. 讨论与局限</h2>
+<p><strong>Calibration sensitivity.</strong> 在统一 group-aware protocol 下，将 target calibration 从 320 减至 160 windows 使 mean S_CC RMSE 超过两倍。两种 protocol 的退化方向一致，但退化幅度部分依赖内部 selection protocol 与 budget。</p>
+<p><strong>Historical boundary.</strong> 历史 240/80 split 是 window-level；61 个 validation filenames 全部出现在 fit subset。这是 calibration-internal overlap，不能写为 test leakage。Low-calibration 与 harmonization 使用此前已使用的历史 C5 test，仅构成 frozen-method descriptive evidence。</p>
+<p><strong>Gas and QC limitations.</strong> CO-high 与 Methane 对 calibration coverage 尤其敏感。v5 QC2 能富集高误差样本，但 coverage 与 HC90 CO guards 未通过，因此没有取代 v4。</p>
+<p><strong>Privacy boundary.</strong> Federated H1 构建中 raw source samples remain local；交换的 sufficient statistics 没有安全聚合或差分隐私保护，本文不主张形式化隐私保证。</p>
+
+<h2>VIII. 结论</h2>
+<p>GAPS 在真实设备联邦分类、充分统计量 source regression reference 与轻量 target personalization 之间建立了可执行闭环。五种子结果支持 B5 分类稳定性；Federated H1 在预注册 1% margin 下相对 all-prior 非劣并显著简化依赖；v5 core 降低了回归参数、bundle 和 Pi median latency。与此同时，v4 仍是更强的正式 selective-output baseline，目标 calibration coverage 仍是系统主要限制。上述结论共同界定了效率收益与可靠部署边界。</p>
+
+<section class="appendix"><h2>Appendix A. Frozen supporting tables and figures</h2>
+<p class='table-title'>Table A7. Calibration protocol harmonization comparison.</p><table><thead><tr><th>Budget</th><th>Historical S_CC</th><th>Group-aware S_CC</th><th>G−H (ppm)</th></tr></thead><tbody><tr><td>320</td><td>11.3416 ± 0.0000</td><td>10.8724 ± 0.4391</td><td>-0.4692</td></tr><tr><td>160</td><td>17.8621 ± 1.5586</td><td>23.9156 ± 5.2550</td><td>6.0536</td></tr><tr><td>80</td><td>28.4545 ± 3.3698</td><td>30.4799 ± 4.3262</td><td>2.0254</td></tr><tr><td>40</td><td>43.2442 ± 10.9745</td><td>36.4992 ± 2.7156</td><td>-6.7449</td></tr></tbody></table>
+<figure><img src='../paper_evidence_freeze/figures/appendix_calibration_dual_track.png' alt='dual-track calibration audit'><figcaption><strong>Appendix Fig. A1.</strong> Group-aware and historical calibration tracks are shown in separate panels; historical and group-aware points are not merged into one curve.</figcaption></figure>
+<figure><img src='../paper_evidence_freeze/figures/appendix_calibration_protocol_delta.png' alt='protocol delta'><figcaption><strong>Appendix Fig. A2.</strong> Descriptive group-aware minus historical S_CC RMSE at each budget.</figcaption></figure>
+<p>Tables A1–A6 and A8 are provided as frozen CSV artifacts in <code>docs/paper_evidence_freeze/paper_tables/</code>. They cover per-seed classification, per-seed and per-gas regression, QC OOF selection, QC per-gas results, communication payload, and low-calibration per-gas results.</p></section>
+
+<h2>参考文献</h2><ol>
+<li>A. Vergara, S. Vembu, T. Ayhan, M. A. Ryan, M. L. Homer, and R. Huerta, “Chemical gas sensor drift compensation using classifier ensembles,” <em>Sensors and Actuators B: Chemical</em>, vol. 166--167, pp. 320--329, 2012, doi: 10.1016/j.snb.2012.01.074.</li>
+<li>J. Fonollosa, I. Rodríguez-Luján, and R. Huerta, “Chemical gas sensor array dataset,” <em>Data in Brief</em>, vol. 3, pp. 85--89, 2015, doi: 10.1016/j.dib.2015.01.003.</li>
+<li>B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y Arcas, “Communication-efficient learning of deep networks from decentralized data,” in <em>Proc. AISTATS</em>, PMLR 54, pp. 1273--1282, 2017.</li>
+<li>T. Li, A. K. Sahu, M. Zaheer, M. Sanjabi, A. Talwalkar, and V. Smith, “Federated optimization in heterogeneous networks,” in <em>Proc. Mach. Learn. Syst. (MLSys)</em>, vol. 2, pp. 429--450, 2020.</li>
+<li>A. Gretton, K. M. Borgwardt, M. J. Rasch, B. Schölkopf, and A. Smola, “A kernel two-sample test,” <em>Journal of Machine Learning Research</em>, vol. 13, no. 25, pp. 723--773, 2012.</li>
+<li>B. Sun and K. Saenko, “Deep CORAL: Correlation alignment for deep domain adaptation,” in <em>Computer Vision--ECCV 2016 Workshops</em>, Amsterdam, The Netherlands, 2016, pp. 443--450, doi: 10.1007/978-3-319-49409-8_35.</li>
+<li>Y. Ganin <em>et al.</em>, “Domain-adversarial training of neural networks,” <em>Journal of Machine Learning Research</em>, vol. 17, no. 59, pp. 1--35, 2016.</li>
+<li>J. Snell, K. Swersky, and R. S. Zemel, “Prototypical networks for few-shot learning,” in <em>Advances in Neural Information Processing Systems</em>, vol. 30, pp. 4077--4087, 2017.</li>
+<li>D. Rolnick, A. Ahuja, J. Schwarz, T. P. Lillicrap, and G. Wayne, “Experience replay for continual learning,” in <em>Advances in Neural Information Processing Systems</em>, vol. 32, pp. 348--358, 2019.</li>
+<li>C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, “On calibration of modern neural networks,” in <em>Proc. ICML</em>, PMLR 70, pp. 1321--1330, 2017.</li>
+<li>D. Hendrycks and K. Gimpel, “A baseline for detecting misclassified and out-of-distribution examples in neural networks,” in <em>Proc. ICLR</em>, 2017.</li>
+<li>Y. Geifman and R. El-Yaniv, “SelectiveNet: A deep neural network with an integrated reject option,” in <em>Proc. ICML</em>, PMLR 97, pp. 2151--2159, 2019.</li>
+<li>K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image recognition,” in <em>Proc. CVPR</em>, pp. 770--778, 2016.</li>
+<li>A. Vaswani <em>et al.</em>, “Attention is all you need,” in <em>Advances in Neural Information Processing Systems</em>, vol. 30, pp. 5998--6008, 2017.</li>
+<li>IEEE Internet of Things Journal, “Guidelines for Authors.” [Online]. Available: https://ieee-iotj.org/guidelines-for-authors/. [Accessed: Jul. 20, 2026].</li>
+<li>J. Fonollosa, “Twin Gas Sensor Arrays,” UCI Machine Learning Repository, 2016, doi: 10.24432/C5MW3K.</li>
+<li>Y. Mao, Y. Rong, F. Chi, G. Li, H. Xu, and P. Ping, “Personalized Federated Learning over Edge-Cloud Collaborative Network for Intelligent Sensing Analysis,” <em>Tsinghua Science and Technology</em>, vol. 31, no. 2, pp. 851--866, 2026, doi: 10.26599/TST.2024.9010251.</li>
+<li>Y. Gao, L. Liu, X. Zheng, C. Zhang, and H. Ma, “Federated Sensing: Edge-Cloud Elastic Collaborative Learning for Intelligent Sensing,” <em>IEEE Internet of Things Journal</em>, vol. 8, no. 14, pp. 11100--11111, 2021, doi: 10.1109/JIOT.2021.3053055.</li>
+<li>H. Liu and F. Wu, “A Federated Model Update Method for Intelligent Gas Sensor Replacement,” <em>IEICE Transactions on Electronics</em>, vol. E108.C, no. 1, pp. 46--53, 2025, doi: 10.1587/transele.2024ECP5007.</li>
+<li>J. Fonollosa, L. Fernández, A. Gutiérrez-Gálvez, R. Huerta, and S. Marco, “Calibration transfer and drift counteraction in chemical sensor arrays using Direct Standardization,” <em>Sensors and Actuators B: Chemical</em>, vol. 236, pp. 1044--1053, 2016, doi: 10.1016/j.snb.2016.05.089.</li>
+</ol>
+</main></body></html>

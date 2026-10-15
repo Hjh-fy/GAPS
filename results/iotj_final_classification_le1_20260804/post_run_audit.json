@@ -1,0 +1,405 @@
+{
+  "findings": [
+    {
+      "check_id": "MATRIX-BUDGET",
+      "details": {
+        "e2_adaptation_branches": 9,
+        "new_full_fl_runs": 10,
+        "registered_configs": 21
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "PROTOCOL-DISCLOSURE",
+      "details": {
+        "required_terms": [
+          "optimizer_lr",
+          "canonical SCAFFOLD implementation",
+          "rounds 1 through 5",
+          "round 6 onward",
+          "ordered state-content fingerprint",
+          "source_target_f1_gap"
+        ]
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "TARGET-POLICY-METHOD-SPECIFIC",
+      "details": {
+        "policy": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\docs\\experiments\\iotj_final_classification_le1_20260804\\TARGET_INFORMATION_POLICY.md"
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "P0A-ORDERED-CONTENT-EQUALITY",
+      "details": {
+        "copy": {
+          "equality_basis": "ordered_state_content_fingerprint",
+          "formal_round": 25,
+          "ordered_state_content_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+          "parameter_count": 80,
+          "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\inputs\\P0A_round25_source.pth",
+          "size_bytes": 169977,
+          "whole_file_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+          "whole_file_sha256_role": "provenance_only"
+        },
+        "equality_basis": "ordered_state_content_fingerprint",
+        "equality_verified": true,
+        "formal_round": 25,
+        "schema_version": "iotj.final_classification.input_import.v1",
+        "source": {
+          "equality_basis": "ordered_state_content_fingerprint",
+          "formal_round": 25,
+          "ordered_state_content_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+          "parameter_count": 80,
+          "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_p0_routing_simplification_20260803\\P0A_PURE_FEDAVG_LE1_S42\\remote_server\\server_round_025.pth",
+          "size_bytes": 169977,
+          "whole_file_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+          "whole_file_sha256_role": "provenance_only"
+        },
+        "whole_file_sha256_role": "provenance_only"
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "SCAFFOLD-SOURCE-ONLY-NUMERICAL-GATE",
+      "details": {
+        "action": "PROCEED_FIXED_CONFIGURATION",
+        "checks": {
+          "all_finite": true,
+          "ce_decreased": true,
+          "gradient_norm_valid": true,
+          "no_lr_search": true,
+          "parameter_norm_valid": true,
+          "source_discrimination": true,
+          "source_only": true
+        },
+        "clients": [
+          {
+            "adam_state_present": false,
+            "client_id": 1,
+            "examples": 2360,
+            "optimizer": "SGD",
+            "optimizer_lr": 0.0005,
+            "steps": 74,
+            "train_accuracy": 0.4398305084745763
+          },
+          {
+            "adam_state_present": false,
+            "client_id": 2,
+            "examples": 2360,
+            "optimizer": "SGD",
+            "optimizer_lr": 0.0005,
+            "steps": 74,
+            "train_accuracy": 0.4271186440677966
+          }
+        ],
+        "diagnostics": {
+          "client_count": 2,
+          "client_final_quarter_ce": [
+            1.311400592327118,
+            1.3194438086615667
+          ],
+          "client_first_quarter_ce": [
+            1.3528943591647677,
+            1.3364292250739203
+          ],
+          "majority_class_prior": 0.25,
+          "max_gradient_norm": 2.7386553287506104,
+          "max_parameter_norm": 34.61354446411133,
+          "source_accuracy": 0.43347457627118646
+        },
+        "lr_search_performed": false,
+        "passed": true,
+        "protocol": {
+          "batch_size": 32,
+          "clients": [
+            "C1",
+            "C2"
+          ],
+          "local_epochs": 1,
+          "optimizer": "SGD",
+          "optimizer_lr": 0.0005,
+          "seed": 42
+        },
+        "schema_version": "iotj.final_classification.scaffold_source_gate.v1",
+        "target_information_accessed": false
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "DATASET-C1-C5-COMPLETE",
+      "details": {
+        "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+        "missing": []
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "SELECTIVE-WARMUP-BOUNDARY",
+      "details": {
+        "1": "fedavg_warmup",
+        "2": "fedavg_warmup",
+        "3": "fedavg_warmup",
+        "4": "fedavg_warmup",
+        "5": "fedavg_warmup",
+        "6": "selective"
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "ABLATION-LOSS-ACTIVITY-SCHEMA",
+      "details": {
+        "columns": [
+          "active_steps",
+          "configured_weight",
+          "inactive_reason",
+          "input_available",
+          "loss_name",
+          "mean_raw_loss",
+          "mean_weighted_loss",
+          "scope",
+          "variant"
+        ]
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "ALL-FL-COMMANDS-TARGET-TEST-SEALED",
+      "details": {
+        "offenders": []
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "E2-CANONICAL-X-ONLY",
+      "details": [
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-CORAL-C3",
+          "hyperparameter_search": false,
+          "method": "coral",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C3",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-CORAL-C4",
+          "hyperparameter_search": false,
+          "method": "coral",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C4",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-CORAL-C5",
+          "hyperparameter_search": false,
+          "method": "coral",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C5",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-MMD-C3",
+          "hyperparameter_search": false,
+          "method": "mmd",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C3",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-MMD-C4",
+          "hyperparameter_search": false,
+          "method": "mmd",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C4",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-MMD-C5",
+          "hyperparameter_search": false,
+          "method": "mmd",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C5",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-DANN-C3",
+          "hyperparameter_search": false,
+          "method": "dann",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C3",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-DANN-C4",
+          "hyperparameter_search": false,
+          "method": "dann",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C4",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        },
+        {
+          "checkpoint_selection": "fixed_step_100",
+          "coefficient": 0.5,
+          "conditional": false,
+          "experiment_id": "FCL-E2-DANN-C5",
+          "hyperparameter_search": false,
+          "method": "dann",
+          "optimizer": "Adam",
+          "optimizer_lr": 0.0005,
+          "pseudo_labels": false,
+          "seed": 42,
+          "source_batch_convention": "combined_registered_C1_C2_calibration",
+          "source_checkpoint_role": "P0A_round25",
+          "steps": 100,
+          "target": "C5",
+          "target_ce": false,
+          "target_fields": [
+            "x"
+          ]
+        }
+      ],
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "LOCKED-SPECS-MATCH-PROTOCOL",
+      "details": {
+        "expected": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+        "observed": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea"
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "ALL-FIXED-ENDPOINTS-COMPLETE",
+      "details": {
+        "missing": []
+      },
+      "passed": true,
+      "severity": "blocking"
+    },
+    {
+      "check_id": "FINAL-EVIDENCE-PACKAGE",
+      "details": {
+        "missing": []
+      },
+      "passed": true,
+      "severity": "blocking"
+    }
+  ],
+  "schema_version": "iotj.final_classification.audit.v1",
+  "stage": "post-run",
+  "summary": {
+    "blocking_failures": [],
+    "checks_passed": 13,
+    "checks_total": 13,
+    "status": "PASS"
+  },
+  "timestamp_utc": "2026-08-04T08:36:28.703730+00:00"
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "iotj.final_a4_deployment.v1",
+  "status": "complete",
+  "classifier_checkpoint_identity": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\remote_server\\server_round_025_adapted.pth",
+    "size_bytes": 185801,
+    "formal_round": 25,
+    "ordered_state_content_fingerprint": "06beed28358797b772efca2929fde4dc7dbf0fa734a77a6b68bba573779e33a9",
+    "whole_file_sha256": "5cefe8093d276fcf71f3b3e2800e9896d9967d9e4a9b40994e59bbb49d6009e9",
+    "equality_basis": "ordered_state_content_fingerprint",
+    "whole_file_sha256_role": "provenance_only",
+    "parameter_count": 80
+  },
+  "regression_models": {
+    "path": "regression/regression_models.json",
+    "sha256": "9372a4c124585c49c53449c1952d264e2d7835ce00127c15bcad5622c9fd1b60",
+    "proposed_variant": "R84_FED_H1"
+  },
+  "qc_thresholds": {
+    "path": "qc/qc_threshold_lock.csv",
+    "sha256": "8beba981b0ae82d175f091c0a554cbae9a98255f77e71e19bedd79ef7ece856c",
+    "operating_points": [
+      "HC90",
+      "HC95"
+    ]
+  },
+  "record_schema": "regression/final_test_records.csv",
+  "physical_validation": {
+    "experiment_id": "FCL-E4-A4",
+    "topology": "client_C1__cloud_server__client_C2",
+    "participating_machines": "3",
+    "source_clients": "C1;C2",
+    "client_devices": "cpu;cpu",
+    "target": "C5",
+    "seed": "42",
+    "expected_rounds": "25",
+    "completed_rounds": "25",
+    "wall_seconds": "4641.427080299996",
+    "target_test_opened_during_training": "False",
+    "fixed_endpoint": "True",
+    "status": "PASS",
+    "physical_validation_scope": "real three-machine Flower execution plus independent Raspberry Pi 5 runtime benchmark"
+  }
+}

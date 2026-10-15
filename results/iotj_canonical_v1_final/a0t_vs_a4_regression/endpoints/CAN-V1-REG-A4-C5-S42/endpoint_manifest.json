@@ -1,0 +1,71 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.endpoint.v1",
+  "status": "COMPLETE",
+  "experiment_id": "CAN-V1-REG-A4-C5-S42",
+  "method": "A4",
+  "target": "C5",
+  "seed": 42,
+  "calibration_lock_sha256": "49e508c5da4682768ec34109089ea247d1bf9abfd29665d894df1b185ec7056a",
+  "checkpoint_sha256": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93",
+  "prediction_sha256": {
+    "S_ALL": "6a84a30e6483a3ce2fa276003dbf5eeefd8bf9e7caf555b22591debc387d02d7",
+    "S_CC": "73a68d2beaf4a297e4cfc773284845b8375a0e360aeb269a51f55b3184657ea8",
+    "Oracle_ALL": "8e03dacbb2983fec700d65f92b5840d05f4afe11d02f17cb0a4d216dc3d8440a",
+    "Oracle_CC": "c7058c1e3cdf2fed609b8ceee8cf2eaeb1fe7452a09f9631cebfbbdee46f0362"
+  },
+  "test_manifest_sha256": {
+    "test_features.npy": "b337dead1e0d6d27198cb6455b5d90372ff87c668a71c6177e0560df3584dd9d",
+    "test_classification_labels.npy": "0e5e9339cf3721c3880719a8f5e488256e6dfe1f7af564abfe2ece511b8dac66",
+    "test_regression_labels.npy": "d72f8b04c2e8378e9637958bc2caffe6fad93675aac34c096cd118765f2eea1f",
+    "test_phase_labels.npy": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "test_experiment_info.json": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95"
+  },
+  "test_classification": {
+    "N": 1360,
+    "accuracy": 0.9941176470588236,
+    "macro_f1": 0.99412609063164,
+    "nll": 0.0659403512622192,
+    "ece": 0.006260940301067694,
+    "mean_confidence": 0.9995930084849105,
+    "per_class_recall": {
+      "0": 0.9911764705882353,
+      "1": 0.9941176470588236,
+      "2": 1.0,
+      "3": 0.9911764705882353
+    },
+    "per_class_f1": {
+      "0": 0.9941002949852508,
+      "1": 0.995581737849779,
+      "2": 0.9912536443148687,
+      "3": 0.9955686853766618
+    },
+    "confusion_matrix": [
+      [
+        337,
+        0,
+        3,
+        0
+      ],
+      [
+        1,
+        338,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        340,
+        0
+      ],
+      [
+        0,
+        1,
+        2,
+        337
+      ]
+    ]
+  },
+  "target_test_used_for_selection": false,
+  "alpha_selection_performed": false
+}

@@ -1,0 +1,15 @@
+metric,value,unit,evidence_status
+Main direction B2 accuracy,0.9926470588235294,fraction,seed-42 screening/historical
+Main direction B5 accuracy,0.9889705882352942,fraction,seed-42 screening/historical
+Main direction B2-B5 accuracy,0.3676470588235281,percentage points,descriptive only; no multi-seed uncertainty
+B2 R4 FULL actual-route RMSE,14.6564,ppm,formal C5 regression
+B5 R4 FULL actual-route RMSE,17.4473,ppm,formal C5 regression
+B2 HC90 accepted RMSE,11.5866,ppm,formal operational QC
+B2 HC90 yield,0.8949,fraction,formal operational QC
+B5 HC90 accepted RMSE,15.3599,ppm,formal operational QC
+B5 HC90 yield,0.8824,fraction,formal operational QC
+B2 pilot application bytes,1395868,bytes / 2 rounds,real three-host pilot
+B2 pilot logical bytes,1391310,bytes / 2 rounds,real three-host pilot
+B2 pilot mean round wall,193.07141253150002,seconds,2-round pilot
+B2 pilot mean server DA,168.5312539425,seconds,2-round pilot
+Observer measured overhead,24.85013,milliseconds / 2-round run,observer-side measurement

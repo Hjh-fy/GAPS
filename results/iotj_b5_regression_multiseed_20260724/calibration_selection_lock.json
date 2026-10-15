@@ -1,0 +1,164 @@
+{
+  "schema_version": "iotj.b5_regression_calibration_lock.v1",
+  "locked_at": "2026-07-24T14:45:55.789024+00:00",
+  "formal_run_commit": "99cd23e8b4a5f2f103170f1d8a110d6d85febd5e",
+  "selection_split": "C5_calibration_240_fit_80_validation",
+  "seed_routes": {
+    "42": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_ecs_c2_representative_20260720\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "checkpoint_sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+      "calibration_rows": 320,
+      "calibration_route_sha256": "ca7e2d375cbafc45bd982eaedd2c10386a5ae1bdf0aae11488a59621bcfb6e86",
+      "test_rows": 1360,
+      "frozen_test_route": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed42_reference\\classification_evaluation\\seed42_test_predictions.csv",
+      "frozen_test_route_sha256": "30f38b94d6c1324da8c23733b59767a4238969e4dcc598ba0a3b1403c9790534",
+      "test_replay_equal": true
+    },
+    "43": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed43\\raw\\c12_to_c5__b5__s43\\c12_to_c5__b5__s43__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "checkpoint_sha256": "4a2174e85f069fa04a02bbbf8e0467dc42f8d25d015b58eadc57fe4a98784ab6",
+      "calibration_rows": 320,
+      "calibration_route_sha256": "362a0a4801dcc19d2a3dc73eefa2263e72f2eb3a4fb9b5b3b15cdb942611dd5f",
+      "test_rows": 1360,
+      "frozen_test_route": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed43\\classification_evaluation\\seed43_test_predictions.csv",
+      "frozen_test_route_sha256": "955593e7b8b9b748a0357a5f19de2b47c4a2f808f39c1898ed48b2da8abd552c",
+      "test_replay_equal": true
+    },
+    "44": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed44\\raw\\c12_to_c5__b5__s44\\c12_to_c5__b5__s44__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "checkpoint_sha256": "cc1b07da93a45165f3acb47b86ed98caf263f7f0c8625ceb1ecca751067553f3",
+      "calibration_rows": 320,
+      "calibration_route_sha256": "362a0a4801dcc19d2a3dc73eefa2263e72f2eb3a4fb9b5b3b15cdb942611dd5f",
+      "test_rows": 1360,
+      "frozen_test_route": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed44\\classification_evaluation\\seed44_test_predictions.csv",
+      "frozen_test_route_sha256": "4a10c3e336c3d1bcf82715f469fa748c0d1abb11b9842de8e088f2bfc2148222",
+      "test_replay_equal": true
+    },
+    "45": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed45\\raw\\c12_to_c5__b5__s45\\c12_to_c5__b5__s45__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "checkpoint_sha256": "b7c5d398beb5c8734fe2650b04d479a46f4e17bc0ac7c86eab266e2686581e8f",
+      "calibration_rows": 320,
+      "calibration_route_sha256": "8de5ad27d72566a8e825b770408a2cdc54c2048061a7b6c76316b557198fc4e7",
+      "test_rows": 1360,
+      "frozen_test_route": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed45\\classification_evaluation\\seed45_test_predictions.csv",
+      "frozen_test_route_sha256": "ddb200c061822070b25a9ea94b6ae46fa55bda6c9ec657597883dc444e9b76e6",
+      "test_replay_equal": true
+    },
+    "46": {
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed46\\raw\\c12_to_c5__b5__s46\\c12_to_c5__b5__s46__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "checkpoint_sha256": "26bcc33066a10268ce21ac7011ba636982c9073a645658e96c5d454b69608913",
+      "calibration_rows": 320,
+      "calibration_route_sha256": "8de5ad27d72566a8e825b770408a2cdc54c2048061a7b6c76316b557198fc4e7",
+      "test_rows": 1360,
+      "frozen_test_route": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_multiseed_20260724\\seed46\\classification_evaluation\\seed46_test_predictions.csv",
+      "frozen_test_route_sha256": "e6027ddd7a92b9b8460aaccf197098724864f4ce55bf7bea5e4cde014855c28d",
+      "test_replay_equal": true
+    }
+  },
+  "selected_alphas": {
+    "42": {
+      "RG0_RICH_ONLY": {
+        "0": 1.0,
+        "1": 10.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "RG1_FEDERATED_H1": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "RG2_ALL_PRIOR": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.01,
+        "3": 0.1
+      }
+    },
+    "43": {
+      "RG0_RICH_ONLY": {
+        "0": 1.0,
+        "1": 10.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "RG1_FEDERATED_H1": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "RG2_ALL_PRIOR": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      }
+    },
+    "44": {
+      "RG0_RICH_ONLY": {
+        "0": 1.0,
+        "1": 10.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "RG1_FEDERATED_H1": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "RG2_ALL_PRIOR": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      }
+    },
+    "45": {
+      "RG0_RICH_ONLY": {
+        "0": 1.0,
+        "1": 10.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "RG1_FEDERATED_H1": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "RG2_ALL_PRIOR": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      }
+    },
+    "46": {
+      "RG0_RICH_ONLY": {
+        "0": 1.0,
+        "1": 10.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "RG1_FEDERATED_H1": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "RG2_ALL_PRIOR": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      }
+    }
+  },
+  "test_used_for_fit_select_or_refit": false,
+  "test_opened_after_lock": true,
+  "test_opened_at": "2026-07-24T14:45:56.042509+00:00",
+  "test_evaluation_completed_at": "2026-07-24T14:51:39.252712+00:00"
+}

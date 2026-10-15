@@ -1,0 +1,3 @@
+study_id,dataset,source,target,seed,status,audit_status,decision,result_path,provenance
+CAN-V1-CRRQ-Q1V2-CONFORMAL-QC-20260812,canonical-v1,C1;C2,C3;C4;C5,42,completed,audit_pass,CONFIDENCE_QC_FINAL,results/iotj_canonical_v1_final/canonical_q1_conformal_qc_v2_20260812,"COMPLETE.json; Q1_DECISION.json; sha256_index.json; authoritative"
+CAN-V1-CRRQ-Q1-CONFORMAL-QC-20260812,canonical-v1,C1;C2,C3;C4;C5,42,blocked,invalid_superseded,INVALID_DO_NOT_CITE,results/iotj_canonical_v1_final/canonical_q1_conformal_qc_20260812,"preserved partial root; scalar-only interval helper failure; no decision or COMPLETE marker"

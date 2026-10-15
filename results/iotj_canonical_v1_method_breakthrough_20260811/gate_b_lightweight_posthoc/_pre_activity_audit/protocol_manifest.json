@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "protocol": {
+    "gate": "B_LIGHTWEIGHT_POSTHOC_TARGET_PERSONALIZATION",
+    "source_set": "S2",
+    "target": "C5",
+    "calibration_count": 320,
+    "calibration_role": "canonical_v1_20_percent",
+    "steps": 100,
+    "optimizer": "Adam",
+    "lr": 0.0005,
+    "batch_size": 32,
+    "seed": 42,
+    "adapter_rank": 4,
+    "adapter_initialization": "kaiming_down_zero_up",
+    "adapter_deployment": "exact_classifier_fold",
+    "hyperparameter_search": false,
+    "checkpoint_selection": "fixed_step_100",
+    "target_test_selection": false,
+    "sufficient_macro_f1_gap_pp": 0.5,
+    "substantial_parameter_fraction": 0.25
+  },
+  "producer_commit": "69d195adc76913dd7f09cf88af0def7d9f142811",
+  "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+  "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+  "calibration_manifest_sha256": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+  "target_test_manifest_sha256": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95",
+  "target_test_selection": false,
+  "decision": {
+    "decision": "FULL_ADAPTATION_REQUIRED",
+    "selected_method": "a0t_full",
+    "sufficient": {
+      "classifier_only": false,
+      "projection_head": false,
+      "rank4_adapter": false
+    }
+  }
+}

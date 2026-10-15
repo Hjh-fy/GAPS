@@ -1,0 +1,29 @@
+{
+  "adaptation_seconds": 20.204606100000092,
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E2-CORAL-C5\\adapted_step_100.pth",
+  "checkpoint_sha256": "027201eb0f4e4884d20aa8ddc498292ec680e1dcbd38c842e6480429c6bc3a2a",
+  "experiment_id": "FCL-E2-CORAL-C5",
+  "protocol_hash": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+  "schema_version": "iotj.final_classification.e2.v1",
+  "spec": {
+    "checkpoint_selection": "fixed_step_100",
+    "coefficient": 0.5,
+    "conditional": false,
+    "experiment_id": "FCL-E2-CORAL-C5",
+    "hyperparameter_search": false,
+    "method": "coral",
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "pseudo_labels": false,
+    "seed": 42,
+    "source_batch_convention": "combined_registered_C1_C2_calibration",
+    "source_checkpoint_role": "P0A_round25",
+    "steps": 100,
+    "target": "C5",
+    "target_ce": false,
+    "target_fields": [
+      "x"
+    ]
+  },
+  "target_test_opened": false
+}

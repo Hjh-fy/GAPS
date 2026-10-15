@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import copy
 import json
+import time
 from collections import OrderedDict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -10,8 +12,68 @@ from typing import Dict, List, Optional, Tuple
 import flwr as fl
 import numpy as np
 import torch
-from flwr.common import EvaluateRes, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
+from torch.utils.data import DataLoader, Subset, TensorDataset
+from flwr.common import EvaluateRes, FitIns, FitRes, NDArrays, Parameters, ndarrays_to_parameters, parameters_to_ndarrays
 from flwr.server.client_proxy import ClientProxy
+
+from gaps_flower.domain_adaptation_inputs import (
+    load_domain_adaptation_arrays,
+    validate_domain_adaptation_request,
+)
+from gaps_flower.flower_message_audit import audit_fit_ins, audit_fit_res
+from gaps_flower.final_adaptation_context import (
+    build_final_adaptation_context,
+    write_final_adaptation_context,
+)
+from gaps_flower.observability import NullObserver
+from gaps_flower.p0i_adaptation import (
+    BATCH_SIZE as P0I_BATCH_SIZE,
+    FeatureOnlyCalibrationDataset,
+    parameter_fingerprint,
+    run_frozen_u1,
+)
+from gaps_flower.scaffold import (
+    ScaffoldServerControlState,
+    control_fingerprint,
+    pack_control_variates,
+    unpack_control_variates,
+)
+from gaps_flower.target_information import (
+    TargetAccessLedger,
+    authorize_gaps_target_calibration,
+)
+from gaps_flower.task import get_parameters, set_parameters
+
+
+def selective_aggregation_phase(server_round: int, *, warmup: int) -> str:
+    """Return the preregistered phase for complete-round FedAvg warm-up."""
+    round_idx = int(server_round)
+    warmup_rounds = int(warmup)
+    if round_idx < 1:
+        raise ValueError("server_round must be >= 1")
+    if warmup_rounds < 0:
+        raise ValueError("warmup must be >= 0")
+    return "fedavg_warmup" if round_idx <= warmup_rounds else "selective"
+
+
+def canonicalize_fit_results(
+    results: List[Tuple[ClientProxy, FitRes]],
+) -> List[Tuple[ClientProxy, FitRes]]:
+    """Return FitRes values in stable uploaded-client order, failing closed."""
+
+    keyed: list[tuple[int, Tuple[ClientProxy, FitRes]]] = []
+    seen: set[int] = set()
+    for item in results:
+        _proxy, fit_res = item
+        metrics = fit_res.metrics
+        client_id = metrics.get("client_id") if isinstance(metrics, dict) else None
+        if type(client_id) is not int or client_id <= 0:
+            raise ValueError("FitRes metrics require a positive integer client_id")
+        if client_id in seen:
+            raise ValueError(f"duplicate FitRes client_id: {client_id}")
+        seen.add(client_id)
+        keyed.append((client_id, item))
+    return [item for _client_id, item in sorted(keyed, key=lambda row: row[0])]
 
 
 class CheckpointFedAvg(fl.server.strategy.FedAvg):
@@ -25,9 +87,11 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         output_dir: str,
         run_name: str = "",
         save_history: bool = True,
+        observer=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self.observer = observer or NullObserver()
         self.parameter_keys = parameter_keys
         self.reference_state = reference_state
         self.output_dir = Path(output_dir)
@@ -35,6 +99,7 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         self.run_name = run_name
         self.save_history = save_history
         self._round_events = {}
+        self._fit_round_start_ns: Dict[int, int] = {}
         self.history_path = self.output_dir / "history.json"
 
     def _round_event(self, server_round: int) -> dict:
@@ -129,6 +194,9 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
             global_feature = self._parse_json_metric(metrics.get("global_feature_json"), [])
             prototypes = self._parse_json_metric(metrics.get("prototype_json"), {})
             proto_vars = self._parse_json_metric(metrics.get("prototype_var_json"), {})
+            client_loss_activity = self._parse_json_metric(
+                metrics.get("client_loss_activity_json"), []
+            )
 
             client_entry = {
                 "client_id": client_id,
@@ -136,6 +204,17 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "proto_examples": int(metrics.get("proto_examples", 0)),
                 "local_epochs": int(metrics.get("local_epochs", 0)),
                 "fit_seconds": float(metrics.get("fit_seconds", 0.0)),
+                "train_ce_mean": float(metrics.get("train_ce_mean", 0.0)),
+                "train_accuracy": float(metrics.get("train_accuracy", 0.0)),
+                "train_metric_examples": int(
+                    metrics.get("train_metric_examples", num_examples)
+                ),
+                "train_ce_averaging": str(
+                    metrics.get(
+                        "train_ce_averaging",
+                        "sample_weighted_over_local_minibatches",
+                    )
+                ),
                 "feature_norm": float(metrics.get("feature_norm", 0.0)),
                 "feature_mean": float(metrics.get("feature_mean", 0.0)),
                 "feature_std": float(metrics.get("feature_std", 0.0)),
@@ -146,6 +225,8 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
                 "use_align": int(metrics.get("use_align", 0)),
                 "use_replay_distill": int(metrics.get("use_replay_distill", 0)),
                 "device_residual_norm": float(metrics.get("device_residual_norm", 0.0)),
+                "server_parameters_fingerprint": str(metrics.get("server_parameters_fingerprint", "")),
+                "loss_activity": client_loss_activity,
             }
             if global_feature:
                 client_entry["global_feature_dim"] = len(global_feature)
@@ -289,6 +370,226 @@ class CheckpointFedAvg(fl.server.strategy.FedAvg):
         return aggregated_loss, aggregated_metrics
 
 
+class ScaffoldStrategy(CheckpointFedAvg):
+    """Canonical SCAFFOLD strategy with persistent server control variate."""
+
+    def __init__(
+        self,
+        *,
+        model_template: torch.nn.Module,
+        total_clients: int,
+        scaffold_lr: float = 5e-4,
+        **kwargs,
+    ):
+        if float(scaffold_lr) != 5e-4:
+            raise ValueError("FAIL_CLOSED formal SCAFFOLD lr must equal preregistered 5e-4")
+        super().__init__(**kwargs)
+        self.scaffold_lr = float(scaffold_lr)
+        self.control_state = ScaffoldServerControlState.from_model(
+            model_template, total_clients=total_clients
+        )
+
+    def scaffold_fit_config(self, server_round: int) -> dict:
+        return {
+            "server_round": int(server_round),
+            "optimizer": "scaffold_sgd",
+            "scaffold_lr": self.scaffold_lr,
+            "scaffold_server_control": pack_control_variates(
+                self.control_state.control
+            ),
+            "scaffold_server_control_fingerprint": control_fingerprint(
+                self.control_state.control
+            ),
+        }
+
+    def configure_fit(self, server_round, parameters, client_manager):
+        instructions = super().configure_fit(server_round, parameters, client_manager)
+        scaffold_config = self.scaffold_fit_config(server_round)
+        return [
+            (
+                client,
+                FitIns(
+                    fit_ins.parameters,
+                    {**dict(fit_ins.config), **scaffold_config},
+                ),
+            )
+            for client, fit_ins in instructions
+        ]
+
+    def aggregate_fit(self, server_round, results, failures):
+        ordered_results = canonicalize_fit_results(results)
+        deltas = []
+        for _proxy, fit_res in ordered_results:
+            payload = (fit_res.metrics or {}).get("scaffold_control_delta")
+            if not isinstance(payload, bytes):
+                raise RuntimeError("FAIL_CLOSED missing SCAFFOLD client control delta")
+            deltas.append(
+                unpack_control_variates(
+                    payload,
+                    list(self.control_state.control),
+                    self.control_state.control,
+                )
+            )
+            if int((fit_res.metrics or {}).get("scaffold_adam_state_present", 1)) != 0:
+                raise RuntimeError("FAIL_CLOSED Adam state present in canonical SCAFFOLD")
+        self.control_state.update(deltas)
+        aggregated_parameters, aggregated_metrics = super().aggregate_fit(
+            server_round, ordered_results, failures
+        )
+        control_path = self.output_dir / f"scaffold_server_control_round_{server_round:03d}.pth"
+        torch.save(
+            {
+                "round": int(server_round),
+                "server_control": self.control_state.control,
+                "fingerprint": control_fingerprint(self.control_state.control),
+                "optimizer": "SGD",
+                "optimizer_lr": self.scaffold_lr,
+                "optimizer_momentum": 0.0,
+            },
+            control_path,
+        )
+        event = self._round_event(server_round)
+        event["aggregation_method"] = "scaffold"
+        event["scaffold"] = {
+            "server_control_path": str(control_path),
+            "server_control_fingerprint": control_fingerprint(
+                self.control_state.control
+            ),
+            "server_control_rounds_completed": self.control_state.rounds_completed,
+            "optimizer": "SGD",
+            "optimizer_lr": self.scaffold_lr,
+            "optimizer_note": "canonical SCAFFOLD implementation",
+            "server_model_step_size": 1.0,
+        }
+        self._write_history()
+        return aggregated_parameters, aggregated_metrics
+
+
+class P0IInterleavedFedAvg(CheckpointFedAvg):
+    """P0-I: CE-only FedAvg followed by exactly 100 x-only UDA steps per round."""
+
+    def __init__(
+        self,
+        *,
+        model_template: torch.nn.Module,
+        source_calibration_dirs: str,
+        target_calibration_dir: str,
+        uda_steps_per_round: int = 100,
+        uda_device: str = "cpu",
+        seed: int = 42,
+        **kwargs,
+    ):
+        if uda_steps_per_round != 100 or seed != 42:
+            raise ValueError("FAIL_CLOSED P0-I requires 100 UDA steps/round and seed42")
+        super().__init__(**kwargs)
+        self.model_template = model_template.cpu()
+        self.source_calibration_dirs = source_calibration_dirs
+        self.target_calibration_dir = Path(target_calibration_dir).resolve()
+        self.uda_steps_per_round = int(uda_steps_per_round)
+        self.uda_device = torch.device(uda_device)
+        self.seed = int(seed)
+        source_x, source_y, _source_phase = load_domain_adaptation_arrays(
+            source_calibration_dirs, strict=True,
+        )
+        if len(source_x) < 500:
+            raise RuntimeError("FAIL_CLOSED P0-I source calibration requires >=500 samples")
+        self._source_x = source_x; self._source_y = source_y
+        self._previous_post_fingerprint: str | None = None
+        self._lineage_rows: list[dict] = []
+        self._uda_rows: list[dict] = []
+        self._round_start: dict[int, float] = {}
+
+    def _source_loader(self) -> DataLoader:
+        dataset = TensorDataset(torch.from_numpy(self._source_x), torch.from_numpy(self._source_y))
+        indices = np.random.RandomState(self.seed).choice(len(dataset), size=500, replace=False)
+        generator = torch.Generator().manual_seed(self.seed)
+        return DataLoader(Subset(dataset, indices), batch_size=P0I_BATCH_SIZE, shuffle=True, generator=generator, num_workers=0)
+
+    def _target_loader(self) -> DataLoader:
+        dataset = FeatureOnlyCalibrationDataset(self.target_calibration_dir)
+        generator = torch.Generator().manual_seed(self.seed)
+        return DataLoader(dataset, batch_size=P0I_BATCH_SIZE, shuffle=True, generator=generator, num_workers=0)
+
+    def configure_fit(self, server_round, parameters, client_manager):
+        self._round_start[int(server_round)] = time.perf_counter()
+        configured = super().configure_fit(server_round, parameters, client_manager)
+        for _client, fit_ins in configured:
+            fit_ins.config["server_round"] = int(server_round)
+        return configured
+
+    def _validate_received_lineage(self, server_round: int, results: List[Tuple[ClientProxy, FitRes]]) -> None:
+        received = {
+            int(fit_res.metrics.get("client_id", -1)): str(fit_res.metrics.get("server_parameters_fingerprint", ""))
+            for _proxy, fit_res in results
+        }
+        if set(received) != {1, 2} or any(not value for value in received.values()):
+            raise RuntimeError(f"FAIL_CLOSED missing client lineage fingerprints in round {server_round}: {received}")
+        if server_round > 1 and any(value != self._previous_post_fingerprint for value in received.values()):
+            raise RuntimeError(
+                f"FAIL_CLOSED round {server_round} did not initialize from round {server_round - 1} POST-UDA: {received}"
+            )
+        self._lineage_rows.append({
+            "round": int(server_round), "expected_parent_post_fingerprint": self._previous_post_fingerprint,
+            "client_1_received_fingerprint": received[1], "client_2_received_fingerprint": received[2],
+            "parent_match": server_round == 1 or all(v == self._previous_post_fingerprint for v in received.values()),
+        })
+
+    def _save_role_checkpoint(self, server_round: int, role: str, arrays: NDArrays, **metadata) -> Path:
+        state = {
+            key: torch.tensor(value, dtype=self.reference_state[key].dtype)
+            for key, value in zip(self.parameter_keys, arrays)
+        }
+        path = self.output_dir / f"server_round_{server_round:03d}_{role}.pth"
+        torch.save({
+            "round": int(server_round), "role": role, "model_state": state,
+            "parameter_keys": self.parameter_keys, "run_name": self.run_name, **metadata,
+        }, path)
+        return path
+
+    def aggregate_fit(self, server_round, results, failures):
+        self._validate_received_lineage(server_round, results)
+        aggregated_parameters, aggregated_metrics = super().aggregate_fit(server_round, results, failures)
+        if aggregated_parameters is None:
+            raise RuntimeError(f"FAIL_CLOSED no FedAvg parameters in round {server_round}")
+        pre_arrays = parameters_to_ndarrays(aggregated_parameters)
+        pre_fingerprint = parameter_fingerprint(self.parameter_keys, pre_arrays)
+        pre_path = self._save_role_checkpoint(server_round, "pre_uda", pre_arrays, parameter_fingerprint=pre_fingerprint)
+        model = copy.deepcopy(self.model_template)
+        set_parameters(model, pre_arrays, self.parameter_keys)
+        adapted, diagnostics, uda_seconds = run_frozen_u1(
+            model, self._source_loader(), self._target_loader(), self.uda_device,
+            num_steps=self.uda_steps_per_round, seed=self.seed,
+        )
+        post_arrays, post_keys = get_parameters(adapted.cpu())
+        if post_keys != self.parameter_keys:
+            raise RuntimeError("FAIL_CLOSED adapted parameter keys changed")
+        post_fingerprint = parameter_fingerprint(self.parameter_keys, post_arrays)
+        post_path = self._save_role_checkpoint(
+            server_round, "post_uda", post_arrays,
+            parameter_fingerprint=post_fingerprint, parent_pre_fingerprint=pre_fingerprint,
+            adapted_as_next_global=True,
+        )
+        fit_wall = max((float(res.metrics.get("fit_seconds", 0.0)) for _proxy, res in results), default=0.0)
+        total_round = time.perf_counter() - self._round_start.pop(int(server_round), time.perf_counter())
+        for row in diagnostics:
+            self._uda_rows.append({"round": int(server_round), **row, "uda_wall_seconds_per_round": uda_seconds,
+                                   "fit_wall_seconds_per_round": fit_wall, "total_round_seconds": total_round})
+        self._previous_post_fingerprint = post_fingerprint
+        self._lineage_rows[-1].update({
+            "pre_uda_fingerprint": pre_fingerprint, "post_uda_fingerprint": post_fingerprint,
+            "pre_checkpoint": str(pre_path), "post_checkpoint": str(post_path),
+        })
+        (self.output_dir / "interleaved_lineage.json").write_text(json.dumps(self._lineage_rows, indent=2) + "\n", encoding="utf-8")
+        (self.output_dir / "interleaved_uda_diagnostics.json").write_text(json.dumps(self._uda_rows, indent=2) + "\n", encoding="utf-8")
+        event = self._round_event(server_round)
+        event.update({"pre_uda_checkpoint": str(pre_path), "post_uda_checkpoint": str(post_path),
+                      "pre_uda_fingerprint": pre_fingerprint, "post_uda_fingerprint": post_fingerprint,
+                      "returned_parameters": "post_uda", "use_adapted_as_global": True,
+                      "uda_steps": self.uda_steps_per_round, "uda_seconds": uda_seconds})
+        self._write_history()
+        return ndarrays_to_parameters(post_arrays), aggregated_metrics
+
+
 class GapsStrategy(CheckpointFedAvg):
     """GAPS 自定义聚合策略
 
@@ -323,6 +624,7 @@ class GapsStrategy(CheckpointFedAvg):
         use_domain_adapt: bool = False,
         server_val_data: Optional[str] = None,
         server_calib_data: Optional[str] = None,
+        da_expected_window_shape: tuple[int, int] = (100, 8),
         domain_adapt_steps: int = 30,
         domain_adapt_warmup: int = 3,
         da_use_coral: bool = True,
@@ -351,6 +653,10 @@ class GapsStrategy(CheckpointFedAvg):
         da_target_ce_class_balanced: bool = False,
         da_server_opt_lr: float = 1e-4,
         use_adapted_as_global: bool = False,
+        ablation_variant: str = "",
+        require_selective_after_warmup: bool = False,
+        target_information_method: str = "gaps",
+        final_adaptation_context_round: int = 0,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -365,6 +671,11 @@ class GapsStrategy(CheckpointFedAvg):
         self.use_domain_adapt = use_domain_adapt
         self.server_val_data = server_val_data
         self.server_calib_data = server_calib_data
+        self.da_expected_window_shape = tuple(int(value) for value in da_expected_window_shape)
+        if len(self.da_expected_window_shape) != 2 or any(
+            value <= 0 for value in self.da_expected_window_shape
+        ):
+            raise ValueError("DA expected window shape must contain two positive dimensions")
         self.domain_adapt_steps = domain_adapt_steps
         self.domain_adapt_warmup = domain_adapt_warmup
         self.da_use_coral = da_use_coral
@@ -393,9 +704,43 @@ class GapsStrategy(CheckpointFedAvg):
         self.da_target_ce_class_balanced = da_target_ce_class_balanced
         self.da_server_opt_lr = da_server_opt_lr
         self.use_adapted_as_global = use_adapted_as_global
+        self.ablation_variant = str(ablation_variant or "unspecified")
+        self.require_selective_after_warmup = bool(require_selective_after_warmup)
+        self.target_information_method = str(target_information_method).lower()
+        self.final_adaptation_context_round = int(final_adaptation_context_round)
+        if self.final_adaptation_context_round not in (0, 25):
+            raise ValueError(
+                "final adaptation context capture is disabled (0) or fixed at round25"
+            )
+        self.target_access_ledger = TargetAccessLedger(
+            self.output_dir / "target_access_ledger.jsonl"
+        )
         self._da_trainer = None
         self._val_loader = None
         self._calib_loader = None
+        self._da_source_arrays = None
+        self._da_target_arrays = None
+        if self.use_domain_adapt:
+            if self.strict_calibration_split is not True:
+                raise ValueError(
+                    "Production domain adaptation requires strict calibration split inputs"
+                )
+            source_dirs, target_dirs = validate_domain_adaptation_request(
+                "gaps",
+                True,
+                self.server_val_data,
+                self.server_calib_data,
+            )
+            self._da_source_arrays = load_domain_adaptation_arrays(
+                source_dirs,
+                strict=True,
+                expected_window_shape=self.da_expected_window_shape,
+            )
+            self._da_target_arrays = load_domain_adaptation_arrays(
+                target_dirs,
+                strict=True,
+                expected_window_shape=self.da_expected_window_shape,
+            )
 
     def _semantic_protos_json(self) -> str:
         """Serialize current semantic prototypes for client-side alignment."""
@@ -412,14 +757,46 @@ class GapsStrategy(CheckpointFedAvg):
         class-phase statistics. From later rounds, ``gaps_cls`` clients can use
         these EMA prototypes in ``Client.train_one_round`` for alignment.
         """
+        round_start_ns = time.perf_counter_ns()
+        self._fit_round_start_ns[int(server_round)] = round_start_ns
+        self.observer.emit(
+            "fit_round_start",
+            round_idx=int(server_round),
+            client_id=None,
+            status="started",
+            payload={},
+        )
         configured = super().configure_fit(server_round, parameters, client_manager)
         proto_payload = self._semantic_protos_json() if self.semantic_protos else ""
         for _client, fit_ins in configured:
             fit_ins.config["server_round"] = int(server_round)
+            fit_ins.config["ablation_variant"] = self.ablation_variant
             fit_ins.config["semantic_proto_ready"] = bool(proto_payload)
             if proto_payload:
                 fit_ins.config["semantic_protos_json"] = proto_payload
                 fit_ins.config["semantic_proto_count"] = int(len(self.semantic_protos))
+        if not isinstance(self.observer, NullObserver):
+            for client, fit_ins in configured:
+                audit = audit_fit_ins(fit_ins)
+                self.observer.emit(
+                    "flower_fitins_prepared",
+                    round_idx=int(server_round),
+                    client_id=str(client.cid),
+                    status="succeeded",
+                    payload={
+                        "proxy_id": str(client.cid),
+                        "downlink_audit": {
+                            "logical": audit.logical,
+                            "application_message_bytes": (
+                                audit.application_message_bytes
+                            ),
+                            "application_message_sha256": (
+                                audit.application_message_sha256
+                            ),
+                        },
+                    },
+                    flower_serialize_ns=audit.flower_serialize_ns,
+                )
         return configured
 
     def aggregate_fit(
@@ -428,13 +805,83 @@ class GapsStrategy(CheckpointFedAvg):
         results: List[Tuple[ClientProxy, FitRes]],
         failures: List[BaseException],
     ) -> Tuple[Optional[Parameters], dict]:
+        aggregate_start_ns = time.perf_counter_ns()
+        server_da_total_ns = 0
+        da_executed = False
+        self.observer.emit(
+            "server_aggregate_start",
+            round_idx=int(server_round),
+            client_id=None,
+            status="started",
+            payload={},
+        )
         if not results:
+            aggregate_end_ns = time.perf_counter_ns()
+            aggregate_total_ns = aggregate_end_ns - aggregate_start_ns
+            round_start_ns = self._fit_round_start_ns.pop(
+                int(server_round), aggregate_start_ns
+            )
+            timing_payload = {
+                "server_aggregate_fit_total_ns": aggregate_total_ns,
+                "server_da_total_ns": 0,
+                "server_aggregate_non_da_ns": aggregate_total_ns,
+                "da_executed": False,
+            }
+            self.observer.emit(
+                "server_aggregate_end",
+                round_idx=int(server_round),
+                client_id=None,
+                status="succeeded",
+                payload=timing_payload,
+            )
+            self.observer.emit(
+                "fit_round_end",
+                round_idx=int(server_round),
+                client_id=None,
+                status="succeeded",
+                payload={
+                    **timing_payload,
+                    "fit_round_wall_ns": aggregate_end_ns - round_start_ns,
+                },
+            )
             return None, {}
 
         # ── 1. 每个客户端: Flower Parameters → state_dict(OrderedDict) ──
+        # Flower returns successful FitRes values in arrival order.  Use a
+        # stable identity order before every float32 aggregation/statistics/DA
+        # path so edge timing cannot select a different numerical reduction.
+        results = canonicalize_fit_results(results)
+
         client_state_dicts: List[OrderedDict] = []
         num_examples_list: List[int] = []
-        for _proxy, fit_res in results:
+        for proxy, fit_res in results:
+            if not isinstance(self.observer, NullObserver):
+                audit = audit_fit_res(fit_res)
+                raw_client_id = (fit_res.metrics or {}).get("client_id")
+                resolved_client_id = (
+                    f"C{int(raw_client_id)}"
+                    if raw_client_id is not None
+                    else str(proxy.cid)
+                )
+                self.observer.emit(
+                    "flower_fitres_available",
+                    round_idx=int(server_round),
+                    client_id=resolved_client_id,
+                    status="succeeded",
+                    payload={
+                        "proxy_id": str(proxy.cid),
+                        "uplink_audit": {
+                            "logical": audit.logical,
+                            "application_message_bytes": (
+                                audit.application_message_bytes
+                            ),
+                            "application_message_sha256": (
+                                audit.application_message_sha256
+                            ),
+                        },
+                    },
+                    flower_serialize_ns=audit.flower_serialize_ns,
+                )
             arrays = parameters_to_ndarrays(fit_res.parameters)
             state = OrderedDict()
             for key, arr in zip(self.parameter_keys, arrays):
@@ -454,19 +901,64 @@ class GapsStrategy(CheckpointFedAvg):
         )
 
         # ── 阶段 4.2: 选择性聚合权重调整 ──
-        selective_info: dict = {"selective_active": False}
-        if self.use_selective_agg and self.semantic_protos and server_round > self.selective_warmup:
+        client_ids = [
+            int((fit_res.metrics or {}).get("client_id", -1))
+            for _proxy, fit_res in results
+        ]
+        phase = selective_aggregation_phase(
+            server_round, warmup=self.selective_warmup
+        )
+        selective_info: dict = {
+            "selective_active": False,
+            "phase": phase if self.use_selective_agg else "disabled",
+            "round": int(server_round),
+            "warmup": int(self.selective_warmup),
+            "base_weights": {
+                str(cid): float(weight)
+                for cid, weight in zip(client_ids, base_weights.tolist())
+            },
+        }
+        if self.use_selective_agg and phase == "selective" and self.semantic_protos:
             selective_weights, selective_info = self._compute_selective_weights(
                 results, base_weights, server_round
+            )
+            authorize_gaps_target_calibration(
+                method=self.target_information_method,
+                ledger=self.target_access_ledger,
+            )
+            selective_info.update(
+                {
+                    "phase": phase,
+                    "base_weights": {
+                        str(cid): float(weight)
+                        for cid, weight in zip(client_ids, base_weights.tolist())
+                    },
+                    "final_weights": {
+                        str(cid): float(weight)
+                        for cid, weight in zip(client_ids, selective_weights.tolist())
+                    },
+                }
             )
             weights = selective_weights
         else:
             weights = base_weights
             if self.use_selective_agg:
-                selective_info = {
-                    "selective_active": False,
-                    "reason": f"warmup (round {server_round} ≤ {self.selective_warmup})" if self.semantic_protos else "no semantic_protos yet",
-                }
+                if phase == "selective" and not self.semantic_protos:
+                    if self.require_selective_after_warmup:
+                        raise RuntimeError(
+                            "FAIL_CLOSED selective aggregation inputs unavailable "
+                            f"at round {server_round} after {self.selective_warmup} "
+                            "complete FedAvg warm-up rounds"
+                        )
+                    selective_info["reason"] = "semantic_prototypes_unavailable"
+                else:
+                    selective_info["reason"] = (
+                        f"complete FedAvg warm-up round {server_round}/"
+                        f"{self.selective_warmup}"
+                    )
+            else:
+                selective_info["reason"] = "selective_aggregation_disabled"
+            selective_info["final_weights"] = dict(selective_info["base_weights"])
 
         # ── 3. GAPS 加权参数聚合 ──
         aggregated_state = self._aggregate_params_gaps(
@@ -523,11 +1015,38 @@ class GapsStrategy(CheckpointFedAvg):
         if aggregated_parameters is not None:
             arrays = parameters_to_ndarrays(aggregated_parameters)
             event["checkpoint"] = self._save_checkpoint(server_round, arrays)
+            context_path = self._capture_final_adaptation_context(
+                server_round=server_round,
+                aggregated_state=aggregated_state,
+                checkpoint_path=Path(event["checkpoint"]),
+                results=results,
+                weights=weights,
+            )
+            if context_path is not None:
+                event["final_adaptation_context"] = str(context_path)
 
             # ── 阶段 4.4: 服务端域适应 ──
             if self.use_domain_adapt and server_round > self.domain_adapt_warmup:
+                self.observer.emit(
+                    "server_da_start",
+                    round_idx=int(server_round),
+                    client_id=None,
+                    status="started",
+                    payload={},
+                )
+                da_start_ns = time.perf_counter_ns()
                 da_path, da_summary, da_arrays = self._run_domain_adapt(
                     server_round, aggregated_state, arrays, results, weights
+                )
+                da_end_ns = time.perf_counter_ns()
+                server_da_total_ns = da_end_ns - da_start_ns
+                da_executed = True
+                self.observer.emit(
+                    "server_da_end",
+                    round_idx=int(server_round),
+                    client_id=None,
+                    status="succeeded",
+                    payload={"server_da_total_ns": server_da_total_ns},
                 )
                 event["domain_adapt"] = da_path
                 event["domain_adapt_summary"] = da_summary
@@ -538,6 +1057,36 @@ class GapsStrategy(CheckpointFedAvg):
                 else:
                     event["returned_parameters"] = "plain_aggregated"
         self._write_history()
+        aggregate_end_ns = time.perf_counter_ns()
+        aggregate_total_ns = aggregate_end_ns - aggregate_start_ns
+        round_start_ns = self._fit_round_start_ns.pop(
+            int(server_round), aggregate_start_ns
+        )
+        timing_payload = {
+            "server_aggregate_fit_total_ns": aggregate_total_ns,
+            "server_da_total_ns": server_da_total_ns,
+            "server_aggregate_non_da_ns": (
+                aggregate_total_ns - server_da_total_ns
+            ),
+            "da_executed": da_executed,
+        }
+        self.observer.emit(
+            "server_aggregate_end",
+            round_idx=int(server_round),
+            client_id=None,
+            status="succeeded",
+            payload=timing_payload,
+        )
+        self.observer.emit(
+            "fit_round_end",
+            round_idx=int(server_round),
+            client_id=None,
+            status="succeeded",
+            payload={
+                **timing_payload,
+                "fit_round_wall_ns": aggregate_end_ns - round_start_ns,
+            },
+        )
         return aggregated_parameters, aggregated_metrics
 
     # ═══════════════════════════════════════════════════════════════
@@ -895,6 +1444,44 @@ class GapsStrategy(CheckpointFedAvg):
                 client_residuals.append(None)
         return client_mus, client_counts, client_ids, client_residuals
 
+    def _capture_final_adaptation_context(
+        self,
+        *,
+        server_round: int,
+        aggregated_state: OrderedDict,
+        checkpoint_path: Path,
+        results: List[Tuple[ClientProxy, FitRes]],
+        weights: torch.Tensor,
+    ) -> Optional[Path]:
+        """Persist the exact source-side inputs for one fixed round25 adaptation."""
+
+        if int(server_round) != int(self.final_adaptation_context_round):
+            return None
+        if int(server_round) != 25:
+            raise RuntimeError("FAIL_CLOSED final adaptation context is not round25")
+        client_mus, client_counts, client_ids, client_residuals = (
+            self._collect_da_client_payloads(results)
+        )
+        payload = build_final_adaptation_context(
+            round_id=server_round,
+            run_name=self.run_name,
+            checkpoint_path=Path(checkpoint_path),
+            checkpoint_state=aggregated_state,
+            semantic_protos=self.semantic_protos,
+            semantic_proto_vars=self.semantic_proto_vars,
+            client_mus=client_mus,
+            client_counts=client_counts,
+            client_ids=client_ids,
+            client_residuals=client_residuals,
+            client_weights=weights,
+        )
+        path = self.output_dir / "final_adaptation_context_round_025.json"
+        write_final_adaptation_context(path, payload)
+        write_final_adaptation_context(
+            self.output_dir / "final_adaptation_context_latest.json", payload
+        )
+        return path
+
     # ═══════════════════════════════════════════════════════════════
     # 阶段 4.4: 服务端域适应 (CORAL + MMD + 对抗)
     # ═══════════════════════════════════════════════════════════════
@@ -966,6 +1553,7 @@ class GapsStrategy(CheckpointFedAvg):
                 "ADV_CLASS_CONDITIONAL": True,
                 "CORAL_CLASS_CONDITIONAL": self.da_coral_class_conditional,
                 "DA_LEARN_SEMANTIC_PROTOS": True,
+                "ABLATION_VARIANT": self.ablation_variant,
             }
             self._da_trainer = ServerDomainAdaptation(
                 model=da_model,
@@ -1081,89 +1669,21 @@ class GapsStrategy(CheckpointFedAvg):
         return model.to(device)
 
     def _init_domain_adapt_loaders(self) -> None:
-        """初始化服务端数据加载器 (val_loader, calib_loader)
-
-        支持两种目录格式:
-          1. 单个客户端目录 (含 calibration_features.npy 等带前缀的文件)
-          2. 逗号分隔的多个目录，自动合并
-          3. 裸目录 (含 features.npy classification_labels.npy 等)
-
-        对应原单机模拟:
-          val_loader  ← 源域 training clients 的 calibration_features.npy (sensor 1-2)
-          calib_loader ← 目标域 test clients 的 calibration_features.npy (sensor 3-5)
-
-        注意: 两个数据加载器都使用 calibration_features.npy，
-        区别仅在于来自不同传感器组的客户端。
-        限制采样 500 个样本以避免服务端域适应耗时过长。
-        """
-        from pathlib import Path
+        """Construct DA loaders only from arrays validated during strategy startup."""
         from federated_dataset import GasSensorWindowDataset
         from torch.utils.data import DataLoader, Subset
-        import numpy as np
 
-        batch_size = 32
-
-        def _load_from_dirs(data_dirs_spec: str) -> DataLoader:
-            """从单个或多个目录加载 calibration 数据并合并
-
-            Args:
-                data_dirs_spec: 逗号分隔的目录路径或单个路径
-            """
-            dirs = [d.strip() for d in data_dirs_spec.split(",") if d.strip()]
-            all_features = []
-            all_cls_labels = []
-            all_phase_labels = []
-
-            for data_dir in dirs:
-                dp = Path(data_dir)
-                # 主实验协议要求服务端 DA 只使用 calibration split。
-                # strict_calibration_split=True 时禁止 fallback 到 test/train，防止数据泄漏。
-                prefix = None
-                if getattr(self, "strict_calibration_split", True):
-                    feat_path = dp / "calibration_features.npy"
-                    if feat_path.exists():
-                        prefix = "calibration_"
-                    else:
-                        raise FileNotFoundError(
-                            f"严格 calibration split 模式下，目录 {data_dir} 缺少 calibration_features.npy"
-                        )
-                else:
-                    for candidate in ("calibration_", "test_", "train_", ""):
-                        feat_path = dp / f"{candidate}features.npy"
-                        if feat_path.exists():
-                            prefix = candidate
-                            break
-                    if prefix is None:
-                        raise FileNotFoundError(
-                            f"在目录 {data_dir} 中找不到任何 features.npy"
-                        )
-
-                features = np.load(dp / f"{prefix}features.npy")
-                cls_path = dp / f"{prefix}classification_labels.npy"
-                if not cls_path.exists():
-                    cls_path = dp / "classification_labels.npy"
-                cls_labels = np.load(cls_path)
-                phase_path = dp / f"{prefix}phase_labels.npy"
-                if phase_path.exists():
-                    phase_labels = np.load(phase_path, allow_pickle=True)
-                else:
-                    phase_labels = np.full(len(features), -1, dtype=np.int64)
-
-                all_features.append(features)
-                all_cls_labels.append(cls_labels)
-                all_phase_labels.append(phase_labels)
-                print(f"[GAPS]   + {data_dir} ({prefix}features.npy): "
-                      f"{len(features)} samples")
-
-            merged_features = np.concatenate(all_features, axis=0)
-            merged_cls_labels = np.concatenate(all_cls_labels, axis=0)
-            merged_phase_labels = np.concatenate(all_phase_labels, axis=0)
-
+        def _make_loader(arrays, domain: str) -> DataLoader:
+            if arrays is None:
+                raise RuntimeError(
+                    f"Validated {domain} domain adaptation arrays are unavailable"
+                )
+            features, cls_labels, phase_labels = arrays
             dataset = GasSensorWindowDataset(
-                features=merged_features,
-                regression_labels=np.zeros((len(merged_features), 4), dtype=np.float32),
-                classification_labels=merged_cls_labels,
-                phase_labels=merged_phase_labels,
+                features=features,
+                regression_labels=np.zeros((len(features), 4), dtype=np.float32),
+                classification_labels=cls_labels,
+                phase_labels=phase_labels,
                 normalize=False,
                 mean_std=None,
             )
@@ -1173,25 +1693,17 @@ class GapsStrategy(CheckpointFedAvg):
             )
             return DataLoader(
                 Subset(dataset, indices),
-                batch_size=batch_size, shuffle=True, num_workers=0,
+                batch_size=32,
+                shuffle=True,
+                num_workers=0,
             )
 
-        if self.server_val_data:
-            print(f"[GAPS] Loading source-domain val data from: {self.server_val_data}")
-            self._val_loader = _load_from_dirs(self.server_val_data)
-            print(f"[GAPS]   → val_loader: {len(self._val_loader.dataset)} samples "
-                  f"(source domain, from calibration split)")
-        else:
-            self._val_loader = None
-
-        if self.server_calib_data:
-            print(f"[GAPS] Loading target-domain calib data from: {self.server_calib_data}")
-            self._calib_loader = _load_from_dirs(self.server_calib_data)
-            print(f"[GAPS]   → calib_loader: {len(self._calib_loader.dataset)} samples "
-                  f"(target domain, from calibration split)")
-        else:
-            self._calib_loader = None
-
+        self._val_loader = _make_loader(self._da_source_arrays, "source")
+        self._calib_loader = _make_loader(self._da_target_arrays, "target")
+        print(
+            f"[GAPS] DA loaders: source={len(self._val_loader.dataset)}, "
+            f"target={len(self._calib_loader.dataset)}"
+        )
 
 def weighted_average(metrics):
     """Weighted average for numeric Flower metrics."""

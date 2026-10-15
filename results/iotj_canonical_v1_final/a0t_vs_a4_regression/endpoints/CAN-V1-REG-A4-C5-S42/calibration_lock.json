@@ -1,0 +1,75 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.lock.v1",
+  "status": "SEALED_BEFORE_TARGET_TEST",
+  "experiment_id": "CAN-V1-REG-A4-C5-S42",
+  "method": "A4",
+  "target": "C5",
+  "target_test_opened": false,
+  "alpha_selection_performed": false,
+  "fixed_alphas": {
+    "0": 1.0,
+    "1": 0.01,
+    "2": 10.0,
+    "3": 0.1
+  },
+  "calibration_N": 320,
+  "classification_metrics": {
+    "N": 320,
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "nll": 1.3247143904064525e-06,
+    "ece": 1.3247132301108522e-06,
+    "mean_confidence": 0.9999986752867699,
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_f1": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "confusion_matrix": [
+      [
+        80,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        80,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        80,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        80
+      ]
+    ]
+  },
+  "checkpoint": {
+    "experiment_id": "CAN-V1-REG-A4-C5-S42",
+    "classification_experiment_id": "CANONICAL-V1-A4-C5",
+    "method": "A4",
+    "target": "C5",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\classification\\CANONICAL-V1-A4-C5\\remote_server\\server_latest_adapted.pth",
+    "checkpoint_sha256": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93",
+    "ordered_state_content_fingerprint": "a572b53a31219d9420a476297ed203180efe13fa1069ae286f88fa46508860ae",
+    "formal_round": 25,
+    "classification_manifest_sha256": "b7e3f785a97c8507ee100a551ed12315dc795e91d2af3b49a1e38ae1b9abc2b5",
+    "completion_marker_sha256": "755b67a87692db6a1cccb1578b0f755b4e2ae2ebb8b4ec6e865fa301bc10d859"
+  },
+  "r84_models_sha256": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729"
+}

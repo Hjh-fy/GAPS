@@ -1,0 +1,13 @@
+# Release archives are byte-addressed artifacts. Never filter or text-diff them.
+release/gaps_runtime_v5_core_20260726/** binary
+release/gaps_runtime_v5_core_20260726.zip binary
+release/gaps_runtime_v5_core_20260726.zip.sha256 binary
+
+# Submission evidence is byte-addressed by its closure SHA-256 index.
+results/iotj_submission_evidence_closure_20260804/** -text whitespace=-trailing-space
+results/iotj_gaps_cross_target_regression_router_analysis_20260804/** -text whitespace=-trailing-space
+results/iotj_gaps_cross_target_r84_full_20260805/** -text whitespace=-trailing-space
+results/iotj_gaps_roleaware_r84_full_20260805/** -text whitespace=-trailing-space
+results/fedongas_c5_regression_cross_20261015/** -text whitespace=-trailing-space
+results/fedongas_c5_regression_budget_extension_20261015/** -text whitespace=-trailing-space
+results/fedongas_c34_class_validation_20261015/** -text whitespace=-trailing-space

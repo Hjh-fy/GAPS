@@ -1,0 +1,43 @@
+{
+  "created_at_utc": "2026-07-30T21:22:46.159033+00:00",
+  "identity": {
+    "classifier": "B5",
+    "local_epochs_per_round": 1,
+    "rounds": 25,
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "split": "historical_C5_test_1360",
+    "target_client": "C5"
+  },
+  "schema_version": "iotj.b5_server_da_round_curve_protocol.v1",
+  "test_access_boundary": "Retrospective diagnostic after the historical test was opened. Metrics are prohibited from early stopping, checkpoint selection, DA-budget selection, or frozen-method reselection.",
+  "variants": {
+    "DA100": {
+      "checkpoint_count": 25,
+      "checkpoint_root": "results\\iotj_b5_local_epoch_ablation_20260729\\le1\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training",
+      "evidence_status": "existing_canonical_reference",
+      "server_da_steps_per_round": 100
+    },
+    "DA30": {
+      "checkpoint_count": 25,
+      "checkpoint_root": "results\\iotj_b5_server_da_budget_ablation_20260731\\da30\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training",
+      "evidence_status": "blocked_observability_contract_technical_result_only",
+      "server_da_steps_per_round": 30
+    },
+    "DA50": {
+      "checkpoint_count": 25,
+      "checkpoint_root": "results\\iotj_b5_server_da_budget_ablation_20260731\\da50\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training",
+      "evidence_status": "canonical_postflight_pass",
+      "server_da_steps_per_round": 50
+    },
+    "DA80": {
+      "checkpoint_count": 25,
+      "checkpoint_root": "results\\iotj_b5_server_da_budget_ablation_20260731\\da80\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training",
+      "evidence_status": "canonical_postflight_pass",
+      "server_da_steps_per_round": 80
+    }
+  }
+}

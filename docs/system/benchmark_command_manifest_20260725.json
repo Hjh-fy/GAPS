@@ -1,0 +1,269 @@
+{
+  "schema_version": "gaps.benchmark_command_manifest.reconstructed.v1",
+  "status": "READ_ONLY_RECONSTRUCTION",
+  "reconstructed_at": "2026-07-26T21:54:15+08:00",
+  "benchmark_reexecuted": false,
+  "inference_reexecuted": false,
+  "evaluation_reexecuted": false,
+  "original_shell_invocation_captured": false,
+  "interpretation": "Canonical-equivalent argv reconstructed from frozen protocol, result records, argparse contracts, and the retained portable Pi package. This is not an assertion that the original operator used the same Python executable, shell quoting, or working directory.",
+  "formal_benchmark": {
+    "experiment_id": "IOTJ-FINAL-SYSTEM-BENCHMARK-20260725",
+    "code_commit": "4ccfc489821410ddacb6ad36180694bb953311f1",
+    "runtimes": [
+      "RUNTIME_V4_FULL",
+      "RUNTIME_V5_REGRESSION_CORE",
+      "RUNTIME_V5_QC2_CANDIDATE"
+    ],
+    "platforms": [
+      "PC_WINDOWS",
+      "PI5"
+    ],
+    "batch_size": 1,
+    "warmup": 50,
+    "runs": 500,
+    "threads": 1,
+    "device": "cpu",
+    "row_universe": "fixed C5 test 1360 in canonical order",
+    "steady_state_disk_io": false,
+    "threshold_search": false
+  },
+  "provenance_sources": [
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/benchmark_protocol.json",
+      "bytes": 641,
+      "sha256": "b92ae49fe556200b39f430f37118e22be5c4c4e753bec7c3102c594a452666a9",
+      "role": "formal fixed benchmark protocol"
+    },
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/environment_manifest.json",
+      "bytes": 978,
+      "sha256": "4f4ae28ebeed4a0550218b89bc974db283a38ad65f3e6c77fe0a0dffd350d49a",
+      "role": "recorded PC/Pi environment"
+    },
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/frozen_asset_manifest.json",
+      "bytes": 6720,
+      "sha256": "813ffd2b8c1291f8d7b036f647d74409d690ceafef16173b5aa0ce2792aff1d1",
+      "role": "formal runtime and dataset asset identities"
+    },
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/sha256_index.json",
+      "bytes": 10056,
+      "sha256": "e6d51368c6ecd1acbe2d9808e0d5b91ffc73fbdf6e74882455883224f1c5df28",
+      "role": "formal result artifact index"
+    },
+    {
+      "path": ".final_benchmark_pi_staging/portable_package_manifest.json",
+      "bytes": 3437,
+      "sha256": "0ddccf186bd9cef19eadfe4463f9aaa6e7ca75819e16297ffbd8d578f572780a",
+      "role": "retained local-only Pi package layout and remote root",
+      "git_status_at_reconstruction": "untracked"
+    },
+    {
+      "path": "scripts/benchmark_iotj_final_runtime.py",
+      "bytes": 15253,
+      "sha256": "d60fb5da9c4df0a9cf31b57348bc3f16b458252c71e6fd1061ace342d326530f",
+      "role": "steady-state argparse and runtime dispatch",
+      "unchanged_since_formal_benchmark_commit": true
+    },
+    {
+      "path": "scripts/probe_iotj_runtime_cold_start.py",
+      "bytes": 3413,
+      "sha256": "5afa151bb3c2707c3ef5bd6c7e3bbe9beb17057d99283404db1dd9074a3e90d0",
+      "role": "cold-start argparse",
+      "unchanged_since_formal_benchmark_commit": true
+    },
+    {
+      "path": "scripts/prepare_iotj_final_benchmark_package.py",
+      "bytes": 7480,
+      "sha256": "ad99db7e70f17f00958e36d479cdd21fc6bf4b31f4fe5d27b30f4f2d18637a5f",
+      "role": "portable package builder",
+      "unchanged_since_formal_benchmark_commit": true
+    }
+  ],
+  "package_preparation": {
+    "original_command_status": "UNKNOWN",
+    "canonical_equivalent_argv": [
+      "python",
+      "-m",
+      "scripts.prepare_iotj_final_benchmark_package",
+      "--output",
+      ".final_benchmark_pi_staging",
+      "--remote-root",
+      "/home/gaps/iotj_final_system_benchmark_20260725"
+    ],
+    "evidence": [
+      "prepare script argparse",
+      "retained portable_package_manifest remote_root"
+    ]
+  },
+  "pc_contracts": {
+    "RUNTIME_V4_FULL": {
+      "canonical_equivalent_path": "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json",
+      "bytes": 2377,
+      "sha256": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+      "original_argument_status": "NOT_RECORDED"
+    },
+    "RUNTIME_V5_REGRESSION_CORE": {
+      "canonical_equivalent_path": "results/iotj_b5_c5_runtime_v5_candidate_20260724/runtime_v5/runtime_contract_v5.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+      "original_argument_status": "SUPPORTED_BY_FROZEN_ASSET_MANIFEST"
+    },
+    "RUNTIME_V5_QC2_CANDIDATE": {
+      "canonical_equivalent_path": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_v5_qc_hc95_contract.json",
+      "bytes": 714,
+      "sha256": "2b764e2cf845bd0ae7b2edcccbbb2948736b90c3532114c254423933d1def1d9",
+      "original_argument_status": "SUPPORTED_BY_QC_BUNDLE_AND_HC95_BENCHMARK_ROLE"
+    }
+  },
+  "pi_contracts": {
+    "RUNTIME_V4_FULL": "/home/gaps/iotj_final_system_benchmark_20260725/contracts/runtime_v4.json",
+    "RUNTIME_V5_REGRESSION_CORE": "/home/gaps/iotj_final_system_benchmark_20260725/contracts/runtime_v5_core.json",
+    "RUNTIME_V5_QC2_CANDIDATE": "/home/gaps/iotj_final_system_benchmark_20260725/contracts/runtime_v5_qc2_hc95.json"
+  },
+  "steady_state_command_template": [
+    "<python>",
+    "-m",
+    "scripts.benchmark_iotj_final_runtime",
+    "--runtime",
+    "<runtime>",
+    "--contract",
+    "<contract>",
+    "--data-root",
+    "<data-root>",
+    "--platform-id",
+    "<platform-id>",
+    "--device",
+    "cpu",
+    "--threads",
+    "1",
+    "--batch-size",
+    "1",
+    "--warmup",
+    "50",
+    "--runs",
+    "500",
+    "--output",
+    "<result-json>",
+    "--rows-output",
+    "<row-timing-csv>"
+  ],
+  "steady_state_invocations": [
+    {
+      "platform_id": "PC_WINDOWS",
+      "runtime": "RUNTIME_V4_FULL",
+      "contract_ref": "pc_contracts.RUNTIME_V4_FULL",
+      "data_root": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5",
+      "result_json": "results/iotj_final_system_benchmark_20260725/benchmarks/pc/runtime_v4_full.json",
+      "row_timing_csv": "results/iotj_final_system_benchmark_20260725/benchmarks/pc/runtime_v4_full_rows.csv",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PC_WINDOWS",
+      "runtime": "RUNTIME_V5_REGRESSION_CORE",
+      "contract_ref": "pc_contracts.RUNTIME_V5_REGRESSION_CORE",
+      "data_root": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5",
+      "result_json": "results/iotj_final_system_benchmark_20260725/benchmarks/pc/runtime_v5_regression_core.json",
+      "row_timing_csv": "results/iotj_final_system_benchmark_20260725/benchmarks/pc/runtime_v5_regression_core_rows.csv",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PC_WINDOWS",
+      "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+      "contract_ref": "pc_contracts.RUNTIME_V5_QC2_CANDIDATE",
+      "data_root": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5",
+      "result_json": "results/iotj_final_system_benchmark_20260725/benchmarks/pc/runtime_v5_qc2_candidate.json",
+      "row_timing_csv": "results/iotj_final_system_benchmark_20260725/benchmarks/pc/runtime_v5_qc2_candidate_rows.csv",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PI5",
+      "runtime": "RUNTIME_V4_FULL",
+      "contract_ref": "pi_contracts.RUNTIME_V4_FULL",
+      "data_root": "/home/gaps/iotj_final_system_benchmark_20260725/data",
+      "result_json": "results/iotj_final_system_benchmark_20260725/benchmarks/pi/runtime_v4_full.json",
+      "row_timing_csv": "results/iotj_final_system_benchmark_20260725/benchmarks/pi/runtime_v4_full_rows.csv",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PI5",
+      "runtime": "RUNTIME_V5_REGRESSION_CORE",
+      "contract_ref": "pi_contracts.RUNTIME_V5_REGRESSION_CORE",
+      "data_root": "/home/gaps/iotj_final_system_benchmark_20260725/data",
+      "result_json": "results/iotj_final_system_benchmark_20260725/benchmarks/pi/runtime_v5_regression_core.json",
+      "row_timing_csv": "results/iotj_final_system_benchmark_20260725/benchmarks/pi/runtime_v5_regression_core_rows.csv",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PI5",
+      "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+      "contract_ref": "pi_contracts.RUNTIME_V5_QC2_CANDIDATE",
+      "data_root": "/home/gaps/iotj_final_system_benchmark_20260725/data",
+      "result_json": "results/iotj_final_system_benchmark_20260725/benchmarks/pi/runtime_v5_qc2_candidate.json",
+      "row_timing_csv": "results/iotj_final_system_benchmark_20260725/benchmarks/pi/runtime_v5_qc2_candidate_rows.csv",
+      "recorded_status": "PASS"
+    }
+  ],
+  "cold_start_command_template": [
+    "<python>",
+    "-m",
+    "scripts.probe_iotj_runtime_cold_start",
+    "--runtime",
+    "<runtime>",
+    "--contract",
+    "<contract>",
+    "--data-root",
+    "<data-root>",
+    "--output",
+    "<result-json>"
+  ],
+  "cold_start_results": [
+    {
+      "platform_id": "PC_WINDOWS",
+      "runtime": "RUNTIME_V4_FULL",
+      "result_json": "results/iotj_final_system_benchmark_20260725/cold_start/pc_runtime_v4.json",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PC_WINDOWS",
+      "runtime": "RUNTIME_V5_REGRESSION_CORE",
+      "result_json": "results/iotj_final_system_benchmark_20260725/cold_start/pc_runtime_v5_core.json",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PC_WINDOWS",
+      "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+      "result_json": "results/iotj_final_system_benchmark_20260725/cold_start/pc_runtime_v5_qc2.json",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PI5",
+      "runtime": "RUNTIME_V4_FULL",
+      "result_json": "results/iotj_final_system_benchmark_20260725/cold_start/cold_pi_runtime_v4.json",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PI5",
+      "runtime": "RUNTIME_V5_REGRESSION_CORE",
+      "result_json": "results/iotj_final_system_benchmark_20260725/cold_start/cold_pi_runtime_v5_core.json",
+      "recorded_status": "PASS"
+    },
+    {
+      "platform_id": "PI5",
+      "runtime": "RUNTIME_V5_QC2_CANDIDATE",
+      "result_json": "results/iotj_final_system_benchmark_20260725/cold_start/cold_pi_runtime_v5_qc2.json",
+      "recorded_status": "PASS"
+    }
+  ],
+  "unknown_original_fields": [
+    "exact Python executable path on PC",
+    "exact Python executable path on Pi",
+    "operator shell and quoting",
+    "exact working directory",
+    "exact original PC Runtime-v4 contract argument",
+    "whether module or direct-script invocation syntax was used"
+  ],
+  "evidence_boundary": "This manifest improves command provenance only. It does not create new benchmark evidence, does not change frozen result identity, and must not be used to claim clean-checkout deployability."
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.r0.failure_audit.v1",
+  "status": "FAIL_CLOSED",
+  "failed_gate": "R0.4_CANONICAL_FEDRIDGE_EXACT_RECOVERY",
+  "execution_commit": "1b16f1e",
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "completed_before_failure": {
+    "source_feature_caches": [
+      "C1_train",
+      "C1_calibration",
+      "C2_train",
+      "C2_calibration"
+    ],
+    "source_alpha_selection": true,
+    "source_train_plus_calibration_refit": true,
+    "sufficient_statistics_written": true,
+    "alpha_lock_written": true
+  },
+  "not_opened": {
+    "source_test_labels": true,
+    "source_test_feature_caches": true,
+    "target_C3_feature_caches": true,
+    "target_C4_feature_caches": true,
+    "target_C5_feature_caches": true,
+    "target_test_labels": true,
+    "R1": true
+  },
+  "alpha_agreement": {
+    "Ethanol": 0.1,
+    "CO": 0.01,
+    "Ethylene": 0.01,
+    "Methane": 0.01
+  },
+  "strict_gate_failures": {
+    "CO": {
+      "field": "coefficient_max_abs_difference",
+      "observed": 6.100162863731384e-08,
+      "maximum": 1e-08
+    },
+    "Ethylene": {
+      "field": "coefficient_max_abs_difference",
+      "observed": 2.0023435354232788e-08,
+      "maximum": 1e-08
+    },
+    "Methane": {
+      "fields": [
+        "scaler_max_abs_difference",
+        "coefficient_max_abs_difference"
+      ],
+      "observed": [
+        0.999999831412606,
+        0.0018461935413379388
+      ],
+      "maximum": [
+        1e-10,
+        1e-08
+      ]
+    }
+  },
+  "prediction_max_abs_difference_ppm": 2.5330280095658964e-08,
+  "prediction_tolerance_ppm": 1e-06,
+  "practical_equivalence_fallback_used": false,
+  "threshold_relaxed": false,
+  "rerun_performed": false,
+  "downstream_gate_opened": false
+}

@@ -1,0 +1,20 @@
+{
+  "checkpoint_selection": "fixed_step_100",
+  "coefficient": 0.5,
+  "conditional": false,
+  "experiment_id": "FCL-E2-DANN-C3",
+  "hyperparameter_search": false,
+  "method": "dann",
+  "optimizer": "Adam",
+  "optimizer_lr": 0.0005,
+  "pseudo_labels": false,
+  "seed": 42,
+  "source_batch_convention": "combined_registered_C1_C2_calibration",
+  "source_checkpoint_role": "P0A_round25",
+  "steps": 100,
+  "target": "C3",
+  "target_ce": false,
+  "target_fields": [
+    "x"
+  ]
+}

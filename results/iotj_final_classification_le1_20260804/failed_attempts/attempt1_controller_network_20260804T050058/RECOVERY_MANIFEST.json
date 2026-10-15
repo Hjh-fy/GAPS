@@ -1,0 +1,40 @@
+{
+  "schema_version": "iotj.final_classification.recovery.v1",
+  "experiment_id": "FCL-E3-GAPS-C4",
+  "attempt_id": "FCL-E3-GAPS-C4-attempt1",
+  "attempt_status": "failed_transport",
+  "formal_endpoint_completed": false,
+  "target_test_opened": false,
+  "last_preserved_state": {
+    "federated_round": 21,
+    "domain_adaptation_steps": 100,
+    "checkpoint": "remote_server_partial/server_round_021_adapted.pth",
+    "checkpoint_sha256": "0d0e0df2335c3f8169e5caacda7f79e5c2ba8ad4265d120158a950e48e5f47c3"
+  },
+  "failure": {
+    "observed_at_local": "2026-08-04T05:00:58+08:00",
+    "category": "controller_transport",
+    "client_error": "grpc StatusCode.UNAVAILABLE: Stream removed (Socket closed)",
+    "controller_network_events_local": [
+      "2026-08-04T05:00:26+08:00",
+      "2026-08-04T05:01:17+08:00"
+    ],
+    "server_oom_observed": false,
+    "server_disk_exhaustion_observed": false,
+    "exact_tunnel_hop": "unknown because tunnel stderr was not persisted"
+  },
+  "provenance": {
+    "freeze_commit": "50094788404545c64e2cf583fe4556afd8349b16",
+    "protocol_hash": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+    "locked_run_spec_sha256": "f9b1ac194d5078ae1bf98ebf6f8d585eb35186ca69cc8b7235fb055d749fcb82",
+    "preserved_file_count": 166,
+    "preserved_bytes": 10599776,
+    "preserved_at_utc": "2026-08-04T02:55:21.3272965Z"
+  },
+  "recovery_policy": {
+    "reuse_partial_checkpoint": false,
+    "restart_from_frozen_initial_state": true,
+    "reason": "The fixed endpoint and complete distributed state were not reached; round-21 artifacts remain diagnostic only."
+  },
+  "remote_archive": "/root/GAPS/iotj_final_classification_le1_20260804/_failed_attempts/FCL-E3-GAPS-C4_attempt1_controller_network_20260804T050058"
+}

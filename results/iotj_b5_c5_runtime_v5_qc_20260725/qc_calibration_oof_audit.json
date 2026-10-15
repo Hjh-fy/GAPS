@@ -1,0 +1,101 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_closure.v1",
+  "status": "PASS",
+  "folds": [
+    {
+      "fold": 0,
+      "train_N": 256,
+      "validation_N": 64,
+      "train_group_count": 64,
+      "validation_group_count": 16,
+      "group_overlap_count": 0,
+      "target_alpha": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "feature_reference_train_only": true,
+      "ecdf_train_only": true,
+      "mad_scale_train_only": true,
+      "raw_train_N": 256
+    },
+    {
+      "fold": 1,
+      "train_N": 256,
+      "validation_N": 64,
+      "train_group_count": 64,
+      "validation_group_count": 16,
+      "group_overlap_count": 0,
+      "target_alpha": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "feature_reference_train_only": true,
+      "ecdf_train_only": true,
+      "mad_scale_train_only": true,
+      "raw_train_N": 256
+    },
+    {
+      "fold": 2,
+      "train_N": 256,
+      "validation_N": 64,
+      "train_group_count": 64,
+      "validation_group_count": 16,
+      "group_overlap_count": 0,
+      "target_alpha": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "feature_reference_train_only": true,
+      "ecdf_train_only": true,
+      "mad_scale_train_only": true,
+      "raw_train_N": 256
+    },
+    {
+      "fold": 3,
+      "train_N": 256,
+      "validation_N": 64,
+      "train_group_count": 64,
+      "validation_group_count": 16,
+      "group_overlap_count": 0,
+      "target_alpha": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "feature_reference_train_only": true,
+      "ecdf_train_only": true,
+      "mad_scale_train_only": true,
+      "raw_train_N": 256
+    },
+    {
+      "fold": 4,
+      "train_N": 256,
+      "validation_N": 64,
+      "train_group_count": 64,
+      "validation_group_count": 16,
+      "group_overlap_count": 0,
+      "target_alpha": {
+        "0": 1.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 0.1
+      },
+      "feature_reference_train_only": true,
+      "ecdf_train_only": true,
+      "mad_scale_train_only": true,
+      "raw_train_N": 256
+    }
+  ],
+  "row_count": 320,
+  "row_key_unique": true,
+  "group_cross_fold_count": 0,
+  "test_opened": false,
+  "test_used_for_any_calibration_or_selection": false
+}

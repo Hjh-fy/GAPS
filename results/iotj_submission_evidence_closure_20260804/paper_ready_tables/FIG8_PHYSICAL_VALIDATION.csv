@@ -1,0 +1,2 @@
+experiment_id,topology,participating_machines,source_clients,client_devices,target,seed,expected_rounds,completed_rounds,wall_seconds,target_test_opened_during_training,fixed_endpoint,status,physical_validation_scope
+FCL-E4-A4,client_C1__cloud_server__client_C2,3,C1;C2,cpu;cpu,C5,42,25,25,4641.427080299996,False,True,PASS,real three-machine Flower execution plus independent Raspberry Pi 5 runtime benchmark

@@ -1,0 +1,34 @@
+{
+  "method": "1.4826_times_MAD_of_signed_target_minus_H1",
+  "epsilon": 1e-08,
+  "per_predicted_gas": {
+    "0": {
+      "n": 80,
+      "signed_delta_median": 53.143665005710005,
+      "mad": 30.41289234670485,
+      "mad_multiplier": 1.4826,
+      "scale": 45.090154193224606
+    },
+    "1": {
+      "n": 81,
+      "signed_delta_median": -67.33024671265385,
+      "mad": 39.98940211556901,
+      "mad_multiplier": 1.4826,
+      "scale": 59.28828757654261
+    },
+    "2": {
+      "n": 79,
+      "signed_delta_median": 50.94239450578712,
+      "mad": 35.534435471182405,
+      "mad_multiplier": 1.4826,
+      "scale": 52.68335402957503
+    },
+    "3": {
+      "n": 80,
+      "signed_delta_median": 2.475527519183288,
+      "mad": 8.98528799663049,
+      "mad_multiplier": 1.4826,
+      "scale": 13.321587983804363
+    }
+  }
+}

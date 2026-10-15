@@ -1,0 +1,3 @@
+experiment_id,status,seed,source_clients,target_client,rounds,local_epochs,total_uda_steps,adaptation_schedule,formal_endpoint,target_label_access,result_root
+P0-I2-POSTHOC-UDA2500-S42,planned,42,"C1,C2",C5,25,1,2500,posthoc_after_round25,step2500,x_only,results/iotj_p0_adaptation_timing_20260803/P0I_POSTHOC_UDA2500_S42
+P0-I3-INTERLEAVED-UDA25X100-S42,planned,42,"C1,C2",C5,25,1,2500,100_after_each_round,round25_post_uda,x_only,results/iotj_p0_adaptation_timing_20260803/P0I_INTERLEAVED_UDA25X100_S42

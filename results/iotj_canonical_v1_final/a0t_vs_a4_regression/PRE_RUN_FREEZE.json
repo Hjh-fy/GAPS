@@ -1,0 +1,126 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.freeze.v1",
+  "status": "PASS",
+  "endpoint_count": 6,
+  "target_test_state": "SEALED",
+  "alpha_selection_performed": false,
+  "classifier_training_performed": false,
+  "dataset": {
+    "status": "PASS",
+    "aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "checked_files": 71,
+    "bad_files": []
+  },
+  "h1": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_h1_federated_ridge_equivalence_20260724\\federated_h1_manifest.json",
+    "sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc"
+  },
+  "frozen_alphas": {
+    "C3": {
+      "0": 100.0,
+      "1": 0.0,
+      "2": 0.1,
+      "3": 0.1
+    },
+    "C4": {
+      "0": 1.0,
+      "1": 10.0,
+      "2": 0.1,
+      "3": 10.0
+    },
+    "C5": {
+      "0": 1.0,
+      "1": 0.01,
+      "2": 10.0,
+      "3": 0.1
+    }
+  },
+  "qc_locks": {
+    "C3": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\qc\\C3_qc_threshold_lock.csv",
+      "sha256": "a2674e7ae439a6815fc8f2572ea1980348a2f458ad0bf05e283adca50e14b14a"
+    },
+    "C4": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\qc\\C4_qc_threshold_lock.csv",
+      "sha256": "612c3e4ba1deb4f6ec7da9384dd3a7d32228f19d6e9f972b8d9a9f0ac7137555"
+    },
+    "C5": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\qc\\C5_qc_threshold_lock.csv",
+      "sha256": "45c7ccfd52043d9322b1982bf862b28eef5281b7f57cfe2d6f73c7de83647713"
+    }
+  },
+  "checkpoints": [
+    {
+      "experiment_id": "CAN-V1-REG-A0T-C3-S42",
+      "classification_experiment_id": "CANONICAL-V1-A0T-C3",
+      "method": "A0T",
+      "target": "C3",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\a0t_equal_label\\classification\\CANONICAL-V1-A0T-C3\\remote_server\\server_latest_adapted.pth",
+      "checkpoint_sha256": "4894be9a943876dc46e219ffcb68d1d7ce0fdb3981ae9255b0aba2ce4e6b5728",
+      "ordered_state_content_fingerprint": "26c5c08b8167eed9ec029382205fd6f4db9d622eb6c5dc2bda833bbdbb755854",
+      "formal_round": 25,
+      "classification_manifest_sha256": "b450dc71d72e764b479d110700339dd904834df1fdfb0783a674db1579be1ce4",
+      "completion_marker_sha256": "64b5d4c941af0637f97ceb0a0a041670f03add748c3ccb38be351020cfcac393"
+    },
+    {
+      "experiment_id": "CAN-V1-REG-A0T-C4-S42",
+      "classification_experiment_id": "CANONICAL-V1-A0T-C4",
+      "method": "A0T",
+      "target": "C4",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\a0t_equal_label\\classification\\CANONICAL-V1-A0T-C4\\remote_server\\server_latest_adapted.pth",
+      "checkpoint_sha256": "eee28075336170682abc4fb7e17fd01f481776ea06d175c2cf0decada85ec609",
+      "ordered_state_content_fingerprint": "4aced2521fa1e03da484e3a9a1a0aff9d0e5de27754de0ef2ba30d4fa9a0ec52",
+      "formal_round": 25,
+      "classification_manifest_sha256": "4975aa72578370a819cc09644c1bb2ca0e1a2d513b5b3034505487f9ca6dcda8",
+      "completion_marker_sha256": "8431867d122fe91c2ba9e0e43a5d3916a18b55a5a4db1c2ce10497fa17ec7fcc"
+    },
+    {
+      "experiment_id": "CAN-V1-REG-A0T-C5-S42",
+      "classification_experiment_id": "CANONICAL-V1-A0T-C5",
+      "method": "A0T",
+      "target": "C5",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\a0t_equal_label\\classification\\CANONICAL-V1-A0T-C5\\remote_server\\server_latest_adapted.pth",
+      "checkpoint_sha256": "b46d1f5fe9df53b425d207df965af2656ca4290e1fe0cb6f723cdd8f0e007fa5",
+      "ordered_state_content_fingerprint": "3d05c2e9e5aef8f45e4c7d1eeba7ae85475c3f39c3d0205f721a0aa22ab1d0ba",
+      "formal_round": 25,
+      "classification_manifest_sha256": "ddfe0f2c31312357b7e2b9b165fc668a5743aa31ba6ea15db915ec95a276ab72",
+      "completion_marker_sha256": "3cc13f3cc431b6ac9128b28d9da1bc19e9ce0ab35fa46a535d70d2bf09c652f8"
+    },
+    {
+      "experiment_id": "CAN-V1-REG-A4-C3-S42",
+      "classification_experiment_id": "CANONICAL-V1-A4-C3",
+      "method": "A4",
+      "target": "C3",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\classification\\CANONICAL-V1-A4-C3\\remote_server\\server_latest_adapted.pth",
+      "checkpoint_sha256": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414",
+      "ordered_state_content_fingerprint": "fc473008105a8b944eaacdadca415733f38e0beb00c9a61898b1c959a96a25fb",
+      "formal_round": 25,
+      "classification_manifest_sha256": "eded363328173ba913638096af3828d39730720039bc00df28ea881b26abd2bf",
+      "completion_marker_sha256": "8e286002e679cc5636d58b3c3c43f882c906f20a766813260db7e9fb59e72438"
+    },
+    {
+      "experiment_id": "CAN-V1-REG-A4-C4-S42",
+      "classification_experiment_id": "CANONICAL-V1-A4-C4",
+      "method": "A4",
+      "target": "C4",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\classification\\CANONICAL-V1-A4-C4\\remote_server\\server_latest_adapted.pth",
+      "checkpoint_sha256": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+      "ordered_state_content_fingerprint": "e8706d99a2e06d5710ed9848b2e86873c2de588c854657242a166fd01a7f58d7",
+      "formal_round": 25,
+      "classification_manifest_sha256": "99f82f2538511711cdc1221f3d109a3fa749c1ae3154e9ab1e6e0e38b85fc9e4",
+      "completion_marker_sha256": "c9a9d7c639ef3a3d3b24e1997715368427221e3683d87d3c3d97e6108034a5bd"
+    },
+    {
+      "experiment_id": "CAN-V1-REG-A4-C5-S42",
+      "classification_experiment_id": "CANONICAL-V1-A4-C5",
+      "method": "A4",
+      "target": "C5",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\classification\\CANONICAL-V1-A4-C5\\remote_server\\server_latest_adapted.pth",
+      "checkpoint_sha256": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93",
+      "ordered_state_content_fingerprint": "a572b53a31219d9420a476297ed203180efe13fa1069ae286f88fa46508860ae",
+      "formal_round": 25,
+      "classification_manifest_sha256": "b7e3f785a97c8507ee100a551ed12315dc795e91d2af3b49a1e38ae1b9abc2b5",
+      "completion_marker_sha256": "755b67a87692db6a1cccb1578b0f755b4e2ae2ebb8b4ec6e865fa301bc10d859"
+    }
+  ]
+}

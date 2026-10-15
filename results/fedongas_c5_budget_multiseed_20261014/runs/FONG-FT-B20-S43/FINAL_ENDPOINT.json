@@ -1,0 +1,21 @@
+{
+  "run": {
+    "experiment_id": "FONG-FT-B20-S43",
+    "method": "FT",
+    "seed": 43,
+    "budget_pct": 20,
+    "calibration_n": 320,
+    "initialization_run": "FONG-SRC-S43",
+    "rounds": 0,
+    "target_updates": 2500
+  },
+  "freeze_commit": "dc73318636335e0d2317613dff00ef73e6c798f1",
+  "checkpoint": "remote_server/update_2500.pth",
+  "checkpoint_sha256": "cc79521e42b914db5bd8a28773532c9f4999704df906464927c9e4220afe1940",
+  "state_fingerprint": "28946d859be0e64a2764e51b30eee8d6eccefde823b4a497a9c83f50d13cb343",
+  "initial_fingerprint": "1bfc5628f2e4bec2d033e8977e706506af506affd0e94170d04dc71c777419bb",
+  "wall_seconds": 84.36129819999769,
+  "target_updates": 2500,
+  "target_test_opened": false,
+  "status": "PASS"
+}

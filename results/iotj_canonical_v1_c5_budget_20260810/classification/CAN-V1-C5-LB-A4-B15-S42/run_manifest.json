@@ -1,0 +1,50 @@
+{
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_c5_budget_20260810\\classification\\CAN-V1-C5-LB-A4-B15-S42\\remote_server\\server_latest_adapted.pth",
+  "checkpoint_sha256": "29bbd6eee55f76c78f7ce802e5f508e6475e52a63ddeff8af36b6404b3210ece",
+  "experiment_id": "CAN-V1-C5-LB-A4-B15-S42",
+  "protocol": {
+    "adaptation_target_fields": [
+      "x",
+      "class",
+      "phase"
+    ],
+    "adaptation_target_split": "calibration",
+    "batch_size": 32,
+    "budget_pct": 15,
+    "calibration_n": 240,
+    "calibration_per_stratum": 6,
+    "calibration_strata": 40,
+    "checkpoint_reuse": false,
+    "checkpoint_selection": "fixed_round_25",
+    "classifier_router": "A4",
+    "da_window_shape": [
+      50,
+      8
+    ],
+    "dataset": "iotj_canonical_v1",
+    "experiment_id": "CAN-V1-C5-LB-A4-B15-S42",
+    "frozen_base_experiment": "FCL-E4-A4",
+    "hyperparameter_search": false,
+    "initialization": "fresh_seed42_random_initialization",
+    "local_epochs": 1,
+    "method": "A4",
+    "nested_family": "05_subset_10_subset_15_subset_existing_20",
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "optimizer_note": "proposed method protocol",
+    "rounds": 25,
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "study_id": "iotj_canonical_v1_c5_budget_20260810",
+    "target": "C5",
+    "target_test_selection": false
+  },
+  "protocol_hash": "a0a17a9962d96a728a3c675ec842c8e7656498903b8a5025d16db94eb08de625",
+  "schema_version": "iotj.final_classification.full_fl.v1",
+  "source_archive_sha256": "ddc8ba05cf3293287cd50ce6a78ae41b4c32f685ff85c782d2062a100ae5f07e",
+  "target_test_opened": false,
+  "wall_seconds": 2441.1556677999906
+}

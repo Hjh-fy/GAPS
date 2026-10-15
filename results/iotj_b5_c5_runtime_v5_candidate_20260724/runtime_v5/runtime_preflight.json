@@ -1,0 +1,20 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "status": "PASS",
+  "contract_sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482",
+  "bundle_load_strict": true,
+  "classifier_checkpoint_sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+  "classifier_checkpoint_expected_sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+  "calibration_rows": 320,
+  "test_rows": 1360,
+  "runtime_v4_and_HC_frozen_sha256": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  },
+  "runtime_v4_assets_modified": false,
+  "qc_enabled": false
+}

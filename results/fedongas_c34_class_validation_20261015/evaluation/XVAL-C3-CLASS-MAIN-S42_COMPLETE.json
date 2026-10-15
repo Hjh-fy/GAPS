@@ -1,0 +1,24 @@
+{
+  "values": {
+    "experiment_id": "XVAL-C3-CLASS-MAIN-S42",
+    "target": "C3",
+    "method": "CLASS",
+    "seed": 42,
+    "budget_pct": 20,
+    "calibration_n": 678,
+    "test_n": 2677,
+    "initialization_run": "random-S42",
+    "rounds": 25,
+    "target_updates": 2500,
+    "accuracy": 0.9996264475158759,
+    "macro_f1": 0.9996268654638367,
+    "nll": 0.006454670775596723,
+    "ece": 0.00046261158139186454,
+    "num_examples": 2677,
+    "checkpoint_sha256": "96cb87a9af17d4ba0b3180337a39b20e0505b6d59e6fd327139e50796930e27e",
+    "calculation_status": "new_fixed_endpoint",
+    "wall_seconds": 1351.169175899995
+  },
+  "checkpoint_sha256": "96cb87a9af17d4ba0b3180337a39b20e0505b6d59e6fd327139e50796930e27e",
+  "prediction_sha256": "7f179523ac8d89d0e4c555d11c2146f0c316bacd3c83c0c270bce87a1dae30d7"
+}

@@ -1,0 +1,75 @@
+{
+  "alpha_selection_performed": false,
+  "calibration_N": 320,
+  "classification_metrics": {
+    "N": 320,
+    "accuracy": 1.0,
+    "confusion_matrix": [
+      [
+        80,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        80,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        80,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        80
+      ]
+    ],
+    "ece": 0.008011388592422054,
+    "macro_f1": 1.0,
+    "mean_confidence": 0.991988611407578,
+    "nll": 0.008544321315012468,
+    "per_class_f1": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    }
+  },
+  "classifier": {
+    "budget": 20,
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_redesign_20260811\\gate1_posthoc\\a0t_full\\posthoc_a0t_full_c5.pth",
+    "checkpoint_sha256": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
+    "checkpoint_state_fingerprint": "4c7f13115e8a16c26e615f0f501cbd08a990e733bac2ac368c25b5533f53c2ef",
+    "classifier_training_performed": false,
+    "identity": "I0",
+    "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+    "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+    "status": "PASS",
+    "step": 100,
+    "target_test_opened_before_lock": false
+  },
+  "experiment_id": "CAN-V1-MB-P3-POSTHOC-R84-S42",
+  "fixed_alphas": {
+    "0": 1.0,
+    "1": 0.01,
+    "2": 10.0,
+    "3": 0.1
+  },
+  "h1_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+  "r84_models_sha256": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729",
+  "schema_version": "iotj.canonical_v1.method_breakthrough.phase3.lock.v1",
+  "status": "SEALED_BEFORE_TARGET_TEST",
+  "target_test_opened": false
+}

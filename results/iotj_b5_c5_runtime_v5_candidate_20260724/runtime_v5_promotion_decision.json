@@ -1,0 +1,22 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "decision": "RUNTIME_V5_REGRESSION_READY_QC_PENDING",
+  "real_topology_H1_aggregation": "PASS",
+  "source_raw_sample_isolation": "PASS",
+  "seed42_RG1_metrics_replay": "PASS",
+  "calibration_320_runtime_parity": "PASS",
+  "test_1360_runtime_parity": "PASS",
+  "fail_closed_runtime_contract": "PASS",
+  "runtime_v4_six_frozen_SHA": "UNCHANGED",
+  "qc_dependency_audit": "PATH_B_RISK_SEMANTICS_INCOMPATIBLE",
+  "v5_HC95_HC90_built": false,
+  "next_step": "freeze_and_execute_a_separate_v5_QC_protocol_before_any_Pi_benchmark",
+  "stop_boundary": [
+    "no_Pi_benchmark",
+    "no_PC_latency_benchmark",
+    "no_low_calibration",
+    "no_new_algorithm_experiment",
+    "no_new_training_seed"
+  ],
+  "decided_at": "2026-07-24T17:12:32.364433+00:00"
+}

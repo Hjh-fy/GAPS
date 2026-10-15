@@ -1,0 +1,46 @@
+{
+  "all_postflight_pass": true,
+  "all_row_keys_unique": true,
+  "all_test_rows": 1360,
+  "canonical_seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "evidence_boundary": "B5 classification five-seed stability only; no regression, QC, runtime v5, Pi benchmark, or low-calibration conclusion.",
+  "newly_trained_seeds": [
+    43,
+    44,
+    45,
+    46
+  ],
+  "next_stage_not_started": "B5 regression multi-seed",
+  "next_stage_ready": true,
+  "outputs": [
+    "results\\iotj_b5_multiseed_20260724\\per_seed_b5_classification_metrics.csv",
+    "results\\iotj_b5_multiseed_20260724\\b5_classification_multiseed_summary.csv",
+    "results\\iotj_b5_multiseed_20260724\\b5_confusion_matrix_summary.csv"
+  ],
+  "runtime_v4_frozen_six": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860"
+  },
+  "schema_version": "iotj.b5_classification_multiseed_completion.v1",
+  "seed42_retrained": false,
+  "seed_set": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "status": "complete",
+  "training_code_revision": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "training_topology": "ecs_c2_pi_c1"
+}

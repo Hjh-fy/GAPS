@@ -1,0 +1,49 @@
+{
+  "schema_version": "iotj.b5_first_divergence.v2",
+  "status": "environment_nondeterminism_root_cause_localized",
+  "classification": "OFF-A != OFF-B; Observer is not causal",
+  "first_divergent_round": 1,
+  "first_divergent_stage": "server_semantic_prototype_reduction_after_identical_fitres",
+  "first_divergent_tensor_or_field": "semantic_protos[\"0,0\"][0]",
+  "off_a_value": -2.2548980712890625,
+  "off_b_value": -2.254908800125122,
+  "first_field_abs_delta": 0.000010728836059570312,
+  "semantic_prototype_max_abs_delta": 0.000015351921319961548,
+  "off_a_sha256": "812be637a3f6bd3a039b0a631a0cc26e8f941014c420a2e70926e9c4030ea1ac",
+  "off_b_sha256": "20a9aaf4f0894016123660ddef2ab0df057124c6f9c9fd8c6c430a248223a8c4",
+  "upstream_stages_proven_identical": [
+    {
+      "stage": "frozen_initial_checkpoint",
+      "sha256": "f4f78249c9e967f8a9dea6c597246e10d4574e447bb969052dea847e48b962a2"
+    },
+    {
+      "stage": "round_1_fitins_C1_and_C2_model_tensors",
+      "sha256": "26f4a77d80ff5cca793872381b4ae14d3b0662d6cc8f40eb1d54f1dfdfa31b69"
+    },
+    {
+      "stage": "round_1_C1_fitres_model_tensors_and_metrics",
+      "sha256": "3bf2df555692c396b6441d080106e415c539f77f2634b49e011a4c8610b8c1a2"
+    },
+    {
+      "stage": "round_1_C2_fitres_model_tensors_and_metrics",
+      "sha256": "bca7e47c5277106d2a4a7e7f5691dc618f78c087a2350ba23edbca00f6970b63"
+    },
+    {
+      "stage": "round_1_plain_parameter_aggregate",
+      "sha256": "97268f2856136ac21291667a7629fee4510d0386611020379dbda557116f1118"
+    }
+  ],
+  "arrival_order": {
+    "off_a": [2, 1],
+    "off_b": [1, 2]
+  },
+  "causal_boundary": "Flower FitRes arrival order was passed unchanged into float32 prototype/statistics reductions. Canonical client_id ordering is the minimal fix.",
+  "downstream_evidence": {
+    "round_1_adapted_logits_off_a_sha256": "e89b497dd27079235d136e100143d950a8d5e6c4dab3837fe3ff3d027585694d",
+    "round_1_adapted_logits_off_b_sha256": "c26b78a00bbe28ff4e9918111c3b2d64b2c412ab43b8d4124c3aba54d3a8c757",
+    "final_checkpoint_max_abs_delta": 0.02182745933532715
+  },
+  "fix_scope": "gaps_flower.strategy.canonicalize_fit_results and its aggregate_fit integration only",
+  "freeze_record_created": false,
+  "formal_25_round_runs_started": false
+}

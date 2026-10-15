@@ -148,6 +148,8 @@ class FinalDeployRuntime:
         result: DeployResult,
         meta: Dict[str, Any] | None = None,
     ) -> float:
+        if result.risk_score is None:
+            return float(result.final_ppm)
         if self.rich_residual.enabled:
             return self.rich_residual.apply(window, result, self.client_id, meta=meta)
         return self._co_corrected_ppm(result)
@@ -165,7 +167,9 @@ class FinalDeployRuntime:
             "co_corrected_ppm": float(co_corrected_ppm),
             "auto_output_ppm": float(co_corrected_ppm) if qc_decision == "accept" else "",
             "qc_decision": qc_decision,
-            "risk_score": float(result.risk_score),
+            "risk_score": (
+                None if result.risk_score is None else float(result.risk_score)
+            ),
         }
 
     def predict_batch(

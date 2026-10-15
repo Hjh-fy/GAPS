@@ -1,0 +1,439 @@
+2026-08-04 02:41:49 [INFO] __main__: [GAPS client 1] ready: train_samples=2360, test_samples=680, device=cpu, local_epochs=1, profile=proto_replay, seed=42, fedprox_mu=0
+[93mWARNING [0m:   DEPRECATED FEATURE: flwr.client.start_numpy_client() is deprecated. 
+	Instead, use `flwr.client.start_client()` by ensuring you first call the `.to_client()` method as shown below: 
+	flwr.client.start_client(
+		server_address='<IP>:<PORT>',
+		client=FlowerClient().to_client(), # <-- where FlowerClient is of type flwr.client.NumPyClient object
+	)
+	Using `start_numpy_client()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+2026-08-04 02:41:49 [WARNING] flwr: DEPRECATED FEATURE: flwr.client.start_numpy_client() is deprecated. 
+	Instead, use `flwr.client.start_client()` by ensuring you first call the `.to_client()` method as shown below: 
+	flwr.client.start_client(
+		server_address='<IP>:<PORT>',
+		client=FlowerClient().to_client(), # <-- where FlowerClient is of type flwr.client.NumPyClient object
+	)
+	Using `start_numpy_client()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+[93mWARNING [0m:   DEPRECATED FEATURE: flwr.client.start_client() is deprecated.
+	Instead, use the `flower-supernode` CLI command to start a SuperNode as shown below:
+
+		$ flower-supernode --insecure --superlink='<IP>:<PORT>'
+
+	To view all available options, run:
+
+		$ flower-supernode --help
+
+	Using `start_client()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+2026-08-04 02:41:49 [WARNING] flwr: DEPRECATED FEATURE: flwr.client.start_client() is deprecated.
+	Instead, use the `flower-supernode` CLI command to start a SuperNode as shown below:
+
+		$ flower-supernode --insecure --superlink='<IP>:<PORT>'
+
+	To view all available options, run:
+
+		$ flower-supernode --help
+
+	Using `start_client()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+2026-08-04 02:41:49 [DEBUG] flwr: Opened insecure gRPC connection (no certificates were passed)
+2026-08-04 02:41:49 [DEBUG] flwr: ChannelConnectivity.IDLE
+2026-08-04 02:41:49 [DEBUG] flwr: ChannelConnectivity.CONNECTING
+2026-08-04 02:41:49 [DEBUG] flwr: ChannelConnectivity.READY
+[92mINFO [0m:      
+2026-08-04 02:41:52 [INFO] flwr: 
+[92mINFO [0m:      Received: train message b2d0d47a-b6cc-4cc9-ad41-961211776089
+2026-08-04 02:41:52 [INFO] flwr: Received: train message b2d0d47a-b6cc-4cc9-ad41-961211776089
+2026-08-04 02:41:52 [INFO] __main__: [GAPS client 1] fit round=1 START: train_samples=2360, local_epochs=1
+/home/gaps/GAPS/gaps_rpi_env/lib/python3.13/site-packages/torch/utils/data/dataloader.py:752: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
+  super().__init__(loader)
+2026-08-04 02:42:02 [INFO] __main__: [GAPS client 1] fit round=1 DONE: samples=2360, seconds=10.63
+[92mINFO [0m:      Sent reply
+2026-08-04 02:42:02 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:44:53 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 227a5e80-1be5-42ad-9da6-5be2d3fb577c
+2026-08-04 02:44:53 [INFO] flwr: Received: evaluate message 227a5e80-1be5-42ad-9da6-5be2d3fb577c
+2026-08-04 02:44:54 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.8750, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 02:44:54 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:44:54 [INFO] flwr: 
+[92mINFO [0m:      Received: train message f476c1c0-e005-4537-b59d-60de847fbdfa
+2026-08-04 02:44:54 [INFO] flwr: Received: train message f476c1c0-e005-4537-b59d-60de847fbdfa
+2026-08-04 02:44:54 [INFO] __main__: [GAPS client 1] fit round=2 START: train_samples=2360, local_epochs=1
+2026-08-04 02:45:06 [INFO] __main__: [GAPS client 1] fit round=2 DONE: samples=2360, seconds=11.65
+[92mINFO [0m:      Sent reply
+2026-08-04 02:45:06 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:47:54 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message a4ae51b0-9514-4f55-a876-87b239e6fe3a
+2026-08-04 02:47:54 [INFO] flwr: Received: evaluate message a4ae51b0-9514-4f55-a876-87b239e6fe3a
+2026-08-04 02:47:55 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9426, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 02:47:55 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:47:56 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 55c9e4ec-b16c-4af6-a8fd-947fbcecad79
+2026-08-04 02:47:56 [INFO] flwr: Received: train message 55c9e4ec-b16c-4af6-a8fd-947fbcecad79
+2026-08-04 02:47:56 [INFO] __main__: [GAPS client 1] fit round=3 START: train_samples=2360, local_epochs=1
+2026-08-04 02:48:07 [INFO] __main__: [GAPS client 1] fit round=3 DONE: samples=2360, seconds=11.60
+[92mINFO [0m:      Sent reply
+2026-08-04 02:48:07 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:50:55 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message cdc5f0e0-befb-40a2-9c16-534ece624c5b
+2026-08-04 02:50:55 [INFO] flwr: Received: evaluate message cdc5f0e0-befb-40a2-9c16-534ece624c5b
+2026-08-04 02:50:56 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9221, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 02:50:56 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:50:57 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 04bd8357-1f53-42bb-b286-d037b852b627
+2026-08-04 02:50:57 [INFO] flwr: Received: train message 04bd8357-1f53-42bb-b286-d037b852b627
+2026-08-04 02:50:57 [INFO] __main__: [GAPS client 1] fit round=4 START: train_samples=2360, local_epochs=1
+2026-08-04 02:51:08 [INFO] __main__: [GAPS client 1] fit round=4 DONE: samples=2360, seconds=11.57
+[92mINFO [0m:      Sent reply
+2026-08-04 02:51:08 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:53:58 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 4f5f063e-4e7c-4f57-a897-3c1d6674418c
+2026-08-04 02:53:58 [INFO] flwr: Received: evaluate message 4f5f063e-4e7c-4f57-a897-3c1d6674418c
+2026-08-04 02:53:58 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9868, seconds=0.60
+[92mINFO [0m:      Sent reply
+2026-08-04 02:53:58 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:53:59 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 132567d3-876b-4b4d-937a-371283e3ea0c
+2026-08-04 02:53:59 [INFO] flwr: Received: train message 132567d3-876b-4b4d-937a-371283e3ea0c
+2026-08-04 02:53:59 [INFO] __main__: [GAPS client 1] fit round=5 START: train_samples=2360, local_epochs=1
+2026-08-04 02:54:10 [INFO] __main__: [GAPS client 1] fit round=5 DONE: samples=2360, seconds=11.58
+[92mINFO [0m:      Sent reply
+2026-08-04 02:54:10 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:57:00 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message a88d07a9-fb68-45db-a685-1ef97a7ac00c
+2026-08-04 02:57:00 [INFO] flwr: Received: evaluate message a88d07a9-fb68-45db-a685-1ef97a7ac00c
+2026-08-04 02:57:00 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9882, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 02:57:00 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 02:57:01 [INFO] flwr: 
+[92mINFO [0m:      Received: train message c7cf2539-d1cd-421b-a753-becf672c5261
+2026-08-04 02:57:01 [INFO] flwr: Received: train message c7cf2539-d1cd-421b-a753-becf672c5261
+2026-08-04 02:57:01 [INFO] __main__: [GAPS client 1] fit round=6 START: train_samples=2360, local_epochs=1
+2026-08-04 02:57:13 [INFO] __main__: [GAPS client 1] fit round=6 DONE: samples=2360, seconds=11.60
+[92mINFO [0m:      Sent reply
+2026-08-04 02:57:13 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:00:00 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 80ef8a56-42b4-4e4e-bef2-696319d76e0c
+2026-08-04 03:00:00 [INFO] flwr: Received: evaluate message 80ef8a56-42b4-4e4e-bef2-696319d76e0c
+2026-08-04 03:00:01 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9824, seconds=0.64
+[92mINFO [0m:      Sent reply
+2026-08-04 03:00:01 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:00:02 [INFO] flwr: 
+[92mINFO [0m:      Received: train message b02dbf1f-00ee-4b59-9d7d-eb26215f85c4
+2026-08-04 03:00:02 [INFO] flwr: Received: train message b02dbf1f-00ee-4b59-9d7d-eb26215f85c4
+2026-08-04 03:00:02 [INFO] __main__: [GAPS client 1] fit round=7 START: train_samples=2360, local_epochs=1
+2026-08-04 03:00:13 [INFO] __main__: [GAPS client 1] fit round=7 DONE: samples=2360, seconds=11.65
+[92mINFO [0m:      Sent reply
+2026-08-04 03:00:13 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:03:03 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 6c7a5bcf-c6b3-4dfc-bedd-ec964783823e
+2026-08-04 03:03:03 [INFO] flwr: Received: evaluate message 6c7a5bcf-c6b3-4dfc-bedd-ec964783823e
+2026-08-04 03:03:03 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:03:03 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:03:04 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 20b58b7d-8ca3-464d-a689-b96af7b27157
+2026-08-04 03:03:04 [INFO] flwr: Received: train message 20b58b7d-8ca3-464d-a689-b96af7b27157
+2026-08-04 03:03:04 [INFO] __main__: [GAPS client 1] fit round=8 START: train_samples=2360, local_epochs=1
+2026-08-04 03:03:16 [INFO] __main__: [GAPS client 1] fit round=8 DONE: samples=2360, seconds=11.55
+[92mINFO [0m:      Sent reply
+2026-08-04 03:03:16 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:06:05 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 58271fce-0807-49c6-888a-9f6b67bfab04
+2026-08-04 03:06:05 [INFO] flwr: Received: evaluate message 58271fce-0807-49c6-888a-9f6b67bfab04
+2026-08-04 03:06:05 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:06:05 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:06:06 [INFO] flwr: 
+[92mINFO [0m:      Received: train message fa5bb894-4e5f-43b8-812d-35fd50391016
+2026-08-04 03:06:06 [INFO] flwr: Received: train message fa5bb894-4e5f-43b8-812d-35fd50391016
+2026-08-04 03:06:06 [INFO] __main__: [GAPS client 1] fit round=9 START: train_samples=2360, local_epochs=1
+2026-08-04 03:06:17 [INFO] __main__: [GAPS client 1] fit round=9 DONE: samples=2360, seconds=11.53
+[92mINFO [0m:      Sent reply
+2026-08-04 03:06:17 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:09:06 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 50116487-b816-4e3c-a0fe-160cd24eb8a0
+2026-08-04 03:09:06 [INFO] flwr: Received: evaluate message 50116487-b816-4e3c-a0fe-160cd24eb8a0
+2026-08-04 03:09:07 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9941, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:09:07 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:09:08 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 8587e1ab-97fe-4637-bcbe-1a78649d8538
+2026-08-04 03:09:08 [INFO] flwr: Received: train message 8587e1ab-97fe-4637-bcbe-1a78649d8538
+2026-08-04 03:09:08 [INFO] __main__: [GAPS client 1] fit round=10 START: train_samples=2360, local_epochs=1
+2026-08-04 03:09:19 [INFO] __main__: [GAPS client 1] fit round=10 DONE: samples=2360, seconds=11.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:09:19 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:12:09 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 31462720-ddcf-4e93-8dfe-91a55a71794e
+2026-08-04 03:12:09 [INFO] flwr: Received: evaluate message 31462720-ddcf-4e93-8dfe-91a55a71794e
+2026-08-04 03:12:09 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:12:09 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:12:10 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 83dcff1e-ea6e-4f93-ba3d-6d784529f1d9
+2026-08-04 03:12:10 [INFO] flwr: Received: train message 83dcff1e-ea6e-4f93-ba3d-6d784529f1d9
+2026-08-04 03:12:10 [INFO] __main__: [GAPS client 1] fit round=11 START: train_samples=2360, local_epochs=1
+2026-08-04 03:12:22 [INFO] __main__: [GAPS client 1] fit round=11 DONE: samples=2360, seconds=11.66
+[92mINFO [0m:      Sent reply
+2026-08-04 03:12:22 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:15:11 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 49e26ea3-4e54-41b4-96ca-b3dcbf62ba34
+2026-08-04 03:15:11 [INFO] flwr: Received: evaluate message 49e26ea3-4e54-41b4-96ca-b3dcbf62ba34
+2026-08-04 03:15:12 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:15:12 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:15:13 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 3035dc87-6652-4d7e-922d-38f74d0b5a97
+2026-08-04 03:15:13 [INFO] flwr: Received: train message 3035dc87-6652-4d7e-922d-38f74d0b5a97
+2026-08-04 03:15:13 [INFO] __main__: [GAPS client 1] fit round=12 START: train_samples=2360, local_epochs=1
+2026-08-04 03:15:24 [INFO] __main__: [GAPS client 1] fit round=12 DONE: samples=2360, seconds=11.60
+[92mINFO [0m:      Sent reply
+2026-08-04 03:15:24 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:18:13 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message e212334c-cd7a-4f3a-b00f-d7b186ad7e84
+2026-08-04 03:18:13 [INFO] flwr: Received: evaluate message e212334c-cd7a-4f3a-b00f-d7b186ad7e84
+2026-08-04 03:18:13 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9882, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:18:13 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:18:14 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 8739241b-7c0f-49f3-926d-8c20e8b7c0ec
+2026-08-04 03:18:14 [INFO] flwr: Received: train message 8739241b-7c0f-49f3-926d-8c20e8b7c0ec
+2026-08-04 03:18:14 [INFO] __main__: [GAPS client 1] fit round=13 START: train_samples=2360, local_epochs=1
+2026-08-04 03:18:26 [INFO] __main__: [GAPS client 1] fit round=13 DONE: samples=2360, seconds=11.67
+[92mINFO [0m:      Sent reply
+2026-08-04 03:18:26 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:21:15 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 5277f9d3-a718-400b-b600-93581ec83471
+2026-08-04 03:21:15 [INFO] flwr: Received: evaluate message 5277f9d3-a718-400b-b600-93581ec83471
+2026-08-04 03:21:16 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9912, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:21:16 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:21:16 [INFO] flwr: 
+[92mINFO [0m:      Received: train message de4280c9-4527-405f-ba83-0f9479393912
+2026-08-04 03:21:16 [INFO] flwr: Received: train message de4280c9-4527-405f-ba83-0f9479393912
+2026-08-04 03:21:16 [INFO] __main__: [GAPS client 1] fit round=14 START: train_samples=2360, local_epochs=1
+2026-08-04 03:21:28 [INFO] __main__: [GAPS client 1] fit round=14 DONE: samples=2360, seconds=11.66
+[92mINFO [0m:      Sent reply
+2026-08-04 03:21:28 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:24:16 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 7718328a-7d8d-40c1-98fb-12e6f586cec7
+2026-08-04 03:24:16 [INFO] flwr: Received: evaluate message 7718328a-7d8d-40c1-98fb-12e6f586cec7
+2026-08-04 03:24:17 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9912, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:24:17 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:24:18 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 03cef0ee-9a6e-4e8f-bcfa-0f6934e5d580
+2026-08-04 03:24:18 [INFO] flwr: Received: train message 03cef0ee-9a6e-4e8f-bcfa-0f6934e5d580
+2026-08-04 03:24:18 [INFO] __main__: [GAPS client 1] fit round=15 START: train_samples=2360, local_epochs=1
+2026-08-04 03:24:29 [INFO] __main__: [GAPS client 1] fit round=15 DONE: samples=2360, seconds=11.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:24:29 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:27:19 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 50e07735-4bc5-4117-aad4-19c1e754900b
+2026-08-04 03:27:19 [INFO] flwr: Received: evaluate message 50e07735-4bc5-4117-aad4-19c1e754900b
+2026-08-04 03:27:20 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9941, seconds=0.65
+[92mINFO [0m:      Sent reply
+2026-08-04 03:27:20 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:27:21 [INFO] flwr: 
+[92mINFO [0m:      Received: train message fc3716a3-3dff-4366-94ff-2b7498967ad9
+2026-08-04 03:27:21 [INFO] flwr: Received: train message fc3716a3-3dff-4366-94ff-2b7498967ad9
+2026-08-04 03:27:21 [INFO] __main__: [GAPS client 1] fit round=16 START: train_samples=2360, local_epochs=1
+2026-08-04 03:27:32 [INFO] __main__: [GAPS client 1] fit round=16 DONE: samples=2360, seconds=11.58
+[92mINFO [0m:      Sent reply
+2026-08-04 03:27:32 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:30:21 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message d6393298-6ee4-46bb-8480-90dc3a71fb93
+2026-08-04 03:30:21 [INFO] flwr: Received: evaluate message d6393298-6ee4-46bb-8480-90dc3a71fb93
+2026-08-04 03:30:22 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9853, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:30:22 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:30:22 [INFO] flwr: 
+[92mINFO [0m:      Received: train message ed6dd796-871c-4734-a400-c2ba55bb4853
+2026-08-04 03:30:22 [INFO] flwr: Received: train message ed6dd796-871c-4734-a400-c2ba55bb4853
+2026-08-04 03:30:22 [INFO] __main__: [GAPS client 1] fit round=17 START: train_samples=2360, local_epochs=1
+2026-08-04 03:30:34 [INFO] __main__: [GAPS client 1] fit round=17 DONE: samples=2360, seconds=11.68
+[92mINFO [0m:      Sent reply
+2026-08-04 03:30:34 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:33:23 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 34833df5-7561-4302-8a73-c322ac79af41
+2026-08-04 03:33:23 [INFO] flwr: Received: evaluate message 34833df5-7561-4302-8a73-c322ac79af41
+2026-08-04 03:33:23 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:33:23 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:33:24 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 8d45bbe7-cac2-44b5-ae5e-11e54d5ad678
+2026-08-04 03:33:24 [INFO] flwr: Received: train message 8d45bbe7-cac2-44b5-ae5e-11e54d5ad678
+2026-08-04 03:33:24 [INFO] __main__: [GAPS client 1] fit round=18 START: train_samples=2360, local_epochs=1
+2026-08-04 03:33:36 [INFO] __main__: [GAPS client 1] fit round=18 DONE: samples=2360, seconds=11.68
+[92mINFO [0m:      Sent reply
+2026-08-04 03:33:36 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:36:23 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message ea8d6f19-5464-400d-892d-6e5c27bf98ad
+2026-08-04 03:36:23 [INFO] flwr: Received: evaluate message ea8d6f19-5464-400d-892d-6e5c27bf98ad
+2026-08-04 03:36:24 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9912, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:36:24 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:36:24 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 6f7200cf-d4a6-45d5-8928-b563d6e3617e
+2026-08-04 03:36:24 [INFO] flwr: Received: train message 6f7200cf-d4a6-45d5-8928-b563d6e3617e
+2026-08-04 03:36:24 [INFO] __main__: [GAPS client 1] fit round=19 START: train_samples=2360, local_epochs=1
+2026-08-04 03:36:36 [INFO] __main__: [GAPS client 1] fit round=19 DONE: samples=2360, seconds=11.54
+[92mINFO [0m:      Sent reply
+2026-08-04 03:36:36 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:39:26 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 986768d3-f870-44bf-b1a0-b12b474d68f2
+2026-08-04 03:39:26 [INFO] flwr: Received: evaluate message 986768d3-f870-44bf-b1a0-b12b474d68f2
+2026-08-04 03:39:26 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9912, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:39:26 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:39:27 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 25f44852-1bca-448f-8f2a-56d387342fdf
+2026-08-04 03:39:27 [INFO] flwr: Received: train message 25f44852-1bca-448f-8f2a-56d387342fdf
+2026-08-04 03:39:27 [INFO] __main__: [GAPS client 1] fit round=20 START: train_samples=2360, local_epochs=1
+2026-08-04 03:39:39 [INFO] __main__: [GAPS client 1] fit round=20 DONE: samples=2360, seconds=11.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:39:39 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:42:31 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 1706ce6b-f2f9-44ff-97cc-3b67ea72319f
+2026-08-04 03:42:31 [INFO] flwr: Received: evaluate message 1706ce6b-f2f9-44ff-97cc-3b67ea72319f
+2026-08-04 03:42:32 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:42:32 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:42:32 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 5cbdee31-fcfd-4bd5-99b5-16151c45087a
+2026-08-04 03:42:32 [INFO] flwr: Received: train message 5cbdee31-fcfd-4bd5-99b5-16151c45087a
+2026-08-04 03:42:32 [INFO] __main__: [GAPS client 1] fit round=21 START: train_samples=2360, local_epochs=1
+2026-08-04 03:42:44 [INFO] __main__: [GAPS client 1] fit round=21 DONE: samples=2360, seconds=11.67
+[92mINFO [0m:      Sent reply
+2026-08-04 03:42:44 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:45:34 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 6e1a102d-51b2-472f-bf43-17b32895e81a
+2026-08-04 03:45:34 [INFO] flwr: Received: evaluate message 6e1a102d-51b2-472f-bf43-17b32895e81a
+2026-08-04 03:45:34 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.63
+[92mINFO [0m:      Sent reply
+2026-08-04 03:45:34 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:45:35 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 5dd8833f-8b56-4042-997a-5b0615d9c5b6
+2026-08-04 03:45:35 [INFO] flwr: Received: train message 5dd8833f-8b56-4042-997a-5b0615d9c5b6
+2026-08-04 03:45:35 [INFO] __main__: [GAPS client 1] fit round=22 START: train_samples=2360, local_epochs=1
+2026-08-04 03:45:46 [INFO] __main__: [GAPS client 1] fit round=22 DONE: samples=2360, seconds=11.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:45:46 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:48:38 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 6fd29d86-ad74-4f73-b7a2-14c04d3ac089
+2026-08-04 03:48:38 [INFO] flwr: Received: evaluate message 6fd29d86-ad74-4f73-b7a2-14c04d3ac089
+2026-08-04 03:48:38 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:48:38 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:48:39 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 009cb2cf-f684-4206-8dc8-7d58ae9978fa
+2026-08-04 03:48:39 [INFO] flwr: Received: train message 009cb2cf-f684-4206-8dc8-7d58ae9978fa
+2026-08-04 03:48:39 [INFO] __main__: [GAPS client 1] fit round=23 START: train_samples=2360, local_epochs=1
+2026-08-04 03:48:50 [INFO] __main__: [GAPS client 1] fit round=23 DONE: samples=2360, seconds=11.56
+[92mINFO [0m:      Sent reply
+2026-08-04 03:48:50 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:51:44 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message c0a697aa-0888-466c-97a5-aab5bf87ac89
+2026-08-04 03:51:44 [INFO] flwr: Received: evaluate message c0a697aa-0888-466c-97a5-aab5bf87ac89
+2026-08-04 03:51:44 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9926, seconds=0.62
+[92mINFO [0m:      Sent reply
+2026-08-04 03:51:44 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:51:45 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 5ae9ac7c-b4c7-4995-8016-709855ed3a5a
+2026-08-04 03:51:45 [INFO] flwr: Received: train message 5ae9ac7c-b4c7-4995-8016-709855ed3a5a
+2026-08-04 03:51:45 [INFO] __main__: [GAPS client 1] fit round=24 START: train_samples=2360, local_epochs=1
+2026-08-04 03:51:56 [INFO] __main__: [GAPS client 1] fit round=24 DONE: samples=2360, seconds=11.51
+[92mINFO [0m:      Sent reply
+2026-08-04 03:51:56 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:54:48 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message ff455871-bbc5-48dc-932a-2dd40225a851
+2026-08-04 03:54:48 [INFO] flwr: Received: evaluate message ff455871-bbc5-48dc-932a-2dd40225a851
+2026-08-04 03:54:49 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9912, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:54:49 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:54:49 [INFO] flwr: 
+[92mINFO [0m:      Received: train message 18528565-a2d2-4df3-8e4d-3249909edef7
+2026-08-04 03:54:49 [INFO] flwr: Received: train message 18528565-a2d2-4df3-8e4d-3249909edef7
+2026-08-04 03:54:49 [INFO] __main__: [GAPS client 1] fit round=25 START: train_samples=2360, local_epochs=1
+2026-08-04 03:55:01 [INFO] __main__: [GAPS client 1] fit round=25 DONE: samples=2360, seconds=11.59
+[92mINFO [0m:      Sent reply
+2026-08-04 03:55:01 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:58:00 [INFO] flwr: 
+[92mINFO [0m:      Received: evaluate message 0346f721-b85d-4168-92a5-258b67bf76b6
+2026-08-04 03:58:00 [INFO] flwr: Received: evaluate message 0346f721-b85d-4168-92a5-258b67bf76b6
+2026-08-04 03:58:01 [INFO] __main__: [GAPS client 1] evaluate: samples=680, accuracy=0.9912, seconds=0.61
+[92mINFO [0m:      Sent reply
+2026-08-04 03:58:01 [INFO] flwr: Sent reply
+[92mINFO [0m:      
+2026-08-04 03:58:01 [INFO] flwr: 
+[92mINFO [0m:      Received: reconnect message 9752963c-219a-40f8-bffc-2753def402b6
+2026-08-04 03:58:01 [INFO] flwr: Received: reconnect message 9752963c-219a-40f8-bffc-2753def402b6
+2026-08-04 03:58:01 [DEBUG] flwr: gRPC channel closed
+[92mINFO [0m:      Disconnect and shut down
+2026-08-04 03:58:01 [INFO] flwr: Disconnect and shut down

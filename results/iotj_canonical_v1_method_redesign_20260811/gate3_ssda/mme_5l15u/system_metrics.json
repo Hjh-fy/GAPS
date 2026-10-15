@@ -1,0 +1,22 @@
+{
+  "method": "mme_5l15u",
+  "steps": 100,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "seed": 42,
+  "trainable_parameters": 22765,
+  "total_parameters": 22765,
+  "adaptation_seconds": 16.714969100081362,
+  "relative_parameter_displacement": 0.029788503280610203,
+  "mme_lambda": 0.1,
+  "exact_mme_reproduction": false,
+  "architecture_note": "existing normalized-feature linear classifier with bias retained",
+  "optimizer_updates": 100,
+  "unlabeled_used": true,
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_redesign_20260811\\gate3_ssda\\mme_5l15u\\mme_5l15u_step100.pth",
+  "checkpoint_sha256": "4e7bbe112cc094fd81f179003daa7c3ee6c2dc8acfa1e11a55980ae0740ba13d",
+  "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+  "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+  "labeled_count": 80,
+  "unlabeled_count_available": 240
+}

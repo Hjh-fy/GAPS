@@ -1,0 +1,30 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_result_index.v1",
+  "experiment_id": "IOTJ-B5-C5-RUNTIME-V5-QC-20260725",
+  "decision": "RUNTIME_V5_QC_VALID_BUT_NOT_SUPERIOR",
+  "selected_candidate": "QC2",
+  "protocol_commit": "c96ae1a",
+  "test_adapter_fix_commit": "7c15b98",
+  "qc_selection_lock_sha256": "64877b7676bc4497074a2619282e0d2fedd658db76c2d1868b91699edba6d518",
+  "result_root": "results/iotj_b5_c5_runtime_v5_qc_20260725",
+  "primary_records": {
+    "protocol": "results/iotj_b5_c5_runtime_v5_qc_20260725/protocol_manifest.json",
+    "selection": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_candidate_selection.json",
+    "lock": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_selection_lock.json",
+    "test_summary": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_test_summary.csv",
+    "v4_comparison": "results/iotj_b5_c5_runtime_v5_qc_20260725/comparison_vs_runtime_v4.json",
+    "decision_gate": "results/iotj_b5_c5_runtime_v5_qc_20260725/decision_gate.json",
+    "calibration_parity": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_qc_calibration_parity_report.json",
+    "test_parity": "results/iotj_b5_c5_runtime_v5_qc_20260725/runtime_qc_test_parity_report.json",
+    "sha256_index": "results/iotj_b5_c5_runtime_v5_qc_20260725/sha256_index.json"
+  },
+  "large_artifacts_not_for_git": [
+    "qc_calibration_oof_rows.csv",
+    "hc95_test_rows.csv",
+    "hc90_test_rows.csv",
+    "runtime_qc_test_rows.csv",
+    "runtime_v5_qc_policy.json",
+    "runtime_v5_qc_bundle/qc_policy.json"
+  ],
+  "runtime_v4_remains_formal_baseline": true
+}

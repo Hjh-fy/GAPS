@@ -1,0 +1,71 @@
+{
+  "schema_version": "gaps.iotj.chinese_content_freeze_index.v1",
+  "freeze_status": "CHINESE_CONTENT_FROZEN_FOR_CONTROLLED_ENGLISH_TRANSLATION",
+  "freeze_timestamp": "2026-07-27T01:45:15.3134447+08:00",
+  "branch": "codex/iotj-confirmation-observability",
+  "source": {
+    "path": "docs/paper/GAPS_IoTJ_submission_candidate_v3_1.zh.html",
+    "sha256": "5fdf5f5b57ca72c969c3684dc2fda795b3727dd8caaff3dbee5c4c1fc4ad5f3e",
+    "size_bytes": 51062,
+    "commit": "c4342e8a009f8bc8f3e38af56ccca4f504ce2fc8"
+  },
+  "frozen_copy": {
+    "path": "docs/paper/GAPS_IoTJ_chinese_content_frozen_20260727.zh.html",
+    "sha256": "5fdf5f5b57ca72c969c3684dc2fda795b3727dd8caaff3dbee5c4c1fc4ad5f3e",
+    "size_bytes": 51062,
+    "byte_for_byte_equal_to_source": true
+  },
+  "provenance": {
+    "paper_evidence_freeze_commit": "b78e8bec989cc8a925698d682aff05efe859fcd2",
+    "system_runtime_freeze_commit": "36ee62339c025064cb415bfd13c5e7139a954edc",
+    "number_audit": {
+      "path": "docs/paper/candidate_v3_1_number_audit.json",
+      "sha256": "052e833b74a9424b00ac7363b4bbfa50c8bd61a0a0e7fe4684dbeb7f601014be",
+      "status": "PASS",
+      "numeric_conflict_count": 0
+    },
+    "controlled_translation_contract": "docs/paper/GAPS_IoTJ_controlled_translation_contract_20260727.md"
+  },
+  "human_signoff": [
+    {
+      "item": "title",
+      "status": "APPROVED"
+    },
+    {
+      "item": "three_contributions_and_order",
+      "status": "APPROVED"
+    },
+    {
+      "item": "target_calibration_and_held_out_window_boundary",
+      "status": "APPROVED"
+    },
+    {
+      "item": "appendix_a_b_content_identity",
+      "status": "APPROVED"
+    },
+    {
+      "item": "author_and_public_information_managed_as_separate_submission_metadata",
+      "status": "APPROVED"
+    }
+  ],
+  "allowed_derivative_operations": [
+    "Controlled English translation that preserves scientific meaning, numbers, units, comparisons, uncertainty, limitations, and evidence identity.",
+    "IEEE LaTeX conversion, typesetting, line wrapping, table/figure placement, and appendix-to-supplementary relocation without deleting or changing scientific content.",
+    "English figure redraw using the same frozen data and message; the broad Fig. 1 locality label must be replaced by the bounded data-flow wording approved in the frozen caption.",
+    "Reference and BibTeX formatting or verified metadata correction with explicit provenance and without changing the supported manuscript claim.",
+    "Independent submission-metadata management for authors, affiliations, corresponding-author details, acknowledgments, and approved data/code availability wording.",
+    "Byte-preserving copies, archives, SHA verification, and derivative provenance indexing."
+  ],
+  "prohibited_scientific_content_changes": [
+    "Editing or overwriting the source manuscript or frozen-copy bytes.",
+    "Changing the title meaning, contribution set or order, research questions, method semantics, dataset roles, calibration/test protocol, test-access boundary, or evaluation identity.",
+    "Changing any frozen number, unit, precision, comparison, uncertainty, table/figure data, result interpretation, limitation, or claim-evidence relationship.",
+    "Removing adverse results, filename-overlap boundaries, calibration dependence, privacy limitations, runtime-role distinctions, or legacy-evidence identities.",
+    "Changing model, classifier, regression head, runtime, QC component, threshold, promotion decision, or frozen asset.",
+    "Running or using new training, inference, evaluation, benchmark, test access, or post-freeze method selection to revise the frozen scientific narrative.",
+    "Using any other Chinese manuscript as the scientific source of the controlled English translation."
+  ],
+  "formal_test_accessed_during_freeze": false,
+  "training_inference_evaluation_or_benchmark_run": false,
+  "frozen_scientific_assets_modified": false
+}

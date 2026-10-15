@@ -1,0 +1,16 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.strict_audit.v1",
+  "status": "PASS",
+  "failures": [],
+  "endpoint_count": 6,
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "checkpoint_count": 6,
+  "prediction_file_count": 30,
+  "test_target_count": 3,
+  "dual_gate": {
+    "c5_A4_minus_A0T_RMSE": -3.679410397345883,
+    "pooled_A4_minus_A0T_RMSE": -1.8780981601115094,
+    "decision": "REGRESSION_ADVANTAGE_SUPPORTED"
+  },
+  "stop_rule": "STOP_NO_FURTHER_EXPERIMENTS"
+}

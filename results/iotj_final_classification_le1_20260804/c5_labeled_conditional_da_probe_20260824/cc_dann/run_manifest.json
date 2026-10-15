@@ -1,0 +1,44 @@
+{
+  "adaptation_seconds": 8.04560189996846,
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\c5_labeled_conditional_da_probe_20260824\\cc_dann\\adapted_step_100.pth",
+  "checkpoint_sha256": "af34c99c98a5cf23e59b693de099d2acabd7d0512ecf2a413f3d2e913d29d69f",
+  "method": "cc_dann",
+  "source_checkpoint_ordered_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+  "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+  "spec": {
+    "alignment": "dann_grl_binary_bce",
+    "alignment_scope": "true_class_conditional",
+    "alignment_weight": 0.5,
+    "checkpoint_selection": "fixed_step_100",
+    "hyperparameter_search": false,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "seed": 42,
+    "steps": 100,
+    "target_ce_weight": 0.0,
+    "target_fields": [
+      "x",
+      "class"
+    ],
+    "target_label_role": "class_grouping_only_no_target_CE"
+  },
+  "target_calibration": {
+    "class_label_sha256": "ab86987f6493f8e1b3aca7283992978948c82d1621e4954055251adb9f0301d2",
+    "concentration_access": false,
+    "feature_sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e",
+    "feature_shape": [
+      320,
+      100,
+      8
+    ],
+    "fields": [
+      "x",
+      "class"
+    ],
+    "num_examples": 320,
+    "phase_access": false,
+    "split": "C5_calibration",
+    "target_test_access": false
+  },
+  "target_test_opened": false
+}

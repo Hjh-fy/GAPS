@@ -1,0 +1,38 @@
+{
+  "schema_version": "iotj.b5_seed_preflight.v1",
+  "run_id": "c12_to_c5__b5__s43",
+  "seed": 43,
+  "timestamp": "2026-07-24T12:25:00+08:00",
+  "m0_head": "d3ac8b90c87d50a7a0be1fd985d883db15456703",
+  "origin_head": "d3ac8b90c87d50a7a0be1fd985d883db15456703",
+  "checks": {
+    "m0_protocol_validator": "ready_for_preflight",
+    "three_host_ssh": "pass",
+    "clock_skew": "pass",
+    "residual_training_processes": "none",
+    "flower_ports_8080_18080": "free",
+    "host_resources": "pass",
+    "content_addressed_source_deployment": "pass",
+    "dependency_versions": "pass",
+    "dataset_manifest_files": "pass",
+    "algorithm_config": "pass",
+    "existing_attempt_processes": "none",
+    "runtime_v4_hc95_hc90_frozen_files": "unchanged",
+    "seed43_output_isolation_before_preflight": "absent",
+    "seed43_output_isolation_after_preflight": "absent"
+  },
+  "controller_command": "python -m scripts.run_iotj_confirmation_observability ... --runs B5:43 --preflight-only",
+  "controller_result": {
+    "queue": [
+      "c12_to_c5__b5__s43"
+    ],
+    "status": "preflighted"
+  },
+  "notes": [
+    "The controller preflight deployed or reused only the content-addressed frozen source archive and launched no server/client training process.",
+    "The C2 client subset intentionally matches the canonical seed42 ECS-C2 topology: nine manifest-bound feature/classification/regression files and no local phase-label files. The loader therefore emits phase=-1 for C2, exactly as recorded in seed42 client_stats_round_001.json. Adding phase files would change the frozen protocol.",
+    "Server-side DA uses strict_calibration_split=true and therefore reads only C1/C2/C5 calibration_* arrays; it cannot fall back to source train/test arrays."
+  ],
+  "decision": "PASS",
+  "formal_training_authorized": true
+}

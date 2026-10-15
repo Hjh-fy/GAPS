@@ -241,7 +241,7 @@ def configure_header_footer(section) -> None:
     fp = footer.paragraphs[0]
     fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
     fp.paragraph_format.space_before = Pt(3)
-    prefix = fp.add_run("Draft 2026-07-11  |  Page ")
+    prefix = fp.add_run("Updated draft 2026-07-15  |  Page ")
     set_run_font(prefix, size=8.5, color=MUTED)
     add_page_field(fp)
 
@@ -901,7 +901,7 @@ def add_memo_masthead(doc: Document, title: str, subtitle: str, english_title: s
         ("稿件类型", "IoT-J 系统方法论文完整初稿"),
         ("主协议", "C1/C2 source → C5 target only"),
         ("证据版本", "v2r1 seed-42 core complete; confirmation pending"),
-        ("日期", "2026-07-11"),
+        ("日期", "2026-07-15"),
     ]
     for label, value in metadata:
         p = doc.add_paragraph()

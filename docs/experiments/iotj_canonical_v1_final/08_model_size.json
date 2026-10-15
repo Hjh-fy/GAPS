@@ -1,0 +1,37 @@
+{
+  "schema_version": "iotj.canonical_v1.model_size.v1",
+  "classifier_by_target": {
+    "C3": {
+      "state_tensor_count": 80,
+      "total_parameter_count": 22765,
+      "trainable_parameter_count": 22765,
+      "fp32_model_bytes": 91060,
+      "checkpoint_file_bytes": 183275,
+      "checkpoint_sha256": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414"
+    },
+    "C4": {
+      "state_tensor_count": 80,
+      "total_parameter_count": 22765,
+      "trainable_parameter_count": 22765,
+      "fp32_model_bytes": 91060,
+      "checkpoint_file_bytes": 183275,
+      "checkpoint_sha256": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3"
+    },
+    "C5": {
+      "state_tensor_count": 80,
+      "total_parameter_count": 22765,
+      "trainable_parameter_count": 22765,
+      "fp32_model_bytes": 91060,
+      "checkpoint_file_bytes": 183275,
+      "checkpoint_sha256": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93"
+    }
+  },
+  "parameter_count_semantics": "total_parameter_count counts scalar parameters; state_tensor_count counts state-dict tensors",
+  "federated_h1_serialized_bytes": 47244,
+  "h23_qc_auxiliary_serialized_bytes": 481909,
+  "r84_serialized_bytes": 108715,
+  "qc_config_bytes": 9247,
+  "package_bytes_before_audit_files": 1454242,
+  "input_tensor_bytes_fp32": 1600,
+  "complete_deployment_package_bytes": 1455987
+}

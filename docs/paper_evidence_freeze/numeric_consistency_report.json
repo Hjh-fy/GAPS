@@ -1,0 +1,76 @@
+{
+  "schema_version": "iotj.paper_evidence_freeze.v1",
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "B5 accuracy",
+      "token": "0.989118 ± 0.005983",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "RG1 five-seed",
+      "token": "11.6339 ± 0.3142",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "formal seed42 frozen",
+      "token": "11.3416 ppm",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "group-aware 320",
+      "token": "10.8724",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "group-aware 160",
+      "token": "23.9156",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "QC HC95 yield+RMSE",
+      "token": "93.75%/86.99%",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "application payload wording",
+      "token": "measured application payload",
+      "expected_present": true,
+      "found": true,
+      "status": "PASS"
+    },
+    {
+      "check": "stale historical B2 number",
+      "token": "99.26%",
+      "expected_present": false,
+      "found": false,
+      "status": "PASS"
+    },
+    {
+      "check": "stale H8 route number",
+      "token": "17.447",
+      "expected_present": false,
+      "found": false,
+      "status": "PASS"
+    }
+  ],
+  "numeric_conflicts": 0,
+  "scope_rules": [
+    "11.3416=frozen historical seed42 result",
+    "10.8724=group-aware 320 mean",
+    "accepted RMSE always paired with yield",
+    "application payload is not transport traffic"
+  ]
+}

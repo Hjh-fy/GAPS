@@ -1,0 +1,32 @@
+{
+  "schema_version": "iotj.federated_source_regression_screening_result_index.v1",
+  "status": "formal_complete_audited",
+  "experiment_id": "IOTJ-FSRP-RS0-RS4-20260723",
+  "formal_run_commit": "109a095343a5e83aa401e1f52cb8b99cd975a95c",
+  "branch": "codex/iotj-confirmation-observability",
+  "output_root": "results/iotj_federated_source_regression_prior_20260723",
+  "selection_scope": "C5_calibration_validation_only",
+  "selected_candidate": "RS3_local_plus_fedavg",
+  "selection_status": "paper_preferred_candidate",
+  "next_stage_recommendation": "STOP_FEDERATED_REGRESSION",
+  "test_used_for_selection": false,
+  "evidence_boundary": "in_process_checkpoint_fedavg_algorithm_screening_only",
+  "files": [
+    {"path": "calibration_selection.csv", "bytes": 1493, "sha256": "37912bd50e69976a72a6b60f7c4081932f8fc4b3e8de4850a345b74012cfed9a"},
+    {"path": "comparison_vs_pooled_h8.csv", "bytes": 977, "sha256": "be303561fca7e44705325b6bf6f938b8d4a5a6d9377edc5d9ad038bea5b784d0"},
+    {"path": "decision_gate.json", "bytes": 2994, "sha256": "4eed0c50234e21b2c12146c901cc9272e78345c6a8ee94537e1fddb4eb9450a5"},
+    {"path": "fedavg_model_manifest.json", "bytes": 1974, "sha256": "1be7663c28decdde1b5b9a204784c21d315f95de9300eb1f2aa7ab6000d190e7"},
+    {"path": "per_gas_summary.csv", "bytes": 1401, "sha256": "e1328039f214024b97a4828181bac415028ce6658616e077728acd7ebd3029cb"},
+    {"path": "protocol_manifest.json", "bytes": 11745, "sha256": "d7299c410a39ba4bcf6a4562764886a7af15eca5acd7e3b95735852d707835bb"},
+    {"path": "README.md", "bytes": 366, "sha256": "187c8524f96f74e923a2bb8df23ded3083888638d7e51bcf857162a95dfac294"},
+    {"path": "regression_fedavg_global.pt", "bytes": 1790709, "sha256": "a74ce3e40ead215c497acd8135622b1bbad88867ae7271a9c0009d2ace16ebb6"},
+    {"path": "regression_source_client1_local.pth", "bytes": 1853776, "sha256": "97f338d410970925b73093f1538592a904b5d1ef7f2a944b55dbb988c07ac90e"},
+    {"path": "regression_source_client2_local.pth", "bytes": 1853776, "sha256": "e5d7e697e1abac9632d0ee047ff0c8812c8b44d9dd4c323831203a8643cab081"},
+    {"path": "regression_variant_summary.csv", "bytes": 1123, "sha256": "d37521a27d3f373a11a25021fc47409ca9c768b31bc4ac3d0f036e941bf6e058"},
+    {"path": "source_local_model_manifest.json", "bytes": 585, "sha256": "9ced6b7dfdaa63aa2cfcb85519c125c8f40034e96a4aa127669afbbfb02c7309"},
+    {"path": "source_prediction_mechanism.json", "bytes": 2578, "sha256": "63c0965efaf0b31bf487dcad3fa43464f2358fc91e52ac78d8261dd3368a02cc"},
+    {"path": "test_predictions.csv", "bytes": 223232, "sha256": "d4019cdae839db478c7a4e29938d051a28f642ff6d3e08ac57a6eb6989f3e127"},
+    {"path": "topology_audit.json", "bytes": 7256, "sha256": "8db7f3f603532caeb27a67c0bf95a522a1095fb030fde817dffa8bd6b4951b57"}
+  ],
+  "result_document": "docs/experiments/iotj_federated_source_regression_screening_result_20260723.zh.md"
+}

@@ -8,6 +8,7 @@ from typing import Dict, Tuple, Optional, List, Any
 from torch.utils.data import DataLoader
 from model import FedGasModel
 from config import FLConfig
+from gaps_flower.loss_activity import LossActivityAccumulator
 from utils import get_lambda_reg, apply_sensor_aug
 
 
@@ -561,6 +562,27 @@ class Client:
             lambda_reg = None  # 使用动态权重
             optimizer = torch.optim.Adam(self.model.parameters(), lr=config.LR_CLIENT)
 
+        fedprox_mu = float(getattr(config, "FEDPROX_MU", 0.0))
+        if fedprox_mu < 0.0:
+            raise ValueError("FEDPROX_MU must be non-negative")
+        fedprox_reference = {
+            name: parameter.detach().clone()
+            for name, parameter in self.model.named_parameters()
+            if parameter.requires_grad
+        } if fedprox_mu > 0.0 else {}
+        fedprox_penalty_sum = 0.0
+        fedprox_penalty_batches = 0
+        loss_activity = LossActivityAccumulator(
+            scope="client",
+            variant=str(getattr(self, "loss_activity_variant", "unspecified")),
+        )
+        # Read-only training instrumentation.  These scalars are accumulated
+        # from the forward pass already required for optimization; no extra
+        # model pass, optimizer update, or state mutation is introduced.
+        train_ce_sum = 0.0
+        train_correct = 0
+        train_examples = 0
+
         # 学习率调度器：分阶段模式下停用（因为参数组动态变化）
         scheduler = None
 
@@ -590,6 +612,14 @@ class Client:
 
                 # 计算各部分损失
                 loss_cls = self._compute_classification_loss(logits, y_cls)
+                batch_examples = int(y_cls.numel())
+                train_ce_sum += float(
+                    F.cross_entropy(logits.detach(), y_cls, reduction="sum").item()
+                )
+                train_correct += int(
+                    (logits.detach().argmax(dim=1) == y_cls).sum().item()
+                )
+                train_examples += batch_examples
                 loss_align = self._compute_align_loss(cls_feat, y_cls, y_p, global_protos)
                 loss_distill = self._compute_distill_loss(x, cls_feat)
                 loss_reg = self._compute_regression_loss(reg_feat, y_cls, y_reg, semantic_protos, y_p, current_round)
@@ -598,6 +628,83 @@ class Client:
                 if lambda_reg is None:
                     lambda_reg = get_lambda_reg(current_round, self.config.GLOBAL_ROUNDS)
                 total_loss = loss_cls + loss_align + loss_distill + lambda_reg * loss_reg
+                loss_activity.record(
+                    loss_name="source_ce",
+                    configured_weight=1.0,
+                    input_available=True,
+                    raw_loss=float(loss_cls.detach().item()),
+                    active=True,
+                    inactive_reason="",
+                )
+                align_weight = float(getattr(config, "LAMBDA_ALIGN", 0.0))
+                align_inputs = bool(global_protos)
+                align_active = bool(config.USE_ALIGN and align_inputs and align_weight != 0.0)
+                loss_activity.record(
+                    loss_name="semantic_alignment",
+                    configured_weight=align_weight,
+                    input_available=align_inputs,
+                    raw_loss=(
+                        float(loss_align.detach().item()) / align_weight
+                        if align_active
+                        else None
+                    ),
+                    active=align_active,
+                    inactive_reason=(
+                        ""
+                        if align_active
+                        else (
+                            "module_disabled"
+                            if not config.USE_ALIGN
+                            else "global_prototypes_unavailable"
+                            if not align_inputs
+                            else "configured_weight_zero"
+                        )
+                    ),
+                )
+                replay_weight = float(getattr(config, "LAMBDA_REPLAY_DISTILL", 0.0))
+                replay_inputs = self.prev_model is not None
+                replay_active = bool(
+                    config.USE_REPLAY_DISTILL and replay_inputs and replay_weight != 0.0
+                )
+                loss_activity.record(
+                    loss_name="replay_distillation",
+                    configured_weight=replay_weight,
+                    input_available=replay_inputs,
+                    raw_loss=(
+                        float(loss_distill.detach().item()) / replay_weight
+                        if replay_active
+                        else None
+                    ),
+                    active=replay_active,
+                    inactive_reason=(
+                        ""
+                        if replay_active
+                        else (
+                            "module_disabled"
+                            if not config.USE_REPLAY_DISTILL
+                            else "previous_model_unavailable"
+                            if not replay_inputs
+                            else "configured_weight_zero"
+                        )
+                    ),
+                )
+                reg_weight = float(lambda_reg)
+                reg_enabled = bool(getattr(config, "USE_REG_LOSS", False))
+                reg_active = bool(reg_enabled and reg_weight != 0.0)
+                loss_activity.record(
+                    loss_name="regression",
+                    configured_weight=reg_weight,
+                    input_available=True,
+                    raw_loss=float(loss_reg.detach().item()) if reg_active else None,
+                    active=reg_active,
+                    inactive_reason=(
+                        ""
+                        if reg_active
+                        else "regression_disabled"
+                        if not reg_enabled
+                        else "configured_weight_zero"
+                    ),
+                )
                 # 回归对比损失
                 if getattr(self.config, 'USE_REG_CONTRASTIVE', False):
                     from utils import regression_contrastive_loss
@@ -607,6 +714,16 @@ class Client:
                         pos_margin=self.config.REG_CONTRASTIVE_POS_MARGIN,
                     )
                     total_loss = total_loss + self.config.LAMBDA_REG_CONTRASTIVE * loss_reg_contrast
+
+                if fedprox_reference:
+                    proximal_penalty = sum(
+                        torch.sum((parameter - fedprox_reference[name]) ** 2)
+                        for name, parameter in self.model.named_parameters()
+                        if name in fedprox_reference
+                    )
+                    total_loss = total_loss + 0.5 * fedprox_mu * proximal_penalty
+                    fedprox_penalty_sum += float(proximal_penalty.detach().item())
+                    fedprox_penalty_batches += 1
                                 
                 total_loss.backward()
                 # 梯度裁剪（提高阈值）
@@ -616,6 +733,21 @@ class Client:
             # 学习率调度
             if scheduler:
                 scheduler.step()
+
+        self.last_fedprox_penalty = (
+            fedprox_penalty_sum / fedprox_penalty_batches
+            if fedprox_penalty_batches
+            else 0.0
+        )
+        self.last_train_ce_mean = (
+            train_ce_sum / train_examples if train_examples else 0.0
+        )
+        self.last_train_accuracy = (
+            train_correct / train_examples if train_examples else 0.0
+        )
+        self.last_train_metric_examples = int(train_examples)
+        self.last_train_ce_averaging = "sample_weighted_over_local_minibatches"
+        self.last_loss_activity = loss_activity.rows()
 
         # ========= 3. 训练后均值 + 方差 + 差分隐私噪声  =========
         if not getattr(config, "UPLOAD_PROTO_STATS", True):
@@ -741,8 +873,15 @@ class Client:
                     # 批量获取对应的原型
                     selected_protos = proto_tensor[y_cls, y_p]
                     
-                    # 计算批量损失
-                    align_terms = torch.norm(feats - selected_protos, p=2, dim=1).pow(2)
+                    # GAPS-DG-P uses squared distance in the normalized
+                    # semantic space for both local features and server
+                    # prototypes.  Existing contrastive profiles use the
+                    # branch above and are unaffected.
+                    normalized_feats = F.normalize(feats, dim=1, p=2)
+                    normalized_protos = F.normalize(selected_protos, dim=1, p=2)
+                    align_terms = torch.norm(
+                        normalized_feats - normalized_protos, p=2, dim=1
+                    ).pow(2)
                     loss_align = align_terms.mean()
             loss_align *= self.config.LAMBDA_ALIGN
         return loss_align

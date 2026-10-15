@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "freeze_commit": "20007966527949309a094605aebfb710b57eed2d",
+  "input_hashes_verified": 206,
+  "fixed_endpoints": 6,
+  "class_round_loss_audits": 50,
+  "classification_rows": 6,
+  "combined_rows": 9,
+  "formal_predictions": 12111,
+  "curve_points": 75,
+  "curve_predictions": 134925,
+  "curve_summary": [
+    {
+      "target": "C3",
+      "round25_accuracy": 0.9996264475158759,
+      "first_round_at_least_99": 8,
+      "sustained_99_start": 8,
+      "test_n": 2677
+    },
+    {
+      "target": "C4",
+      "round25_accuracy": 1,
+      "first_round_at_least_99": 3,
+      "sustained_99_start": 16,
+      "test_n": 1360
+    },
+    {
+      "target": "C5",
+      "round25_accuracy": 0.9941176470588236,
+      "first_round_at_least_99": 12,
+      "sustained_99_start": 15,
+      "test_n": 1360
+    }
+  ],
+  "regression_files_verified": 14,
+  "test_open_after_all_endpoints": true,
+  "inference_repeated": false,
+  "training_repeated": false,
+  "regression_refit_repeated": false,
+  "related_pytest": "43 passed in 15.36s",
+  "compileall_exit_code": 0,
+  "full_suite_prior_status": "1604 passed,84 failed,9 errors,5 skipped; not rerun or claimed green",
+  "classification_controller_alive": false,
+  "remote_training_processes": 0,
+  "figure_source_QA": {
+    "PASS": 13,
+    "WARN": 1,
+    "FAIL": 0,
+    "warning": "No TIFF; SVG/PDF/600dpi PNG are the frozen deliverables"
+  },
+  "nested_regression_cache_audit": {
+    "budgets": [
+      5,
+      10,
+      15
+    ],
+    "reference_budget": 20,
+    "matching_key": "canonical_identity",
+    "max_abs_diff": {
+      "sensor83": 0,
+      "h1": 0,
+      "source_prior": 0
+    },
+    "training_or_inference_performed": false
+  }
+}

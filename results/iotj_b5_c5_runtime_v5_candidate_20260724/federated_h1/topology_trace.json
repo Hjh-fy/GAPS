@@ -1,0 +1,28 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "topology": {
+    "C1": "Raspberry_Pi",
+    "C2": "ECS_client",
+    "aggregation_server": "Alibaba_Cloud_ECS_server_DA"
+  },
+  "sequential_phases": [
+    "C1_and_C2_local_feature_moments",
+    "server_global_scalers",
+    "C1_and_C2_local_normal_equations",
+    "server_ridge_candidates",
+    "C1_and_C2_local_clipped_validation_SSE",
+    "server_alpha_selection_and_global_H1"
+  ],
+  "artifact_sha256": {
+    "c1_moments.json": "d9a2caa8d4fd2d49bb7efcdc504f43039f1c80740a425646ab0ffcbeffe83825",
+    "c2_moments.json": "29e6b9a76eae2f0645766fb13ab33efb5c9879df920b9a9081583ca698818d14",
+    "global_scalers.json": "868122031c25ff6f34708c5b6269fe2194071a1fdb460c2e77fdfb46be49e2ab",
+    "c1_equations.json": "4ca011e5b90cf3f158ca8d12c96884fc7b1676ef359b85c05a9318d7af005a10",
+    "c2_equations.json": "847f9c8a8950b72d7547752b2eab565c7dd280771d46282d51bdb155881e51bc",
+    "h1_candidates.json": "92869fc4a9ccc7682f751c800483c367f2a389443a8f14e5b9c633839629f78f",
+    "c1_scores.json": "bb40ed5c7ad6094bf24b422fc5f6bf2c37f0b5e06a466b3262f390ad067f8e08",
+    "c2_scores.json": "555c21b48bc00b708b4bc9ce0e4568bbfb730b99e0a7098a674cc29f8212ce23",
+    "global_h1_model.json": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+  },
+  "formal_execution_commit": "f55a87444a59735ce14768bd6ce3ef827fb157ea"
+}

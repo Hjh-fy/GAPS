@@ -1,0 +1,42 @@
+{
+  "hash_only_dataset_provenance_check": true,
+  "inputs": {
+    "classifier_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_redesign_20260811\\gate1_posthoc\\a0t_full\\posthoc_a0t_full_c5.pth",
+    "classifier_sha256": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
+    "classifier_state_fingerprint": "4c7f13115e8a16c26e615f0f501cbd08a990e733bac2ac368c25b5533f53c2ef",
+    "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "h1_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+    "phase3_fixed_marker_sha256": "5c27e1a6e07495bd498b8cc644e52e9ddebdf07d51586f00d8a02878bdd5f0db",
+    "r84_models": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\phase3_posthoc_argmax\\retry3\\endpoint\\r84_models.json",
+    "r84_models_sha256": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729",
+    "status": "PASS"
+  },
+  "producer_commit": "1cbbd58d7ebf69780dba44b37907eaecdbd30c61",
+  "protocol": {
+    "bootstrap_group": "raw_filename",
+    "bootstrap_replicates": 2000,
+    "bootstrap_seed": 42,
+    "classifier": "immutable Phase3 I0+B20 step100",
+    "cost_formula": "max(0, mean(SE_forced_j-SE_correct_c)); diagonal=0",
+    "cost_matrix_source": "C5 B20 calibration only",
+    "dataset": "canonical-v1",
+    "decision_thresholds": {
+      "maximum_macro_f1_drop": 0.005,
+      "modest_relative_rmse_improvement": 0.02,
+      "supported_probability_delta_negative": 0.5,
+      "supported_relative_rmse_improvement": 0.05
+    },
+    "hyperparameter_search": false,
+    "lambda": null,
+    "phase": "P4_EXPECTED_DOWNSTREAM_COST_ROUTING",
+    "regression": "immutable Phase3 R84_FED_H1_fixed_alpha",
+    "router": "argmin_j sum_c p(c|x) C(c,j)",
+    "target": "C5",
+    "target_test_checkpoint_selection": false,
+    "target_test_used_for_cost_matrix": false,
+    "threshold": null
+  },
+  "schema_version": "iotj.canonical_v1.method_breakthrough.phase4.freeze.v1",
+  "status": "FROZEN_BEFORE_COST_MATRIX",
+  "target_test_semantic_access": false
+}

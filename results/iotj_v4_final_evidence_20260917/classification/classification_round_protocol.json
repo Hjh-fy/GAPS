@@ -1,0 +1,59 @@
+{
+  "calculation_status": "recomputed",
+  "checkpoint_state": "post_adaptation",
+  "command": "python scripts/build_iotj_v4_classification_round_curve.py --device cpu --batch-size 128",
+  "created_at_utc": "2026-09-13T16:11:18.574365+00:00",
+  "dataset_root": "dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "git_head": "db327de4e17a84a3765a63cb170fe1357a162473",
+  "input_assets": {
+    "C3": {
+      "checkpoint_count": 25,
+      "checkpoint_pattern": "server_round_001...025_adapted.pth",
+      "checkpoint_root": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\remote_server",
+      "experiment_id": "FCL-E3-GAPS-C3",
+      "final_evaluation": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\final_evaluation_C3.json",
+      "formal_final_accuracy": 0.9897058823529412,
+      "formal_final_macro_f1": 0.9896925893091547,
+      "history": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\remote_server\\history.json",
+      "run_config": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C3\\remote_server\\run_config.json",
+      "test_client": 3,
+      "test_rows": 680
+    },
+    "C4": {
+      "checkpoint_count": 25,
+      "checkpoint_pattern": "server_round_001...025_adapted.pth",
+      "checkpoint_root": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C4\\remote_server",
+      "experiment_id": "FCL-E3-GAPS-C4",
+      "final_evaluation": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C4\\final_evaluation_C4.json",
+      "formal_final_accuracy": 0.990625,
+      "formal_final_macro_f1": 0.9906242720708129,
+      "history": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C4\\remote_server\\history.json",
+      "run_config": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C4\\remote_server\\run_config.json",
+      "test_client": 4,
+      "test_rows": 320
+    },
+    "C5": {
+      "checkpoint_count": 25,
+      "checkpoint_pattern": "server_round_001...025_adapted.pth",
+      "checkpoint_root": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C5\\remote_server",
+      "experiment_id": "FCL-E3-GAPS-C5",
+      "final_evaluation": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C5\\final_evaluation_C5.json",
+      "formal_final_accuracy": 0.9845588235294118,
+      "formal_final_macro_f1": 0.9845427071190632,
+      "history": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C5\\remote_server\\history.json",
+      "run_config": "results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C5\\remote_server\\run_config.json",
+      "test_client": 5,
+      "test_rows": 1360
+    }
+  },
+  "local_epochs_per_round": 1,
+  "metric": {
+    "direction": "higher",
+    "name": "Accuracy",
+    "unit": "proportion"
+  },
+  "rounds": 25,
+  "schema_version": "iotj.v4.classification_round_curve.v1",
+  "seed": 42,
+  "test_access_boundary": "Retrospective diagnostic after the frozen target test had been opened. Prohibited from checkpoint selection, early stopping, or method reselection."
+}

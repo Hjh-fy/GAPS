@@ -1,0 +1,103 @@
+{
+  "schema_version": "iotj.canonical_v1.scientific_validation.freeze.v1",
+  "status": "FROZEN_BEFORE_MISSING_RUNS",
+  "parent_commit": "c8f54742d768500372ce3d8db61512d50f42854e",
+  "freeze_commit": "SELF_GIT_COMMIT_CONTAINING_THIS_FREEZE",
+  "canonical_dataset_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "immutable_protocol": {
+    "preprocessing": "HZ5_MEAN_W10S",
+    "source": [
+      "C1",
+      "C2"
+    ],
+    "targets": [
+      "C3",
+      "C4",
+      "C5"
+    ],
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 32,
+    "seed": 42,
+    "classifier": "A4",
+    "regression": "R84_FED_H1",
+    "qc": "frozen_equal_mean"
+  },
+  "existing_evidence_audit": {
+    "FedAvg": {
+      "status": "CANONICAL_COMPARATOR_MISSING",
+      "dataset_hash": "unknown",
+      "observed_dataset": "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
+    },
+    "FedProx": {
+      "status": "CANONICAL_COMPARATOR_MISSING",
+      "dataset_hash": "unknown",
+      "observed_dataset": "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
+    },
+    "SCAFFOLD": {
+      "status": "CANONICAL_COMPARATOR_MISSING",
+      "dataset_hash": "unknown",
+      "observed_dataset": "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
+    },
+    "MMD": {
+      "status": "CANONICAL_COMPARATOR_MISSING",
+      "dataset_hash": "unknown",
+      "observed_dataset": "client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid"
+    },
+    "A0T": {
+      "status": "BLOCKED_NOT_RUN",
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "observed_dataset": "iotj_canonical_v1_preregistered_only"
+    },
+    "GAPS/A4": {
+      "status": "CANONICAL_COMPLETE",
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "observed_dataset": "iotj_canonical_v1"
+    },
+    "routing": {
+      "status": "CANONICAL_COMPLETE",
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "observed_dataset": "iotj_canonical_v1"
+    },
+    "FedRidge_83D_84D": {
+      "status": "CANONICAL_COMPLETE",
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "observed_dataset": "iotj_canonical_v1"
+    },
+    "QC": {
+      "status": "CANONICAL_COMPLETE",
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "observed_dataset": "iotj_canonical_v1"
+    },
+    "Pi5": {
+      "status": "CANONICAL_COMPLETE",
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "observed_dataset": "iotj_canonical_v1"
+    }
+  },
+  "missing_run_ids": [
+    "CAN-V1-CMP-FEDAVG",
+    "CAN-V1-CMP-FEDPROX",
+    "CAN-V1-CMP-SCAFFOLD",
+    "CAN-V1-CMP-MMD-C3",
+    "CANONICAL-V1-A0T-C3",
+    "CAN-V1-STRICT-A4-R84-C3",
+    "CAN-V1-CMP-MMD-C4",
+    "CANONICAL-V1-A0T-C4",
+    "CAN-V1-STRICT-A4-R84-C4",
+    "CAN-V1-CMP-MMD-C5",
+    "CANONICAL-V1-A0T-C5",
+    "CAN-V1-STRICT-A4-R84-C5"
+  ],
+  "matrix_sha256": "b32f86bffe56769c25128d5f497d56b698cca00f765372da6937504eb502f8b2",
+  "forbidden": [
+    "target_test_selection",
+    "hyperparameter_search",
+    "new_algorithms",
+    "preprocessing_change",
+    "A4_change",
+    "R84_change",
+    "QC_change",
+    "outlier_deletion"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": "iotj.controller_launch.v1",
+  "run_id": "c12_to_c5__b2__s42",
+  "expected_attempt_id": "c12_to_c5__b2__s42__a005",
+  "algorithm_confirmation_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "controller_commit": "351a4e61133922af6705e6d276de24bec87c9bff",
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "algorithm_config_sha256": "9f7e549e0c95ee859cb0059adfb9d614c21a7f2659f2f3d6828f6aac98ed4561",
+  "execution_topology_id": "ecs_c2_pi_c1",
+  "server_host": "root@121.40.139.213",
+  "c1_host": "gaps@192.168.137.172",
+  "c2_host": "root@114.55.171.63",
+  "rounds": 25,
+  "local_epochs": 5,
+  "batch_size": 32,
+  "run_timeout_seconds": 172800,
+  "preflight_status": "passed"
+}

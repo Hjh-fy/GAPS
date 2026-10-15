@@ -1,0 +1,311 @@
+{
+  "schema_version": "iotj.low_calibration_sensitivity.v1",
+  "artifacts": [
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/ABLATION_PLAN.md",
+      "bytes": 267,
+      "sha256": "eda616559ec93981cc26335a55f16a38d85b27273b5f8afa4eb400c687d79a92"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_alpha_audit.csv",
+      "bytes": 34305,
+      "sha256": "828de9cd1875f82f699d34b10032ee8a991800c5b1d0b8de650bf92f589f0156"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_fold_assignment_audit.csv",
+      "bytes": 79484,
+      "sha256": "63db3ab999e343526a865531a927656aaa1912e3be82b4513de747ab0c249ce4"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_lock.json",
+      "bytes": 7435,
+      "sha256": "decea5f0f414bd2bc8dde080c23fe6a5f44b4eefe5d2afe4bcb304da75e6eebc"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_model_manifest.json",
+      "bytes": 10375,
+      "sha256": "5195b0c2b09d1b7ff9f775e4cced416ec2494fd3d12d50e0374c8b866e76fcf4"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_subset_160.csv",
+      "bytes": 7143,
+      "sha256": "5ce3e998a3900a65edc958925295990a54dfc07e1c723365faf05296f4ba0a1c"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_subset_320.csv",
+      "bytes": 14207,
+      "sha256": "558b7e4d2d06511096ced0c830c525fe0e1bb4c7332600693d157fd40d9dcf45"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_subset_40.csv",
+      "bytes": 1804,
+      "sha256": "0a42bf4b2aa02840618a58a2bd692b8dc9707904bc19f63eadac27a11ce42af1"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_subset_80.csv",
+      "bytes": 3520,
+      "sha256": "570afe9c9fa947dcd85b0ff2a35f6694515843c7f5ffbd6a77e889210b1188e4"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/calibration_timing_repetitions.csv",
+      "bytes": 24554,
+      "sha256": "0a4fbb0fcd3489775fb2a70e683739a67a984d9d3f90dce5c8922773c12f0b3d"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/decision_gate.json",
+      "bytes": 396,
+      "sha256": "9499068a42c71fd4a29dff4b748fc1ce5c2320797e256bcf3e65a0549ef88f0d"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/experiment_audit.md",
+      "bytes": 702,
+      "sha256": "04a67f7254e25cc99f4168a9628fee72a51741f743933643e005e6f9229886f1"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/EXPERIMENT_MATRIX.csv",
+      "bytes": 7273,
+      "sha256": "e407394373d80ad1624d64e02f0359b86235c96b2fb822434b43c1cd6ae01ca3"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/EXPERIMENT_PLAN.md",
+      "bytes": 410,
+      "sha256": "eca130ddaf94ef122e428fee48d3745968ceaf3fa51b470a275acad1822b8cb3"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/experiment_registry.csv",
+      "bytes": 7273,
+      "sha256": "e407394373d80ad1624d64e02f0359b86235c96b2fb822434b43c1cd6ae01ca3"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/fold_isolation_audit.json",
+      "bytes": 4965,
+      "sha256": "b0b7922f23ed1b1d138e898b74cb663ad2fe2daaeb48088dc62b468182e04da7"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/frozen_asset_manifest.json",
+      "bytes": 4208,
+      "sha256": "e85a01379604388d3fcd7dc8517fa96ef09e6ebf90ee2b0bef4990e217b2107b"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/low_calibration_alpha_summary.csv",
+      "bytes": 1668,
+      "sha256": "746db779f90c1f1cee2c86703b1717f2f2d804d0b68a4ca7d38a9ab6b337b00a"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/low_calibration_per_gas_summary.csv",
+      "bytes": 1857,
+      "sha256": "21f339399246420ab446bae28d8346db7789821a096e5b4460ed386943b8192c"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/low_calibration_summary.csv",
+      "bytes": 3004,
+      "sha256": "b110cadf495b0e3a93e61401b3e8d0186fe30223127610ed257a221cac23aa0b"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/low_calibration_timing_summary.csv",
+      "bytes": 3122,
+      "sha256": "d9dbd32f6ff46c5a320407836e4c9449f5e14673a5f62f249ece2c595b9c28e9"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_160/replicate_0/target_ridge_105d.json",
+      "bytes": 46187,
+      "sha256": "9e2484c4dc91f10264318ea5fc2f3111bcf28092bf6649e503b75f78ccd2c57c"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_160/replicate_1/target_ridge_105d.json",
+      "bytes": 46200,
+      "sha256": "987db63fcd687918c18a7835a663590a987bf79410aa80f9c99c6b9a32a65805"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_160/replicate_2/target_ridge_105d.json",
+      "bytes": 46437,
+      "sha256": "e4caa06f32604bf64ed1b3d6d3aa280c5b9b6da711a51c28ed7ab53f11f95dca"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_160/replicate_3/target_ridge_105d.json",
+      "bytes": 46139,
+      "sha256": "86a81328a75e29315c309333ffc5c1f9a064198466eab4c87ee986dce1d347e6"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_160/replicate_4/target_ridge_105d.json",
+      "bytes": 46395,
+      "sha256": "8f1d76542eef0353b8e55a3b9d29621ebb1444b6a21b7175bb6255b7cc86aba5"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_320/replicate_0/target_ridge_105d.json",
+      "bytes": 46147,
+      "sha256": "6b16dcc661a5764a0d3ae934b687f96557bd116bbd4fbdd0718fbf5257beed77"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_40/replicate_0/target_ridge_105d.json",
+      "bytes": 45962,
+      "sha256": "2b6587deeb23a001c35ef22c37bd707688d73702e8c5f513ee2922702eccc0ae"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_40/replicate_1/target_ridge_105d.json",
+      "bytes": 45334,
+      "sha256": "0495805fcac71a036610c05bc7ec951ff394e5e426c6b1e92ef9b829d5a81c30"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_40/replicate_2/target_ridge_105d.json",
+      "bytes": 45920,
+      "sha256": "cb5b46b6a05171846eee2a0f168d3a69cdf1bcfeb2ab71d02de806460a8a46f3"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_40/replicate_3/target_ridge_105d.json",
+      "bytes": 45710,
+      "sha256": "e66c28a5ce507359f3c18c57c6debe1f711fc3426671115f07d06eb1e1d23047"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_40/replicate_4/target_ridge_105d.json",
+      "bytes": 46229,
+      "sha256": "511eeb9c9cf7f97785c9fca84eda86ad6c9cedfa05fcb02f81dfb7a5ae715886"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_80/replicate_0/target_ridge_105d.json",
+      "bytes": 46456,
+      "sha256": "65fefddacdcc21f85447876f2f32dd0ea620ed199a69e9e60b9397e323463719"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_80/replicate_1/target_ridge_105d.json",
+      "bytes": 46400,
+      "sha256": "5af97e4cdba50b882a265cf1750c85662bde2267909cfa9c8d380d2e181d67b2"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_80/replicate_2/target_ridge_105d.json",
+      "bytes": 46013,
+      "sha256": "daeaabb363113f3c8e400bafc6b9ed0768b55e79a0f49c00f922407bff29431f"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_80/replicate_3/target_ridge_105d.json",
+      "bytes": 46403,
+      "sha256": "3309ef13fb727fef517c871c4f0e125d518765118d8c3f40f88f5b8f26b7ee94"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/models/budget_80/replicate_4/target_ridge_105d.json",
+      "bytes": 46425,
+      "sha256": "df46dd44ea66566ebc579caa0db271158aadef5bf69160dbd422eed39b75e5d6"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_captions.en.md",
+      "bytes": 482,
+      "sha256": "7a76592f28585401b3636c90dfec2eff9a65149c73fdc97b77c6e5448a0127e2"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_captions.zh.md",
+      "bytes": 451,
+      "sha256": "6d38e0488481dc1be8bde8225dce535e67c15bef802045f55b1f8dc5680f8214"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_per_gas.pdf",
+      "bytes": 17712,
+      "sha256": "1f95775b9af94f7089865a4df658a4b0671e5c71525b36e7e6ff4faae49285cd"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_per_gas.png",
+      "bytes": 167943,
+      "sha256": "60f29c921b77f6a947e47307cd95459d0d86fa767fd48cf4309eaded49e54d2e"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_scc_rmse.pdf",
+      "bytes": 13017,
+      "sha256": "48dfefd68fe0fb30b6c677ba44c987418db0f481790921600aa7fdf6752e9041"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_scc_rmse.png",
+      "bytes": 83465,
+      "sha256": "d687c76bac77ff4be321ff91e7ba1d39d70ccd0ca2e834a6fd956d6cc0893c11"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_time.pdf",
+      "bytes": 12010,
+      "sha256": "c17ae4bd07da404baa229582ae43e84671b10964c4af39e1d17a20313c364f43"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_figures/low_calibration_time.png",
+      "bytes": 109639,
+      "sha256": "fb43bdb1730ea0f38578e1df374fb9f665108d68c6104e21137a37928d949754"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_tables/table_low_calibration.csv",
+      "bytes": 665,
+      "sha256": "23f3723389f201f67075b97567020990dafb3b3e6d4a673f218c79fdfa89432e"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_tables/table_low_calibration.md",
+      "bytes": 818,
+      "sha256": "e864eb89865a08a08858c621e541e149e3cf9e3c037e09d5e575223a3bca9616"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/paper_tables/table_low_calibration.tex",
+      "bytes": 854,
+      "sha256": "1995ec68dd95ed7985d57ab9604368b111f91c0492dd92475ac2ab4e510104f3"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/per_replicate_low_calibration_metrics.csv",
+      "bytes": 8103,
+      "sha256": "96b3b282cfef6b97c255b3c5b3f21f4212e4734dfbb64e7927b007124661f788"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/per_replicate_per_gas_metrics.csv",
+      "bytes": 4345,
+      "sha256": "3dab5e95156862529ec11806e8fa5d3107238eb4473da8e5a6f2b7d29174645a"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/protocol_manifest.json",
+      "bytes": 2456,
+      "sha256": "dbd173bbee2322127df246684294783d0c63332f393d516491937b042c795d0d"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/result_analysis.md",
+      "bytes": 209,
+      "sha256": "cfdaec4b97739642389a1b168cb296cdad57ff046b53a29accc3139ee9e7fab5"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/skill_handoff.json",
+      "bytes": 1349,
+      "sha256": "d8777baff7941078f3a64499af5b84d1458636029f4dff459f640a274d5e4daa"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/stage_state.json",
+      "bytes": 1209,
+      "sha256": "bc85421c650411ee3ffa3e18fb6bdbe5379fc656b5d64184da0b83e1d666b80b"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/subset_balance_audit.csv",
+      "bytes": 1654,
+      "sha256": "55bb77a8d3d5b8d318aaf620ff55f0c95f21fcb2bd40478ce434b4ff598e96c2"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/subset_manifest.json",
+      "bytes": 4118,
+      "sha256": "c110cd30db5fe8510e0e618e9b9eb2c31f75bc86a48f9bc1e170e5af66649b56"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/subset_replicate_manifest.json",
+      "bytes": 4160,
+      "sha256": "2346d4fc36dc3832756e3fb4a224691575e75627e7d034c6819ecaa05c31e60f"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/test_evaluation_manifest.json",
+      "bytes": 697,
+      "sha256": "2475ea720a12d3c0975a65cc6ad87979b838aef622f3cad2a51cd85e25d5eec6"
+    },
+    {
+      "path": "results/iotj_low_calibration_sensitivity_20260725/test_predictions.csv",
+      "bytes": 796511,
+      "sha256": "8213038917300573a7a7151fdf1374c6cabd8f2d907029001c0e1d3a681dd35e"
+    }
+  ],
+  "external_artifacts": {
+    "report": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\docs\\experiments\\iotj_low_calibration_sensitivity_result_20260725.zh.md",
+      "bytes": 4251,
+      "sha256": "81abd3c8ab3ab5046ddac0f76a1020bb5ffafb56edcf34a21aaf4d0a3b590a78"
+    }
+  },
+  "large_row_results_sha_bound_but_excluded_from_git": [
+    "test_predictions.csv",
+    "calibration_timing_repetitions.csv"
+  ]
+}

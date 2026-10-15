@@ -1,0 +1,4 @@
+target,method,status,accuracy,macro_f1,nll,ece,num_examples,checkpoint,blocked_reason
+C3,server-centric A4,blocked,,,,,,,No immutable same-protocol server-centric A4 round-25 endpoint was found in the local result root or audited server result root; a full-GAPS endpoint is not an A4 substitute.
+C4,server-centric A4,blocked,,,,,,,No immutable same-protocol server-centric A4 round-25 endpoint was found in the local result root or audited server result root; a full-GAPS endpoint is not an A4 substitute.
+C5,server-centric A4,complete,0.9933823529411765,0.9933898239049185,0.05438417410666987,0.006405640132455269,1360,D:\A Python learning\Federated Learning\TRAE SOLO\.worktrees\iotj-final-classification-le1\results\iotj_final_classification_le1_20260804\FCL-E4-A4\remote_server\server_round_025_adapted.pth,

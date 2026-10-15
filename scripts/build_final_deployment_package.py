@@ -74,6 +74,7 @@ def copy_runtime_source(repo_root: Path, out: Path) -> None:
         "inference.py",
         "calibration.py",
         "deploy_config.py",
+        "package_contract.py",
         "qc_policy.py",
         "r4a_residual.py",
         "rich_residual.py",

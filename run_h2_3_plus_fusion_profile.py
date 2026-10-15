@@ -254,7 +254,13 @@ def fit_ridge_family(
     alphas: Sequence[float],
     val_ratio: float,
     prefix: str,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    return_final_models: bool = False,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]] | tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[tuple[str, int], Any],
+]:
     val_rows_all: list[dict[str, Any]] = []
     train_models: dict[tuple[str, int], Any] = {}
     final_models: dict[tuple[str, int], Any] = {}
@@ -297,11 +303,14 @@ def fit_ridge_family(
                     "alpha_audit": json.dumps(alpha_audit, ensure_ascii=False),
                 }
             )
-    return (
+    result = (
         apply_client_models(val_rows_all, train_models, prefix),
         apply_client_models(list(test_rows), final_models, prefix),
         fit_audit,
     )
+    if return_final_models:
+        return (*result, final_models)
+    return result
 
 
 def fit_mlp_family(
@@ -314,7 +323,13 @@ def fit_mlp_family(
     val_ratio: float,
     seed: int,
     prefix: str,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    return_final_models: bool = False,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]] | tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[tuple[str, int], MLPHead],
+]:
     val_rows_all: list[dict[str, Any]] = []
     train_models: dict[tuple[str, int], MLPHead] = {}
     final_models: dict[tuple[str, int], MLPHead] = {}
@@ -362,11 +377,14 @@ def fit_mlp_family(
                     "grid_audit": json.dumps(grid_audit, ensure_ascii=False),
                 }
             )
-    return (
+    result = (
         apply_client_mlp(val_rows_all, train_models, prefix),
         apply_client_mlp(list(test_rows), final_models, prefix),
         fit_audit,
     )
+    if return_final_models:
+        return (*result, final_models)
+    return result
 
 
 def by_key(rows: Iterable[dict[str, Any]]) -> dict[tuple[str, str, int], dict[str, Any]]:

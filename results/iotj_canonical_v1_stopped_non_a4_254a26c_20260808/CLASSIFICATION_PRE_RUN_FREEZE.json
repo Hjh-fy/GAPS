@@ -1,0 +1,102 @@
+{
+  "classification": {
+    "adaptation_target_split": "calibration",
+    "batch_size": 32,
+    "checkpoint_reuse": false,
+    "checkpoint_selection": "fixed_round_25",
+    "da_window_shape": [
+      50,
+      8
+    ],
+    "dataset": "iotj_canonical_v1",
+    "hyperparameter_search": false,
+    "local_epochs": 1,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "rounds": 25,
+    "seed": 42,
+    "study_id": "iotj_canonical_v1_final_20260808",
+    "target_test_selection": false
+  },
+  "data": {
+    "counts": {
+      "C1": {
+        "calibration": 320,
+        "test": 680,
+        "train": 2360
+      },
+      "C2": {
+        "calibration": 320,
+        "test": 680,
+        "train": 2360
+      },
+      "C3": {
+        "calibration": 678,
+        "test": 2677
+      },
+      "C4": {
+        "calibration": 320,
+        "test": 1360
+      },
+      "C5": {
+        "calibration": 320,
+        "test": 1360
+      }
+    },
+    "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "preflight_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1\\preflight.json",
+    "preflight_sha256": "4da2291b7244a43eb302d74e2255208e439285fdd3105af043bb2b394b01ac64"
+  },
+  "freeze_commit": "254a26cbdcdf4de20f26e2e7d97d078337ec86a4",
+  "protocol_audit": {
+    "all_targets_fixed": true,
+    "checkpoint_reuse_tokens_present": false,
+    "findings": [
+      {
+        "canonical_source_validation_roots": true,
+        "canonical_target_calibration_root": true,
+        "checkpoint_reuse": false,
+        "da_window_shape_50x8": true,
+        "local_epochs": 1,
+        "selective_rounds_1_to_5_warmup": true,
+        "strict_calibration_split": true,
+        "target": "C3",
+        "target_ce_weight_zero": true
+      },
+      {
+        "canonical_source_validation_roots": true,
+        "canonical_target_calibration_root": true,
+        "checkpoint_reuse": false,
+        "da_window_shape_50x8": true,
+        "local_epochs": 1,
+        "selective_rounds_1_to_5_warmup": true,
+        "strict_calibration_split": true,
+        "target": "C4",
+        "target_ce_weight_zero": true
+      },
+      {
+        "canonical_source_validation_roots": true,
+        "canonical_target_calibration_root": true,
+        "checkpoint_reuse": false,
+        "da_window_shape_50x8": true,
+        "local_epochs": 1,
+        "selective_rounds_1_to_5_warmup": true,
+        "strict_calibration_split": true,
+        "target": "C5",
+        "target_ce_weight_zero": true
+      }
+    ],
+    "schema_version": "iotj.canonical_v1.classification.protocol_audit.v1",
+    "status": "PASS",
+    "test_arrays_referenced_by_training_commands": false
+  },
+  "protocol_hash": "e0e4193e7f4e0d6428235ad3b23d3e7475a5eb1eaa7aaff3d92d51432c5a2aab",
+  "schema_version": "iotj.canonical_v1.classification.pre_run.v1",
+  "status": "FROZEN",
+  "targets": [
+    "C3",
+    "C4",
+    "C5"
+  ],
+  "test_open_policy": "only after all fixed round25 endpoints complete"
+}

@@ -1,0 +1,98 @@
+{
+  "argmax_classification": {
+    "N": 1360,
+    "accuracy": 0.9764705882352941,
+    "confusion_matrix": [
+      [
+        337,
+        3,
+        0,
+        0
+      ],
+      [
+        1,
+        330,
+        6,
+        3
+      ],
+      [
+        0,
+        9,
+        330,
+        1
+      ],
+      [
+        1,
+        7,
+        1,
+        331
+      ]
+    ],
+    "macro_f1": 0.9765440505346443
+  },
+  "argmax_regression": {
+    "Bias": 1.1670805278582432,
+    "MAE": 10.691170586712394,
+    "N": 1360,
+    "NRMSE_range": 0.19972727686326158,
+    "R2": 0.821260210875533,
+    "RMSE": 28.057496229689647
+  },
+  "bootstrap": {
+    "ci95_high": 3.7512929387936675,
+    "ci95_low": -2.6442080880411347,
+    "mean_delta_rmse": 0.35717801912487257,
+    "median_delta_rmse": 0.29799117240896855,
+    "probability_delta_negative": 0.4245,
+    "replicates": 2000,
+    "seed": 42
+  },
+  "bootstrap_probability_delta_negative": 0.4245,
+  "cost_classification": {
+    "N": 1360,
+    "accuracy": 0.9735294117647059,
+    "confusion_matrix": [
+      [
+        337,
+        3,
+        0,
+        0
+      ],
+      [
+        0,
+        323,
+        11,
+        6
+      ],
+      [
+        0,
+        6,
+        331,
+        3
+      ],
+      [
+        1,
+        3,
+        3,
+        333
+      ]
+    ],
+    "macro_f1": 0.9735250697823341
+  },
+  "cost_minus_argmax_rmse": 0.313090770468186,
+  "cost_regression": {
+    "Bias": 1.3303905624880026,
+    "MAE": 10.88717796218195,
+    "N": 1360,
+    "NRMSE_range": 0.18861679164498674,
+    "R2": 0.8172488754556254,
+    "RMSE": 28.370587000157833
+  },
+  "decision": "COST_AWARE_ROUTING_NOT_SUPPORTED",
+  "high_concentration_cost_minus_argmax_rmse": 1.9164906439239822,
+  "high_concentration_cost_minus_argmax_sse": 102569.88388332177,
+  "macro_f1_drop": 0.0030189807523102186,
+  "relative_rmse_improvement": -0.01115889913715402,
+  "route_changes": 17,
+  "target_test_checkpoint_selection": false
+}

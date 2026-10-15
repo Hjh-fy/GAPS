@@ -1,5 +1,21 @@
 # GAPS Mainline Entrypoints and Role Map — 2026-06-26
 
+> **LEGACY / SUPERSEDED**
+>
+> This file preserves the 2026-06-26 R3aK16/H2.3/H8/H8+C4/AutoV2 role map
+> for historical reproduction. It is not the current system entrypoint.
+>
+> Current canonical guides:
+>
+> - `docs/system/GAPS_SYSTEM_OVERVIEW_20260726.zh.md`
+> - `docs/system/GAPS_CODE_MAP_20260726.zh.md`
+> - `docs/system/GAPS_COMMAND_COOKBOOK_20260726.zh.md`
+> - `docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md`
+>
+> The final simplified regression path is B5 + sufficient-statistics
+> Federated H1 + C5 105D per-gas Ridge. Runtime v4 remains the formal
+> selective-output baseline; Runtime v5 QC2 was not promoted.
+
 This document is the current entrypoint map for the GAPS codebase. It intentionally separates **algorithm training**, **target-side calibration/selection**, **deployment export**, and **runtime validation** so future Codex/local work does not depend on outdated README commands.
 
 ## 0. Current Mainline Roles

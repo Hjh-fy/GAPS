@@ -1,0 +1,44 @@
+{
+  "schema_version": "iotj.h1_federated_ridge_equivalence.v1",
+  "selection_scope": "equivalence_only",
+  "test_opened_after_selection": true,
+  "test_used_for_scaler_alpha_fit_or_refit": false,
+  "runtime_action": "none",
+  "tolerances": {
+    "scaler_max_abs_difference": 1e-10,
+    "coefficient_max_abs_difference": 1e-08,
+    "prediction_max_abs_difference_ppm": 1e-06,
+    "practical_prediction_max_abs_difference_ppm": 0.001,
+    "practical_metric_max_abs_difference_ppm": 0.01
+  },
+  "decision": "PRACTICAL_EQUIVALENCE",
+  "alpha_equal_all_gases": true,
+  "max_scaler_abs_difference": 1.9539925233402755e-14,
+  "max_coefficient_or_intercept_abs_difference": 1.7438189274798788e-06,
+  "max_C5_H1_prediction_abs_difference_ppm": 2.0809125089726876e-08,
+  "Ridge_H1_S_ALL_RMSE_abs_difference": 1.1747758321689616e-10,
+  "Ridge_H1_S_CC_RMSE_abs_difference": 5.32196509084315e-12,
+  "test_evaluation_timestamp": "2026-07-23T17:37:12.950270+00:00",
+  "recommendation": "report_numerical_error_runtime_unchanged",
+  "b5_route_parity": {
+    "calibration_validation": {
+      "N": 80,
+      "route_mismatch_count": 0,
+      "max_abs_source_prediction_difference": {
+        "H1_source_ridge_ppm": 3.410605131648481e-13,
+        "H2_source_per_gas_mlp_ppm": 5.684341886080802e-14,
+        "H3_source_shared_mlp_ppm": 1.1368683772161603e-13
+      }
+    },
+    "test": {
+      "N": 1360,
+      "route_mismatch_count": 0,
+      "max_abs_source_prediction_difference": {
+        "H1_source_ridge_ppm": 1.0231815394945443e-12,
+        "H2_source_per_gas_mlp_ppm": 8.526512829121202e-14,
+        "H3_source_shared_mlp_ppm": 2.2737367544323206e-13
+      }
+    }
+  },
+  "evidence_boundary": "source raw samples remain local and only aggregated sufficient statistics are used to reconstruct the global Ridge solution."
+}

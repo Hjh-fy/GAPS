@@ -1,0 +1,21 @@
+{
+  "method": "classifier_only",
+  "steps": 100,
+  "optimizer": "Adam",
+  "lr": 0.0005,
+  "seed": 42,
+  "trainable_parameter_names": [
+    "classifier.weight",
+    "classifier.bias"
+  ],
+  "trainable_parameters": 260,
+  "total_parameters": 22765,
+  "trainable_parameter_ratio": 0.011421041071820778,
+  "adaptation_seconds": 1.4408856999361888,
+  "relative_parameter_displacement": 0.019147722237408318,
+  "peak_rss_bytes": 378609664,
+  "checkpoint_delta_bytes": 2732,
+  "checkpoint_bytes": 110114,
+  "checkpoint_sha256": "ce12123d649a356d7b1ccf98b6783e0595287ac10e671706b79545d306bae788",
+  "prediction_checkpoint_form": "ordinary_model"
+}

@@ -1,0 +1,35 @@
+{
+  "schema_version": "iotj.canonical_v1.method_breakthrough.gate_b.freeze.v1",
+  "status": "FROZEN_BEFORE_ADAPTATION",
+  "producer_commit": "69d195adc76913dd7f09cf88af0def7d9f142811",
+  "protocol": {
+    "gate": "B_LIGHTWEIGHT_POSTHOC_TARGET_PERSONALIZATION",
+    "source_set": "S2",
+    "target": "C5",
+    "calibration_count": 320,
+    "calibration_role": "canonical_v1_20_percent",
+    "steps": 100,
+    "optimizer": "Adam",
+    "lr": 0.0005,
+    "batch_size": 32,
+    "seed": 42,
+    "adapter_rank": 4,
+    "adapter_initialization": "kaiming_down_zero_up",
+    "adapter_deployment": "exact_classifier_fold",
+    "hyperparameter_search": false,
+    "checkpoint_selection": "fixed_step_100",
+    "target_test_selection": false,
+    "sufficient_macro_f1_gap_pp": 0.5,
+    "substantial_parameter_fraction": 0.25
+  },
+  "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\comparators\\source_fl\\CAN-V1-CMP-FEDAVG\\remote_server\\server_latest.pth",
+  "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+  "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+  "calibration_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\iotj_canonical_v1\\client_5\\calibration_experiment_info.json",
+  "calibration_manifest_sha256": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+  "reused_endpoint_sha256": {
+    "a0t_full": "857f3954003bffad1af716002a1bd2915923389faec31b69f5c72e563aaa212c",
+    "projection_head": "8af3a4a011d212c7002dade55e594afce9f82acab46145b33c68e381da44d3bf"
+  },
+  "target_test_access_before_lock": "NONE"
+}

@@ -1,0 +1,80 @@
+{
+  "schema_version": "iotj.canonical_b5_representative_system.v1",
+  "calculation_status": "recomputed_from_audit_bound_raw_records",
+  "claim_boundary": "One canonical B5 seed-42 representative ECS+Pi+ECS-C2 run. It supports real-topology system cost evidence only, not B5 five-seed algorithm confirmation. B2 a006 remains a failed diagnostic and is not its canonical paired counterpart.",
+  "run_id": "c12_to_c5__b5__s42",
+  "attempt_id": "c12_to_c5__b5__s42__a001",
+  "group_id": "B5",
+  "seed": 42,
+  "attempt_state": "canonical",
+  "audit_status": "valid",
+  "audit_sha256": "0e5819ce0d5de0df78537a8088e0821fa8fbdcfb0fc7bb032648f1c3b67b8bdd",
+  "algorithm_confirmation_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "communication": {
+    "logical_downlink_25round_total_bytes": 8746558,
+    "logical_uplink_25round_total_bytes": 8766541,
+    "application_downlink_25round_total_bytes": 8764300,
+    "application_uplink_25round_total_bytes": 8808350,
+    "application_25round_total_bytes": 17572650,
+    "application_25round_total_mib": 16.75858497619629,
+    "application_round_mean_bytes": 702906.0,
+    "transport_status": "not_collected"
+  },
+  "timing_seconds": {
+    "round_wall_mean": 237.29363929452,
+    "round_wall_p50": 236.452648287,
+    "round_wall_p95": 241.94570446560002,
+    "round_wall_total": 5932.340982363,
+    "pi_c1_train_mean": 41.9596048542,
+    "ecs_c2_train_mean": 74.74604130112,
+    "server_da_mean": 161.3357218574,
+    "server_da_p95": 163.3006304852,
+    "server_non_da_mean": 0.07114607204,
+    "server_da_share_of_round_wall": 0.6798990581334383
+  },
+  "resources": {
+    "pi_c1": {
+      "sample_count": 5875,
+      "active_sample_count": 1060,
+      "resource_coverage": 0.9754948162111216,
+      "expected_sample_points": 1061,
+      "covered_sample_points": 1035,
+      "rss_active_mean_mib": 514.073835495283,
+      "rss_peak_mib": 518.375,
+      "cpu_host_mean_percent": 84.44238285079072,
+      "cpu_host_peak_percent": 90.89171253939446,
+      "temperature_available": true,
+      "temperature_mean_c": 57.41674528301887,
+      "temperature_peak_c": 62.25,
+      "throttling_observed": false
+    },
+    "ecs_c2": {
+      "sample_count": 5902,
+      "active_sample_count": 1864,
+      "resource_coverage": 0.9771519659936238,
+      "expected_sample_points": 1882,
+      "covered_sample_points": 1839,
+      "rss_active_mean_mib": 508.5376248994099,
+      "rss_peak_mib": 513.70703125,
+      "cpu_host_mean_percent": 49.93668624926283,
+      "cpu_host_peak_percent": 58.801676290519,
+      "temperature_available": false,
+      "temperature_mean_c": null,
+      "temperature_peak_c": null,
+      "throttling_observed": null
+    }
+  },
+  "observer": {
+    "total_overhead_ms": 5969.046366,
+    "overhead_to_round_wall_ratio": 0.0010061873354458427,
+    "event_bytes_written": 34849930
+  },
+  "checkpoint": {
+    "relative_path": "raw/ecs/training/server_round_025_adapted.pth",
+    "size_bytes": 184201,
+    "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+    "scope": "classifier training checkpoint only; not final C5 deployment bundle"
+  }
+}

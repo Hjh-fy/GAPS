@@ -1,0 +1,29 @@
+{
+  "run": {
+    "experiment_id": "FONG-FT-B20-S43",
+    "method": "FT",
+    "seed": 43,
+    "budget_pct": 20,
+    "calibration_n": 320,
+    "initialization_run": "FONG-SRC-S43",
+    "rounds": 0,
+    "target_updates": 2500
+  },
+  "command": [
+    "/root/gaps_env/bin/python",
+    "-u",
+    "-m",
+    "gaps_flower.fedongas27_target",
+    "--method",
+    "FT",
+    "--seed",
+    "43",
+    "--data",
+    "/root/GAPS/fedongas27_inputs_20261014/target_xy/budget_20",
+    "--initial-state",
+    "/root/GAPS/iotj_final_classification_le1_20260804/FONG-SRC-S43/server_round_025.pth",
+    "--output",
+    "/root/GAPS/iotj_final_classification_le1_20260804/FONG-FT-B20-S43"
+  ],
+  "freeze_commit": "dc73318636335e0d2317613dff00ef73e6c798f1"
+}

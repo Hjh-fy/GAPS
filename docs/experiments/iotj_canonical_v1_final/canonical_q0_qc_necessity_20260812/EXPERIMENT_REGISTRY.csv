@@ -1,0 +1,3 @@
+experiment_id,gate,target,seed,method,status,depends_on,result_root,claim_scope
+CAN-V1-CRRQ-Q0,Q0,C3+C4+C5,42,QC_NECESSITY,AUDIT_PASS_MULTISIGNAL_NOT_ESTABLISHED,CAN-V1-CRRQ-R2-V2,results/iotj_canonical_v1_final/canonical_q0_qc_necessity_20260812,"C5 primary; C3/C4 and target-stratified pooled secondary"
+CAN-V1-CRRQ-Q1,Q1,C3+C4+C5,42,CONFORMAL_STYLE_QC,TRIGGERED_NOT_STARTED,CAN-V1-CRRQ-Q0,results/iotj_canonical_v1_final/canonical_regression_reconstruction_qc_20260811/Q1,"conditional follow-up; not authorized by Q0 closure"

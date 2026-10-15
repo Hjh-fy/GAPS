@@ -1,0 +1,62 @@
+{
+  "audit_status": "approved_data_blocked_broad_claim",
+  "claim_ids": [
+    "R1-M2"
+  ],
+  "comparison": "R1-M2 baseline fairness on C5 sealed test",
+  "evidence_id": "EVID-R1-M2-SEED42",
+  "experiment_ids": [
+    "R1M2-TARGET-ONLY-S42",
+    "R1M2-CENTRAL-SOURCE-S42",
+    "R1M2-FEDPROX-SOURCE-S42",
+    "R1M2-FEDAVG-SAME-ADAPTER-S42",
+    "R1M2-DS-FEDAVG-S42",
+    "IOTJ-B5-S42-REFERENCE"
+  ],
+  "limitations": [
+    "seed42 only; no uncertainty/significance claim",
+    "target-only is a stronger supervised-target objective",
+    "only the adapter-matched FedAvg row is a close mechanism comparator",
+    "adapter-matched FedAvg exceeds B5 at seed42, blocking the broad mechanism-superiority claim",
+    "adapter ce_stats JSON wire bytes were not instrumented; model payload bytes remain exact"
+  ],
+  "metric_ids": [
+    "R1M2-TARGET-ONLY-S42::accuracy",
+    "R1M2-TARGET-ONLY-S42::macro_f1",
+    "R1M2-TARGET-ONLY-S42::nll",
+    "R1M2-TARGET-ONLY-S42::ece",
+    "R1M2-CENTRAL-SOURCE-S42::accuracy",
+    "R1M2-CENTRAL-SOURCE-S42::macro_f1",
+    "R1M2-CENTRAL-SOURCE-S42::nll",
+    "R1M2-CENTRAL-SOURCE-S42::ece",
+    "R1M2-FEDPROX-SOURCE-S42::accuracy",
+    "R1M2-FEDPROX-SOURCE-S42::macro_f1",
+    "R1M2-FEDPROX-SOURCE-S42::nll",
+    "R1M2-FEDPROX-SOURCE-S42::ece",
+    "R1M2-FEDAVG-SAME-ADAPTER-S42::accuracy",
+    "R1M2-FEDAVG-SAME-ADAPTER-S42::macro_f1",
+    "R1M2-FEDAVG-SAME-ADAPTER-S42::nll",
+    "R1M2-FEDAVG-SAME-ADAPTER-S42::ece",
+    "R1M2-DS-FEDAVG-S42::accuracy",
+    "R1M2-DS-FEDAVG-S42::macro_f1",
+    "R1M2-DS-FEDAVG-S42::nll",
+    "R1M2-DS-FEDAVG-S42::ece",
+    "IOTJ-B5-S42-REFERENCE::accuracy",
+    "IOTJ-B5-S42-REFERENCE::macro_f1",
+    "IOTJ-B5-S42-REFERENCE::nll",
+    "IOTJ-B5-S42-REFERENCE::ece"
+  ],
+  "provenance": {
+    "analysis_dir": "docs/experiments/iotj_r1_m2_baseline_fairness_seed42_20260803/final_audit_20260803_1506_v3",
+    "code_compatibility": "code_compatibility.json"
+  },
+  "source_paths": [
+    "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-TARGET-ONLY-S42/run_manifest.json",
+    "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-CENTRAL-SOURCE-S42/run_manifest.json",
+    "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDPROX-SOURCE-S42/run_manifest.json",
+    "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-FEDAVG-SAME-ADAPTER-S42/run_manifest.json",
+    "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_r1_m2_baseline_fairness_seed42_20260803/R1M2-DS-FEDAVG-S42/run_manifest.json",
+    "results/iotj_b5_multiseed_20260724/seed42_reference/classification_evaluation/seed42_classification_metrics.json"
+  ],
+  "support_strength": "descriptive_single_seed"
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_test_stage_failure.v1",
+  "stage": "Q8_v4_baseline_guard_loading",
+  "status": "RECORDED_NON_SELECTION_IMPLEMENTATION_FAILURE",
+  "error": "v4 baseline adapter omitted the existing pred_class field before misclassification summary",
+  "qc_selection_lock_sha256": "64877b7676bc4497074a2619282e0d2fedd658db76c2d1868b91699edba6d518",
+  "test_opened_after_lock": true,
+  "candidate_changed": false,
+  "risk_components_changed": false,
+  "ecdf_changed": false,
+  "mad_scale_changed": false,
+  "thresholds_changed": false,
+  "decision_rule_changed": false,
+  "partial_outputs_preserved": [
+    "hc95_test_rows.csv",
+    "hc90_test_rows.csv",
+    "qc_test_summary.csv",
+    "qc_per_gas_summary.csv",
+    "qc_risk_decile_summary.csv"
+  ],
+  "authorized_resume_scope": "fix v4 CSV field mapping, rerun tests, continue guards and parity from the same immutable QC lock"
+}

@@ -1,0 +1,24 @@
+{
+  "study_id": "CAN-V1-CRRQ-Q0-QC-NECESSITY-20260812",
+  "status": "PRE_RUN_FROZEN_NO_EXECUTION",
+  "dataset": "canonical-v1",
+  "preprocessing": "HZ5_MEAN_W10S",
+  "targets": ["C3", "C4", "C5"],
+  "primary_target": "C5",
+  "secondary_scopes": ["C3", "C4", "target_stratified_pooled"],
+  "final_regression_backend": "R84_CONCAT",
+  "r2_prerequisite_root": "results/iotj_canonical_v1_final/canonical_r2_transfer_safe_v2_20260812",
+  "r2_required_decision": "RETAIN_R84_DEVICE_DEPENDENT",
+  "coverage_grid": {"start": 0.50, "stop": 1.00, "step": 0.01},
+  "policies": {
+    "full": "FULL_OUTPUT",
+    "random": {"name": "RANDOM_RETAIN", "repetitions": 5000, "seed": 42, "same_retained_count": true},
+    "confidence": {"name": "CLASSIFICATION_CONFIDENCE_ONLY", "risk": "1-max_probability"},
+    "regression": {"name": "REGRESSION_UNCERTAINTY_ONLY", "models": 5, "groups": "raw_filename", "normalization": "routed_gas_range"},
+    "equal_mean": {"name": "EXISTING_EQUAL_MEAN_QC", "fallback": "Q4_CANONICAL_INPUTS_UNAVAILABLE", "substitution_forbidden": true}
+  },
+  "selection": "calibration_only_fixed_policy_lock_before_test",
+  "hyperparameter_search": false,
+  "q1_authorized": false,
+  "formal_execution_started": false
+}

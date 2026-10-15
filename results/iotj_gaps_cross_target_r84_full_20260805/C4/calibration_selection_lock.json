@@ -1,0 +1,78 @@
+{
+  "schema_version": "iotj.gaps_cross_target_r84_full.v1",
+  "status": "SEALED_BEFORE_TARGET_TEST",
+  "target": "C4",
+  "target_test_opened": false,
+  "fixed_alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "selection": [
+    {
+      "experiment_id": "XTR-R84-GAPS-C4",
+      "target": "C4",
+      "class_id": 0,
+      "gas": "Ethanol",
+      "calibration_fit_N": 30,
+      "calibration_validation_N": 10,
+      "calibration_refit_N": 40,
+      "input_dimension": 84,
+      "selected_alpha": 0.1,
+      "calibration_validation_RMSE": 30.640317503504026,
+      "alpha_grid_audit": "[{\"alpha\":0.0,\"validation_RMSE\":31.045879383446323},{\"alpha\":0.01,\"validation_RMSE\":30.677640273800467},{\"alpha\":0.1,\"validation_RMSE\":30.640317503504026},{\"alpha\":1.0,\"validation_RMSE\":36.775908178087114},{\"alpha\":10.0,\"validation_RMSE\":33.06669245957663},{\"alpha\":100.0,\"validation_RMSE\":33.92977675930525},{\"alpha\":1000.0,\"validation_RMSE\":35.55742129914019}]",
+      "selection_split": "C4_calibration_internal_75_25",
+      "target_test_used_for_selection": false
+    },
+    {
+      "experiment_id": "XTR-R84-GAPS-C4",
+      "target": "C4",
+      "class_id": 1,
+      "gas": "CO",
+      "calibration_fit_N": 30,
+      "calibration_validation_N": 10,
+      "calibration_refit_N": 40,
+      "input_dimension": 84,
+      "selected_alpha": 100.0,
+      "calibration_validation_RMSE": 24.441355556849675,
+      "alpha_grid_audit": "[{\"alpha\":0.0,\"validation_RMSE\":36.84228395498273},{\"alpha\":0.01,\"validation_RMSE\":36.877716171949544},{\"alpha\":0.1,\"validation_RMSE\":37.16142464676982},{\"alpha\":1.0,\"validation_RMSE\":38.08503577428254},{\"alpha\":10.0,\"validation_RMSE\":37.263531816971486},{\"alpha\":100.0,\"validation_RMSE\":24.441355556849675},{\"alpha\":1000.0,\"validation_RMSE\":44.87440797980485}]",
+      "selection_split": "C4_calibration_internal_75_25",
+      "target_test_used_for_selection": false
+    },
+    {
+      "experiment_id": "XTR-R84-GAPS-C4",
+      "target": "C4",
+      "class_id": 2,
+      "gas": "Ethylene",
+      "calibration_fit_N": 30,
+      "calibration_validation_N": 10,
+      "calibration_refit_N": 40,
+      "input_dimension": 84,
+      "selected_alpha": 1.0,
+      "calibration_validation_RMSE": 4.059103384261638,
+      "alpha_grid_audit": "[{\"alpha\":0.0,\"validation_RMSE\":6.524009841381281},{\"alpha\":0.01,\"validation_RMSE\":5.695558831028005},{\"alpha\":0.1,\"validation_RMSE\":4.3344780598872},{\"alpha\":1.0,\"validation_RMSE\":4.059103384261638},{\"alpha\":10.0,\"validation_RMSE\":4.790104951996322},{\"alpha\":100.0,\"validation_RMSE\":9.86486093209464},{\"alpha\":1000.0,\"validation_RMSE\":22.842847506111806}]",
+      "selection_split": "C4_calibration_internal_75_25",
+      "target_test_used_for_selection": false
+    },
+    {
+      "experiment_id": "XTR-R84-GAPS-C4",
+      "target": "C4",
+      "class_id": 3,
+      "gas": "Methane",
+      "calibration_fit_N": 30,
+      "calibration_validation_N": 10,
+      "calibration_refit_N": 40,
+      "input_dimension": 84,
+      "selected_alpha": 0.1,
+      "calibration_validation_RMSE": 5.309525791675094,
+      "alpha_grid_audit": "[{\"alpha\":0.0,\"validation_RMSE\":6.831149033221678},{\"alpha\":0.01,\"validation_RMSE\":6.3514852357127705},{\"alpha\":0.1,\"validation_RMSE\":5.309525791675094},{\"alpha\":1.0,\"validation_RMSE\":7.699949420586089},{\"alpha\":10.0,\"validation_RMSE\":13.989860244026149},{\"alpha\":100.0,\"validation_RMSE\":20.489205458877056},{\"alpha\":1000.0,\"validation_RMSE\":42.90091924850202}]",
+      "selection_split": "C4_calibration_internal_75_25",
+      "target_test_used_for_selection": false
+    }
+  ],
+  "models_file": "regression_models.json"
+}

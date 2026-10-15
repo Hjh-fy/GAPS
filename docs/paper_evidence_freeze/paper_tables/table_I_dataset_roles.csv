@@ -1,0 +1,6 @@
+Device/role,Platform,Role,Paper split
+C1,Raspberry Pi 5,source classifier + local H1 statistics,local source train/validation
+C2,ECS client,source classifier + local H1 statistics,local source train/validation
+Server,Alibaba ECS,"FedAvg, server-side DA, H1 statistics aggregation",no raw C1/C2 training rows
+C5,target device,target personalization and deployment test,320 calibration / 1360 test windows
+Sensors,8 MOS channels,"Ethanol, CO, Ethylene, Methane",100×8 response windows

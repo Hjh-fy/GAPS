@@ -1,0 +1,7 @@
+@echo off
+setlocal
+cd /d "D:\A Python learning\Federated Learning\TRAE SOLO\.worktrees\iotj-confirmation-observability"
+if not exist "results\iotj_b5_multiseed_20260724\seed45" mkdir "results\iotj_b5_multiseed_20260724\seed45"
+set PYTHONDONTWRITEBYTECODE=1
+"D:\anaconda3\python.exe" -m scripts.run_iotj_confirmation_observability --protocol-manifest "results/c2e_summary/confirmation_protocol_manifest.json" --source-archive-manifest "results/c2e_summary/source_archive_manifest.json" --dataset-manifest "results/c2e_summary/dataset_manifest.json" --command-root "results/c2e_commands" --source-archive "results/c2e/source/confirmation_source.tar" --raw-root "results/iotj_b5_multiseed_20260724/seed45/raw" --runs "B5:45" --ecs-host "root@121.40.139.213" --pi-hosts "gaps@192.168.137.172" --wait-for-pi-minutes "30" --pi-retry-seconds "10" --c2-host "root@114.55.171.63" --c2-python "/root/gaps_c2_cpu_env/bin/python" --c2-data-root "/root/GAPS/confirmation_c2_data/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid" --c2-dataset-subset-manifest "results/c2e_ecs_c2_topology/c2_dataset_subset_manifest.json" --execution-topology-manifest "results/c2e_ecs_c2_topology/execution_topology_manifest.json" --run-timeout-seconds "172800" --poll-seconds "30" 1>"results/iotj_b5_multiseed_20260724/seed45/controller.stdout.log" 2>"results/iotj_b5_multiseed_20260724/seed45/controller.stderr.log"
+exit /b %errorlevel%

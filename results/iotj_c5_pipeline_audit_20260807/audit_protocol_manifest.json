@@ -1,0 +1,16 @@
+{
+  "schema_version": "iotj.c5_pipeline_audit.v1",
+  "status": "COMPLETE_READ_ONLY_AUDIT",
+  "seed": 42,
+  "formal_training_started": false,
+  "target_test_used_for_selection": false,
+  "existing_assets_modified": false,
+  "conclusion": "B. DATA PROVENANCE DIFFERENCE",
+  "scripts": [
+    "tools/audit_c5_window_identity.py",
+    "tools/reproduce_c5_split_rng_state.py",
+    "tools/run_c5_pipeline_factorial_audit.py",
+    "tools/recompute_r84_metrics_independent.py",
+    "tools/finalize_c5_pipeline_audit.py"
+  ]
+}

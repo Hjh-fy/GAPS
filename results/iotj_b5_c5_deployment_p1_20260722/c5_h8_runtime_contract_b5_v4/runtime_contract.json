@@ -1,0 +1,54 @@
+{
+  "bundle_manifest": {
+    "bytes": 4617,
+    "path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_b5_c5_deployment_p1_20260722/bundle_candidate/manifest.json",
+    "sha256": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5"
+  },
+  "classifier_model": {
+    "architecture": "FedGasBaseModel",
+    "encoder_type": "tcn",
+    "feat_dim": 64,
+    "num_classes": 4,
+    "num_sensors": 8,
+    "tcn_norm": "instance",
+    "use_cls_proj": true
+  },
+  "inputs": {
+    "features": {
+      "bytes": 8704128,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_features.npy",
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82"
+    },
+    "metadata": {
+      "bytes": 535350,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_experiment_info.json",
+      "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf"
+    },
+    "phase_labels": {
+      "bytes": 11008,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/client_5/test_phase_labels.npy",
+      "sha256": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5"
+    },
+    "row_count": 1360,
+    "runtime_dtype": "float32",
+    "source_dtype": "float64",
+    "window_shape": [
+      100,
+      8
+    ]
+  },
+  "references": {
+    "HC90": {
+      "bytes": 11942586,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc90_records.csv",
+      "sha256": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+    },
+    "HC95": {
+      "bytes": 11942586,
+      "path": "D:/A Python learning/Federated Learning/TRAE SOLO/.worktrees/iotj-confirmation-observability/results/iotj_b5_c5_deployment_p1_20260722/high_coverage_qc/test_hc95_records.csv",
+      "sha256": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860"
+    }
+  },
+  "schema_version": "iotj.c5_h8_runtime_contract.v1",
+  "status": "ready"
+}

@@ -1,0 +1,188 @@
+{
+  "schema_version": "gaps.iotj.submission_candidate_v2.number_audit.v1",
+  "audit_date": "2026-07-27",
+  "status": "PASS",
+  "candidate": {
+    "path": "docs/paper/GAPS_IoTJ_submission_candidate_v2.zh.html",
+    "sha256": "57eef73898122c73eb1c5ec4727c3f578d34f5ee2e8b09f627d16675c3bb9860",
+    "parent_candidate_commit": "1d70917bfe0d78391a5c65433cba4f35efad8231",
+    "system_release_freeze_commit": "36ee62339c025064cb415bfd13c5e7139a954edc",
+    "paper_evidence_freeze_commit": "b78e8bec989cc8a925698d682aff05efe859fcd2",
+    "v1_overwritten": false
+  },
+  "authoritative_sources": [
+    {
+      "path": "docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md",
+      "sha256": "bc3c22fe701853e8b978a5de156d34e32216b16708d89214a847778abd595dad"
+    },
+    {
+      "path": "results/iotj_b5_multiseed_20260724/b5_classification_multiseed_summary.csv",
+      "sha256": "11adaa5202268a206ac01f49fe8ca515716d2e80b9cfc88c5877f3ef6ef925c8"
+    },
+    {
+      "path": "results/iotj_b5_regression_multiseed_20260724/regression_multiseed_summary.csv",
+      "sha256": "5f6e3078bb82652d5268fda9e626c85dac07976e385bebf76ccb6fbaa4541378"
+    },
+    {
+      "path": "results/iotj_final_system_benchmark_20260725/benchmarks/benchmark_summary.csv",
+      "sha256": "528f60a0f87d94ecc748001c580e32d5ae67de3bbeb78b2848a1efe5baaf654c"
+    },
+    {
+      "path": "results/iotj_b5_c5_runtime_v5_qc_20260725/qc_test_summary.csv",
+      "sha256": "9901a8adf53f59b847497d19349d2ec9bd789fd141cb692919a9da4a1d8eb08e"
+    },
+    {
+      "path": "results/iotj_calibration_protocol_harmonization_20260726/track_groupaware/groupaware_budget_summary.csv",
+      "sha256": "63608d778f815360375271defe868d36be4d60309b78a1bf4a834c0818b70743"
+    }
+  ],
+  "checked_number_groups": [
+    {
+      "id": "DATA_PROTOCOL",
+      "values": {
+        "input_shape": [100, 8],
+        "source_clients": ["C1", "C2"],
+        "target_client": "C5",
+        "source_train_rows_per_client": 2360,
+        "source_calibration_rows_per_client": 320,
+        "target_calibration_rows": 320,
+        "target_test_rows": 1360,
+        "gas_count": 4,
+        "concentration_levels_per_gas": 10,
+        "raw_hz": 100,
+        "target_hz": 10,
+        "window_points": 100,
+        "stride_points": 50
+      },
+      "source": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid/split_audit_generated.json and preprocessor.py",
+      "result": "MATCH"
+    },
+    {
+      "id": "CLASSIFICATION_FIVE_SEED",
+      "scope": "five complete classifier training seeds; C5 test N=1360 per seed",
+      "values": {
+        "accuracy_mean": 0.989118,
+        "accuracy_sample_sd": 0.005983,
+        "accuracy_min": 0.980147,
+        "accuracy_max": 0.994853,
+        "macro_f1_mean": 0.989134,
+        "macro_f1_sample_sd": 0.005960,
+        "nll_mean": 0.100237,
+        "ece_mean": 0.010607
+      },
+      "source_sha256": "11adaa5202268a206ac01f49fe8ca515716d2e80b9cfc88c5877f3ef6ef925c8",
+      "result": "MATCH"
+    },
+    {
+      "id": "REGRESSION_FIVE_ROUTE",
+      "scope": "five frozen classifier routes; source heads fixed; target Ridge recomputed per route",
+      "values": {
+        "rich_only_scc_rmse_mean": 14.4546,
+        "rich_only_scc_sample_sd": 0.2621,
+        "federated_h1_scc_rmse_mean": 11.6339,
+        "federated_h1_scc_sample_sd": 0.3142,
+        "all_prior_scc_rmse_mean": 11.5208,
+        "all_prior_scc_sample_sd": 0.3148,
+        "federated_h1_relative_delta_vs_all_prior_percent": 0.981637,
+        "performance_retention_tolerance_percent": 1.0,
+        "all_prior_lower_scc_routes": "5/5"
+      },
+      "source_sha256": "5f6e3078bb82652d5268fda9e626c85dac07976e385bebf76ccb6fbaa4541378",
+      "result": "MATCH",
+      "claim_boundary": "engineering performance-retention rule; not a formal hypothesis test"
+    },
+    {
+      "id": "H1_EQUIVALENCE",
+      "scope": "real-topology H1 artifact versus pooled reference",
+      "values": {
+        "selected_alpha_agreement": "4/4",
+        "max_prediction_abs_diff_ppm": 6.2532e-08,
+        "s_all_rmse_abs_diff_ppm": 9.4460e-11,
+        "s_cc_rmse_abs_diff_ppm": 6.7040e-12
+      },
+      "source": "results/iotj_b5_c5_runtime_v5_candidate_20260724/federated_h1/equivalence_decision.json",
+      "source_sha256": "34b9125cba3e46bf4703ba8c518ff442c87a2456ed53bc1761b1c6e11c21ccee",
+      "result": "MATCH"
+    },
+    {
+      "id": "PARAMETERS_AND_PACKAGE",
+      "values": {
+        "formal_regression_parameters": 28737,
+        "federated_h1_parameters": 420,
+        "target_ridge_parameters": 424,
+        "simplified_total_regression_parameters": 844,
+        "classifier_parameters_separately_counted": 22765,
+        "formal_bundle_bytes": 2971538,
+        "simplified_core_bundle_bytes": 289916,
+        "candidate_qc_bundle_bytes": 1065632
+      },
+      "source": "docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md",
+      "result": "MATCH"
+    },
+    {
+      "id": "RUNTIME_LATENCY",
+      "scope": "CPU, batch=1, threads=1, warmup=50, runs=500, fixed C5 test order",
+      "values": {
+        "formal_pc_p50_p95_ms": [5.434, 13.945],
+        "formal_pi_p50_p95_ms": [4.571, 4.621],
+        "simplified_pc_p50_p95_ms": [4.072, 14.786],
+        "simplified_pi_p50_p95_ms": [3.725, 3.765],
+        "candidate_qc_pc_p50_p95_ms": [5.477, 19.312],
+        "candidate_qc_pi_p50_p95_ms": [4.523, 4.571]
+      },
+      "source_sha256": "528f60a0f87d94ecc748001c580e32d5ae67de3bbeb78b2848a1efe5baaf654c",
+      "result": "MATCH",
+      "claim_boundary": "no all-platform/all-percentile improvement claim"
+    },
+    {
+      "id": "QC_DIAGNOSTICS",
+      "values": {
+        "formal_hc90_co_yield_percent": 84.71,
+        "formal_hc90_co_rmse_ppm": 19.7243,
+        "candidate_hc90_co_yield_percent": 64.12,
+        "candidate_hc90_co_rmse_ppm": 20.8318
+      },
+      "source_sha256": "9901a8adf53f59b847497d19349d2ec9bd789fd141cb692919a9da4a1d8eb08e",
+      "result": "MATCH",
+      "claim_boundary": "candidate not promoted; formal QC remains the selective-output baseline"
+    },
+    {
+      "id": "CALIBRATION_SENSITIVITY",
+      "scope": "post-freeze descriptive group-aware protocol; does not replace historical result",
+      "values": {
+        "budget_320_scc_rmse_mean_sd": [10.8724, 0.4391],
+        "budget_160_scc_rmse_mean_sd": [23.9156, 5.2550],
+        "budget_80_scc_rmse_mean_sd": [30.4799, 4.3262],
+        "budget_40_scc_rmse_mean_sd": [36.4992, 2.7156],
+        "historical_seed_specific_scc_rmse_ppm": 11.3416
+      },
+      "source_sha256": "63608d778f815360375271defe868d36be4d60309b78a1bf4a834c0818b70743",
+      "result": "MATCH"
+    }
+  ],
+  "derived_values_checked": [
+    {
+      "expression": "14.454631 - 11.633858",
+      "reported": 2.8208,
+      "unit": "ppm",
+      "result": "MATCH_AFTER_ROUNDING"
+    },
+    {
+      "expression": "11.633858 - 11.520766",
+      "reported": 0.1131,
+      "unit": "ppm",
+      "result": "MATCH_AFTER_ROUNDING"
+    },
+    {
+      "expression": "420 + 424",
+      "reported": 844,
+      "unit": "parameters",
+      "result": "MATCH"
+    }
+  ],
+  "numeric_conflicts": [],
+  "numeric_conflict_count": 0,
+  "frozen_result_files_modified": false,
+  "new_experiment_or_evaluation_run": false,
+  "final_decision": "PASS"
+}

@@ -1,0 +1,74 @@
+{
+  "schema_version": "iotj.b5_regression_multiseed.v1",
+  "status": "formal",
+  "formal_run_commit": "99cd23e8b4a5f2f103170f1d8a110d6d85febd5e",
+  "origin_commit_at_run": "99cd23e8b4a5f2f103170f1d8a110d6d85febd5e",
+  "seed_set": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "split": {
+    "C5_calibration": 320,
+    "calibration_fit": 240,
+    "calibration_validation": 80,
+    "C5_test": 1360
+  },
+  "variants": {
+    "RG0_RICH_ONLY": {
+      "target_head": "per-gas Ridge",
+      "input_dimension": 104,
+      "source_prior_keys": []
+    },
+    "RG1_FEDERATED_H1": {
+      "target_head": "per-gas Ridge",
+      "input_dimension": 105,
+      "source_prior_keys": [
+        "H1_federated_source_ridge_ppm"
+      ]
+    },
+    "RG2_ALL_PRIOR": {
+      "target_head": "per-gas Ridge",
+      "input_dimension": 107,
+      "source_prior_keys": [
+        "H1_federated_source_ridge_ppm",
+        "H2_source_per_gas_mlp_ppm",
+        "H3_source_shared_mlp_ppm"
+      ]
+    }
+  },
+  "ridge_alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "selection": "calibration-validation only, per seed/gas/variant",
+  "refit": "full 320-row calibration after alpha lock",
+  "test_used_for_fit_select_or_refit": false,
+  "common_correct_definition": "intersection of classification-correct sample_index sets across seeds 42,43,44,45,46",
+  "runtime_v4_modified": false,
+  "qc_modified": false,
+  "source_heads_retrained": false,
+  "frozen_hashes_before": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  },
+  "frozen_hashes_after": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  }
+}

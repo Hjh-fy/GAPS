@@ -1,0 +1,27 @@
+{
+  "schema_version": "iotj.paper_evidence_freeze.v1",
+  "status": "PAPER_EVIDENCE_FROZEN",
+  "claim_count": 10,
+  "approved_claim_count": 10,
+  "evidence_count": 12,
+  "numeric_conflicts": 0,
+  "critical_terminology_violations": 0,
+  "missing_core_tables": 0,
+  "missing_core_figures": 0,
+  "missing_evidence": 0,
+  "html_validation": "PASS",
+  "runtime_modified": false,
+  "qc_modified": false,
+  "new_experiment_run": false,
+  "test_reopened": false,
+  "mandatory_boundaries": {
+    "runtime_v4_formal_baseline": true,
+    "runtime_v5_core_final_simplified": true,
+    "runtime_v5_qc2_not_promoted": true,
+    "frozen_11_3416_distinct_from_group_10_8724": true,
+    "HIGH_CALIBRATION_SENSITIVITY_retained": true,
+    "SENSITIVITY_PARTLY_PROTOCOL_DEPENDENT_retained": true,
+    "window_level_boundary": true,
+    "privacy_boundary": true
+  }
+}

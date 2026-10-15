@@ -1,0 +1,45 @@
+{
+  "alignment": "mmd2",
+  "alignment_scope": "unconditional_global",
+  "alignment_weight": 0.5,
+  "calibration": {
+    "class_label_sha256": "2fb5d460c16f4eff34b4b20255491aa1884cad4677b4bc3e15ede1ab577bece0",
+    "concentration_access": false,
+    "feature_sha256": "3e4f8e0dd8a6bfcdd3d25410adb32e8f70f3fa112d1c7a6337f5214a6462c4fb",
+    "feature_shape": [
+      320,
+      100,
+      8
+    ],
+    "fields": [
+      "x",
+      "class"
+    ],
+    "num_examples": 320,
+    "phase_access": false,
+    "split": "C3_calibration",
+    "target_test_access": false
+  },
+  "calibration_examples": 320,
+  "checkpoint_selection": "fixed_step_100",
+  "checkpoint_sha256": "05f40ddbe44375b64d924d9fe3b24a829fe67c7c935fa7a7b9807e63ca4d1c9c",
+  "commissioning_seconds": 5.740704600000754,
+  "experiment_id": "C3LCD-MMD-TCE-S42-20261008",
+  "hyperparameter_search": false,
+  "method": "MMD+TCE",
+  "method_key": "mmd_tce",
+  "optimizer": "Adam",
+  "optimizer_lr": 0.0005,
+  "seed": 42,
+  "source_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+  "steps": 100,
+  "target": "C3",
+  "target_ce_weight": 1.0,
+  "target_fields": [
+    "x",
+    "class"
+  ],
+  "target_label_role": "classification_CE_and_available_training_labels",
+  "target_test_opened": false,
+  "test_examples": 680
+}

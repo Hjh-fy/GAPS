@@ -1,0 +1,59 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "decision_path": "PATH_B_RISK_SEMANTICS_INCOMPATIBLE",
+  "v4_score_key": "deployment_risk_full",
+  "compatible_components": [
+    "raw_risk_confidence",
+    "raw_risk_prototype",
+    "raw_risk_support"
+  ],
+  "incompatible_components": {
+    "raw_risk_expert_disagreement": [
+      "h23_plus_ppm",
+      "target_ridge_plus_source_preds_ppm"
+    ],
+    "raw_risk_source_spread": [
+      "H1_source_ridge_ppm",
+      "H2_source_per_gas_mlp_ppm",
+      "H3_source_shared_mlp_ppm"
+    ]
+  },
+  "selected_risk_aggregates_incompatible_components": true,
+  "threshold_lineage": "v4_calibration_validation_deployment_risk_full_distribution",
+  "v4_threshold_reuse_allowed": false,
+  "new_risk_model_invented": false,
+  "v5_qc_built": false,
+  "required_next_protocol": "separate_frozen_v5_QC_protocol_using_v5_calibration_only",
+  "source_evidence": {
+    "feature_reference.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\feature_reference.json",
+      "bytes": 1466440,
+      "sha256": "dcf45ac083274f94d83d4696232016bc9e360ca7fff105ace1fdb07c84fb959e"
+    },
+    "component_calibrator.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\component_calibrator.json",
+      "bytes": 11009,
+      "sha256": "b409a06a51999a304e99b98f5c41a5e91819a0a7fd9983223a818596e5dfc18a"
+    },
+    "risk_policy.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\risk_policy.json",
+      "bytes": 679,
+      "sha256": "7aa195fb099d459b741d8920d5ed89efb2f32fd2f374e9126b2c58ea789baf5b"
+    },
+    "risk_selection.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_deployment_p1_20260722\\high_coverage_qc\\risk_selection.json",
+      "bytes": 16723,
+      "sha256": "8212c78c57649b627ce99a8f6fead4cd220ddad25a19f0340f0bd8650fd2a1ce"
+    }
+  },
+  "code_evidence": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\gaps_deploy\\c5_h8_runtime.py",
+    "required_fields": [
+      "h23_plus_ppm",
+      "target_ridge_plus_source_preds_ppm",
+      "H1_source_ridge_ppm",
+      "H2_source_per_gas_mlp_ppm",
+      "H3_source_shared_mlp_ppm"
+    ]
+  }
+}

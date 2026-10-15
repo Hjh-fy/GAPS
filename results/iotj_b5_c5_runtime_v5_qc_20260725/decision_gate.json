@@ -1,0 +1,29 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_closure.v1",
+  "decision": "RUNTIME_V5_QC_VALID_BUT_NOT_SUPERIOR",
+  "reason": "risk and runtime parity are valid, but one or more preregistered v4 promotion guards failed",
+  "selected_candidate": "QC2",
+  "qc_selection_lock_sha256": "64877b7676bc4497074a2619282e0d2fedd658db76c2d1868b91699edba6d518",
+  "test_opened_after_selection": true,
+  "test_opened_after_lock": true,
+  "test_used_for_fit_select_refit_normalization_scale_threshold_or_rule": false,
+  "final_test_evaluation_timestamp": "2026-07-25T04:50:49.434213+00:00",
+  "risk_direction_test_pass": true,
+  "all_v4_promotion_guards_pass": false,
+  "calibration_runtime_parity_pass": true,
+  "test_runtime_parity_pass": true,
+  "runtime_v5_qc_bundle": {
+    "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_qc_20260725\\runtime_v5_qc_bundle\\manifest.json",
+    "bytes": 817,
+    "sha256": "77818f5aa69588fc8b948717282694793f30c6240cb47313d12848980c50d168"
+  },
+  "runtime_v4_hc_frozen_sha256": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  },
+  "next_stage": "retain runtime v4 as formal baseline; do not tune v5 QC on test"
+}

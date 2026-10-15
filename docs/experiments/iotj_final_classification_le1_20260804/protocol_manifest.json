@@ -1,0 +1,33 @@
+{
+  "schema_version": "iotj.final_classification.protocol.v1",
+  "study_id": "iotj_final_classification_le1_20260804",
+  "branch": "codex/iotj-final-classification-le1",
+  "pre_run_freeze_commit": "SELF_GIT_COMMIT_CONTAINING_THIS_MANIFEST",
+  "parent_code_commit": "844653ac4f533d24d8cd3436af1ee61f07e02c2f",
+  "protocol_freeze_hash": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+  "seed": 42,
+  "registered_configs": 21,
+  "new_full_fl_runs": 10,
+  "e2_adaptation_branches": 9,
+  "federated_rounds": 25,
+  "local_epochs": 1,
+  "batch_size": 32,
+  "source_checkpoint": {
+    "role": "P0A-PURE-FEDAVG-LE1-S42 round25",
+    "ordered_state_content_fingerprint": "c0379777c63c7a5b0910e5d2ab8a1c37869692db14fd940e0a86778c9f5a1769",
+    "whole_file_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+    "equality_basis": "ordered_state_content_fingerprint",
+    "whole_file_sha256_role": "provenance_only"
+  },
+  "optimizer_protocol": {
+    "FedAvg": {"optimizer": "Adam", "optimizer_lr": 0.0005, "optimizer_note": "frozen GAPS experimental protocol"},
+    "FedProx": {"optimizer": "Adam", "optimizer_lr": 0.0005, "optimizer_note": "frozen GAPS experimental protocol"},
+    "SCAFFOLD": {"optimizer": "SGD", "optimizer_lr": 0.0005, "optimizer_note": "canonical SCAFFOLD implementation"},
+    "GAPS": {"optimizer": "Adam", "optimizer_lr": 0.0005, "optimizer_note": "proposed method protocol"}
+  },
+  "scaffold_lr_search_performed": false,
+  "target_test_checkpoint_selection": false,
+  "formal_mutation_policy": "no tuning, no matrix changes, no target-test selection after formal lock",
+  "pre_run_audit": {"status": "PASS", "checks_passed": 11, "blocking_failures": 0},
+  "verification": {"focused_tests_passed": 57, "regression_tests_passed": 89, "compileall": "PASS", "source_gate": "PASS"}
+}

@@ -1,0 +1,29 @@
+{
+  "adaptation_seconds": 18.039104199997382,
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E2-MMD-C3\\adapted_step_100.pth",
+  "checkpoint_sha256": "ac567265e5b22c785bb6112f8041f747d4162261b9bf008e79e447b6fbf92242",
+  "experiment_id": "FCL-E2-MMD-C3",
+  "protocol_hash": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+  "schema_version": "iotj.final_classification.e2.v1",
+  "spec": {
+    "checkpoint_selection": "fixed_step_100",
+    "coefficient": 0.5,
+    "conditional": false,
+    "experiment_id": "FCL-E2-MMD-C3",
+    "hyperparameter_search": false,
+    "method": "mmd",
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "pseudo_labels": false,
+    "seed": 42,
+    "source_batch_convention": "combined_registered_C1_C2_calibration",
+    "source_checkpoint_role": "P0A_round25",
+    "steps": 100,
+    "target": "C3",
+    "target_ce": false,
+    "target_fields": [
+      "x"
+    ]
+  },
+  "target_test_opened": false
+}

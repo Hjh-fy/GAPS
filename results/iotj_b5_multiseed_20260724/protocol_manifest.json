@@ -1,0 +1,197 @@
+{
+  "schema_version": "iotj.b5_multiseed_final_protocol.v1",
+  "status": "m0_frozen_ready_for_preflight",
+  "m0_parent_commit": "bcc07a1f832aa9a3440e8daf8f7a357d0304827c",
+  "training_code_revision": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "frozen_input_files": {
+    "results/c2e/source/confirmation_source.tar": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+    "results/c2e_summary/confirmation_protocol_manifest.json": "f4b3e214f29b477b42b0e733939dbf6124889c35d118debd182561665a7b85dc",
+    "results/c2e_summary/source_archive_manifest.json": "80b837c8d0ffd159e0307b9c3e6eb2de20b67d6f988ef4fe2d04946492368f95",
+    "results/c2e_summary/dataset_manifest.json": "e3d7dbd91c9ddcbdd1273ccfb41ad7f4d6430ffea77b2fc415484e6526f2df4b",
+    "results/c2e_ecs_c2_topology/c2_dataset_subset_manifest.json": "412d99c471cdede2686328f05162c551c0d433c735a89ef264c9f325f2e60b93",
+    "results/c2e_ecs_c2_topology/execution_topology_manifest.json": "8afc94184779140d63ef86003a6882d576ce913009df20e99d5f42ab7d424643"
+  },
+  "dataset": {
+    "path": "dataset/client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+    "manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+    "split_seed": 42,
+    "source_clients": ["C1", "C2"],
+    "target_client": "C5",
+    "sample_counts": {
+      "C1": {"train": 2360, "calibration": 320, "test": 680},
+      "C2": {"train": 2360, "calibration": 320, "test": 680},
+      "C5": {"calibration": 320, "test": 1360}
+    }
+  },
+  "seed42_reference": {
+    "run_id": "c12_to_c5__b5__s42",
+    "attempt_id": "c12_to_c5__b5__s42__a001",
+    "checkpoint_path": "results/iotj_ecs_c2_representative_20260720/raw/c12_to_c5__b5__s42/c12_to_c5__b5__s42__a001/raw/ecs/training/server_round_025_adapted.pth",
+    "checkpoint_sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c",
+    "checkpoint_bytes": 184201,
+    "attempt_audit_sha256": "0e5819ce0d5de0df78537a8088e0821fa8fbdcfb0fc7bb032648f1c3b67b8bdd",
+    "attempt_state": "canonical",
+    "validator_status": "valid",
+    "training_round_wall_seconds": 5932.340982363,
+    "reuse_without_retraining": true
+  },
+  "seeds": {
+    "42": {"action": "reuse", "status": "completed_reference"},
+    "43": {"action": "train", "status": "registered"},
+    "44": {"action": "train", "status": "registered"},
+    "45": {"action": "train", "status": "registered"},
+    "46": {"action": "train", "status": "registered"}
+  },
+  "training": {
+    "rounds": 25,
+    "local_epochs_per_round": 5,
+    "batch_size": 32,
+    "client_optimizer": {
+      "name": "torch.optim.Adam",
+      "lr": 0.0005,
+      "betas": [0.9, 0.999],
+      "eps": 1e-08,
+      "weight_decay": 0.0,
+      "amsgrad": false,
+      "scheduler": "none_in_train_one_round",
+      "recreated_each_round": true
+    },
+    "strategy": "gaps",
+    "profile": "proto_replay",
+    "minimum_clients": 2,
+    "classification_only": true,
+    "regression_loss": false,
+    "algorithm_switches": {
+      "prototype_alignment": true,
+      "contrastive_alignment": true,
+      "replay_distillation": true,
+      "prototype_decoupling": true,
+      "device_residual_statistics": true,
+      "selective_aggregation": true,
+      "selective_warmup_rounds": 3,
+      "selective_min_scale": 0.3,
+      "semantic_proto_ema_alpha": 0.8,
+      "proto_mmd": false,
+      "target_supervised_ce": false
+    }
+  },
+  "server_domain_adaptation": {
+    "enabled": true,
+    "device": "cpu",
+    "steps_per_round": 100,
+    "warmup_rounds": 0,
+    "strict_calibration_split": true,
+    "use_adapted_as_global": true,
+    "preset": "none",
+    "server_optimizer_lr": 0.0005,
+    "use_coral": true,
+    "coral_class_conditional": true,
+    "lambda_coral": 0.5,
+    "use_mmd": true,
+    "mmd_objective": "mmd2",
+    "lambda_global_mmd": 0.5,
+    "lambda_class_mmd": 0.5,
+    "stage_alignment": "cross_domain_same_class_phase",
+    "lambda_stage_mmd": 0.2,
+    "use_adversarial": true,
+    "adversarial_feature_objective": "wasserstein_min",
+    "lambda_adversarial": 0.5,
+    "lambda_proto_anchor": 0.3,
+    "lambda_proto": 0.05,
+    "lambda_consistency": 2.0,
+    "lambda_residual": 0.1,
+    "lambda_proto_mmd": 0.0,
+    "lambda_target_ce": 0.0,
+    "target_ce_label_smoothing": 0.0,
+    "target_ce_class_balanced": false
+  },
+  "execution_topology": {
+    "topology_id": "ecs_c2_pi_c1",
+    "server_and_da": "root@121.40.139.213",
+    "C1": "gaps@192.168.137.172",
+    "C2": "root@114.55.171.63",
+    "transport": "Flower over loopback reverse tunnel",
+    "public_flower_port_exposure": false,
+    "parallel_runs_allowed": false
+  },
+  "command_manifests": {
+    "42": {"path": "results/c2e_commands/c12_to_c5__b5__s42/command_manifest.json", "file_sha256": "ee6b45b4f550d9342ce80383a7881696d42ee792d68e1c5632d17cfd9cfebc47", "algorithm_config_sha256": "bd886f824519c991c04f3d31a174ac31bb89d34ac5fc6f5f0234eec1e81213aa"},
+    "43": {"path": "results/c2e_commands/c12_to_c5__b5__s43/command_manifest.json", "file_sha256": "0aaf7d33ff69920049efc5afcf8adb1a2021a381e771aa4467c4f8dff8429ddd", "algorithm_config_sha256": "2fa3045a7bbe40672289c34e3738f128465e764228fa7fb8957c1d85d63870fe"},
+    "44": {"path": "results/c2e_commands/c12_to_c5__b5__s44/command_manifest.json", "file_sha256": "54c365175cebe9218072370a5505cd73b60061eaeac0645e7f1d11adbd6f5667", "algorithm_config_sha256": "a947dd08a02bb1105cf39d2c21106ba059d7c4db01d72bc11a1c9890934f9571"},
+    "45": {"path": "results/c2e_commands/c12_to_c5__b5__s45/command_manifest.json", "file_sha256": "bdf588cf217642d6c46e429dd0d9fd62940929422f513ebdd240594510f90343", "algorithm_config_sha256": "2a29b56645cd84be04cd8befa706a761f7955c4e75f0974a6b6341063942e503"},
+    "46": {"path": "results/c2e_commands/c12_to_c5__b5__s46/command_manifest.json", "file_sha256": "3fd5714ee4e0938744b9cc3cf8192f0d86cc9679685d18f26d1abf7e309da823", "algorithm_config_sha256": "98087d58a47a3c0c0b62b68340a38f36dfa60f3c8cb2e7c5b003d7dfebaa70eb"}
+  },
+  "component_seed_coupling": {
+    "classifier_checkpoint_and_route": "varies_with_classifier_training_seed",
+    "C5_target_ridge_alpha_and_refit": "recomputed_per_classifier_seed",
+    "federated_H1_source_model": {
+      "varies_with_classifier_seed": false,
+      "path": "results/iotj_h1_federated_ridge_equivalence_20260724/federated_h1_manifest.json",
+      "sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+      "equivalence_status": "PRACTICAL_EQUIVALENCE"
+    },
+    "pooled_H1_H2_H3_source_models": {
+      "varies_with_classifier_seed": false,
+      "path": "results/iotj_b5_c5_deployment_p1_20260722/h8_no_rescue/r4_policy.json",
+      "sha256": "18b6c14373018474807eec2bd19a0b508b75adfbf994b0821a786a11def9c263"
+    }
+  },
+  "classification_metrics": {
+    "metrics": ["Accuracy", "Macro-F1", "NLL", "ECE"],
+    "ece_bins": 15,
+    "summary": ["mean", "sample_std_ddof1", "min", "max"],
+    "classifier_reselection": false
+  },
+  "regression_variants": {
+    "RG0_RICH_ONLY": {"input_dimension": 104, "source_priors": []},
+    "RG1_FEDERATED_H1": {"input_dimension": 105, "source_priors": ["federated_H1"]},
+    "RG2_ALL_PRIOR": {"input_dimension": 107, "source_priors": ["pooled_H1", "pooled_H2", "pooled_H3"]}
+  },
+  "final_gate": {
+    "primary": "(mean_S_CC_H1 - mean_S_CC_ALL) / mean_S_CC_ALL <= 0.01",
+    "S_ALL_mean_ratio_max": 1.01,
+    "CO_mean_ratio_max": 1.01,
+    "CO_high_mean_ratio_max": 1.01,
+    "majority_degradation_rule": "fail if RG1 exceeds RG2 by >5% in at least 3 of 5 seeds for any gas, CO, or CO-high",
+    "pass_decision": "SELECT_B5_FEDERATED_H1",
+    "fail_decision": "SELECT_B5_ALL_PRIOR"
+  },
+  "estimated_runtime": {
+    "seed42_measured_training_hours": 1.6478724951008333,
+    "planned_hours_per_new_seed_including_overhead": 2.0,
+    "four_seed_serial_estimate_hours": 8.0,
+    "recommended_reservation_hours": 10.0,
+    "controller_timeout_hours": 48.0
+  },
+  "launch_gate": {
+    "status": "not_run",
+    "requires_three_host_preflight": true,
+    "requires_no_residual_processes": true,
+    "requires_hash_match": true,
+    "requires_empty_seed_output": true,
+    "stop_on_first_failed_attempt": true
+  },
+  "m0_validation": {
+    "validator": "scripts/validate_iotj_b5_multiseed_protocol.py",
+    "status": "ready_for_preflight",
+    "errors": [],
+    "normalized_algorithm_only_seed_varies": true,
+    "related_tests": {
+      "passed": 230,
+      "skipped": 2,
+      "failed": 0,
+      "basetemp": ".m0"
+    },
+    "formal_training_started": false
+  },
+  "forbidden_actions": [
+    "retrain_seed42",
+    "single_machine_simulation_mixed_with_real_topology",
+    "runtime_v5_creation",
+    "runtime_v4_modification",
+    "QC_rebuild",
+    "Pi_benchmark",
+    "low_calibration"
+  ]
+}

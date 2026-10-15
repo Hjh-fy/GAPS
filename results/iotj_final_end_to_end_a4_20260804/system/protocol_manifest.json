@@ -1,0 +1,17 @@
+{
+  "schema_version": "iotj.final_a4_system.v1",
+  "status": "complete",
+  "source_files": {
+    "efficiency": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_system_benchmark_20260725\\paper_tables\\table_system_efficiency.csv",
+    "fl_communication": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_system_benchmark_20260725\\system_metrics\\b5_fl_communication_summary.csv",
+    "h1_communication": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_system_benchmark_20260725\\system_metrics\\federated_h1_communication_summary.csv",
+    "locked": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\locked_run_spec.json",
+    "completed": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\fixed_endpoint_complete.json",
+    "run_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\run_manifest.json"
+  },
+  "communication_evidence_boundary": {
+    "flower": "measured application payload; transport bytes unavailable",
+    "federated_h1": "theoretical serialized one-shot exchange"
+  },
+  "physical_validation_boundary": "no hardware photograph; evidence is the audited three-machine Flower run and separate Pi 5 benchmark"
+}

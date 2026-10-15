@@ -1,0 +1,21 @@
+{
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E3-GAPS-C5\\remote_server\\server_latest_adapted.pth",
+  "checkpoint_sha256": "15ccde0cf274dabd84d007caea94fb11c0e7f59e2b5537425795b7d636aa4bf3",
+  "experiment_id": "FCL-E3-GAPS-C5",
+  "protocol": {
+    "batch_size": 32,
+    "local_epochs": 1,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "optimizer_note": "proposed method protocol",
+    "rounds": 25,
+    "seed": 42,
+    "target": "C5",
+    "target_test_selection": false
+  },
+  "protocol_hash": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+  "schema_version": "iotj.final_classification.full_fl.v1",
+  "source_archive_sha256": "16a13f599a92411148d120f90d901a7859824ae5a869e3c2d82234d6c1c6f2e8",
+  "target_test_opened": false,
+  "wall_seconds": 4591.249364999996
+}

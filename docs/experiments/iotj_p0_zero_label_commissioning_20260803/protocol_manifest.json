@@ -1,0 +1,206 @@
+{
+  "schema_version": "iotj.p0u.zero_label.v1",
+  "status": "completed_pending_strict_audit",
+  "seed": 42,
+  "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_p0_routing_simplification_20260803\\P0A_PURE_FEDAVG_LE1_S42\\remote_server\\server_round_025.pth",
+  "source_checkpoint_sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c",
+  "dataset": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "target_calibration_windows": 320,
+  "target_test_windows": 1360,
+  "steps": 100,
+  "model_lr": 0.0005,
+  "threshold": 0.9,
+  "hyperparameter_search": false,
+  "u1": {
+    "target_api": "x_only",
+    "weights": {
+      "source_ce": 1.0,
+      "coral": 0.5,
+      "global_mmd2": 0.5,
+      "adversarial": 0.5
+    },
+    "critic_lr": 0.001,
+    "critic_iters": 3,
+    "gradient_penalty": 10.0,
+    "forbidden_target_losses": [
+      "target_ce",
+      "class_conditional_coral",
+      "class_mmd",
+      "same_class_phase_stage_mmd",
+      "target_proto_anchor",
+      "target_label_semantic_matching",
+      "pseudo_labels"
+    ]
+  },
+  "u2": {
+    "target_api": "x_only",
+    "teacher": "frozen_source_round25",
+    "pseudo_label_origin": "teacher_argmax",
+    "threshold": 0.9,
+    "truth_access": "posthoc_precision_only"
+  },
+  "label_access_ledger": [
+    {
+      "event": "source_checkpoint_loaded",
+      "at": "2026-08-03T09:45:46.903649+00:00",
+      "sha256": "4313c375a8fa2e929de9d65637a2196f6c0f0752c2dc78112020b8727351751c"
+    },
+    {
+      "event": "u1_target_x_loader_created",
+      "at": "2026-08-03T09:45:47.063247+00:00",
+      "target_labels_loaded": false
+    },
+    {
+      "event": "u1_training_completed",
+      "at": "2026-08-03T09:45:58.117790+00:00",
+      "steps": 100,
+      "target_labels_loaded": false
+    },
+    {
+      "event": "u2_target_x_loader_created",
+      "at": "2026-08-03T09:45:58.119304+00:00",
+      "target_labels_loaded": false
+    },
+    {
+      "event": "u2_training_completed",
+      "at": "2026-08-03T09:46:01.667615+00:00",
+      "steps": 100,
+      "target_labels_loaded": false
+    },
+    {
+      "event": "calibration_truth_opened_posthoc",
+      "at": "2026-08-03T09:46:01.739603+00:00",
+      "purpose": "pseudo_label_precision_only",
+      "after_both_training": true
+    },
+    {
+      "event": "c5_test_opened",
+      "at": "2026-08-03T09:46:01.853871+00:00",
+      "after_both_training": true,
+      "purpose": "single_final_evaluation"
+    }
+  ],
+  "target_test_used_for_selection": false,
+  "checkpoint_selection": "fixed_source_round25",
+  "metrics": {
+    "u1": {
+      "num_examples": 1360,
+      "accuracy": 0.6073529411764705,
+      "macro_accuracy": 0.6073529411764705,
+      "nll": 2.3375478365842035,
+      "ece": 0.317370374939021,
+      "mean_confidence": 0.9247232675552368,
+      "mean_margin": 0.859908938407898,
+      "per_class_accuracy": {
+        "0": 0.4470588235294118,
+        "1": 0.8264705882352941,
+        "2": 0.2088235294117647,
+        "3": 0.9470588235294117
+      },
+      "confusion_matrix": [
+        [
+          152,
+          36,
+          152,
+          0
+        ],
+        [
+          14,
+          281,
+          39,
+          6
+        ],
+        [
+          170,
+          83,
+          71,
+          16
+        ],
+        [
+          0,
+          18,
+          0,
+          322
+        ]
+      ],
+      "macro_f1": 0.5921324526575015,
+      "per_class_recall": {
+        "0": 0.4470588235294118,
+        "1": 0.8264705882352941,
+        "2": 0.2088235294117647,
+        "3": 0.9470588235294117
+      }
+    },
+    "u2": {
+      "num_examples": 1360,
+      "accuracy": 0.3323529411764706,
+      "macro_accuracy": 0.3323529411764706,
+      "nll": 4.946702816907098,
+      "ece": 0.6595982120317571,
+      "mean_confidence": 0.9912299513816833,
+      "mean_margin": 0.983330488204956,
+      "per_class_accuracy": {
+        "0": 0.10588235294117647,
+        "1": 0.0,
+        "2": 0.2235294117647059,
+        "3": 1.0
+      },
+      "confusion_matrix": [
+        [
+          36,
+          1,
+          303,
+          0
+        ],
+        [
+          1,
+          0,
+          144,
+          195
+        ],
+        [
+          0,
+          4,
+          76,
+          260
+        ],
+        [
+          0,
+          0,
+          0,
+          340
+        ]
+      ],
+      "macro_f1": 0.2415575387324489,
+      "per_class_recall": {
+        "0": 0.10588235294117647,
+        "1": 0.0,
+        "2": 0.2235294117647059,
+        "3": 1.0
+      }
+    }
+  },
+  "commissioning_seconds": {
+    "u1": 8.889057600001252,
+    "u2": 3.5235988999993424
+  },
+  "pseudo_label_posthoc": {
+    "record_type": "posthoc_truth_audit",
+    "step": "",
+    "threshold": 0.9,
+    "batch_size": 320,
+    "selected_count": 309,
+    "coverage": 0.965625,
+    "mean_confidence_all": 0.9875918727368116,
+    "mean_confidence_selected": 0.996001754378038,
+    "pseudo_class_0": 13,
+    "pseudo_class_1": 2,
+    "pseudo_class_2": 110,
+    "pseudo_class_3": 184,
+    "pseudo_ce": "",
+    "teacher_policy": "frozen_source_round25",
+    "pseudo_label_origin": "teacher_argmax_only",
+    "target_label_object_present": "posthoc_truth_only",
+    "posthoc_precision": 0.3559870550161812
+  }
+}

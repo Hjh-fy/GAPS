@@ -1,0 +1,70 @@
+{
+  "schema_version": "iotj.b5_c5_federated_h1_runtime_v5_candidate.v1",
+  "record_type": "server_aggregation_manifest",
+  "host": "iZbp13efwf75yj81x6zuh7Z",
+  "protocol": "two_phase_global_scaler_then_normal_equations",
+  "server_api_received": [
+    "n",
+    "sum_x",
+    "sum_x2",
+    "A",
+    "b",
+    "yTy",
+    "y_min",
+    "y_max",
+    "feature_schema_sha256",
+    "row_provenance_sha256",
+    "clipped_validation_SSE",
+    "validation_count"
+  ],
+  "input_and_output_artifacts": {
+    "c1_moments.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c1_moments.json",
+      "bytes": 47961,
+      "sha256": "d9a2caa8d4fd2d49bb7efcdc504f43039f1c80740a425646ab0ffcbeffe83825"
+    },
+    "c2_moments.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c2_moments.json",
+      "bytes": 48021,
+      "sha256": "29e6b9a76eae2f0645766fb13ab33efb5c9879df920b9a9081583ca698818d14"
+    },
+    "global_scalers.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\global_scalers.json",
+      "bytes": 50487,
+      "sha256": "868122031c25ff6f34708c5b6269fe2194071a1fdb460c2e77fdfb46be49e2ab"
+    },
+    "c1_equations.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c1_equations.json",
+      "bytes": 3474182,
+      "sha256": "4ca011e5b90cf3f158ca8d12c96884fc7b1676ef359b85c05a9318d7af005a10"
+    },
+    "c2_equations.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c2_equations.json",
+      "bytes": 3477463,
+      "sha256": "847f9c8a8950b72d7547752b2eab565c7dd280771d46282d51bdb155881e51bc"
+    },
+    "h1_candidates.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\h1_candidates.json",
+      "bytes": 245942,
+      "sha256": "92869fc4a9ccc7682f751c800483c367f2a389443a8f14e5b9c633839629f78f"
+    },
+    "c1_scores.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c1_scores.json",
+      "bytes": 9697,
+      "sha256": "bb40ed5c7ad6094bf24b422fc5f6bf2c37f0b5e06a466b3262f390ad067f8e08"
+    },
+    "c2_scores.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\c2_scores.json",
+      "bytes": 9720,
+      "sha256": "555c21b48bc00b708b4bc9ce0e4568bbfb730b99e0a7098a674cc29f8212ce23"
+    },
+    "global_h1_model.json": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\global_h1_model.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+    }
+  },
+  "server_received_raw_rows": false,
+  "server_received_raw_X_y": false,
+  "server_received_sample_predictions_or_labels": false
+}

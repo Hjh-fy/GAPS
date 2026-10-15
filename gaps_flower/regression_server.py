@@ -55,6 +55,21 @@ logging.basicConfig(
 logger = logging.getLogger("regression_server")
 
 
+def _checkpoint_n_samples(
+    checkpoint: object,
+    client_id: int,
+    checkpoint_path: str | Path,
+) -> int:
+    """Return the immutable training sample count recorded by a client checkpoint."""
+    value = checkpoint.get("n_samples") if isinstance(checkpoint, dict) else None
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(
+            f"Client {client_id} checkpoint has invalid n_samples={value!r}: "
+            f"{checkpoint_path}. Expected a positive integer produced at training time."
+        )
+    return value
+
+
 def aggregate_regression_checkpoints(
     classifier_ckpt: str,
     client_ckpt_dir: str,
@@ -62,6 +77,7 @@ def aggregate_regression_checkpoints(
     client_ids: list[int],
     device: torch.device,
     batch_size: int = 32,
+    verify_live_sample_counts: bool = False,
     reg_head_depth: int | None = None,
     reg_output_mode: str | None = None,
     use_reg_window_stats: bool | None = None,
@@ -146,21 +162,17 @@ def aggregate_regression_checkpoints(
     load_classifier_weights(global_model, classifier_ckpt)
     init_regression_branch_from_classifier(global_model)
 
-    # 2. 获取样本数
-    _, sample_counts = build_source_regression_loaders(
-        data_root=data_root, client_ids=client_ids, batch_size=batch_size,
-    )
-    logger.info(f"回归 FedAvg: 客户端样本数={sample_counts}")
-
-    # 3. 加载各客户端本地 state_dict
+    # 2. 加载各客户端本地 state_dict 及其训练时冻结的样本数
     ckpt_dir = Path(client_ckpt_dir)
     local_states: Dict[int, Dict[str, torch.Tensor]] = {}
+    sample_counts: Dict[int, int] = {}
     for cid in client_ids:
         ckpt_path = ckpt_dir / f"regression_source_client{cid}_local.pth"
         if not ckpt_path.exists():
             logger.warning(f"回归 FedAvg: 客户端 {cid} checkpoint 不存在: {ckpt_path}, 跳过")
             continue
         ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        sample_counts[cid] = _checkpoint_n_samples(ckpt, cid, ckpt_path)
         ckpt_depth = ckpt.get("model_config", {}).get("reg_head_depth")
         if ckpt_depth is not None and int(ckpt_depth) != int(config.REG_HEAD_DEPTH):
             raise ValueError(
@@ -272,6 +284,25 @@ def aggregate_regression_checkpoints(
                     )
         local_states[cid] = ckpt.get("model_state", ckpt)
         logger.info(f"回归 FedAvg: 加载客户端 {cid} 本地参数")
+
+    logger.info(f"回归 FedAvg: checkpoint 样本数={sample_counts}")
+
+    if verify_live_sample_counts:
+        _, live_sample_counts = build_source_regression_loaders(
+            data_root=data_root,
+            client_ids=list(local_states),
+            batch_size=batch_size,
+        )
+        mismatches = {
+            cid: (sample_counts[cid], live_sample_counts.get(cid))
+            for cid in local_states
+            if live_sample_counts.get(cid) != sample_counts[cid]
+        }
+        if mismatches:
+            raise ValueError(
+                "Regression checkpoint n_samples do not match live data sample counts: "
+                f"{mismatches}. Checkpoint counts remain authoritative."
+            )
 
     if len(local_states) < 2:
         logger.warning(
@@ -388,6 +419,11 @@ def main() -> None:
                         help="输出目录")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="批次大小")
+    parser.add_argument(
+        "--verify-live-sample-counts",
+        action="store_true",
+        help="核对当前数据样本数与 checkpoint n_samples；不改变聚合权重",
+    )
     parser.add_argument("--reg-head-depth", type=int, default=None,
                         help="回归头深度; 默认沿用 config.py 中的 REG_HEAD_DEPTH")
     parser.add_argument("--reg-output-mode", default=None, choices=["sigmoid", "linear"],
@@ -456,6 +492,7 @@ def main() -> None:
         client_ids=client_ids,
         device=device,
         batch_size=args.batch_size,
+        verify_live_sample_counts=args.verify_live_sample_counts,
         reg_head_depth=args.reg_head_depth,
         reg_output_mode=args.reg_output_mode,
         use_reg_window_stats=args.reg_window_stats,

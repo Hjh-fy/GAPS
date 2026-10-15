@@ -1,0 +1,89 @@
+{
+  "schema_version": "iotj.canonical_v1.strict_nonoverlap.r84.v1",
+  "status": "COMPLETE",
+  "study_id": "iotj_canonical_v1_strict_nonoverlap_20260809",
+  "seed": 42,
+  "dataset": {
+    "status": "PASS",
+    "aggregate_sha256": "881de29938460ad1a7564aca1f01a2b3f41cdc4820284397a05a0b3b218816c4",
+    "checked_files": 74,
+    "bad_files": []
+  },
+  "target_counts": {
+    "C3": {
+      "calibration": 678,
+      "test": 2515,
+      "per_class": {
+        "0": 170,
+        "1": 170,
+        "2": 170,
+        "3": 168
+      }
+    },
+    "C4": {
+      "calibration": 320,
+      "test": 840,
+      "per_class": {
+        "0": 80,
+        "1": 80,
+        "2": 80,
+        "3": 80
+      }
+    },
+    "C5": {
+      "calibration": 320,
+      "test": 840,
+      "per_class": {
+        "0": 80,
+        "1": 80,
+        "2": 80,
+        "3": 80
+      }
+    }
+  },
+  "ridge_alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "h1_manifest_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+  "classifier_router": "A4",
+  "target_test_used_for_selection": false,
+  "hyperparameter_search_beyond_frozen_alpha_grid": false,
+  "classifier_checkpoint_provenance": {
+    "C3": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\strict_nonoverlap\\run\\classification\\CAN-V1-STRICT-A4-C3\\remote_server\\server_latest_adapted.pth",
+      "size_bytes": 183275,
+      "formal_round": 25,
+      "ordered_state_content_fingerprint": "156ca7afb4a3c3871acc60141c02cda1f94989672f2437bf9d83ab6b5d37ff47",
+      "whole_file_sha256": "164c75e81ce57f2b0cd6930e20896ace0396bf57bb02e329e354d4a2797e15c7",
+      "equality_basis": "ordered_state_content_fingerprint",
+      "whole_file_sha256_role": "provenance_only",
+      "state_tensor_count": 80
+    },
+    "C4": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\strict_nonoverlap\\run\\classification\\CAN-V1-STRICT-A4-C4\\remote_server\\server_latest_adapted.pth",
+      "size_bytes": 183275,
+      "formal_round": 25,
+      "ordered_state_content_fingerprint": "8007d64c32871d99c13c8091d620ee992401e23b80631a671e0ec61fb75c9851",
+      "whole_file_sha256": "e1a00438491c03e1c9580cdf71f7917ac5f54f323229c549255d7492d48b0d6d",
+      "equality_basis": "ordered_state_content_fingerprint",
+      "whole_file_sha256_role": "provenance_only",
+      "state_tensor_count": 80
+    },
+    "C5": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\strict_nonoverlap\\run\\classification\\CAN-V1-STRICT-A4-C5\\remote_server\\server_latest_adapted.pth",
+      "size_bytes": 183275,
+      "formal_round": 25,
+      "ordered_state_content_fingerprint": "8b342ae56f4c2717a9f76201edebf24463cc4a19deab9d9bce56f5c39e115eac",
+      "whole_file_sha256": "6051678b379857894a8b9cf01488ce03aa5e602cfe5835cc80aa451c6efa1749",
+      "equality_basis": "ordered_state_content_fingerprint",
+      "whole_file_sha256_role": "provenance_only",
+      "state_tensor_count": 80
+    }
+  }
+}

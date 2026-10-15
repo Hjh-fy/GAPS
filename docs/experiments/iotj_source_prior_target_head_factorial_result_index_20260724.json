@@ -1,0 +1,27 @@
+{
+  "schema_version": "iotj.source_prior_target_head_factorial_result_index.v1",
+  "status": "formal_complete_audited",
+  "experiment_family": "IOTJ-SPTH-E1-E2-S42",
+  "formal_run_commit": "ead9f93d76994c1b653b17820fc92071314aa5b6",
+  "branch": "codex/iotj-confirmation-observability",
+  "output_root": "results/iotj_source_prior_target_head_factorial_20260723",
+  "selection_status": "NEW_CANDIDATE_PENDING_CONFIRMATION",
+  "selected_candidate": "E1_MLP_PRIOR",
+  "runtime_action": "none",
+  "test_used_for_selection": false,
+  "files": [
+    {"path": "asset_audit.json", "bytes": 3632, "sha256": "d5cb1168017e7c64245409deeee0d4ab24366b3353a2d4441cbf64a8ac2969c6"},
+    {"path": "calibration_selection.csv", "bytes": 17801, "sha256": "aa595410fa52346bdf254c94ec7695ed57237344dcf50d1a89255eb072c621fc"},
+    {"path": "calibration_validation_predictions.csv", "bytes": 11263, "sha256": "0db2fb8870a5b27c894eece9917076fb178ea5bbd711a6a9459463bc721fe4ae"},
+    {"path": "calibration_validation_summary.csv", "bytes": 392, "sha256": "086288260388fc552bfd94391a4f9f36229894f3359fce16eea75eab9331fd74"},
+    {"path": "decision_gate.json", "bytes": 2079, "sha256": "dbf12f4c1c56ab1ce877ed620c9c5cb0b15b4149c19052a48d06b92730224256"},
+    {"path": "factorial_effects.csv", "bytes": 1491, "sha256": "dcfe82e078f2d6126089d9dfc1b04d28d36404b5414e8301873af3c9ae7fb869"},
+    {"path": "per_gas_summary.csv", "bytes": 1806, "sha256": "f8640e48a2c32cd4ace2565b8eea094a88ea271a8c7738139d96346dcdb8e2fc"},
+    {"path": "protocol_manifest.json", "bytes": 9099, "sha256": "82b8024701416c39db9cd6d7e692360809ffa79d70ea98eb9a3851fedd428b19"},
+    {"path": "README.md", "bytes": 301, "sha256": "12f94008abfb74950c728ed54cd22e823918e6ed15d54778a9abcb5f084d8cb2"},
+    {"path": "target_head_manifest.json", "bytes": 13557, "sha256": "2afb7116b5246906cdc4c056e948ed5b056ec8655eb79fb06a4f890d3a224d3a"},
+    {"path": "test_predictions.csv", "bytes": 189330, "sha256": "583fb9c4d613dc1128316ef1bfb4981ff64faf96a077ae12f4355e1dd6933de0"},
+    {"path": "test_summary.csv", "bytes": 1195, "sha256": "574ccbb7a5685113d78be30c5e61542e908586f01561de852606276f9b454daf"}
+  ],
+  "result_document": "docs/experiments/iotj_source_prior_target_head_factorial_result_20260724.zh.md"
+}

@@ -1,0 +1,148 @@
+{
+  "schema_version": "iotj.canonical_v1.submission_evidence.v1",
+  "status": "EVIDENCE_CLOSURE_WITH_DISCLOSED_BLOCKERS",
+  "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "branch": "codex/iotj-final-classification-le1",
+  "bundle_generation_commit": "ce39295a3c2c7a754c0eed359cc7ba83e75006d0",
+  "formal_experiment_commit": "e7c942fec03d8ccd5d1a8c8b0d75e0cc81868258",
+  "deployment_runtime_commit": "f3d15775f3c3372dc1589989746d864fa0c332d3",
+  "deployment_archive_sha256": "52328c9cd9f8c9d9eba2f700a35f20f488070df2919fba6fa94e8a77a5dc1c31",
+  "checkpoint_hashes": {
+    "C3": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414",
+    "C4": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+    "C5": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93"
+  },
+  "source_artifacts": {
+    "dataset": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\iotj_canonical_v1\\canonical_preprocessing_manifest.json",
+      "sha256": "6c33f0a1586653b2bfa5a43f43ab502c5bdaa3474c24ac03015e36ddd40c2c41",
+      "bytes": 876,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "state": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\FINAL_EXPERIMENT_STATE.json",
+      "sha256": "9947a7abe9328d7302117f15a20d529069eafc50ef47c7af88c35946a04379a3",
+      "bytes": 1922,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "classification": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\classification_evaluation\\classification_metrics.csv",
+      "sha256": "35581ee204bb60a53bb38d6979c5cef6b94646915fa81aefbe662e7cb93659bf",
+      "bytes": 1655,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "regression": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\regression\\cross_target_r84_summary.csv",
+      "sha256": "63b3685baef7899239957bf43ed1d9e0c31e7b2ae2ca3c4c91d2b3631ec4b789",
+      "bytes": 1039,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "qc": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\qc\\qc_equal_mean_summary.csv",
+      "sha256": "a5a9bd026811252c77710ed5a375d0a51f7e7e3f254a379e0082d2b28024c4b8",
+      "bytes": 4784,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "random_qc": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\qc\\qc_random_reference.csv",
+      "sha256": "daf54767d1bd442379bee992a43547dcd539964382b1155ed99adc7343984d01",
+      "bytes": 14837,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "quality": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\quality\\quality_stratified_summary.csv",
+      "sha256": "bde7173668937cf2511483337c1d4e04fc0177806eaa0cd27933f074348b5041",
+      "bytes": 1850,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "pi5": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\pi5_benchmark\\pi5_benchmark_summary.csv",
+      "sha256": "ae62a837e3822432eea24fdd637752fec4c50a736ecfb00666848df1c683c52c",
+      "bytes": 1987,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "pi5_environment": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\pi5_benchmark\\benchmark_environment.json",
+      "sha256": "dcacaa1d789ecd8edddf78c54e9e19437d046d978a881f9ae8d6eaa1774376ae",
+      "bytes": 545,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "model_size": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\deployment_package\\model_size_audit.json",
+      "sha256": "75a75b994cce2880d3116a762db2e379e4ef68169e5566456d82291ce425f49f",
+      "bytes": 1425,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "fedridge": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\fedridge_ablation\\canonical_83d_vs_84d.csv",
+      "sha256": "953b65f42a7a521c2261b2ae8a15c374898cdcc21b62ce2085e039c2bdb50c46",
+      "bytes": 6892,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "overlap": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\evidence_closure\\overlap\\window_overlap_summary.csv",
+      "sha256": "2df5a6fdf358dbe4bd195457ae595074ce3da75008627b37d2239a422028870f",
+      "bytes": 785,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "package": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\deployment_package\\package_manifest.json",
+      "sha256": "7cf667af89f01de42217d11625d9b72607f238f9115a48070f681b24ed2fad44",
+      "bytes": 13140,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "package_archive": {
+      "source_artifact_path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\deployment_package_f3d1577.tar.gz",
+      "sha256": "52328c9cd9f8c9d9eba2f700a35f20f488070df2919fba6fa94e8a77a5dc1c31",
+      "bytes": 542408,
+      "dataset_hash": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+      "canonical": true
+    },
+    "checkpoints": {
+      "C3": "e2364290ffc7fd9748fe86edb3745dca0eac692165f6c8aba1825728ddcd4414",
+      "C4": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+      "C5": "3965ec8618a2d496804bbc141f49e00b451fce05e9edbefde721f0dd4f912b93"
+    }
+  },
+  "canonical_protocol": {
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "targets": [
+      "C3",
+      "C4",
+      "C5"
+    ],
+    "preprocessing": "HZ5_MEAN_W10S",
+    "input_shape": [
+      50,
+      8
+    ],
+    "router": "A4",
+    "rounds": 25,
+    "local_epochs": 1,
+    "seed": 42,
+    "regression": "R84_FED_H1",
+    "qc": "frozen_equal_mean"
+  },
+  "blocked_items": [
+    "canonical_equal_label_A0T",
+    "strict_grouped_non_overlap_robustness",
+    "canonical_figure_regeneration",
+    "manuscript_v7_consistency_scan"
+  ]
+}

@@ -24,12 +24,20 @@ from utils import create_model_by_config, set_random_seed
 NDArrays = List[np.ndarray]
 
 CLASSIFICATION_PROFILE_FLAGS = {
-    "ce_only": {"align": False, "replay": False, "decouple": False},
-    "align_only": {"align": True, "replay": False, "decouple": False},
-    "align_replay": {"align": True, "replay": True, "decouple": False},
-    "proto_only": {"align": True, "replay": False, "decouple": True},
-    "replay_only": {"align": False, "replay": True, "decouple": False},
-    "proto_replay": {"align": True, "replay": True, "decouple": True},
+    "ce_only": {"align": False, "replay": False, "decouple": False, "upload_stats": False},
+    "ce_stats": {"align": False, "replay": False, "decouple": False, "upload_stats": True},
+    "align_only": {"align": True, "replay": False, "decouple": False, "upload_stats": True},
+    "align_replay": {"align": True, "replay": True, "decouple": False, "upload_stats": True},
+    "proto_only": {"align": True, "replay": False, "decouple": True, "upload_stats": True},
+    "replay_only": {"align": False, "replay": True, "decouple": False, "upload_stats": False},
+    "proto_replay": {"align": True, "replay": True, "decouple": True, "upload_stats": True},
+    "dg_proto": {
+        "align": True,
+        "contrastive": False,
+        "replay": False,
+        "decouple": False,
+        "upload_stats": True,
+    },
 }
 
 CLASSIFICATION_PROFILE_ALIASES = {
@@ -86,6 +94,7 @@ def make_config(
     batch_size: int = 32,
     profile: str = "smoke",
     seed: int = 42,
+    proximal_mu: float = 0.0,
 ) -> FLConfig:
     """Create the runtime config used by Flower clients and the DA server.
 
@@ -103,6 +112,9 @@ def make_config(
     config.LOCAL_EPOCHS = local_epochs
     config.BATCH_SIZE = batch_size
     config.SEED = int(seed)
+    if float(proximal_mu) < 0.0:
+        raise ValueError("FedProx proximal_mu must be non-negative")
+    config.FEDPROX_MU = float(proximal_mu)
 
     # Always keep the Flower classification path independent from regression.
     # Regression has a separate offline/FedAvg-style script path in this package.
@@ -126,10 +138,10 @@ def make_config(
     profile_key = canonical_profile(profile)
     flags = CLASSIFICATION_PROFILE_FLAGS[profile_key]
     config.USE_ALIGN = flags["align"]
-    config.USE_CONTRASTIVE_ALIGN = flags["align"]
+    config.USE_CONTRASTIVE_ALIGN = flags.get("contrastive", flags["align"])
     config.USE_REPLAY_DISTILL = flags["replay"]
     config.USE_PROTO_DECOUPLING = flags["decouple"]
-    config.UPLOAD_PROTO_STATS = bool(flags["align"] or flags["decouple"])
+    config.UPLOAD_PROTO_STATS = bool(flags["upload_stats"])
 
     set_random_seed(config.SEED)
     return config
@@ -278,6 +290,9 @@ def train_one_round(
     fit_config: Optional[dict] = None,
 ) -> Tuple[NDArrays, int, dict]:
     fit_config = fit_config or {}
+    gaps_client.loss_activity_variant = str(
+        fit_config.get("ablation_variant", "unspecified")
+    )
     proto_payload = fit_config.get("semantic_protos_json") or fit_config.get("global_protos_json")
     global_protos = deserialize_tensor_dict(
         proto_payload, device=gaps_client.config.DEVICE, key_style="tuple"
@@ -304,6 +319,26 @@ def train_one_round(
         "has_prev_model": int(gaps_client.prev_model is not None),
         "use_proto_decoupling": int(bool(gaps_client.config.USE_PROTO_DECOUPLING and semantic_protos)),
         "proto_stats_uploaded": int(bool(gaps_client.config.UPLOAD_PROTO_STATS)),
+        "fedprox_mu": float(getattr(gaps_client.config, "FEDPROX_MU", 0.0)),
+        "fedprox_penalty_mean": float(getattr(gaps_client, "last_fedprox_penalty", 0.0)),
+        "train_ce_mean": float(getattr(gaps_client, "last_train_ce_mean", 0.0)),
+        "train_accuracy": float(getattr(gaps_client, "last_train_accuracy", 0.0)),
+        "train_metric_examples": int(
+            getattr(gaps_client, "last_train_metric_examples", num_examples)
+        ),
+        "train_ce_averaging": str(
+            getattr(
+                gaps_client,
+                "last_train_ce_averaging",
+                "sample_weighted_over_local_minibatches",
+            )
+        ),
+        "client_loss_activity_json": json.dumps(
+            getattr(gaps_client, "last_loss_activity", []),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
     }
     if gaps_client.config.UPLOAD_PROTO_STATS:
         metrics.update({

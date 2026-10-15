@@ -1,0 +1,7 @@
+Method,Source_FL,Target_X,Target_Y,Target_phase,Target_concentration,Target_information_regime
+FedAvg,yes,no,no,no,no,source-only
+FedProx,yes,no,no,no,no,source-only
+SCAFFOLD,yes,no,no,no,no,source-only
+MMD,yes,yes,no,no,no,unlabeled x-only global alignment
+A0T,yes,yes,yes,no,no,equal-label supervised target-CE-only commissioning
+GAPS/A4,yes,yes,yes,yes,no,labeled structured commissioning with target-CE weight zero

@@ -10,10 +10,12 @@ from pathlib import Path
 import flwr as fl
 from flwr.common import ndarrays_to_parameters
 
-from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, weighted_average
+from gaps_flower.domain_adaptation_inputs import validate_domain_adaptation_request
+from gaps_flower.observability import load_observer
+from gaps_flower.strategy import CheckpointFedAvg, GapsStrategy, P0IInterleavedFedAvg, ScaffoldStrategy, weighted_average
 from gaps_flower.task import CLASSIFICATION_PROFILE_FLAGS, create_model, get_parameters, make_config
 
-DEFAULT_STRATEGIES = ("fedavg", "gaps")
+DEFAULT_STRATEGIES = ("fedavg", "gaps", "p0i_interleaved", "scaffold")
 PROFILE_CHOICES = tuple(CLASSIFICATION_PROFILE_FLAGS) + (
     "smoke",
     "gaps_cls",
@@ -93,19 +95,44 @@ def main() -> None:
     parser.add_argument("--min-clients", type=int, default=1)
     parser.add_argument("--output-dir", default="results/flower_server")
     parser.add_argument("--run-name", default="flower_smoke")
+    parser.add_argument(
+        "--ablation-variant",
+        default="",
+        help="Frozen A0-A6 variant identifier written into loss-activity audit records",
+    )
+    parser.add_argument(
+        "--target-information-method",
+        choices=("gaps", "a4", "a5", "a6"),
+        default="gaps",
+        help="Method-specific calibration field policy recorded by GAPS DA",
+    )
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--observer-context")
+    parser.add_argument("--observer-events")
     parser.add_argument("--profile", choices=PROFILE_CHOICES, default="smoke",
                         help="Server model/config profile; keep this aligned with client --profile for matrix runs")
     parser.add_argument("--save-history", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
                         help="是否保存 history.json 记录 (True/False)")
     parser.add_argument("--strategy", choices=DEFAULT_STRATEGIES, default="fedavg",
                         help="聚合策略: fedavg (Flower默认FedAvg) 或 gaps (GAPS自定义聚合)")
+    parser.add_argument("--scaffold-lr", type=float, default=5e-4,
+                        help="Preregistered canonical SCAFFOLD SGD learning rate; no search")
+    parser.add_argument("--p0i-source-calibration-dirs", type=str)
+    parser.add_argument("--p0i-target-calibration-dir", type=str)
+    parser.add_argument("--p0i-uda-steps-per-round", type=int, default=100)
+    parser.add_argument("--p0i-uda-device", type=str, default="cpu")
     parser.add_argument("--proto-ema-alpha", type=float, default=0.8,
                         help="语义原型 EMA 平滑系数 (仅 --strategy gaps 生效)")
     parser.add_argument("--use-selective-agg", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
                         help="是否启用选择性聚合 (仅 --strategy gaps 生效)")
     parser.add_argument("--selective-warmup", type=int, default=3,
                         help="选择性聚合预热轮数，前 N 轮使用标准 FedAvg")
+    parser.add_argument(
+        "--require-selective-after-warmup",
+        type=lambda v: v.lower() in ("true", "1", "yes"),
+        default=False,
+        help="Fail closed if semantic prototypes are missing after warm-up",
+    )
     parser.add_argument("--selective-min-scale", type=float, default=0.3,
                         help="选择性聚合最小缩放因子，防止权重归零")
     parser.add_argument("--use-proto-mmd", type=lambda v: v.lower() in ("true", "1", "yes"), default=True,
@@ -118,6 +145,12 @@ def main() -> None:
                         help="源域验证集目录: 源域 training client 的 calibration_features.npy (如 client_1,client_2)")
     parser.add_argument("--server-calib-data", type=str, default=None,
                         help="目标域校准集目录: 目标域 test client 的 calibration_features.npy (如 client_3)")
+    parser.add_argument(
+        "--da-window-length",
+        type=int,
+        default=100,
+        help="Expected temporal length for server DA arrays; sensor dimension remains 8",
+    )
     parser.add_argument("--domain-adapt-steps", type=int, default=30,
                         help="域适应优化步数 K")
     parser.add_argument("--domain-adapt-warmup", type=int, default=3,
@@ -162,9 +195,26 @@ def main() -> None:
     parser.add_argument("--da-target-ce-label-smoothing", type=float, default=0.0)
     parser.add_argument("--da-target-ce-class-balanced", type=lambda v: v.lower() in ("true", "1", "yes"), default=False)
     parser.add_argument("--da-server-opt-lr", type=float, default=1e-4)
+    parser.add_argument(
+        "--final-adaptation-context-round",
+        type=int,
+        choices=(0, 25),
+        default=0,
+        help="Persist complete source-side A4 inputs at fixed round25; 0 disables capture",
+    )
     args = parser.parse_args()
     explicit_dests = _explicit_cli_dests(parser, sys.argv[1:])
     apply_da_preset(args, explicit_dests)
+    if args.use_domain_adapt and not args.strict_calibration_split:
+        parser.error(
+            "--use-domain-adapt requires --strict-calibration-split true"
+        )
+    validate_domain_adaptation_request(
+        args.strategy,
+        args.use_domain_adapt,
+        args.server_val_data,
+        args.server_calib_data,
+    )
     save_run_config(args, explicit_dests)
 
     config = make_config(
@@ -176,6 +226,7 @@ def main() -> None:
     )
     model = create_model(config)
     initial_arrays, parameter_keys = get_parameters(model)
+    observer = load_observer(args.observer_context, args.observer_events)
 
     strategy_kwargs = dict(
         parameter_keys=parameter_keys,
@@ -192,56 +243,86 @@ def main() -> None:
         on_fit_config_fn=fit_config,
         fit_metrics_aggregation_fn=weighted_average,
         evaluate_metrics_aggregation_fn=weighted_average,
+        observer=observer,
     )
 
-    if args.strategy == "gaps":
-        strategy = GapsStrategy(
-            proto_ema_alpha=args.proto_ema_alpha,
-            use_selective_agg=args.use_selective_agg,
-            selective_warmup=args.selective_warmup,
-            selective_min_scale=args.selective_min_scale,
-            use_proto_mmd=args.use_proto_mmd,
-            use_domain_adapt=args.use_domain_adapt,
-            server_val_data=args.server_val_data,
-            server_calib_data=args.server_calib_data,
-            domain_adapt_steps=args.domain_adapt_steps,
-            domain_adapt_warmup=args.domain_adapt_warmup,
-            da_use_coral=args.da_use_coral,
-            da_use_mmd=args.da_use_mmd,
-            da_use_adversarial=args.da_use_adversarial,
-            da_mmd_objective=args.da_mmd_objective,
-            da_stage_alignment=args.da_stage_alignment,
-            da_adv_feature_objective=args.da_adv_feature_objective,
-            da_coral_class_conditional=args.da_coral_class_conditional,
-            da_use_align_reg_legacy=args.da_use_align_reg_legacy,
-            da_lambda_align_reg_legacy=args.da_lambda_align_reg_legacy,
-            strict_calibration_split=args.strict_calibration_split,
-            da_device=args.da_device,
-            da_lambda_coral=args.da_lambda_coral,
-            da_lambda_global_mmd=args.da_lambda_global_mmd,
-            da_lambda_class_mmd=args.da_lambda_class_mmd,
-            da_lambda_proto_anchor=args.da_lambda_proto_anchor,
-            da_lambda_adv=args.da_lambda_adv,
-            da_lambda_target_ce=args.da_lambda_target_ce,
-            da_lambda_proto=args.da_lambda_proto,
-            da_lambda_consistency=args.da_lambda_consistency,
-            da_lambda_residual=args.da_lambda_residual,
-            da_lambda_proto_mmd=args.da_lambda_proto_mmd,
-            da_lambda_stage_mmd=args.da_lambda_stage_mmd,
-            da_target_ce_label_smoothing=args.da_target_ce_label_smoothing,
-            da_target_ce_class_balanced=args.da_target_ce_class_balanced,
-            da_server_opt_lr=args.da_server_opt_lr,
-            use_adapted_as_global=args.use_adapted_as_global,
-            **strategy_kwargs,
+    try:
+        if args.strategy == "p0i_interleaved":
+            if not args.p0i_source_calibration_dirs or not args.p0i_target_calibration_dir:
+                parser.error("p0i_interleaved requires source and target calibration directories")
+            strategy = P0IInterleavedFedAvg(
+                model_template=model,
+                source_calibration_dirs=args.p0i_source_calibration_dirs,
+                target_calibration_dir=args.p0i_target_calibration_dir,
+                uda_steps_per_round=args.p0i_uda_steps_per_round,
+                uda_device=args.p0i_uda_device,
+                seed=args.seed,
+                **strategy_kwargs,
+            )
+        elif args.strategy == "gaps":
+            strategy = GapsStrategy(
+                proto_ema_alpha=args.proto_ema_alpha,
+                use_selective_agg=args.use_selective_agg,
+                selective_warmup=args.selective_warmup,
+                selective_min_scale=args.selective_min_scale,
+                use_proto_mmd=args.use_proto_mmd,
+                use_domain_adapt=args.use_domain_adapt,
+                server_val_data=args.server_val_data,
+                server_calib_data=args.server_calib_data,
+                da_expected_window_shape=(args.da_window_length, 8),
+                domain_adapt_steps=args.domain_adapt_steps,
+                domain_adapt_warmup=args.domain_adapt_warmup,
+                da_use_coral=args.da_use_coral,
+                da_use_mmd=args.da_use_mmd,
+                da_use_adversarial=args.da_use_adversarial,
+                da_mmd_objective=args.da_mmd_objective,
+                da_stage_alignment=args.da_stage_alignment,
+                da_adv_feature_objective=args.da_adv_feature_objective,
+                da_coral_class_conditional=args.da_coral_class_conditional,
+                da_use_align_reg_legacy=args.da_use_align_reg_legacy,
+                da_lambda_align_reg_legacy=args.da_lambda_align_reg_legacy,
+                strict_calibration_split=args.strict_calibration_split,
+                da_device=args.da_device,
+                da_lambda_coral=args.da_lambda_coral,
+                da_lambda_global_mmd=args.da_lambda_global_mmd,
+                da_lambda_class_mmd=args.da_lambda_class_mmd,
+                da_lambda_proto_anchor=args.da_lambda_proto_anchor,
+                da_lambda_adv=args.da_lambda_adv,
+                da_lambda_target_ce=args.da_lambda_target_ce,
+                da_lambda_proto=args.da_lambda_proto,
+                da_lambda_consistency=args.da_lambda_consistency,
+                da_lambda_residual=args.da_lambda_residual,
+                da_lambda_proto_mmd=args.da_lambda_proto_mmd,
+                da_lambda_stage_mmd=args.da_lambda_stage_mmd,
+                da_target_ce_label_smoothing=args.da_target_ce_label_smoothing,
+                da_target_ce_class_balanced=args.da_target_ce_class_balanced,
+                da_server_opt_lr=args.da_server_opt_lr,
+                use_adapted_as_global=args.use_adapted_as_global,
+                ablation_variant=args.ablation_variant,
+                require_selective_after_warmup=args.require_selective_after_warmup,
+                target_information_method=args.target_information_method,
+                final_adaptation_context_round=args.final_adaptation_context_round,
+                **strategy_kwargs,
+            )
+        elif args.strategy == "scaffold":
+            if args.profile != "ce_only" or args.scaffold_lr != 5e-4:
+                parser.error("canonical SCAFFOLD requires profile=ce_only and scaffold_lr=5e-4")
+            strategy = ScaffoldStrategy(
+                model_template=model,
+                total_clients=args.min_clients,
+                scaffold_lr=args.scaffold_lr,
+                **strategy_kwargs,
+            )
+        else:
+            strategy = CheckpointFedAvg(**strategy_kwargs)
+
+        fl.server.start_server(
+            server_address=args.server_address,
+            config=fl.server.ServerConfig(num_rounds=args.rounds),
+            strategy=strategy,
         )
-    else:
-        strategy = CheckpointFedAvg(**strategy_kwargs)
-
-    fl.server.start_server(
-        server_address=args.server_address,
-        config=fl.server.ServerConfig(num_rounds=args.rounds),
-        strategy=strategy,
-    )
+    finally:
+        observer.close()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+  "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "calibration_manifest_sha256": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+  "target_test_manifest_sha256": "d884fe1b46fe349e9883288bef3cd1d63a41a0be4c2ebdf2086aec3c62b45e95",
+  "target_test_opened_after_gate": true,
+  "target_test_selection": false,
+  "historical_interleaved": {
+    "A0T": 0.9941388070612982,
+    "GAPS/A4": 0.99412609063164
+  },
+  "decision": {
+    "lifecycle": "POSTHOC_LIFECYCLE_SUPPORTED",
+    "a4": "RETIRE_AS_CORE",
+    "target_head": "NOT_COMPETITIVE",
+    "interleaved_dependency_risk": false
+  }
+}

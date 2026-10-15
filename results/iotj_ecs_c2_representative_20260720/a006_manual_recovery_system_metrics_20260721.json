@@ -1,0 +1,89 @@
+{
+  "schema_version": "iotj.failed_attempt_system_diagnostic.v1",
+  "run_id": "c12_to_c5__b2__s42",
+  "attempt_id": "c12_to_c5__b2__s42__a006",
+  "attempt_state": "failed",
+  "attempt_failure_reason": "process_failure_during_local_evidence_recovery",
+  "training_completed_rounds": 25,
+  "formal_confirmation_eligible": false,
+  "claim_boundary": "The recovered evidence is structurally valid and may be used only as failed-attempt/system diagnostic evidence. The immutable failed status must not be promoted to canonical or included in formal confirmation statistics.",
+  "manual_validation": {
+    "status": "valid",
+    "reasons": [],
+    "fitins_count": 50,
+    "fitres_count": 50,
+    "round_count": 25,
+    "audit_sha256": "be0e1a1bd394e7e90f472842b0b026aa4eb6a84690486141739f2e31bb368893",
+    "c1_resource_coverage": 0.9727443609022557,
+    "c2_resource_coverage": 0.9746376811594203
+  },
+  "communication": {
+    "logical_downlink_25round_total_bytes": 8746474,
+    "logical_uplink_25round_total_bytes": 8768782,
+    "application_downlink_25round_total_bytes": 8764216,
+    "application_uplink_25round_total_bytes": 8810591,
+    "application_25round_total_bytes": 17574807,
+    "application_25round_total_mib": 16.760642051696777,
+    "application_round_mean_bytes": 702992.28,
+    "transport_status": "not_collected"
+  },
+  "timing_seconds": {
+    "round_wall_mean": 241.65431367372,
+    "round_wall_p50": 228.056872149,
+    "round_wall_p95": 269.617286246,
+    "round_wall_total": 6041.357841843,
+    "pi_c1_train_mean": 42.08549692268,
+    "ecs_c2_train_mean": 76.60976019019999,
+    "server_da_mean": 164.1475405454,
+    "server_da_p95": 189.2196493232,
+    "server_non_da_mean": 0.06811394884000001,
+    "server_da_share_of_round_wall": 0.6792659235002562
+  },
+  "resources": {
+    "pi_c1": {
+      "sample_count": 5984,
+      "active_sample_count": 1060,
+      "rss_active_mean_mib": 514.230837264151,
+      "rss_peak_mib": 518.40625,
+      "cpu_host_mean_percent": 84.74111529534231,
+      "cpu_host_peak_percent": 91.28733565454299,
+      "temperature_mean_c": 57.691745283018875,
+      "temperature_peak_c": 62.25,
+      "throttling_observed": false
+    },
+    "ecs_c2": {
+      "sample_count": 6018,
+      "active_sample_count": 1908,
+      "rss_active_mean_mib": 522.2723135318396,
+      "rss_peak_mib": 523.91796875,
+      "cpu_host_mean_percent": 49.94779851137659,
+      "cpu_host_peak_percent": 54.73881398577033,
+      "temperature_available": false
+    }
+  },
+  "observer": {
+    "total_overhead_ms": 6085.66168,
+    "overhead_to_round_wall_ratio": 0.001007333423928334,
+    "event_bytes_written": 35912777
+  },
+  "recovery": {
+    "remote_originals_preserved": true,
+    "local_files": {
+      "ecs": 161,
+      "pi": 11,
+      "ecs_c2": 11
+    },
+    "local_bytes": {
+      "ecs": 12831941,
+      "pi": 17577967,
+      "ecs_c2": 17820601
+    },
+    "key_remote_local_sha256_match": true,
+    "active_training_or_sampler_processes_after_recovery": 0
+  },
+  "extraction_notes": [
+    "FitIns proxy UUIDs were mapped in memory to C1/C2 using the corresponding FitRes payload.proxy_id; no raw file was modified.",
+    "The existing system-table functions were used for communication, timing, resources, and Observer overhead.",
+    "C2 host-role labels were corrected from the legacy PC label to ECS C2 in this diagnostic output."
+  ]
+}

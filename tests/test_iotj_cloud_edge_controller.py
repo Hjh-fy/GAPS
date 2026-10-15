@@ -1,6 +1,60 @@
 from pathlib import Path
+import subprocess
 
 import scripts.run_iotj_classification_cloud_edge as controller
+
+
+def test_ssh_allows_20_second_hotspot_handshake(monkeypatch) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append((list(command), dict(kwargs)))
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(controller, "_run", fake_run)
+
+    controller._ssh("gaps@pi", "echo PI_READY", timeout=15)
+
+    assert calls[0][0] == [
+        "ssh",
+        "-n",
+        "-o", "BatchMode=yes",
+        "-o", "ConnectTimeout=20",
+        "-o", "ServerAliveInterval=15",
+        "-o", "ServerAliveCountMax=2",
+        "gaps@pi",
+        "echo PI_READY",
+    ]
+
+
+def test_wait_for_pi_allows_full_hotspot_connect_budget(monkeypatch) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_ssh(_host: str, _command: str, **kwargs):
+        calls.append(dict(kwargs))
+        return subprocess.CompletedProcess([], 0, "PI_READY\n", "")
+
+    monkeypatch.setattr(controller, "_ssh", fake_ssh)
+
+    assert controller._wait_for_pi(["gaps@pi"], 0, 60) == "gaps@pi"
+    assert calls == [{"timeout": 30, "check": False}]
+
+
+def test_wait_for_pi_retries_after_single_ssh_timeout(monkeypatch) -> None:
+    calls = 0
+
+    def fake_ssh(_host: str, _command: str, **_kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise subprocess.TimeoutExpired(["ssh"], 30)
+        return subprocess.CompletedProcess([], 0, "PI_READY\n", "")
+
+    monkeypatch.setattr(controller, "_ssh", fake_ssh)
+    monkeypatch.setattr(controller.time, "sleep", lambda _seconds: None)
+
+    assert controller._wait_for_pi(["gaps@pi"], 1, 1) == "gaps@pi"
+    assert calls == 2
 
 
 def test_v2_default_queue_contains_only_core_screening_groups() -> None:

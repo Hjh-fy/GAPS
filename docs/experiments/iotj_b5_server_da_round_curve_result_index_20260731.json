@@ -1,0 +1,66 @@
+{
+  "schema_version": "iotj.b5_server_da_round_curve_result_index.v1",
+  "source_commit": "e6336ba403d04fec745e16a3e3fa53335d61b88c",
+  "experiment_identity": {
+    "classifier": "B5",
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "target_client": "C5",
+    "rounds": 25,
+    "local_epochs_per_round": 1,
+    "server_da_steps_per_round": [
+      100,
+      80,
+      50,
+      30
+    ],
+    "evaluated_checkpoints": 100,
+    "sample_scope": "historical_C5_test_1360_held_out_windows"
+  },
+  "artifacts": [
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/protocol_manifest.json",
+      "sha256": "5982f9c58176d4d8a809064467dea2d5f5f8b9f7ef60529d15ae341335625149"
+    },
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/per_round_c5_metrics.csv",
+      "sha256": "784a566134534752d4e9f01950d9ce36c0b11504a88f662234476add6ab29155"
+    },
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/round_curve_summary.json",
+      "sha256": "2c5bec08a74d4a8109b079e3748633d69512dc3ff4d70fab4f6bf1d056a74d84"
+    },
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/round_curve_analysis.json",
+      "sha256": "e95217431a8427025ce6874b4942b155e0fad99ef8feb330b73c53be38be3d8b"
+    },
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/b5_server_da_round_curve.png",
+      "sha256": "84d4f800a6e1745e1d0ad9f234d880fa9b8c8581fea7c4dd469af19b25ce3138"
+    },
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/result_analysis.zh.md",
+      "sha256": "c8ae8b5270a43153815edfa9f9d7c1320cc33e11066c959a36123591823af1ab"
+    },
+    {
+      "path": "results/iotj_b5_server_da_round_curve_20260731/experiment_audit.md",
+      "sha256": "ee12a2113ead800a49acdddc0ba0fc687ede8be07d803bf7d4dc42cf39051b8a"
+    }
+  ],
+  "round_25_parity": {
+    "DA100": "PASS",
+    "DA80": "PASS",
+    "DA50": "PASS",
+    "DA30": "PASS"
+  },
+  "evidence_boundary": {
+    "retrospective_diagnostic_only": true,
+    "test_used_for_early_stopping": false,
+    "test_used_for_checkpoint_selection": false,
+    "test_used_for_budget_selection": false,
+    "DA30_formal_evidence_approved": false
+  }
+}

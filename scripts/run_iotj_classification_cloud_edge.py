@@ -50,7 +50,7 @@ def _ssh(host: str, command: str, *, timeout: int = 30, check: bool = True) -> s
             "ssh",
             "-n",
             "-o", "BatchMode=yes",
-            "-o", "ConnectTimeout=10",
+            "-o", "ConnectTimeout=20",
             "-o", "ServerAliveInterval=15",
             "-o", "ServerAliveCountMax=2",
             host,
@@ -89,7 +89,10 @@ def _wait_for_pi(hosts: Sequence[str], wait_minutes: int, retry_seconds: int) ->
     deadline = time.monotonic() + wait_minutes * 60
     while True:
         for host in hosts:
-            result = _ssh(host, "echo PI_READY", timeout=15, check=False)
+            try:
+                result = _ssh(host, "echo PI_READY", timeout=30, check=False)
+            except subprocess.TimeoutExpired:
+                continue
             if result.returncode == 0 and "PI_READY" in result.stdout:
                 _log(f"Raspberry Pi reachable at {host}")
                 return host

@@ -1,0 +1,131 @@
+{
+  "attempt_id": "c12_to_c5__b5__s42__a001",
+  "attempt_wall_seconds": 1934.751241,
+  "canonical_validator_accepted": false,
+  "checkpoint_sha256": "203612c88ba9ed839ee8876dfc347ad9ac18e5b05f60da888b1ab9c7caa197df",
+  "checks": {
+    "c1_c2_every_round": true,
+    "checkpoint_strict_evaluation_load": true,
+    "da_expected_steps": true,
+    "evaluation_rows_1360_unique": true,
+    "finite_evidence": true,
+    "fitins_fitres_50": true,
+    "only_observability_coverage_reason": true,
+    "rounds_25": true,
+    "test_not_used_for_training_selection_or_stopping": true,
+    "validator_rejected_preserved": true
+  },
+  "classification_metrics": {
+    "N": 1360,
+    "accuracy": 0.9860294117647059,
+    "confusion_matrix": [
+      [
+        332,
+        2,
+        6,
+        0
+      ],
+      [
+        2,
+        336,
+        2,
+        0
+      ],
+      [
+        0,
+        5,
+        335,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        338
+      ]
+    ],
+    "ece": 0.007258776312365284,
+    "macro_f1": 0.9860525311861753,
+    "mean_confidence": 0.9923557998941225,
+    "nll": 0.07212931160811102,
+    "per_class_f1": {
+      "0": 0.9851632047477744,
+      "1": 0.9838945827232797,
+      "2": 0.9781021897810219,
+      "3": 0.9970501474926253
+    },
+    "per_class_precision": {
+      "0": 0.9940119760479041,
+      "1": 0.9795918367346939,
+      "2": 0.9710144927536232,
+      "3": 1.0
+    },
+    "per_class_recall": {
+      "0": 0.9764705882352941,
+      "1": 0.9882352941176471,
+      "2": 0.9852941176470589,
+      "3": 0.9941176470588236
+    }
+  },
+  "da_total_steps": 750,
+  "evidence_boundary": "Non-canonical technical result only. The model training and evaluation artifacts are complete, but the preregistered observability validator did not pass.",
+  "fitins": 50,
+  "fitres": 50,
+  "formal_evidence_approved": false,
+  "observability_contract": {
+    "reasons": [
+      "C2 resource coverage 0.948214 is below 0.95"
+    ],
+    "resource": {
+      "C1": {
+        "coverage": 0.9667774086378738,
+        "covered_rounds": 25,
+        "covered_sample_points": 291,
+        "expected_rounds": 25,
+        "expected_sample_points": 301,
+        "sample_count": 1840
+      },
+      "C2": {
+        "coverage": 0.9482142857142857,
+        "covered_rounds": 25,
+        "covered_sample_points": 531,
+        "expected_rounds": 25,
+        "expected_sample_points": 560,
+        "sample_count": 1843
+      }
+    },
+    "verdict": "FAIL"
+  },
+  "rounds": 25,
+  "run_id": "c12_to_c5__b5__s42",
+  "schema_version": "iotj.b5_rejected_observability_summary.v1",
+  "seed": 42,
+  "status": "blocked_observability_contract",
+  "timing": {
+    "c1_fit_seconds": {
+      "max": 12.07761401,
+      "mean": 11.81731231312,
+      "min": 10.751263707,
+      "sample_std": 0.25526021335772553
+    },
+    "c2_fit_seconds": {
+      "max": 23.153402776,
+      "mean": 21.871297511239998,
+      "min": 19.833733099,
+      "sample_std": 0.7559151609899478
+    },
+    "fit_round_wall_seconds": {
+      "max": 82.891560967,
+      "mean": 73.274107848,
+      "min": 70.900969856,
+      "sample_std": 2.407373685779038
+    },
+    "server_da_seconds": {
+      "max": 53.006863796,
+      "mean": 50.6161986232,
+      "min": 48.998460427,
+      "sample_std": 1.061622107043211
+    }
+  },
+  "training_integrity_verified": true
+}

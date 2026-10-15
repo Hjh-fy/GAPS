@@ -1,0 +1,21 @@
+{
+  "run": {
+    "experiment_id": "FONG-SRC-S43",
+    "method": "SRC",
+    "seed": 43,
+    "budget_pct": 0,
+    "calibration_n": 0,
+    "initialization_run": "random-S43",
+    "rounds": 25,
+    "target_updates": 0
+  },
+  "freeze_commit": "dc73318636335e0d2317613dff00ef73e6c798f1",
+  "checkpoint": "remote_server/server_round_025.pth",
+  "checkpoint_sha256": "7c94c7e0f3b179cc212b5c913add27ff5fb63e0223ec6dc5b3f3f6b35fe7e88f",
+  "state_fingerprint": "1bfc5628f2e4bec2d033e8977e706506af506affd0e94170d04dc71c777419bb",
+  "initial_fingerprint": "359498ab48958c309476df75c4d36af2d8c906cf6283ed8022262c5fac6e7ea8",
+  "wall_seconds": 208.20466300000044,
+  "target_updates": 0,
+  "target_test_opened": false,
+  "status": "PASS"
+}

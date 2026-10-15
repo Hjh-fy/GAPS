@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -25,6 +26,7 @@ from run_h2_3_plus_fusion_profile import (
     select_client_blend_weights,
 )
 from run_regression_head_ablation import (
+    CLASS_NAMES,
     add_target_features,
     client_name,
     fnum,
@@ -33,10 +35,48 @@ from run_regression_head_ablation import (
     summarize,
     write_csv,
 )
+from export_hybrid_mlp_ridge_deployment_candidate import serialize_mlp_head
+from scripts.export_iotj_b5_c5_h23_reference import build_h23_payload
 
 
 EXPECTED_COUNTS = {"calibration": 320, "test": 1360}
 TARGET_CLIENTS = ("C5",)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def build_h23_runtime_reference(
+    *,
+    mlp_models: dict[tuple[str, int], Any],
+    ridge_models: dict[tuple[str, int], Any],
+    selected_weight: float,
+    classifier_sha256: str,
+) -> dict[str, Any]:
+    """Serialize the exact C5 final models used for H23 test predictions."""
+    expected = {("C5", class_id) for class_id in sorted(CLASS_NAMES)}
+    if set(mlp_models) != expected or set(ridge_models) != expected:
+        raise ValueError("H23 runtime reference requires C5-only models for all four classes")
+    serialized_mlp = []
+    serialized_ridge = []
+    for class_id in sorted(CLASS_NAMES):
+        mlp = serialize_mlp_head(mlp_models[("C5", class_id)])
+        mlp.update({"client": "C5", "class_id": class_id, "gas": CLASS_NAMES[class_id]})
+        serialized_mlp.append(mlp)
+        ridge = ridge_models[("C5", class_id)].to_json()
+        ridge.update({"client": "C5", "class_id": class_id, "gas": CLASS_NAMES[class_id]})
+        serialized_ridge.append(ridge)
+    return build_h23_payload(
+        mlp_models=serialized_mlp,
+        ridge_models=serialized_ridge,
+        selected_weight=selected_weight,
+        classifier_sha256=classifier_sha256,
+    )
 
 
 def build_c5_anchor_rows(
@@ -84,6 +124,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     mlp_alphas = parse_float_grid(args.mlp_alphas)
     hidden_grid = parse_hidden_grid(args.hidden_grid)
     blend_weights = parse_float_grid(args.blend_weights)
+    runtime_reference_output = getattr(args, "runtime_reference_output", None)
+    classifier_checkpoint = getattr(args, "classifier_checkpoint", None)
+    if bool(runtime_reference_output) != bool(classifier_checkpoint):
+        raise ValueError("runtime_reference_output and classifier_checkpoint must be provided together")
 
     raw_rows = read_csv(args.target_predictions)
     filtered = [
@@ -105,7 +149,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     test_rows = [row for row in rows if row["split"] == "test"]
     rich_feature_names = sorted(calibration_rows[0]["feature_dict"].keys())
 
-    mlp_val, mlp_test, mlp_audit = fit_mlp_family(
+    mlp_result = fit_mlp_family(
         calibration_rows,
         test_rows,
         TARGET_CLIENTS,
@@ -115,7 +159,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         args.val_ratio,
         args.seed,
         "h2_c5_grid_mlp",
+        return_final_models=bool(runtime_reference_output),
     )
+    if runtime_reference_output:
+        mlp_val, mlp_test, mlp_audit, final_mlp_models = mlp_result
+    else:
+        mlp_val, mlp_test, mlp_audit = mlp_result
     anchor_val = build_c5_anchor_rows(mlp_val)
     anchor_test = build_c5_anchor_rows(mlp_test)
 
@@ -123,7 +172,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     regfeat_calibration = [row for row in regfeat_rows if row["split"] == "calibration"]
     regfeat_test = [row for row in regfeat_rows if row["split"] == "test"]
     regfeat_names = sorted(regfeat_calibration[0]["feature_dict"].keys())
-    ridge_val, ridge_test, ridge_audit = fit_ridge_family(
+    ridge_result = fit_ridge_family(
         regfeat_calibration,
         regfeat_test,
         TARGET_CLIENTS,
@@ -131,7 +180,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         ridge_alphas,
         args.val_ratio,
         "regfeat_ridge",
+        return_final_models=bool(runtime_reference_output),
     )
+    if runtime_reference_output:
+        ridge_val, ridge_test, ridge_audit, final_ridge_models = ridge_result
+    else:
+        ridge_val, ridge_test, ridge_audit = ridge_result
 
     val_merged = merge_prediction_sets(anchor_val, ridge_val, ["regfeat_ridge_ppm"])
     test_merged = merge_prediction_sets(anchor_test, ridge_test, ["regfeat_ridge_ppm"])
@@ -177,6 +231,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     write_csv(output_dir / "c5_h23_plus_summary.csv", summary_rows)
     write_csv(output_dir / "c5_h23_plus_selection.csv", selection_rows)
     write_csv(output_dir / "c5_h23_plus_fit_audit.csv", [*mlp_audit, *ridge_audit])
+    if runtime_reference_output:
+        payload = build_h23_runtime_reference(
+            mlp_models=final_mlp_models,
+            ridge_models=final_ridge_models,
+            selected_weight=float(selected_weights["C5"]),
+            classifier_sha256=_sha256(Path(classifier_checkpoint)),
+        )
+        output_path = Path(runtime_reference_output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
     manifest = {
         "schema_version": 1,
         "protocol": {"source_clients": [1, 2], "target_clients": [5]},
@@ -222,6 +289,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--min-all-delta", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--runtime-reference-output", type=Path)
+    parser.add_argument("--classifier-checkpoint", type=Path)
     args = parser.parse_args(argv)
     manifest = run(args)
     print(json.dumps(manifest, indent=2, ensure_ascii=False))

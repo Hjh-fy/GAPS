@@ -1,0 +1,21 @@
+{
+  "run": {
+    "experiment_id": "FONG-TO-B05-S43",
+    "method": "TO",
+    "seed": 43,
+    "budget_pct": 5,
+    "calibration_n": 80,
+    "initialization_run": "random-S43",
+    "rounds": 0,
+    "target_updates": 2500
+  },
+  "freeze_commit": "dc73318636335e0d2317613dff00ef73e6c798f1",
+  "checkpoint": "remote_server/update_2500.pth",
+  "checkpoint_sha256": "991d68ff6b6bca238c5996203c11de8accb03461ae6ba8caddef703a4cbe055d",
+  "state_fingerprint": "5e250d60c3b484b5ebc6e1ca400a67196f31185c3658f99081c050af5a598ed6",
+  "initial_fingerprint": "359498ab48958c309476df75c4d36af2d8c906cf6283ed8022262c5fac6e7ea8",
+  "wall_seconds": 75.1258652999968,
+  "target_updates": 2500,
+  "target_test_opened": false,
+  "status": "PASS"
+}

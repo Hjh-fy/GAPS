@@ -1,0 +1,6 @@
+record_type,label,bytes,rounds,evidence_type,pi_p50_ms,pi_p95_ms,pi_peak_rss_mib,pi_throughput_windows_per_s,deployment_status
+communication,25-round Flower model exchange,17572650,25,measured_application_bytes,,,,,
+communication,One-shot federated H1 statistics,7710128,1,theoretical_serialized_exchange_bytes,,,,,
+pi5_runtime,RUNTIME_V4_FULL,,,,4.571366,4.62118195,237.890625,209.1094362097692,FORMAL_BASELINE
+pi5_runtime,RUNTIME_V5_REGRESSION_CORE,,,,3.72454,3.7649899,234.234375,254.24177084893154,FINAL_SIMPLIFIED_REGRESSION
+pi5_runtime,RUNTIME_V5_QC2_CANDIDATE,,,,4.522537,4.57112125,235.140625,211.41202580396245,VALID_CANDIDATE_NOT_PROMOTED

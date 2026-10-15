@@ -29,6 +29,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from .package_contract import normalize_and_validate_routing_config
+
 logger = logging.getLogger(__name__)
 
 # 气体名称映射
@@ -396,7 +398,17 @@ class RegressionCalibrator:
                 {"selected_modes": {0: "affine_only", ...}, "affine_params": {...}, ...}
         """
         # 加载 per-class 模式选择
-        for c_str, mode in routing_config.get("selected_modes", {}).items():
+        routing_config = normalize_and_validate_routing_config(
+            routing_config,
+            self.num_classes,
+            self.num_phases,
+        )
+        self.selected_modes = {}
+        self.affine_params = {}
+        self.bias_params = {}
+        self.phase_affine_params = {}
+
+        for c_str, mode in routing_config["selected_modes"].items():
             c = int(c_str)
             self.selected_modes[c] = mode
 

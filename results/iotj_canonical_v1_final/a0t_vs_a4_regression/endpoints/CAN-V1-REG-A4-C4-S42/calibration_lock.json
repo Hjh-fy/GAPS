@@ -1,0 +1,75 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.lock.v1",
+  "status": "SEALED_BEFORE_TARGET_TEST",
+  "experiment_id": "CAN-V1-REG-A4-C4-S42",
+  "method": "A4",
+  "target": "C4",
+  "target_test_opened": false,
+  "alpha_selection_performed": false,
+  "fixed_alphas": {
+    "0": 1.0,
+    "1": 10.0,
+    "2": 0.1,
+    "3": 10.0
+  },
+  "calibration_N": 320,
+  "classification_metrics": {
+    "N": 320,
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "nll": 1.7967099345032891e-06,
+    "ece": 1.79670751099259e-06,
+    "mean_confidence": 0.999998203292489,
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_f1": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "confusion_matrix": [
+      [
+        80,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        80,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        80,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        80
+      ]
+    ]
+  },
+  "checkpoint": {
+    "experiment_id": "CAN-V1-REG-A4-C4-S42",
+    "classification_experiment_id": "CANONICAL-V1-A4-C4",
+    "method": "A4",
+    "target": "C4",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\classification\\CANONICAL-V1-A4-C4\\remote_server\\server_latest_adapted.pth",
+    "checkpoint_sha256": "422a49f28331e5486d215a8d34bc9a972dc8fc1992f8b5bf27428329143599c3",
+    "ordered_state_content_fingerprint": "e8706d99a2e06d5710ed9848b2e86873c2de588c854657242a166fd01a7f58d7",
+    "formal_round": 25,
+    "classification_manifest_sha256": "99f82f2538511711cdc1221f3d109a3fa749c1ae3154e9ab1e6e0e38b85fc9e4",
+    "completion_marker_sha256": "c9a9d7c639ef3a3d3b24e1997715368427221e3683d87d3c3d97e6108034a5bd"
+  },
+  "r84_models_sha256": "4afd3fd8209013ac41f2d3ddce477d649d2870918ccb91f64c387c2b7aecfebf"
+}

@@ -145,3 +145,45 @@ def test_checkpoint_stream_uses_explicit_target_client(
     assert captured["client_id"] == 1
     assert {row["client"] for row in rows} == {"C1"}
     assert metrics["N"] == 2
+
+
+def test_checkpoint_stream_accepts_explicit_step_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class DummyConfig:
+        BATCH_SIZE = 2
+
+    class DummyModel:
+        def eval(self):
+            return self
+
+        def __call__(self, features: torch.Tensor):
+            logits = torch.tensor(
+                [[4.0, 1.0, 0.0, 0.0], [0.0, 4.0, 1.0, 0.0]],
+                dtype=torch.float32,
+            )
+            return logits, torch.zeros((len(features), 1)), torch.zeros((len(features), 1))
+
+    monkeypatch.setattr(
+        classification_summary,
+        "load_checkpoint_model",
+        lambda *_args, **_kwargs: (DummyModel(), DummyConfig(), {"step": 100}),
+    )
+    monkeypatch.setattr(
+        classification_summary,
+        "make_loader",
+        lambda *_args, **_kwargs: [(torch.zeros((2, 50, 8)), torch.tensor([0, 1]))],
+    )
+
+    rows, metrics = classification_summary.evaluate_checkpoint_stream(
+        Path("adapted_step_100.pth"),
+        data_root=Path("dataset"),
+        target_client=3,
+        split="test",
+        device=torch.device("cpu"),
+        batch_size=2,
+        expected_endpoint=("step", 100),
+    )
+
+    assert len(rows) == 2
+    assert metrics["N"] == 2

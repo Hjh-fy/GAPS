@@ -1,0 +1,12 @@
+{
+  "schema_version": "iotj.feature_metadata_ablation.v1",
+  "federated_h1_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_h1_federated_ridge_equivalence_20260724\\federated_h1_manifest.json",
+  "federated_h1_manifest_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+  "federated_h1_status": "PRACTICAL_EQUIVALENCE",
+  "h1_training_depends_on_classifier_seed": false,
+  "h2_h3_training_depends_on_classifier_seed": false,
+  "source_heads_retrained": false,
+  "H1": "sufficient-statistics federated per-gas Ridge",
+  "H2": "frozen pooled-source per-gas MLP from R4",
+  "H3": "frozen pooled-source shared MLP from R4"
+}

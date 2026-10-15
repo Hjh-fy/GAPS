@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import argparse
 import copy
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+import scripts.evaluate_iotj_high_coverage_qc as qc
 from scripts.evaluate_iotj_high_coverage_qc import (
+    attach_oracle_prediction,
     apply_workpoint,
     evaluate_workpoint,
     fit_component_calibrator,
@@ -192,6 +197,187 @@ def test_workpoint_evaluation_reports_yield_error_capture_and_random_control() -
     assert report["random_control"]["iterations"] == 50
 
 
+def test_workpoint_reports_nonreject_and_oracle_metrics() -> None:
+    rows = [
+        {"client": "C5", "split": "test", "sample_index": 0, "true_class": 0, "pred_class": 1,
+         "true_ppm": 10.0, "pred_ppm": 30.0, "oracle_ppm": 12.0, "qc_decision": "accept"},
+        {"client": "C5", "split": "test", "sample_index": 1, "true_class": 0, "pred_class": 0,
+         "true_ppm": 20.0, "pred_ppm": 24.0, "oracle_ppm": 21.0, "qc_decision": "review"},
+        {"client": "C5", "split": "test", "sample_index": 2, "true_class": 0, "pred_class": 0,
+         "true_ppm": 30.0, "pred_ppm": 90.0, "oracle_ppm": 31.0, "qc_decision": "reject"},
+    ]
+
+    report = evaluate_workpoint(rows, "pred_ppm", oracle_pred_key="oracle_ppm", n_random=0)
+
+    assert report["nonreject_N"] == 2
+    assert report["nonreject_metrics"]["RMSE"] == pytest.approx((416.0 / 2.0) ** 0.5)
+    assert report["oracle_accept_metrics"]["RMSE"] == pytest.approx(2.0)
+    assert report["oracle_nonreject_metrics"]["RMSE"] == pytest.approx((5.0 / 2.0) ** 0.5)
+
+
+@pytest.mark.parametrize(
+    ("row", "message"),
+    [
+        (
+            {
+                "true_class": 0,
+                "true_ppm": 10.0,
+                "pred_ppm": float("nan"),
+                "qc_decision": "accept",
+            },
+            "non-finite regression value",
+        ),
+        (
+            {
+                "true_class": 9,
+                "true_ppm": 10.0,
+                "pred_ppm": 11.0,
+                "qc_decision": "accept",
+            },
+            "unknown true_class",
+        ),
+    ],
+)
+def test_workpoint_metrics_fail_closed_on_invalid_regression_rows(
+    row: dict[str, object], message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        evaluate_workpoint([row], "pred_ppm", n_random=0)
+
+
+def test_workpoint_rejects_invalid_qc_decision_before_metrics() -> None:
+    rows = [
+        {"qc_decision": "hold", "true_class": 0, "pred_class": 0, "true_ppm": 10.0, "pred_ppm": 10.0},
+    ]
+
+    with pytest.raises(ValueError, match="invalid qc_decision"):
+        evaluate_workpoint(rows, "pred_ppm", n_random=0)
+
+
+def test_attach_oracle_prediction_keys_by_client_split_and_sample_index() -> None:
+    rows = [
+        {"client": "C5", "split": "test", "sample_index": 7},
+        {"client": "C6", "split": "test", "sample_index": 7},
+    ]
+    oracle_rows = [
+        {"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": 11.0},
+        {"client": "C6", "split": "test", "sample_index": 7, "oracle_ppm": 22.0},
+    ]
+
+    attached = attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+    assert [row["attached_oracle_ppm"] for row in attached] == [11.0, 22.0]
+
+
+def test_attach_oracle_prediction_requires_client_coordinates() -> None:
+    rows = [{"client": None, "split": "test", "sample_index": 7}]
+    oracle_rows = [
+        {"client": None, "split": "test", "sample_index": 7, "oracle_ppm": 11.0}
+    ]
+
+    with pytest.raises(ValueError, match="oracle row key requires client"):
+        attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+
+@pytest.mark.parametrize(
+    ("oracle_rows", "message"),
+    [
+        (
+            [
+                {"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": 11.0},
+                {"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": 12.0},
+            ],
+            "duplicate oracle row",
+        ),
+        (
+            [{"client": "C6", "split": "test", "sample_index": 7, "oracle_ppm": 11.0}],
+            "missing oracle prediction",
+        ),
+        (
+            [{"client": "C5", "split": "test", "sample_index": 7, "oracle_ppm": float("nan")}],
+            "non-finite oracle prediction",
+        ),
+    ],
+)
+def test_attach_oracle_prediction_rejects_invalid_oracle_rows(
+    oracle_rows: list[dict[str, object]], message: str
+) -> None:
+    rows = [{"client": "C5", "split": "test", "sample_index": 7}]
+
+    with pytest.raises(ValueError, match=message):
+        attach_oracle_prediction(rows, oracle_rows, "oracle_ppm", "attached_oracle_ppm")
+
+
+def test_qc_run_consumes_exact_upstream_oracle_ppm_column(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    oracle_key = "target_ridge_plus_source_preds_oracle_route_ppm"
+    validation = [{"client": "C5", "split": "calibration", "sample_index": index} for index in range(80)]
+    test = [{"client": "C5", "split": "test", "sample_index": index} for index in range(1360)]
+    oracle = [
+        {"client": "C5", "split": "test", "sample_index": index, oracle_key: float(index)}
+        for index in range(1360)
+    ]
+    args = argparse.Namespace(
+        output_dir=tmp_path,
+        target_inputs="target_inputs",
+        h23_validation="h23_validation",
+        h23_test="h23_test",
+        h8_validation="h8_validation",
+        h8_test="h8_test",
+        h8_test_oracle="h8_test_oracle",
+        backbone_calibration="backbone_calibration",
+        backbone_test="backbone_test",
+        pred_key="pred_ppm",
+        n_random=0,
+        seed=42,
+    )
+
+    monkeypatch.setattr(qc, "_read_csv", lambda path: oracle if path == "h8_test_oracle" else [])
+    monkeypatch.setattr(qc, "_attach_calibration_features", lambda *_: [{}] * 240)
+    monkeypatch.setattr(
+        qc,
+        "merge_aligned_streams",
+        lambda *_args, split: validation if split == "calibration" else test,
+    )
+    monkeypatch.setattr(qc, "fit_feature_reference", lambda _: {})
+    monkeypatch.setattr(qc, "raw_deployment_risk", lambda *_: {})
+    monkeypatch.setattr(qc, "fit_component_calibrator", lambda _: {})
+    monkeypatch.setattr(qc, "score_deployment_rows", lambda rows, _: list(rows))
+    monkeypatch.setattr(
+        qc,
+        "select_score_family",
+        lambda *_: {"selected_policy": {}, "selected_score": "deployment_risk_full"},
+    )
+    monkeypatch.setattr(qc, "fit_workpoints", lambda *_: {})
+    monkeypatch.setattr(
+        qc,
+        "apply_workpoint",
+        lambda rows, _policy, workpoint: [
+            {**row, "qc_workpoint": workpoint, "qc_decision": "accept"} for row in rows
+        ],
+    )
+    monkeypatch.setattr(
+        qc,
+        "evaluate_workpoint",
+        lambda *_args, **_kwargs: {
+            "accept_N": 1360,
+            "nonreject_N": 1360,
+            "accept_metrics": {},
+            "nonreject_metrics": {},
+            "oracle_accept_metrics": {},
+            "oracle_nonreject_metrics": {},
+        },
+    )
+    monkeypatch.setattr(qc, "evaluate_ranking_curve", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(qc, "_write_csv", lambda *_: None)
+    monkeypatch.setattr(qc, "_write_json", lambda *_: None)
+
+    result = qc.run_high_coverage_qc(args)
+
+    assert result["manifest"]["oracle_pred_key"] == oracle_key
+
+
 def test_score_family_selection_uses_calibration_error_capture() -> None:
     rows = []
     for index in range(20):
@@ -260,3 +446,4 @@ def test_high_coverage_qc_script_is_directly_executable() -> None:
 
     assert result.returncode == 0, result.stderr
     assert "high-coverage C5 QC" in result.stdout
+    assert "--h8-test-oracle" in result.stdout

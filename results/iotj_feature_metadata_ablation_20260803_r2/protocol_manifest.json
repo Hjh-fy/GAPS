@@ -1,0 +1,80 @@
+{
+  "schema_version": "iotj.feature_metadata_ablation.v1",
+  "status": "registered_confirmatory",
+  "code_commit": "58d45820d67dce1c0a6f942ad3ae49da3b5be4f9",
+  "script_sha256": "d0c98cad3cd5a48d63a06b90e339ba86f86877a0f3f72ca72e3c09d97adebf8a",
+  "seed_set": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "split": {
+    "C5_calibration": 320,
+    "fit": 240,
+    "validation": 80,
+    "C5_test": 1360
+  },
+  "profiles": {
+    "M83_SENSOR": 83,
+    "M91_ONLINE_SAFE": 91,
+    "M104_FULL": 104
+  },
+  "variants": {
+    "M83_SENSOR__NO_H1": [
+      "M83_SENSOR",
+      false
+    ],
+    "M83_SENSOR__H1": [
+      "M83_SENSOR",
+      true
+    ],
+    "M91_ONLINE_SAFE__NO_H1": [
+      "M91_ONLINE_SAFE",
+      false
+    ],
+    "M91_ONLINE_SAFE__H1": [
+      "M91_ONLINE_SAFE",
+      true
+    ],
+    "M104_FULL__NO_H1": [
+      "M104_FULL",
+      false
+    ],
+    "M104_FULL__H1": [
+      "M104_FULL",
+      true
+    ]
+  },
+  "ridge_alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "test_used_for_fit_select_or_refit": false,
+  "source_heads_retrained": false,
+  "QC": "none",
+  "known_split_limitation": "window-level split; allows_file_overlap=true",
+  "frozen_hashes_before": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  },
+  "frozen_hashes_after": {
+    "bundle_manifest": "a2514bd74ba0a98334d146af218922ee84884a53b93b0d4c44414723abee73b5",
+    "c5_test_features": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82",
+    "c5_test_metadata": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf",
+    "c5_test_phase_labels": "a69f333c8418fa3bf94c599a2d684cd122b4a46df2ff405bced227b68fcdb8b5",
+    "hc95_reference": "33d04439376852bb976d9a4ed5f09235107b296c5f839c75ed667fdecc598860",
+    "hc90_reference": "6051e7787915e0163ffd815dc089626e751906474c858072c5c0520c615dccb3"
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "schema_version": "iotj.low_calibration_sensitivity.v1",
+  "replicates": [
+    {
+      "nominal_budget": 320,
+      "replicate": 0,
+      "seed": null,
+      "actual_rows": 320,
+      "unique_filenames": 80,
+      "row_index_sha256": "34caaa16a644739c16b6dd5ecd411c047122be754c4512613f56aa9eb31e4054"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 0,
+      "seed": 2026072500,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "row_index_sha256": "feb2db37cc4155ad15dad28a5acc58e08089ce88a6810307ef535efd68804856"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 0,
+      "seed": 2026072500,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "row_index_sha256": "2e98201ca2f933eee49e61d1114b89dd766413a7b6ebe551660bcfae0833ad6d"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 0,
+      "seed": 2026072500,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "row_index_sha256": "f13861bd518bbfd30173c4e8c79b77df5269c5828ab9637f974fecb31aebd905"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 1,
+      "seed": 2026072501,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "row_index_sha256": "bd11cdb8099d1ae3849c43a832d46bc5e9e651713109b09c817fe5d4252bbd6c"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 1,
+      "seed": 2026072501,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "row_index_sha256": "13a90a6bae15a9f4eecf4dbfdca65017621d86092ecd24dc92950c41741797a1"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 1,
+      "seed": 2026072501,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "row_index_sha256": "2824b12858e6970cd48d3c218cfdce25a2aefae927eb2ecda138ff77880e74b6"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 2,
+      "seed": 2026072502,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "row_index_sha256": "79f6a2850abd8140c9bdd2acaca4f7ab54aa62cd59cd687110db81010a5b66db"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 2,
+      "seed": 2026072502,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "row_index_sha256": "a3210df1acee9c93c1f26997cff7c28832b14d87b3a6bbf8b1470d7bd8a48e0b"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 2,
+      "seed": 2026072502,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "row_index_sha256": "9a9f18c5cb4b617d6f92d162d88fce21fb329f9d1c70752258d9ea2ac8fde2ae"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 3,
+      "seed": 2026072503,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "row_index_sha256": "2ded0233496b99279f7bdd734aa2be067118e7bfaa34a52baee4538602a900e1"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 3,
+      "seed": 2026072503,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "row_index_sha256": "21eb272ad0697792d4bbd7d54fc34e180ea57f0429ceaba9d35242fe60e1c509"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 3,
+      "seed": 2026072503,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "row_index_sha256": "59668d735bdacd86904c3619c1ef7a5e4ad0195b17c622912ee92569e78c1b57"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 4,
+      "seed": 2026072504,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "row_index_sha256": "72e46b018142e1024356a139ab722f14f86975ef18eeec43b12cfb37f257e64d"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 4,
+      "seed": 2026072504,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "row_index_sha256": "040b3f8097e8fda9e886299913f76f252a89f8129df092f2f243f0fb9a48e90a"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 4,
+      "seed": 2026072504,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "row_index_sha256": "eda64ae904214864b8623936b0c47f0b43b1e7d284f13f0ad52e0a225aee591a"
+    }
+  ],
+  "variability_type": "calibration subset selection variability; not classifier training seed variability",
+  "nested_within_replicate": true
+}

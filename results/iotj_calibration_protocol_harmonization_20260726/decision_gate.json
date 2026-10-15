@@ -1,0 +1,22 @@
+{
+  "schema_version": "iotj.calibration_protocol_harmonization.v1",
+  "decision": "SENSITIVITY_PARTLY_PROTOCOL_DEPENDENT",
+  "groupaware_relative_S_CC_delta": {
+    "160": 1.19967032589657,
+    "80": 1.8034253105551357,
+    "40": 2.357062334998159
+  },
+  "historical_relative_S_CC_delta": {
+    "160": 0.5749158498229728,
+    "80": 1.50886225459667,
+    "40": 2.812879685582032
+  },
+  "operational_rule_audit": {
+    "groupaware_degraded_at_80_and_40": true,
+    "historical_degraded_at_80_and_40": true,
+    "max_absolute_relative_degradation_gap": 0.6247544760735971
+  },
+  "method_changed": false,
+  "existing_HIGH_CALIBRATION_SENSITIVITY_overwritten": false,
+  "test_based_selection": false
+}

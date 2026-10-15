@@ -1,0 +1,15 @@
+{
+  "deltas": {
+    "s2_dg_minus_fedavg_c5_macro_f1": -0.05259213383493472,
+    "s4_dg_minus_fedavg_c5_macro_f1": 0.0749899433041799,
+    "s4_dg_source_pooled_drop": 0.0012726552238997435,
+    "s4_fedavg_minus_s2_fedavg_c5_macro_f1": 0.017995948253064387
+  },
+  "dg_mechanism": "SOURCE_DG_PROMISING",
+  "next_action": "CREATE_MULTI_SEED_PROPOSAL_ONLY",
+  "source_diversity": "SOURCE_DIVERSITY_SUPPORTED",
+  "thresholds": {
+    "maximum_source_pooled_macro_f1_drop": 0.01,
+    "meaningful_c5_macro_f1_gain": 0.01
+  }
+}

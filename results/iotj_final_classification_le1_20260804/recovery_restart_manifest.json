@@ -1,0 +1,51 @@
+{
+  "schema_version": "iotj.final_classification.restart.v1",
+  "restarted_experiment_id": "FCL-E3-GAPS-C4",
+  "restart_policy": "fresh execution from the frozen initial state",
+  "partial_checkpoint_reused": false,
+  "previous_attempt": {
+    "attempt_id": "FCL-E3-GAPS-C4-attempt1",
+    "status": "failed_transport",
+    "local_archive": "results/iotj_final_classification_le1_20260804/failed_attempts/attempt1_controller_network_20260804T050058",
+    "remote_archive": "/root/GAPS/iotj_final_classification_le1_20260804/_failed_attempts/FCL-E3-GAPS-C4_attempt1_controller_network_20260804T050058"
+  },
+  "new_attempt": {
+    "attempt_id": "FCL-E3-GAPS-C4-attempt2",
+    "started_at_local": "2026-08-04T10:58:13+08:00",
+    "queue_pid_at_launch": 18872,
+    "postrun_watcher_pid_at_launch": 20280,
+    "first_aggregated_round": 1,
+    "first_round_checkpoint_observed_at_local": "2026-08-04T10:59:03+08:00",
+    "server_pid_at_verification": 1653967,
+    "client_c1_pid_at_verification": 40907,
+    "client_c2_pid_at_verification": 136734
+  },
+  "frozen_provenance": {
+    "freeze_commit": "50094788404545c64e2cf583fe4556afd8349b16",
+    "protocol_hash": "63cea65b8a8d2b9c4baf038e822594a7093f4a5add08c6f43a5501547ea1b1ea",
+    "seed": 42,
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 32,
+    "optimizer": "Adam",
+    "optimizer_lr": 0.0005,
+    "target_test_opened": false
+  },
+  "remaining_queue": [
+    "FCL-E3-GAPS-C4",
+    "FCL-E3-GAPS-C5",
+    "FCL-E4-A1",
+    "FCL-E4-A2",
+    "FCL-E4-A3",
+    "FCL-E4-A4",
+    "FCL-E4-A5"
+  ],
+  "postrun_actions_armed": [
+    "final evaluation",
+    "strict post-run audit",
+    "compileall",
+    "focused tests",
+    "commit",
+    "push codex/iotj-final-classification-le1"
+  ]
+}

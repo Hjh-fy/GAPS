@@ -1,0 +1,40 @@
+{
+  "alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "alpha_selection": "deterministic five-fold raw-filename-grouped target-calibration CV; pooled RMSE; first tie",
+  "budget_counts": {
+    "5": 80,
+    "10": 160,
+    "15": 240,
+    "20": 320
+  },
+  "checks": {
+    "1_frozen_budget_counts": "PASS",
+    "2_nested_5_10_15_20": "PASS",
+    "3_same_calibration_rows_R83_R84": "PASS_BY_SINGLE_SHARED_INDEX_SET",
+    "4_same_test_set": "PASS_1360_IDENTITIES",
+    "5_R83_feature_definition": "PASS_83D",
+    "6_R84_definition": "PASS_R83_PLUS_ONE_FROZEN_R0V2_SCALAR",
+    "7_Ridge_alpha_and_fit_rule": "PASS_FIXED_RULE",
+    "8_preprocessing_unchanged": "PASS_CANONICAL_V1_5HZ_50X8"
+  },
+  "grouped_ci_available": true,
+  "nested_relation": "5% < 10% < 15% < 20%",
+  "preprocessing": "HZ5_MEAN_W10S",
+  "status": "PASS",
+  "test_filename_groups": 80,
+  "test_filename_groups_per_gas": {
+    "CO": 20,
+    "Ethanol": 20,
+    "Ethylene": 20,
+    "Methane": 20
+  },
+  "test_n": 1360
+}

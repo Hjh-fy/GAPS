@@ -1,0 +1,88 @@
+{
+  "schema_version": "iotj.h1_federated_ridge_equivalence.v1",
+  "experiment_id": "IOTJ-H1-FEDERATED-RIDGE-EQUIVALENCE-S42-V1",
+  "status": "formal",
+  "formal_run_commit": "e12a4eb61180c8819b9f6e87dee71b103ac040a8",
+  "origin_commit_at_run": "e12a4eb61180c8819b9f6e87dee71b103ac040a8",
+  "local_origin_equal": true,
+  "created_at": "2026-07-23T17:37:14.139301+00:00",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "target_client": "C5",
+  "seed": 42,
+  "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+  "split": {
+    "C1_C2_source_train": 4720,
+    "C1_C2_source_calibration": 640,
+    "C5_calibration": 320,
+    "C5_calibration_fit": 240,
+    "C5_calibration_validation": 80,
+    "C5_test": 1360
+  },
+  "h1": {
+    "per_gas_independent": true,
+    "feature_dimension": 104,
+    "scaler": "mean and population std (ddof=0); scale<1e-9 -> 1",
+    "intercept": "explicit constant column; unregularized",
+    "objective": "pinv(D.T@D + diag(0,alpha,...)) @ D.T@y",
+    "alpha_grid": [
+      0.0,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "selection": "pooled C1+C2 calibration RMSE with clipped predictions",
+    "refit": "C1+C2 train+calibration",
+    "clipping": "per-gas refit-label min/max"
+  },
+  "federated_exchange": {
+    "phase_1": [
+      "n_i",
+      "sum_x_i",
+      "sum_x2_i"
+    ],
+    "phase_2": [
+      "A_i",
+      "b_i",
+      "y_min_i",
+      "y_max_i"
+    ],
+    "alpha_selection": [
+      "calibration_SSE_i",
+      "calibration_count_i"
+    ],
+    "raw_rows_transmitted": false,
+    "raw_X_y_transmitted": false
+  },
+  "target_variants": [
+    "RIDGE_RICH_ONLY",
+    "RIDGE_H1_POOLED",
+    "RIDGE_H1_FEDERATED_STATS"
+  ],
+  "test_used_for_fit_select_or_refit": false,
+  "C5_calibration_used_for_source_H1_training": false,
+  "C1_C2_source_test_used_for_H1_train_or_select": false,
+  "runtime_v4_modified": false,
+  "QC_modified": false,
+  "frozen_assets_sha256_before": {
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/row_map_1360.json": "7c37cc00d7fdb47e53130d5eeadea913ae96b88aeb8bfe3c6d081d9683a5fd35",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/parity_report.json": "f0610d39b44643c2eb77889e7cf747fb1ae79a2fd89535bd5123e8302c12dde3",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/runtime_rows.csv": "511529671daafd541c1b880fc673f55d0604bd0a9952af16fd2b15a325841f84",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/parity_report.json": "bda8e790eff6d51c59e37fca5f00e5bd5ca1048df7421d86390e675d2ffa06c3",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/runtime_rows.csv": "42c8090228b8d3e454ba7b35854f1260d69527b043734ef2e82bb12fd04ce941"
+  },
+  "frozen_assets_sha256_after": {
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/row_map_1360.json": "7c37cc00d7fdb47e53130d5eeadea913ae96b88aeb8bfe3c6d081d9683a5fd35",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/parity_report.json": "f0610d39b44643c2eb77889e7cf747fb1ae79a2fd89535bd5123e8302c12dde3",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/runtime_rows.csv": "511529671daafd541c1b880fc673f55d0604bd0a9952af16fd2b15a325841f84",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/parity_report.json": "bda8e790eff6d51c59e37fca5f00e5bd5ca1048df7421d86390e675d2ffa06c3",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/runtime_rows.csv": "42c8090228b8d3e454ba7b35854f1260d69527b043734ef2e82bb12fd04ce941"
+  }
+}

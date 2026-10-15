@@ -1,0 +1,1 @@
+固定 B5 + Federated-H1 + C5 Ridge 方法在按 filename 整组保留的嵌套校准预算下进行敏感性分析。160/80/40 的误差条为 5 个确定性 subset replicate 的样本标准差，320 为单次冻结参考。连线仅连接已观测预算点，不是拟合曲线。校准耗时不要求随行数单调变化，因为 160/80/40 使用 group-aware 5-fold alpha selection，而冻结的 320 reference 保持原 240/80 holdout 协议。

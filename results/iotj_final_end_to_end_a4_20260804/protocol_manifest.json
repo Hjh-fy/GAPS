@@ -1,0 +1,150 @@
+{
+  "schema_version": "iotj.final_a4_package.v1",
+  "status": "complete",
+  "formal_target": "C5",
+  "classifier": {
+    "method": "server-centric A4",
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 32,
+    "seed": 42,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "target_ce_weight": 0.0,
+    "selective_aggregation": false,
+    "fixed_endpoint_only": true
+  },
+  "regression": {
+    "schema_version": "iotj.final_a4_end_to_end.v1",
+    "status": "complete",
+    "classifier": {
+      "status": "complete",
+      "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\remote_server\\server_round_025_adapted.pth",
+      "checkpoint_identity": {
+        "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\remote_server\\server_round_025_adapted.pth",
+        "size_bytes": 185801,
+        "formal_round": 25,
+        "ordered_state_content_fingerprint": "06beed28358797b772efca2929fde4dc7dbf0fa734a77a6b68bba573779e33a9",
+        "whole_file_sha256": "5cefe8093d276fcf71f3b3e2800e9896d9967d9e4a9b40994e59bbb49d6009e9",
+        "equality_basis": "ordered_state_content_fingerprint",
+        "whole_file_sha256_role": "provenance_only",
+        "parameter_count": 80
+      },
+      "accuracy": 0.9933823529411765,
+      "macro_f1": 0.9933898239049185,
+      "nll": 0.05438417410666987,
+      "ece": 0.006405640132455269,
+      "num_examples": 1360,
+      "selection_role": "none_fixed_endpoint_only"
+    },
+    "data_root": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid",
+    "target_client": "C5",
+    "calibration_N": 320,
+    "test_N": 1360,
+    "calibration_split": "60 fit + 20 validation per gas, then refit 80",
+    "ridge_alpha_grid": [
+      0.0,
+      0.01,
+      0.1,
+      1.0,
+      10.0,
+      100.0,
+      1000.0
+    ],
+    "proposed_variant": "R84_FED_H1",
+    "variants": {
+      "R83_TARGET_ONLY": {
+        "prediction_key": "pred_83d_ppm",
+        "input_dimension": 83,
+        "source_priors": []
+      },
+      "R84_FED_H1": {
+        "prediction_key": "pred_84d_h1_ppm",
+        "input_dimension": 84,
+        "source_priors": [
+          "H1_federated_source_ridge_ppm"
+        ]
+      },
+      "R86_ALL_PRIORS": {
+        "prediction_key": "pred_86d_all_priors_ppm",
+        "input_dimension": 86,
+        "source_priors": [
+          "H1_federated_source_ridge_ppm",
+          "H2_source_per_gas_mlp_ppm",
+          "H3_source_shared_mlp_ppm"
+        ]
+      }
+    },
+    "target_test_used_for_selection": false,
+    "fixed_endpoint_only": true,
+    "source_priors": {
+      "federated_h1_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_h1_federated_ridge_equivalence_20260724\\federated_h1_manifest.json",
+      "federated_h1_manifest_sha256": "d32217a30f491ba46be436f3baf469b764b54a08d4d542b4eb71dbc007338ecc",
+      "federated_h1_status": "PRACTICAL_EQUIVALENCE",
+      "h1_training_depends_on_classifier_seed": false,
+      "h2_h3_training_depends_on_classifier_seed": false,
+      "source_heads_retrained": false,
+      "H1": "sufficient-statistics federated per-gas Ridge",
+      "H2": "frozen pooled-source per-gas MLP from R4",
+      "H3": "frozen pooled-source shared MLP from R4"
+    },
+    "runtime_contract": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_b5_c5_deployment_p1_20260722\\c5_h8_runtime_contract_b5_v4\\runtime_contract.json",
+    "h1_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_h1_federated_ridge_equivalence_20260724\\federated_h1_manifest.json"
+  },
+  "qc": {
+    "schema_version": "iotj.final_a4_qc.v1",
+    "status": "complete",
+    "prediction": "pred_84d_h1_ppm",
+    "risk_formula": "equal_mean_of_calibration_p95_normalized_components",
+    "risk_normalization": "component-wise C5 calibration p95, clipped to [0,1], then equal mean",
+    "risk_inputs_are_label_free": true,
+    "threshold_selection": "C5 calibration risk empirical quantile",
+    "coverage_targets": [
+      0.7,
+      0.725,
+      0.75,
+      0.775,
+      0.8,
+      0.825,
+      0.85,
+      0.875,
+      0.9,
+      0.925,
+      0.95,
+      0.975,
+      1.0
+    ],
+    "target_test_used_for_threshold_selection": false,
+    "random_reference_repeats": 1000,
+    "random_reference_seed": 20260804,
+    "hc90_hc95_meaning": "calibration-targeted retained coverage, not accuracy"
+  },
+  "system": {
+    "schema_version": "iotj.final_a4_system.v1",
+    "status": "complete",
+    "source_files": {
+      "efficiency": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_system_benchmark_20260725\\paper_tables\\table_system_efficiency.csv",
+      "fl_communication": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_system_benchmark_20260725\\system_metrics\\b5_fl_communication_summary.csv",
+      "h1_communication": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_system_benchmark_20260725\\system_metrics\\federated_h1_communication_summary.csv",
+      "locked": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\locked_run_spec.json",
+      "completed": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\fixed_endpoint_complete.json",
+      "run_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_final_classification_le1_20260804\\FCL-E4-A4\\run_manifest.json"
+    },
+    "communication_evidence_boundary": {
+      "flower": "measured application payload; transport bytes unavailable",
+      "federated_h1": "theoretical serialized one-shot exchange"
+    },
+    "physical_validation_boundary": "no hardware photograph; evidence is the audited three-machine Flower run and separate Pi 5 benchmark"
+  },
+  "figures": [
+    "Fig5",
+    "Fig6",
+    "Fig7",
+    "Fig8"
+  ],
+  "seed": 42,
+  "classification_retrained": false,
+  "target_test_used_for_selection": false
+}

@@ -1,0 +1,1 @@
+CLASS post-adaptation classification accuracy across25communication rounds for C3/C4/C5, canonical main calibration, seed42. All raw points shown; no smoothing, error bars, test-based selection or early stopping. Round25 reuses locked formal endpoint predictions. Curves are not independent replicates.

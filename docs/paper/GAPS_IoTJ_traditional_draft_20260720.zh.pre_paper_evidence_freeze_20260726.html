@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GAPS：面向跨设备气体智能感知的可靠性增强云–边协同联邦学习框架</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      chtml: { scale: 0.92 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root { --ink:#111; --muted:#555; --rule:#b8b8b8; --navy:#17365d; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: #e7e9ed; color: var(--ink);
+      font-family: "Times New Roman", "Noto Serif CJK SC", "Songti SC", SimSun, serif;
+      line-height: 1.42; font-size: 10.4pt;
+    }
+    .paper {
+      width: min(216mm, calc(100vw - 24px)); margin: 22px auto; padding: 15mm 16mm 18mm;
+      background: white; box-shadow: 0 3px 18px rgba(0,0,0,.14);
+    }
+    .preprint {
+      border-bottom: 1px solid var(--rule); padding-bottom: 5px; margin-bottom: 12px;
+      color: var(--muted); font: 8pt Arial, sans-serif; letter-spacing: .04em;
+      display: flex; justify-content: space-between;
+    }
+    .front h1 { font-size: 20pt; line-height: 1.17; text-align: center; margin: 10px 0 7px; }
+    .front > p:first-of-type { text-align: center; font-size: 12pt; color: #222; margin: 0 0 16px; }
+    .front h2 { font: bold 9.3pt Arial, sans-serif; display: inline; margin: 0; }
+    .front h2::after { content: "—"; }
+    .front h2 + p { display: inline; }
+    .front p { text-align: justify; margin: 6px 0; }
+    .paper-body { margin-top: 12px; column-count: 2; column-gap: 7.5mm; column-rule: 0 solid transparent; }
+    h2 {
+      font: bold 10pt Arial, sans-serif; text-align: center; margin: 10px 0 6px;
+      break-after: avoid; color: #111;
+    }
+    h3 {
+      font: bold 9.2pt Arial, sans-serif; margin: 8px 0 4px;
+      break-after: avoid; color: #111;
+    }
+    p { margin: 0 0 6px; text-align: justify; orphans: 2; widows: 2; }
+    a { color: var(--navy); text-decoration: none; }
+    table {
+      width: 100%; border-collapse: collapse; margin: 7px 0 10px;
+      font: 7.5pt Arial, sans-serif; break-inside: avoid;
+    }
+    th, td { border-top: .7px solid #444; border-bottom: .7px solid #777; padding: 3px 4px; }
+    th { font-weight: bold; }
+    pre {
+      white-space: pre-wrap; overflow-wrap: anywhere; break-inside: avoid;
+      border-top: 1px solid #555; border-bottom: 1px solid #555;
+      background: #fafafa; padding: 7px; margin: 7px 0 10px;
+      font: 6.8pt/1.38 Consolas, "Courier New", monospace;
+    }
+    code { font-family: Consolas, "Courier New", monospace; }
+    mjx-container[display="true"] { margin: .45em 0 !important; break-inside: avoid; }
+    .wide-figure { column-span: all; break-inside: avoid; margin: 11px 0 13px; }
+    .wide-figure img { display: block; width: 100%; height: auto; margin: 0 auto 5px; }
+    figcaption { font: 7.8pt/1.3 Arial, sans-serif; text-align: justify; color: #222; }
+    blockquote { border-left: 3px solid #aaa; margin: 6px 0; padding-left: 8px; color: #444; }
+    .paper-body > h2:first-child { margin-top: 0; }
+    @media (max-width: 920px) {
+      .paper { width: min(760px, calc(100vw - 16px)); padding: 28px 30px; margin: 8px auto; }
+      .paper-body { column-count: 1; }
+      .wide-figure { column-span: none; }
+    }
+    @media print {
+      @page { size: A4; margin: 12mm 13mm; }
+      body { background: white; font-size: 9.4pt; }
+      .paper { width: auto; margin: 0; padding: 0; box-shadow: none; }
+      .preprint { margin-top: 0; }
+      .paper-body { column-gap: 7mm; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <main class="paper">
+    <div class="preprint"><span>GAPS MANUSCRIPT · IoTJ-STYLE WORKING DRAFT</span><span>2026-07-20</span></div>
+    <section class="front"><h1>GAPS：面向跨设备气体智能感知的可靠性增强云–边协同联邦学习框架</h1>
+<h2>English Title</h2>
+<p>GAPS: A Reliability-Enhanced Cloud–Edge Collaborative Federated Learning Framework for Cross-Device Intelligent Gas Sensing</p>
+<h2>摘要</h2>
+<p>面向工业安全、环境监测和智能制造的气体感知系统通常由多个低成本传感节点组成。由于器件制造差异、长期漂移和运行环境变化，不同设备的传感响应分布存在明显偏移，使得在已有设备上训练的模型难以直接部署到新设备；而为每台新设备重新采集完整标定集又会带来较高成本。针对这一问题，本文提出面向跨设备气体智能感知的可靠性增强云–边协同联邦学习框架 GAPS。该框架首先在多个源设备上执行联邦时序表征学习，原始传感窗口保留在本地；随后利用目标设备少量带标签 calibration 数据在服务器端进行校准辅助的跨设备适配，并在目标端以预测类别路由的轻量回归专家完成浓度定量；最后利用部署可见风险特征将输出划分为自动接受、人工复核和拒绝三种状态，以控制自动输出覆盖率与定量误差之间的权衡。基于包含 5 个物理气体传感单元、8 个 MOS 通道、4 类气体和多个浓度等级的数据，本文在 ECS、树莓派和 PC 组成的真实联邦拓扑上开展实验。在 C1/C2→C5 主协议的 seed-42 实验中，source-only FedAvg 的分类准确率为 26.54%，而采用目标校准的配置可恢复至 98% 以上；预声明完整配置 B5 达到 98.90%，test 排名打开后选取的紧凑 B2 达到 99.26%。在浓度定量中，固定 H8 回归器将 B5 与 B2 的实际路由 RMSE 分别降至 17.447 ppm 和 14.656 ppm；B2-HC95 以 95.66% 的自动接受率获得 12.673 ppm 的 accepted RMSE，并识别 7/10 个错路由窗口。结果表明，跨设备气体感知需要将联邦协同、透明的目标校准、分类—定量路由和可靠性控制作为统一系统设计。当前结论仍限于单种子核心实验，后续将通过多种子、低校准预算和端侧性能测量进一步验证。</p>
+<p><strong>关键词：</strong> 气体传感器；传感器漂移；联邦学习；云边协同；跨设备校准；浓度定量；可靠性推理</p>
+<h2>Abstract</h2>
+<p>Low-cost gas sensing systems deployed for industrial safety, environmental monitoring, and smart manufacturing commonly comprise multiple distributed sensor nodes. Device variability, sensor drift, and environmental changes create substantial distribution shifts, so a model trained on existing devices may fail on a newly deployed device. Recollecting a complete calibration set for every device is also costly. This paper presents GAPS, a reliability-enhanced cloud-edge collaborative federated learning framework for cross-device gas sensing. GAPS learns a temporal representation through federated training while retaining raw sensing windows at source devices, performs calibration-assisted adaptation with a small labeled target calibration set, routes concentration estimates to lightweight target-personalized experts, and applies quality control to produce accept, review, or reject decisions. Experiments use five physical sensing units, eight MOS channels, four gases, and a real ECS–Raspberry Pi–PC topology. Under the C1/C2-to-C5 seed-42 protocol, source-only FedAvg achieved 26.54% accuracy, whereas target-calibrated configurations exceeded 98%. The predeclared B5 configuration achieved 98.90%, and the compact post-screen B2 candidate achieved 99.26%. The H8 regressor obtained actual-route RMSE values of 17.447 and 14.656 ppm for B5 and B2, respectively. At the B2-HC95 operating point, 95.66% of windows were automatically accepted with 12.673 ppm RMSE, while seven of ten routing errors were flagged. These results motivate a unified system design combining federated collaboration, transparent target calibration, classification-to-quantification routing, and reliability control. Multi-seed, low-calibration, and edge-efficiency evaluations remain future work.</p>
+<p><strong>Index Terms:</strong> gas sensing, sensor drift, federated learning, cloud-edge collaboration, target calibration, reliable inference</p></section>
+    <article class="paper-body"><h2>I. 引言</h2>
+<p>基于金属氧化物半导体（metal-oxide-semiconductor，MOS）传感器阵列的电子鼻系统具有成本低、体积小、易于集成和适合连续监测等优势，已被用于工业安全、环境监测和智能制造等场景。然而，低成本传感器的响应会受到制造批次、器件老化、工作温湿度和设备状态的共同影响。同一种气体在不同设备上的响应曲线可能具有不同的基线、幅值和动态轨迹，使得在既有设备上表现良好的识别模型在新设备上发生显著退化 [1], [2]。</p>
+<p>传统校准迁移通常要求主设备与新设备获得匹配样本，或者为新设备重新采集足量标定数据。此类方法在单次设备替换中有效，但难以直接满足多节点、持续扩展的物联网感知系统。已有研究已利用联邦模型更新降低传感器替换带来的重新建模成本 [19]，但真实部署仍需面对三个彼此耦合的问题：多个源设备如何在不集中原始窗口的条件下协同学习；新设备如何以有限且透明的标签预算完成个性化校准；以及系统如何避免把高风险浓度估计无条件输出给下游业务。</p>
+<p>联邦学习允许多个客户端保留本地数据，仅交换模型更新或必要统计量 [3]。但是，FedAvg 并不能自动消除设备间的分布偏移。对于气体感知，单纯把分类准确率作为终点也不足够：浓度专家通常依赖预测类别进行路由，少量分类错误即可造成较大的端到端定量误差；若仅报告“分类正确样本”的回归结果，则会掩盖这种部署风险。因此，跨设备气体感知需要一个连接联邦训练、目标校准、浓度定量和可靠性控制的系统闭环。</p>
+<p>本文提出 GAPS，一个面向跨设备气体智能感知的云–边协同联邦学习框架。GAPS 将联邦训练定位为跨设备部署流程的第一阶段，而非最终模型的唯一来源：多个源设备协同学习时序表征；服务器利用目标设备的少量 calibration 数据开展明确标注的校准辅助适配；目标设备在冻结的表征基础上训练轻量定量专家；部署阶段再使用质量控制（quality control，QC）策略决定自动输出、复核或拒绝。该设计不将目标标签包装为“完全无监督域适应”，也不将选择性拒绝误写成模型修复。</p>
+<p>本文的主要贡献如下。</p>
+<ol>
+<li>提出面向跨设备气体感知的 GAPS 云–边协同框架，将源设备联邦表征学习、目标设备 calibration、预测类别路由的浓度定量和三态可靠输出连接为完整流程。</li>
+<li>提出校准辅助的跨设备适配与目标个性化定量策略。该策略将共享分类表征与目标端轻量 Ridge/MLP 定量专家解耦，使有限标定数据用于可解释的个性化校准，而不是用于重新训练整个系统。</li>
+<li>构建部署可见的三态 QC 机制，并同时报告自动接受率、accepted/nonreject 误差和错路由识别能力，刻画可靠性与自动化覆盖率之间的关系。</li>
+<li>在真实 ECS、树莓派和 PC 组成的联邦训练拓扑以及多设备气体传感数据上进行验证。实验同时揭示了紧凑配置与完整适配配置在不同迁移方向上的差异，为后续多种子和端侧效率评估提供基础。</li>
+</ol>
+<h2>II. 相关工作</h2>
+<h3>A. 气体传感器漂移与校准迁移</h3>
+<p>传感器漂移补偿是电子鼻研究中的长期问题。Vergara 等基于长时间跨度的气体传感阵列数据表明，固定分类器会随时间和设备条件变化而发生性能退化 [1]；公开数据集也为漂移、交叉敏感和浓度变化研究提供了可复现实验基础 [2], [16]。现有校准迁移主要关注信号标准化、特征空间映射、模型微调或预测输出修正。Liu 和 Wu [19] 则面向传感器阵列更换提出联邦模型更新方法，说明在保留已有模型知识的同时缩短新探头重新建模时间具有现实需求。</p>
+<p>与上述工作相比，GAPS 不局限于单一主设备与替换设备之间的更新，而是关注多源节点、独立目标设备和云–边部署流程。更重要的是，本文同时考虑类别识别与浓度定量：前者决定专家路由，后者决定连续数值输出，二者必须在同一评价合同下分析。</p>
+<h3>B. IoT 联邦学习与边云协同感知</h3>
+<p>FedAvg 通过样本数加权聚合本地模型更新，为去中心化学习提供了基础 [3]；FedProx 等方法进一步讨论了非独立同分布数据和设备异质性带来的优化困难 [4]。在智能感知领域，Federated Sensing 将边云协同、弹性本地更新和聚合频率纳入系统设计 [18]；近期边云个性化联邦感知工作也强调模型个性化与层级协同 [17]。这些研究说明，IoT 中的联邦学习不仅是优化算法，还涉及端侧资源、通信和部署角色。</p>
+<p>GAPS 与这些系统研究具有互补关系。本文不重新定义弹性聚合或资源调度问题，而是面向气体感知的设备偏移，重点解决有限目标 calibration、分类—定量路由和可靠输出三个部署层问题。本文只主张原始源窗口不集中上传；由于尚未引入差分隐私或安全聚合，不主张形式化隐私保证。</p>
+<h3>C. 域适配、语义约束与可靠性输出</h3>
+<p>最大均值差异（MMD） [5]、相关对齐（CORAL） [6] 和对抗式域适配 [7] 是减小源/目标分布差异的典型方法。原型学习可用类别中心约束语义结构 [8]，连续学习中的回放或蒸馏可缓解表征漂移 [9]。需要注意的是，若适配阶段使用了目标 calibration 标签，则其应被称为 calibration-assisted 或 label-assisted adaptation，而不是完全无监督域适配。</p>
+<p>另一方面，深度模型可能在错误预测上保持较高置信度，因此 NLL、ECE 与选择性预测对于部署同样重要 [10]--[12]。本文的 QC 以部署时可获得的分类不确定性、响应偏离和校准参考偏离为输入，并以风险分流而非“修复预测”为目标。</p>
+<h2>III. 系统模型与问题定义</h2>
+<h3>A. 云–边协同场景</h3>
+<p>考虑由一个云服务器、多个源设备和一个待部署目标设备构成的气体感知系统。源设备集合记为 \(\mathcal{C}_s=\{C_1,\ldots,C_K\}\)，每个源客户端 \(C_k\) 保留本地数据集 \(\mathcal{D}_k\)。一个输入窗口 \(x_i\in\mathbb{R}^{T\times S}\) 由 \(T\) 个时间步和 \(S\) 个 MOS 通道组成；其标签包括气体类别 \(y_i^{cls}\) 和浓度 \(y_i^{ppm}\)。在当前实验中，\(T=100\)，\(S=8\)，类别为乙醇、CO、乙烯和甲烷。</p>
+<p>目标设备 \(C_t\) 不参加源阶段的联邦训练。设备上线时，它提供少量带标签 calibration 数据 \(\mathcal{D}_t^{cal}\)，并保留独立测试集 \(\mathcal{D}_t^{test}\) 仅用于冻结后的评估。主实验采用 C1/C2 作为源设备、C5 作为目标设备；C5 calibration/test 的窗口数为 320/1360，按类别与浓度分层切分。</p>
+<figure class="wide-figure"><img src="figures/fig1_gaps_architecture.svg" alt="GAPS cloud-edge-device architecture"><figcaption><strong>Fig. 1.</strong> GAPS 云–边–端整体架构。原始源数据保留在边缘客户端；云端完成联邦聚合、语义记忆更新及 calibration-assisted adaptation；目标侧执行冻结分类、H8 个性化定量和三态 QC。</figcaption></figure>
+<h3>B. 学习目标</h3>
+<p>GAPS 的目标是学习分类器 \(f_{\theta}\)、目标定量专家 \(h_{\phi}\) 和质量控制规则 \(q\)。源阶段通过联邦优化获得共享表征：</p>
+<p>\[
+\theta^{r+1}=\sum_{k=1}^{K}\frac{N_k}{\sum_j N_j}\theta_k^{r+1},
+\]</p>
+<p>其中 \(r\) 为通信轮次，\(N_k\) 是客户端样本数。目标阶段利用 \(\mathcal{D}_t^{cal}\) 对共享表征进行校准辅助适配，并训练按预测类别 \(\hat y^{cls}\) 路由的浓度专家。最终系统输出为</p>
+<p>\[
+(\hat y^{cls},\hat y^{ppm},q) = \mathcal{G}(x;\theta,\phi), \quad q\in\{\mathrm{accept},\mathrm{review},\mathrm{reject}\}.
+\]</p>
+<p>这里，只有 \(q=\mathrm{accept}\) 的样本产生自动交付的浓度值；review 和 reject 仍保留审计信息，但不应被视为自动输出。</p>
+<h2>IV. GAPS 方法</h2>
+<h3>A. 联邦时序表征学习</h3>
+<p>给定气体响应窗口 \(X\in\mathbb{R}^{T\times S}\)，编码器首先采用三层深度可分离时序卷积提取局部动态：</p>
+<p>\[
+\operatorname{DSConv}(X)=\operatorname{PWConv}(\operatorname{DWConv}(X)),
+\]</p>
+<p>\[
+H_l=\operatorname{ReLU}\!\left(\operatorname{IN}(\operatorname{DSConv}_l(H_{l-1}))+\operatorname{Proj}_l(H_{l-1})\right).
+\]</p>
+<p>三个残差块的通道数依次为 \(8\!\rightarrow\!32\)、\(32\!\rightarrow\!48\) 和 \(48\!\rightarrow\!48\)，卷积核为 3，扩张率分别为 1、2 和 4。多头自注意力和可学习注意力池化生成窗口表征：</p>
+<p>\[
+A=\operatorname{MHA}(H,H,H),\quad
+\alpha_t=\frac{\exp(w_a^{\top}A_t)}{\sum_u\exp(w_a^{\top}A_u)},
+\]</p>
+<p>\[
+z_{\mathrm{raw}}=\sum_t\alpha_t A_t,\quad
+z=\frac{z_{\mathrm{raw}}}{\lVert z_{\mathrm{raw}}\rVert_2},
+\quad o=W_cz+b_c.
+\]</p>
+<p>客户端基本分类项为</p>
+<p>\[
+\mathcal{L}_{\mathrm{ce}}=-\frac{1}{|\mathcal{B}|}\sum_{i\in\mathcal{B}}
+\log\frac{\exp(o_{i,y_i})}{\sum_c\exp(o_{i,c})}.
+\]</p>
+<p>为保留可跨设备交换的类别—响应阶段语义，客户端计算局部原型</p>
+<p>\[
+\mu_{k,c,p}=\frac{1}{N_{k,c,p}}\sum_{i:y_i=c,\,p_i=p}z_i,
+\]</p>
+<p>并使用服务器广播的全局原型构造 InfoNCE 对齐项</p>
+<p>\[
+\mathcal{L}_{\mathrm{align}}=-\frac{1}{|\mathcal{B}_v|}\sum_{i\in\mathcal{B}_v}
+\log\frac{\exp(\cos(z_i,\bar\mu_{y_i,p_i})/\tau)}
+{\sum_{c,p}\exp(\cos(z_i,\bar\mu_{c,p})/\tau)},\quad \tau=0.1.
+\]</p>
+<p>相邻通信轮次之间加入表征回放约束</p>
+<p>\[
+\mathcal{L}_{\mathrm{rep}}=\frac{1}{|\mathcal{B}|}\sum_i
+\left\lVert z_i(\theta)-z_i(\theta^{r-1})\right\rVert_2^2,
+\]</p>
+<p>故客户端目标为</p>
+<p>\[
+\mathcal{L}_{\mathrm{client}}=\mathcal{L}_{\mathrm{ce}}+
+0.05\mathcal{L}_{\mathrm{align}}+2.0\mathcal{L}_{\mathrm{rep}}.
+\]</p>
+<p>服务器先按样本数得到 \(w_k=N_k/\sum_jN_j\)。前三轮采用标准 FedAvg；其后利用客户端原型与全局原型的平均余弦相似度 \(s_k\) 调整聚合权重：</p>
+<p>\[
+\widetilde w_k=\frac{w_k\max(s_k,s_{\min})}
+{\sum_jw_j\max(s_j,s_{\min})},\quad s_{\min}=0.3,
+\qquad \theta^{r+1}=\sum_k\widetilde w_k\theta_k^{r+1}.
+\]</p>
+<p>全局类别—阶段原型按 \(\rho=0.8\) 更新：</p>
+<p>\[
+\bar\mu_{c,p}^{r}=\rho\bar\mu_{c,p}^{r-1}+(1-\rho)
+\frac{\sum_kN_{k,c,p}\mu_{k,c,p}}{\sum_kN_{k,c,p}}.
+\]</p>
+<p>原始窗口不离开源设备，服务器只接收模型更新和已启用的语义统计。这一阶段建立可由少量目标 calibration 数据进一步适配的共享表征，而不假设源模型能够零校准部署。</p>
+<h3>B. 校准辅助的跨设备适配</h3>
+<p>服务器仅使用源域 rehearsal 样本和目标设备 calibration-fit 样本进行适配。令 \(Z_s\) 与 \(Z_t\) 分别表示源、目标表征，修正后的全局 MMD 项采用标准平方 MMD：</p>
+<p>\[
+\mathcal{L}_{\mathrm{gmmd}}=
+\frac{1}{m^2}\sum_{i,j}k(z_i^s,z_j^s)+
+\frac{1}{n^2}\sum_{i,j}k(z_i^t,z_j^t)-
+\frac{2}{mn}\sum_{i,j}k(z_i^s,z_j^t),
+\]</p>
+<p>其中 \(k(\cdot,\cdot)\) 为高斯核。类别条件项 \(\mathcal{L}_{\mathrm{cmmd}}\) 对各类别分别计算 MMD\(^2\) 后取均值；类别—响应阶段项进一步写为</p>
+<p>\[
+\mathcal{L}_{\mathrm{stage}}=\frac{1}{|\Omega|}
+\sum_{(c,p)\in\Omega}\operatorname{MMD}^{2}(Z_{s,c,p},Z_{t,c,p}),
+\]</p>
+<p>其中 \(\Omega\) 只包含源域和 calibration-fit 中同时存在的类别—阶段组合。CORAL 对齐二阶统计：</p>
+<p>\[
+\mathcal{L}_{\mathrm{coral}}=\frac{1}{4d^2}\lVert C_s-C_t\rVert_F^2,
+\quad d=64.
+\]</p>
+<p>对抗项使用经修正的 Wasserstein 编码器目标</p>
+<p>\[
+\mathcal{L}_{\mathrm{adv}}=\mathbb{E}_{z_s}[D(z_s)]-
+\mathbb{E}_{z_t}[D(z_t)],
+\]</p>
+<p>最小化该项以更新编码器；域 critic 则采用含梯度惩罚的 WGAN 目标并每步更新 3 次。语义正则项汇总为</p>
+<p>\[
+\mathcal{L}_{\mathrm{sem}}=\mathcal{L}_{\mathrm{srcCE}}+
+0.3\mathcal{L}_{\mathrm{anchor}}+0.05\mathcal{L}_{\mathrm{proto}}+
+2.0\mathcal{L}_{\mathrm{cons}}+0.1\mathcal{L}_{\mathrm{res}},
+\]</p>
+<p>其中 \(\mathcal{L}_{\mathrm{proto}}\) 约束设备原型满足 \(\mu_{k,c,p}\approx\bar\mu_{c,p}+r_k\)，\(r_k\) 为设备残差；anchor、consistency 和 residual 项分别保持类别锚点、轮间预测与设备残差稳定性。当前 v3 配置未启用独立 prototype-pair 损失。</p>
+<p>据此，紧凑候选 B2 与完整配置 B5 分别为</p>
+<p>\[
+\mathcal{L}_{\mathrm{B2}}=\mathcal{L}_{\mathrm{sem}}+
+0.5\mathcal{L}_{\mathrm{gmmd}}+0.5\mathcal{L}_{\mathrm{cmmd}},
+\]</p>
+<p>\[
+\mathcal{L}_{\mathrm{B5}}=\mathcal{L}_{\mathrm{B2}}+
+0.5\mathcal{L}_{\mathrm{coral}}+0.2\mathcal{L}_{\mathrm{stage}}+
+0.5\mathcal{L}_{\mathrm{adv}}.
+\]</p>
+<p>所有使用目标标签的项均属于 calibration-assisted adaptation；本文不将其表述为无标签域适应。B2 是在主方向测试排名打开后选择的紧凑候选，B5 是预声明的完整适配配置，二者在后续结果中保持不同证据身份。</p>
+<p><strong>Algorithm 1：GAPS 联邦训练与服务器适配</strong></p>
+<pre><code class="language-text">Input: source clients {D_k}, target calibration-fit D_t^cal,
+       rounds R=25, local epochs E=5, server steps J=100
+1: Initialize global encoder/classifier and semantic prototype memory.
+2: for round r = 1,...,R do
+3:    Broadcast global parameters and valid global prototypes.
+4:    Each client minimizes L_client for E epochs and uploads parameters,
+      sample counts, and enabled class-phase statistics (never raw windows).
+5:    Aggregate by FedAvg during warm-up; afterwards use similarity-aware weights.
+6:    Update global class-phase prototypes by EMA.
+7:    Rehearse source samples and adapt on D_t^cal for J steps with B2 or B5.
+8:    Use the adapted parameters as the initialization of round r+1.
+9: end for
+Output: frozen target classifier and calibration-derived semantic references.
+</code></pre>
+<figure class="wide-figure"><img src="figures/fig2_gaps_method.svg" alt="GAPS algorithmic components"><figcaption><strong>Fig. 2.</strong> GAPS 的三个耦合机制：客户端时序表征与语义原型、服务器端修正分布适配，以及目标侧 H8 定量与部署可见 QC。</figcaption></figure>
+<h3>C. 目标个性化浓度定量</h3>
+<p>分类正确并不保证浓度估计正确。GAPS 将分类表征学习与目标定量解耦，并在 calibration-fit 上训练轻量专家。对设计矩阵 \(X\) 和浓度向量 \(y\)，Ridge 解为</p>
+<p>\[
+\widehat\beta=(X^{\top}X+\alpha I_0)^{\dagger}X^{\top}y,
+\]</p>
+<p>其中 \(I_0\) 不惩罚截距，\(\alpha\in\{0,0.01,0.1,1,10,100,1000\}\) 仅由 calibration-validation 选择。最终 H8 输入将 104 维目标响应特征与三个源模型预测拼接：</p>
+<p>\[
+u_i=\left[\phi_{104}(x_i),\;
+h_{\mathrm{src\text{-}ridge}}(x_i),\;
+h_{\mathrm{src\text{-}pgMLP}}(x_i),\;
+h_{\mathrm{src\text{-}sharedMLP}}(x_i)\right],
+\]</p>
+<p>\[
+\widehat y_i^{\mathrm{ppm}}=h_{\widehat c_i}(u_i),
+\qquad \widehat c_i=\arg\max_c o_{i,c}.
+\]</p>
+<p>因此，实际部署误差同时取决于类别路由和类别专家本身。H2.3+ 的分类表征/原始响应混合权重也只由 calibration-validation 选择；当前 B2/B5 的入选权重为 0，故最终主结果采用 H8。</p>
+<p>为防止测试泄漏，所有回归器超参数、专家组合和阈值均仅由 calibration 内部的 fit/validation 划分确定。本文比较从基础目标回归到 H2.3+、H8 的阶梯；使用测试真实类别逐样本选择专家的 R7 仅作为不可部署上界，不作为系统结果。</p>
+<h3>D. 可靠性质量控制</h3>
+<p>QC 只使用部署时可见变量。首先在 calibration-validation 上将各原始风险通过经验分布函数 \(F_k\) 映射到 \([0,1]\)，再构造</p>
+<p>\[
+q_{\mathrm{conf}}=F_{\mathrm{conf}}(\max(q_{\mathrm{entropy}},q_{\mathrm{margin}})),
+\]</p>
+<p>\[
+q_{\mathrm{feat}}=\tfrac{1}{2}[F_{\mathrm{proto}}(q_{\mathrm{proto}})+
+F_{\mathrm{support}}(q_{\mathrm{support}})],
+\]</p>
+<p>\[
+q_{\mathrm{dis}}=\tfrac{1}{2}[F_{\mathrm{expert}}(q_{\mathrm{expert}})+
+F_{\mathrm{source}}(q_{\mathrm{source}})],\qquad
+q_{\mathrm{full}}=\tfrac{1}{3}(q_{\mathrm{conf}}+q_{\mathrm{feat}}+q_{\mathrm{dis}}).
+\]</p>
+<p>HC95 的 accept/reject 阈值 \(t_a,t_r\) 分别取 calibration-validation 风险分布的 0.95 和 0.9875 分位数：</p>
+<p>\[
+q(x)=
+\begin{cases}
+\mathrm{accept}, & q_{\mathrm{full}}\le t_a,\\
+\mathrm{review}, & t_a<q_{\mathrm{full}}\le t_r,\\
+\mathrm{reject}, & q_{\mathrm{full}}>t_r.
+\end{cases}
+\]</p>
+<p>只有 accept 样本进入自动输出。自动接受率和非拒绝覆盖率分别为</p>
+<p>\[
+Y_{\mathrm{auto}}=N_{\mathrm{accept}}/N,\qquad
+C_{\mathrm{nonreject}}=(N_{\mathrm{accept}}+N_{\mathrm{review}})/N.
+\]</p>
+<p>评价同时报告 yield、accepted RMSE、nonreject RMSE 和错路由召回，从而避免通过过量拒绝人为降低误差。</p>
+<p><strong>Algorithm 2：目标侧冻结推理与三态 QC</strong></p>
+<pre><code class="language-text">Input: target window x, frozen classifier, H8 experts,
+       empirical risk mappings and thresholds (t_a, t_r)
+1: Predict class c_hat and extract the normalized temporal representation.
+2: Build the H8 feature from 104-D response statistics and source predictions.
+3: Route to the per-gas Ridge expert h_c_hat and estimate concentration.
+4: Compute confidence, feature-distance, and disagreement risks using only
+   predicted/deployment-visible quantities; map them to q_full.
+5: if q_full &lt;= t_a: accept and release the concentration automatically.
+6: else if q_full &lt;= t_r: send the sample to review.
+7: else: reject the automatic output while retaining an audit record.
+Output: (predicted class, concentration, accept/review/reject state).
+</code></pre>
+<h3>E. 云–边部署流程</h3>
+<p>ECS 负责 Flower server、聚合和 calibration-assisted 适配；树莓派与 PC 作为物理源客户端执行本地训练；目标设备执行冻结后的分类、路由、定量和 QC。当前工作已完成真实训练拓扑和 fail-closed 的部署资产校验。最终 C5 bundle 的逐行 offline/runtime 一致性、端到端延迟、峰值内存、实际通信字节和掉线恢复测量将在后续系统评估中补充。</p>
+<h2>V. 实验设置</h2>
+<h3>A. 数据与协议</h3>
+<p>实验数据来自 UCI Twin Gas Sensor Arrays，包含 5 个独立气体传感单元、每个单元 8 个 MOX 通道、4 类目标气体及 10 个浓度等级 [16], [20]。主协议固定为 C1/C2→C5：C1 与 C2 作为源客户端，C5 作为新部署目标设备。C5 的 320 个 calibration 窗口进一步按 75%/25% 划分为 fit/validation；1360 个 test 窗口只用于冻结模型后的最终评估。训练和测试使用窗口级的类别—浓度分层切分；因此本文不将结果外推为文件级独立泛化。</p>
+<h3>B. 平台与训练配置</h3>
+<p>Flower server 部署在阿里云 ECS，C1 运行于树莓派，C2 运行于 PC。所有可报告分类训练均在该真实拓扑上完成。分类训练使用 25 个通信轮次、每轮 5 个本地 epoch、batch size 32 和 Adam 学习率 \(5\times10^{-4}\)；服务器适配每轮执行 100 步。所有主比较使用第 25 轮最终 checkpoint。</p>
+<h3>C. 比较方法与指标</h3>
+<p>分类比较包括 source-only FedAvg（A0）、使用相同目标标签预算的 target-CE（A0T）、语义/分布适配族（A5--A7）和修正后的 B1--B5。分类指标为 accuracy、macro-F1、NLL 和 ECE。定量任务报告真实路由全样本的 S_ALL、分类正确子集的 S_CC、RMSE、NRMSE 和样本数。QC 同时报出 accept/review/reject 数量、yield、nonreject 和错路由召回。</p>
+<h2>VI. 结果与分析</h2>
+<h3>A. 跨设备分类：目标 calibration 是必要系统资源</h3>
+<p>表 I 给出 C1/C2→C5 的 seed-42 核心结果。A0 仅取得 26.54% accuracy，表明源设备训练得到的模型无法直接部署到 C5。相同标签预算的 A0T 达到 98.24%，说明目标 calibration 是当前系统中不可忽略的资源，而不是可以隐藏在损失函数中的附带信息。A6 和 A7 分别达到 98.01% 和 98.60%，显示语义适配族在该协议下具有价值。</p>
+<p><strong>Table I. Seed-42 主方向分类结果</strong></p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th style="text-align: right;">Accuracy</th>
+<th style="text-align: right;">Macro-F1</th>
+<th style="text-align: right;">NLL</th>
+<th style="text-align: right;">ECE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A0: source-only FedAvg</td>
+<td style="text-align: right;">26.54%</td>
+<td style="text-align: right;">17.93%</td>
+<td style="text-align: right;">11.2816</td>
+<td style="text-align: right;">0.7275</td>
+</tr>
+<tr>
+<td>A0T: equal-label target CE</td>
+<td style="text-align: right;">98.24%</td>
+<td style="text-align: right;">98.24%</td>
+<td style="text-align: right;">0.1742</td>
+<td style="text-align: right;">0.0158</td>
+</tr>
+<tr>
+<td>A5: distribution adaptation</td>
+<td style="text-align: right;">73.01%</td>
+<td style="text-align: right;">74.15%</td>
+<td style="text-align: right;">1.0907</td>
+<td style="text-align: right;">0.2001</td>
+</tr>
+<tr>
+<td>A6: semantic adaptation</td>
+<td style="text-align: right;">98.01%</td>
+<td style="text-align: right;">98.02%</td>
+<td style="text-align: right;">0.1384</td>
+<td style="text-align: right;">0.0178</td>
+</tr>
+<tr>
+<td>A7: combined adaptation</td>
+<td style="text-align: right;">98.60%</td>
+<td style="text-align: right;">98.60%</td>
+<td style="text-align: right;">0.1132</td>
+<td style="text-align: right;">0.0118</td>
+</tr>
+</tbody>
+</table>
+<p>修正后的 v3 比较中，B2 达到 99.2647% accuracy、99.2657% macro-F1、0.0690 NLL 和 0.0067 ECE；预声明 B5 达到 98.8971% accuracy。B2 是基于 B1--B5 test 排名选择的紧凑候选，因此其下游结果属于探索性证据；B5 则用于检验完整适配栈是否能在不同迁移条件下带来鲁棒收益。该区分使性能排序不会被误写为已完成的跨种子结论。</p>
+<figure class="wide-figure"><img src="figures/fig3_gaps_results.svg" alt="Seed-42 classification, routing, and QC results"><figcaption><strong>Fig. 3.</strong> Seed-42 主证据概览：(a) 修正 B1--B5 的目标分类 accuracy；(b) 真实路由与 forced-true-route 的全样本 RMSE；(c) FULL 到 HC95 工作点的 yield–RMSE 变化。单种子结果不绘制误差条，B2 结果保持探索性标记。</figcaption></figure>
+<h3>B. 目标个性化定量：端到端误差受分类路由影响</h3>
+<p>表 II 报告固定 H8 回归器的结果。B5 与 B2 的 S_CC NRMSE 分别为 0.0690 和 0.0686，接近数值表明正确路由条件下的定量能力相似；但真实路由 S_ALL RMSE 分别为 17.447 ppm 和 14.656 ppm，说明端到端差异主要来自分类错误的数量和破坏程度，而非回归头本身的巨大差异。对全部 1360 个窗口强制使用真实类别路由时，A6、B5 与 B2 的 RMSE/NRMSE 均为 11.9082/0.0690，进一步验证了错路由对尾部误差的影响。</p>
+<p><strong>Table II. 固定 H8 的目标设备定量结果</strong></p>
+<table>
+<thead>
+<tr>
+<th>分类配置</th>
+<th style="text-align: right;">S_ALL RMSE / NRMSE</th>
+<th style="text-align: right;">S_CC N / RMSE</th>
+<th style="text-align: right;">分类错误数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A6</td>
+<td style="text-align: right;">28.0144 / 0.2276</td>
+<td style="text-align: right;">1333 / 11.3890</td>
+<td style="text-align: right;">27</td>
+</tr>
+<tr>
+<td>B5</td>
+<td style="text-align: right;">17.4473 / 0.1352</td>
+<td style="text-align: right;">1345 / 11.3890</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr>
+<td>B2*</td>
+<td style="text-align: right;">14.6564 / 0.1059</td>
+<td style="text-align: right;">1350 / 11.3288</td>
+<td style="text-align: right;">10</td>
+</tr>
+</tbody>
+</table>
+<p>*B2 为 post-screen exploratory candidate。</p>
+<h3>C. 可靠性控制：高覆盖率下的风险分流</h3>
+<p>表 III 展示 HC95 工作点。与 FULL 的无拒绝输出相比，QC 仅将少量高风险窗口转入 review 或 reject。B2-HC95 自动接受 1301/1360 个窗口，yield 为 95.66%，accepted RMSE 为 12.6729 ppm，且识别 7/10 个错路由。该结果说明风险排序能够集中暴露部分危险预测；但 review/reject 的预测未被系统自动修复，因而不应把 QC 的收益解释为所有样本误差下降。</p>
+<p><strong>Table III. HC95 的可靠性质量控制结果</strong></p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th style="text-align: right;">Accept/Review/Reject</th>
+<th style="text-align: right;">Yield</th>
+<th style="text-align: right;">Accepted RMSE</th>
+<th style="text-align: right;">错路由召回</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A6</td>
+<td style="text-align: right;">1233/86/41</td>
+<td style="text-align: right;">90.66%</td>
+<td style="text-align: right;">21.1455</td>
+<td style="text-align: right;">66.67%</td>
+</tr>
+<tr>
+<td>B5</td>
+<td style="text-align: right;">1309/33/18</td>
+<td style="text-align: right;">96.25%</td>
+<td style="text-align: right;">15.9075</td>
+<td style="text-align: right;">46.67%</td>
+</tr>
+<tr>
+<td>B2*</td>
+<td style="text-align: right;">1301/35/24</td>
+<td style="text-align: right;">95.66%</td>
+<td style="text-align: right;">12.6729</td>
+<td style="text-align: right;">70.00%</td>
+</tr>
+</tbody>
+</table>
+<h3>D. 跨方向验证：完整适配栈的收益具有条件性</h3>
+<p>为考察配置对迁移方向和源域异质性的敏感性，本文比较 B2 和 B5 在 C1→C5、C5→C1 以及 C4+C5→C1 三个方向上的表现。C1→C5 中 B2 的 accuracy 高于 B5 0.5882 个百分点，但 McNemar 检验未达到显著；C5→C1 中 B5 高于 B2 0.7090 个百分点，seed-42 同窗口检验 \(p=0.0043\)；C4+C5→C1 中 B5 的点估计更优但差异不显著。由此，本文将 B2 定位为主方向上的紧凑候选，将 B5 定位为困难反向迁移或多源异质条件下值得确认的鲁棒增强，而不声称任一配置已经跨种子普遍优胜。</p>
+<h2>VII. 讨论</h2>
+<p>GAPS 的核心价值不在于把多个损失项简单叠加，而在于建立明确的系统边界。第一，目标 calibration 是现实设备上线流程的一部分，应与其标签预算、用途和公平基线一同报告。第二，S_ALL、S_CC 和 forced-true-route 分别描述端到端行为、正确路由下的定量能力与离线路由上界，三者不能相互替代。第三，QC 需要以覆盖率和风险分流能力共同评价，而不是只报告拒绝后留下样本的低误差。</p>
+<p>当前研究也存在局限性。分类和回归的核心排名主要来自 seed-42，B2 的下游定量与 QC 具有 post-screen 属性；窗口级切分不能等价为文件级独立泛化；C5 calibration 同时服务分类适配、定量和 QC，需要补充低校准预算实验；最后，尽管真实训练拓扑已经建立，最终部署仍需要完成逐行 runtime parity、Pi/PC 延迟、RSS、实际网络通信量和掉线恢复测试。未来工作将优先补齐这些实验，并以多种子统计结果决定 B2 与 B5 的最终投稿定位。</p>
+<h2>VIII. 结论</h2>
+<p>本文提出 GAPS，一个面向跨设备气体智能感知的可靠性增强云–边协同联邦学习框架。GAPS 通过源设备联邦时序表征学习、目标 calibration 辅助适配、预测类别路由的个性化浓度定量以及三态质量控制，形成从协同训练到可靠输出的闭环。真实物理客户端实验表明，source-only 联邦学习难以直接克服设备偏移，而透明的目标 calibration 可显著恢复分类性能；端到端浓度误差主要受到错路由影响，QC 能在较高自动接受率下分流高风险窗口。后续将通过多种子、低校准压力和端侧系统开销实验进一步验证方法的稳定性与部署价值。</p>
+<h2>参考文献</h2>
+<ol>
+<li>A. Vergara, S. Vembu, T. Ayhan, M. A. Ryan, M. L. Homer, and R. Huerta, “Chemical gas sensor drift compensation using classifier ensembles,” <em>Sensors and Actuators B: Chemical</em>, vol. 166--167, pp. 320--329, 2012, doi: 10.1016/j.snb.2012.01.074.</li>
+<li>J. Fonollosa, I. Rodríguez-Luján, and R. Huerta, “Chemical gas sensor array dataset,” <em>Data in Brief</em>, vol. 3, pp. 85--89, 2015, doi: 10.1016/j.dib.2015.01.003.</li>
+<li>B. McMahan, E. Moore, D. Ramage, S. Hampson, and B. A. y Arcas, “Communication-efficient learning of deep networks from decentralized data,” in <em>Proc. AISTATS</em>, PMLR 54, pp. 1273--1282, 2017.</li>
+<li>T. Li, A. K. Sahu, M. Zaheer, M. Sanjabi, A. Talwalkar, and V. Smith, “Federated optimization in heterogeneous networks,” in <em>Proc. Mach. Learn. Syst. (MLSys)</em>, vol. 2, pp. 429--450, 2020.</li>
+<li>A. Gretton, K. M. Borgwardt, M. J. Rasch, B. Schölkopf, and A. Smola, “A kernel two-sample test,” <em>Journal of Machine Learning Research</em>, vol. 13, no. 25, pp. 723--773, 2012.</li>
+<li>B. Sun and K. Saenko, “Deep CORAL: Correlation alignment for deep domain adaptation,” in <em>Computer Vision--ECCV 2016 Workshops</em>, Amsterdam, The Netherlands, 2016, pp. 443--450, doi: 10.1007/978-3-319-49409-8_35.</li>
+<li>Y. Ganin <em>et al.</em>, “Domain-adversarial training of neural networks,” <em>Journal of Machine Learning Research</em>, vol. 17, no. 59, pp. 1--35, 2016.</li>
+<li>J. Snell, K. Swersky, and R. S. Zemel, “Prototypical networks for few-shot learning,” in <em>Advances in Neural Information Processing Systems</em>, vol. 30, pp. 4077--4087, 2017.</li>
+<li>D. Rolnick, A. Ahuja, J. Schwarz, T. P. Lillicrap, and G. Wayne, “Experience replay for continual learning,” in <em>Advances in Neural Information Processing Systems</em>, vol. 32, pp. 348--358, 2019.</li>
+<li>C. Guo, G. Pleiss, Y. Sun, and K. Q. Weinberger, “On calibration of modern neural networks,” in <em>Proc. ICML</em>, PMLR 70, pp. 1321--1330, 2017.</li>
+<li>D. Hendrycks and K. Gimpel, “A baseline for detecting misclassified and out-of-distribution examples in neural networks,” in <em>Proc. ICLR</em>, 2017.</li>
+<li>Y. Geifman and R. El-Yaniv, “SelectiveNet: A deep neural network with an integrated reject option,” in <em>Proc. ICML</em>, PMLR 97, pp. 2151--2159, 2019.</li>
+<li>K. He, X. Zhang, S. Ren, and J. Sun, “Deep residual learning for image recognition,” in <em>Proc. CVPR</em>, pp. 770--778, 2016.</li>
+<li>A. Vaswani <em>et al.</em>, “Attention is all you need,” in <em>Advances in Neural Information Processing Systems</em>, vol. 30, pp. 5998--6008, 2017.</li>
+<li>IEEE Internet of Things Journal, “Guidelines for Authors.” [Online]. Available: https://ieee-iotj.org/guidelines-for-authors/. [Accessed: Jul. 20, 2026].</li>
+<li>J. Fonollosa, “Twin Gas Sensor Arrays,” UCI Machine Learning Repository, 2016, doi: 10.24432/C5MW3K.</li>
+<li>Y. Mao, Y. Rong, F. Chi, G. Li, H. Xu, and P. Ping, “Personalized Federated Learning over Edge-Cloud Collaborative Network for Intelligent Sensing Analysis,” <em>Tsinghua Science and Technology</em>, vol. 31, no. 2, pp. 851--866, 2026, doi: 10.26599/TST.2024.9010251.</li>
+<li>Y. Gao, L. Liu, X. Zheng, C. Zhang, and H. Ma, “Federated Sensing: Edge-Cloud Elastic Collaborative Learning for Intelligent Sensing,” <em>IEEE Internet of Things Journal</em>, vol. 8, no. 14, pp. 11100--11111, 2021, doi: 10.1109/JIOT.2021.3053055.</li>
+<li>H. Liu and F. Wu, “A Federated Model Update Method for Intelligent Gas Sensor Replacement,” <em>IEICE Transactions on Electronics</em>, vol. E108.C, no. 1, pp. 46--53, 2025, doi: 10.1587/transele.2024ECP5007.</li>
+<li>J. Fonollosa, L. Fernández, A. Gutiérrez-Gálvez, R. Huerta, and S. Marco, “Calibration transfer and drift counteraction in chemical sensor arrays using Direct Standardization,” <em>Sensors and Actuators B: Chemical</em>, vol. 236, pp. 1044--1053, 2016, doi: 10.1016/j.snb.2016.05.089.</li>
+</ol></article>
+  </main>
+</body>
+</html>

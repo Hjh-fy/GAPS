@@ -1,0 +1,24 @@
+{
+  "attempt_id": "c12_to_c5__b5__s42__a001",
+  "checks": {
+    "c1_c2_every_round": true,
+    "canonical_validator_accepted": true,
+    "checkpoint_strict_load": true,
+    "classification_rows_1360": true,
+    "da_expected_steps": true,
+    "finite_json_evidence": true,
+    "fitins_fitres_50": true,
+    "local_epochs_correct": true,
+    "round25_adapted_checkpoint": true,
+    "rounds_25": true,
+    "runtime_frozen": true,
+    "seed_correct": true,
+    "zero_fit_eval_failures": true
+  },
+  "evidence_boundary": "post-freeze single-seed server-DA compute-budget sensitivity only",
+  "next_experiment_authorized": true,
+  "run_id": "c12_to_c5__b5__s42",
+  "schema_version": "iotj.b5_classification_postflight.v2",
+  "seed": 42,
+  "verdict": "PASS"
+}

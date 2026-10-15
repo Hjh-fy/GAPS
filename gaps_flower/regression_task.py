@@ -642,7 +642,11 @@ def train_federated_source_regression(
                     save_path.mkdir(parents=True, exist_ok=True)
                     ckpt_path = save_path / f"regression_source_client{cid}_local.pth"
                     torch.save(
-                        {"model_state": local_state_cpu, "client_id": cid},
+                        {
+                            "model_state": local_state_cpu,
+                            "client_id": cid,
+                            "n_samples": int(sample_counts[cid]),
+                        },
                         ckpt_path,
                     )
                     local_checkpoint_paths[str(cid)] = str(ckpt_path)

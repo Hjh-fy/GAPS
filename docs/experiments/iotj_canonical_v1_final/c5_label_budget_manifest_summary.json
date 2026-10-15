@@ -1,0 +1,20 @@
+{
+  "schema_version": "gaps.iotj.c5_label_budget.summary.v1",
+  "status": "LABEL_EFFICIENCY_NOT_SUPPORTED",
+  "multi_seed_recommendation": "NO",
+  "counts": {
+    "20": 320,
+    "15": 240,
+    "10": 160,
+    "5": 80
+  },
+  "strata_coverage": {
+    "20": "40/40",
+    "15": "40/40",
+    "10": "40/40",
+    "5": "40/40"
+  },
+  "seed": 42,
+  "strict_boundary": "canonical_window_level_only; existing strict C5 collapse retained",
+  "comparison_sha256": "ea79f96b196ce7c2b6eb4725f96d80d1622dedf29e43e4af4ccadedfe03de283"
+}

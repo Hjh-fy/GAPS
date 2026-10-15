@@ -1,0 +1,72 @@
+{
+  "schema_version": "iotj.runtime_v5_qc_protocol.v2",
+  "experiment_id": "IOTJ-B5-C5-RUNTIME-V5-QC-20260725",
+  "status": "protocol_frozen_before_test",
+  "build_commit": "c96ae1accf1705365752ce42fe102aeca012129c",
+  "source_clients": [
+    "C1",
+    "C2"
+  ],
+  "target_client": "C5",
+  "classifier": "B5_seed42_frozen",
+  "regression": "real_topology_Federated_H1_plus_C5_105D_per_gas_Ridge",
+  "calibration_rows": 320,
+  "test_rows": 1360,
+  "protocol_amendment": {
+    "version": 2,
+    "reason": "data audit disproved the fixed-four-calibration-row assumption before test opening",
+    "previous_assumption": "exactly 4 calibration rows per filename",
+    "replacement": "all 1..7 calibration rows sharing a filename remain in one fold",
+    "previous_test_opened": false,
+    "qc_selection_lock_existed_before_amendment": false,
+    "runtime_v4_hc_six_sha_unchanged": true
+  },
+  "folds": {
+    "count": 5,
+    "seed": 20260725,
+    "algorithm": "deterministic largest-group-first greedy lexicographic balance",
+    "balance_order": [
+      "total rows",
+      "gas rows",
+      "gas-concentration rows",
+      "group count",
+      "fold id"
+    ],
+    "group_key": "filename",
+    "group_count": 80,
+    "group_size_min": 1,
+    "group_size_max": 7,
+    "all_calibration_rows_for_filename_stay_together": true,
+    "same_group_cross_fold_forbidden": true
+  },
+  "fold_local_assets": [
+    "target Ridge",
+    "B5 prototype/support",
+    "component ECDF",
+    "regression-consistency MAD scale"
+  ],
+  "selection": {
+    "test_used": false,
+    "material_RMSE_ppm": 0.25,
+    "max_yield_loss": 0.01,
+    "gas_collapse_yield_floor": 0.5,
+    "simplest_passing": true
+  },
+  "workpoints": {
+    "HC95": {
+      "accept_quantile": 0.95,
+      "reject_quantile": 0.9875
+    },
+    "HC90": {
+      "accept_quantile": 0.9,
+      "reject_quantile": 0.975
+    }
+  },
+  "auto_output_only_for_accept": true,
+  "evidence_boundary": {
+    "supported": "calibration-derived confidence, representation-distance, and source-to-target regression-consistency signals for selective output",
+    "filename_grouping_scope": "calibration OOF folds only",
+    "historical_calibration_test_split": "window-level",
+    "original_file_level_calibration_test_independence_claim_allowed": false
+  }
+}

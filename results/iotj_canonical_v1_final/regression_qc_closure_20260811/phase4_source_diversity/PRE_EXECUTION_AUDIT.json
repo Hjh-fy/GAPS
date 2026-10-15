@@ -1,0 +1,11 @@
+{
+  "status": "HARD_FAIL_LEGACY_CANONICAL_MIX",
+  "S4_role_view_protocol": "PASS",
+  "S4_source_clients": ["C1", "C2", "C3", "C4"],
+  "C5_excluded": true,
+  "frozen_S2_H1_shape": [100, 8],
+  "canonical_S4_shape": [50, 8],
+  "source_alpha_grid": [0.0, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
+  "training_started": false,
+  "target_test_opened": false
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "iotj.final_system_benchmark_protocol.v1",
+  "runtimes": [
+    "RUNTIME_V4_FULL",
+    "RUNTIME_V5_REGRESSION_CORE",
+    "RUNTIME_V5_QC2_CANDIDATE"
+  ],
+  "batch_size": 1,
+  "warmup": 50,
+  "runs": {
+    "PC": 500,
+    "Pi": 500
+  },
+  "pi_permitted_reduction": 200,
+  "threads": 1,
+  "device": "cpu",
+  "steady_state_excludes_disk_io": true,
+  "cold_start_separate": true,
+  "row_universe": "fixed C5 test 1360 in canonical order",
+  "threshold_search": false,
+  "formal_benchmark_code_commit": "4ccfc489821410ddacb6ad36180694bb953311f1",
+  "actual_runs": {
+    "PC": 500,
+    "Pi": 500
+  }
+}

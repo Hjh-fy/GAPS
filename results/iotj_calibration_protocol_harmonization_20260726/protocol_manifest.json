@@ -1,0 +1,72 @@
+{
+  "schema_version": "iotj.calibration_protocol_harmonization.v1",
+  "experiment_id": "IOTJ-CALIBRATION-PROTOCOL-HARMONIZATION-20260726",
+  "created_at": "2026-07-26T07:04:22.094513+00:00",
+  "formal_code_commit": "c30952c3df0b4f2098bf4d42697aaa11a15ab7b0",
+  "method": "frozen B5 seed42 + Federated H1 + 105D C5 per-gas Ridge",
+  "budgets": [
+    320,
+    160,
+    80,
+    40
+  ],
+  "replicate_seeds": [
+    2026072500,
+    2026072501,
+    2026072502,
+    2026072503,
+    2026072504
+  ],
+  "track_G": {
+    "name": "harmonized filename-group-aware 5-fold",
+    "selection": "per-gas alpha by calibration-only OOF RMSE",
+    "320": "full 320 rows; five fold-assignment replicates",
+    "160_80_40": "read-only reuse of SHA-verified official low-calibration results",
+    "final_refit": "entire current calibration subset"
+  },
+  "track_H": {
+    "name": "historical window-level holdout downsizing",
+    "budgets": {
+      "320": "240+80",
+      "160": "120+40",
+      "80": "60+20",
+      "40": "30+10"
+    },
+    "membership": "fit subset only from frozen 240 fit pool; validation subset only from frozen 80 validation pool",
+    "nested": "40 subset_of 80 subset_of 160 separately inside fit and validation pools",
+    "selection": "per-gas alpha by corresponding historical fit/validation split",
+    "final_refit": "all fit+validation rows at current budget"
+  },
+  "alpha_grid": [
+    0.0,
+    0.01,
+    0.1,
+    1.0,
+    10.0,
+    100.0,
+    1000.0
+  ],
+  "decision_rule": {
+    "degradation_metric": "relative mean S_CC RMSE increase versus the same track's 320 baseline",
+    "clearly_degraded": "both budget 80 and 40 exceed 10%",
+    "obvious_protocol_magnitude_difference": "maximum absolute lower-budget curve gap exceeds 20 percentage points",
+    "A": "both tracks clearly degraded and maximum curve gap <=20 percentage points",
+    "B": "both tracks clearly degraded and maximum curve gap >20 percentage points",
+    "C": "mainly group-aware track clearly degraded; operational fallback when both-track criterion is not met"
+  },
+  "test": {
+    "rows": 1360,
+    "previously_used": true,
+    "opened_by_this_workflow": false,
+    "descriptive_only": true,
+    "used_for_selection": false
+  },
+  "evidence_boundary": [
+    "post-freeze calibration-protocol harmonization audit",
+    "historical 320 retains frozen 240/80 window-level semantics",
+    "group-aware track uses the same five-fold selection protocol at all budgets",
+    "historical downsizing preserves original fit/validation pool membership",
+    "same previously used C5 test is evaluated descriptively",
+    "no protocol, model, subset, fold, alpha, or method is selected from test results"
+  ]
+}

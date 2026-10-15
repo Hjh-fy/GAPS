@@ -35,6 +35,7 @@ class FLConfig:
     GLOBAL_ROUNDS: int = 10                 # 联邦训练轮次【实验设计：10轮，配合大K步数】
     LOCAL_EPOCHS: int = 5                   # 客户端本地训练轮次【保持5轮】
     LR_CLIENT: float = 5e-4                 # 客户端学习率
+    FEDPROX_MU: float = 0.0                 # FedProx proximal coefficient; 0 preserves FedAvg/local-SGD behavior
 
     # 可学习聚合 
     ETA_W: float = 0.01  # 增加学习率，加快权重更新速度

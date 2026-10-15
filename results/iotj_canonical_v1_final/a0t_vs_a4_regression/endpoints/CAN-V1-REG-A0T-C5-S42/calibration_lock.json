@@ -1,0 +1,75 @@
+{
+  "schema_version": "iotj.canonical_v1.a0t_vs_a4_regression.lock.v1",
+  "status": "SEALED_BEFORE_TARGET_TEST",
+  "experiment_id": "CAN-V1-REG-A0T-C5-S42",
+  "method": "A0T",
+  "target": "C5",
+  "target_test_opened": false,
+  "alpha_selection_performed": false,
+  "fixed_alphas": {
+    "0": 1.0,
+    "1": 0.01,
+    "2": 10.0,
+    "3": 0.1
+  },
+  "calibration_N": 320,
+  "classification_metrics": {
+    "N": 320,
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "nll": 1.750886612583738e-07,
+    "ece": 1.7508864402770996e-07,
+    "mean_confidence": 0.999999824911356,
+    "per_class_recall": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "per_class_f1": {
+      "0": 1.0,
+      "1": 1.0,
+      "2": 1.0,
+      "3": 1.0
+    },
+    "confusion_matrix": [
+      [
+        80,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        80,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        80,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        80
+      ]
+    ]
+  },
+  "checkpoint": {
+    "experiment_id": "CAN-V1-REG-A0T-C5-S42",
+    "classification_experiment_id": "CANONICAL-V1-A0T-C5",
+    "method": "A0T",
+    "target": "C5",
+    "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_final_20260808\\a0t_equal_label\\classification\\CANONICAL-V1-A0T-C5\\remote_server\\server_latest_adapted.pth",
+    "checkpoint_sha256": "b46d1f5fe9df53b425d207df965af2656ca4290e1fe0cb6f723cdd8f0e007fa5",
+    "ordered_state_content_fingerprint": "3d05c2e9e5aef8f45e4c7d1eeba7ae85475c3f39c3d0205f721a0aa22ab1d0ba",
+    "formal_round": 25,
+    "classification_manifest_sha256": "ddfe0f2c31312357b7e2b9b165fc668a5743aa31ba6ea15db915ec95a276ab72",
+    "completion_marker_sha256": "3cc13f3cc431b6ac9128b28d9da1bc19e9ce0ab35fa46a535d70d2bf09c652f8"
+  },
+  "r84_models_sha256": "d2bac6025dee700b2500cae074ea10997c3f99bea68e829ea101320db65f8729"
+}

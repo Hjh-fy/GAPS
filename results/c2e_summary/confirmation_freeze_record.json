@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "frozen",
+  "direction": "C1/C2 -> C5",
+  "groups": [
+    "B2",
+    "B5"
+  ],
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "confirmation_commit": "2ef7aea77b9dfabdd09da4f38742907a37c58c30",
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "regular_members_sha256": "961d24f1042ec3a3bb77f5609483f5d67cf4697aa3444e42cd2e130f028b5727",
+  "dataset_manifest_sha256": "fb8946da138bea5aa829dd1f5b733561a443083beb77a873e7173cbc95fcd430",
+  "protocol_manifest_sha256": "ba289bf87a7d4526f3e3a3639e6e04881c75aececc84bdd8fd918b89b054f57b",
+  "observer_gate": {
+    "status": "passed",
+    "required_max_abs_delta": 0.0,
+    "b2": {
+      "status": "equivalent",
+      "max_abs_delta": 0.0,
+      "report_sha256": "1f395b7209b94abc049ab16679c483e3d89565212e2266f868506dbbb1ad92d1"
+    },
+    "b5": {
+      "status": "equivalent",
+      "max_abs_delta": 0.0,
+      "report_sha256": "36016723cfa253f1e7df1292964dbd4c4ef0960a5e4fe2e0a8c75f8088f8207f"
+    }
+  },
+  "target_test_opened": false
+}

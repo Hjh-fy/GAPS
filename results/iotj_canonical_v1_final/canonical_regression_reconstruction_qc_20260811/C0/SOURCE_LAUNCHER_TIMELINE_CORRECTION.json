@@ -1,0 +1,23 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.c0.launcher_timeline_correction.v1",
+  "status": "SUPERSEDES_PRELIMINARY_LAUNCHER_FAILURE_INFERENCE",
+  "supersedes": "SOURCE_LAUNCHER_FAILURE_AUDIT.json",
+  "reason": "The earlier audit was a point-in-time inference made before the detached controller copied its completed remote endpoint back to the worktree.",
+  "observed_timeline": [
+    "The original detached launcher process was no longer visible to the local PID check while its child controller and remote SSH operations continued.",
+    "A second foreground invocation was attempted under the lock-only retry policy.",
+    "That second invocation hard-failed before remote launch because execution artifacts from the original invocation were already present.",
+    "The original controller subsequently completed the unique 25-round Flower endpoint, copied the remote result directory, and wrote fixed_endpoint_complete.json."
+  ],
+  "scientific_endpoint_count": 1,
+  "duplicate_source_training_run": false,
+  "completed_source_rounds": 25,
+  "fixed_endpoint_marker": "source_fl/fixed_endpoint_complete.json",
+  "source_checkpoint_sha256": "5af34d51124305bd69253d2c55a1ffc6c9f7027f57d76b76942e4a9ea16dd2cf",
+  "source_round25_ordered_state_fingerprint": "09565570f0f4c6d3d6e96d89eb936f37f095a4d23f55a889829f327583397665",
+  "protocol_hash": "4d3746624ccccbf3c71d216d6bcd418f9f15885497156e2e071fd350230565b8",
+  "scientific_protocol_changed": false,
+  "target_information_accessed_during_source_training": false,
+  "target_test_opened_during_source_training": false,
+  "correction_recorded_at_utc": "2026-08-11T16:08:27.2345547Z"
+}

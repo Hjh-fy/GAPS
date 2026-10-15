@@ -1,0 +1,69 @@
+{
+  "schema_version": "iotj.calibration_protocol_harmonization.v1",
+  "assets": {
+    "classifier_B5_seed42": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_ecs_c2_representative_20260720\\raw\\c12_to_c5__b5__s42\\c12_to_c5__b5__s42__a001\\raw\\ecs\\training\\server_round_025_adapted.pth",
+      "bytes": 184201,
+      "sha256": "9b268f659c60a1d3b9bb789d89e82b5cedae56b92173daca616caef247371e5c"
+    },
+    "federated_H1": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\federated_h1\\global_h1_model.json",
+      "bytes": 50226,
+      "sha256": "1ca10939f09e744fdddc0dce6f5fd959ccf769e9b78142030aa7e50aa6b2f3d4"
+    },
+    "feature_schema_105d_contract": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\runtime_v5\\runtime_contract_v5.json",
+      "bytes": 2328,
+      "sha256": "bca1471198f0505d4536fba71100e87279156a0c69fdd54d300ffad991b36482"
+    },
+    "calibration_features": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\calibration_features.npy",
+      "bytes": 2048128,
+      "sha256": "99e3a5fc72c81a598e6c9f9317b17302f09465e783d204d5bf53bd1c70066e3e"
+    },
+    "calibration_labels": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\calibration_regression_labels.npy",
+      "bytes": 5248,
+      "sha256": "665e7fd4883a596ad2161704adaf0b8cf9c8251a5080e8273deef138b0b63619"
+    },
+    "calibration_metadata": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\calibration_experiment_info.json",
+      "bytes": 125960,
+      "sha256": "e9d147f30cf7a8f534da43a0b14558dc7ec3f83eca443dad226306ed2c56a01e"
+    },
+    "test_features": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_features.npy",
+      "bytes": 8704128,
+      "sha256": "7955cb70b24fa86ce109a52ca3b2231ad543b8ba8be0276781ffa03384143a82"
+    },
+    "test_labels": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_regression_labels.npy",
+      "bytes": 21888,
+      "sha256": "1d0d42364e3efb4fca2f88760b5c2a54e2834fd8d0460eb0030a704239061021"
+    },
+    "test_metadata": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\client_data_c1234src_c5tgt_2080_timeaware_60_170_window_fullgrid\\client_5\\test_experiment_info.json",
+      "bytes": 535350,
+      "sha256": "9b48459f52698b11fad66c0a2c63c9ede22292555e4bcaa71125e1f7e90097bf"
+    },
+    "historical_validation_membership": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\target_ridge\\calibration_validation_predictions.csv",
+      "bytes": 2588,
+      "sha256": "4d2c99eb208239c5383858e97ee00b90609b4684632cefb708af80bb47ea1bcb"
+    },
+    "historical_frozen_target_ridge": {
+      "path": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-confirmation-observability\\results\\iotj_b5_c5_runtime_v5_candidate_20260724\\target_ridge\\target_ridge_105d_manifest.json",
+      "bytes": 46151,
+      "sha256": "2039d049776e7dfe0e8c4e6405dff2ae56a6e09b63f60ff2627ac0975aa075de"
+    }
+  },
+  "runtime_v4_six_sha256": {
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/runtime_contract.json": "54a42bb9f622c441a889a36fb1e585cb437e04c11128eb0578cfef6fd7711c3c",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_contract_b5_v4/row_map_1360.json": "7c37cc00d7fdb47e53130d5eeadea913ae96b88aeb8bfe3c6d081d9683a5fd35",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/parity_report.json": "f0610d39b44643c2eb77889e7cf747fb1ae79a2fd89535bd5123e8302c12dde3",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc95_v1/runtime_rows.csv": "511529671daafd541c1b880fc673f55d0604bd0a9952af16fd2b15a325841f84",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/parity_report.json": "bda8e790eff6d51c59e37fca5f00e5bd5ca1048df7421d86390e675d2ffa06c3",
+    "results/iotj_b5_c5_deployment_p1_20260722/c5_h8_runtime_parity_hc90_v1/runtime_rows.csv": "42c8090228b8d3e454ba7b35854f1260d69527b043734ef2e82bb12fd04ce941"
+  },
+  "runtime_v4_read_only": true
+}

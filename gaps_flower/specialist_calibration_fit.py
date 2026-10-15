@@ -51,6 +51,10 @@ logging.basicConfig(
 logger = logging.getLogger("specialist_calibration_fit")
 
 
+class InsufficientValidationDataError(ValueError):
+    """Raised when calibration data cannot support a disjoint validation split."""
+
+
 def _parse_classes(raw: str) -> List[int]:
     return [int(item.strip()) for item in raw.split(",") if item.strip()]
 
@@ -62,6 +66,17 @@ def _extract_model_state(checkpoint: Any) -> Dict[str, torch.Tensor]:
         if "state_dict" in checkpoint:
             return checkpoint["state_dict"]
     return checkpoint
+
+
+def _load_model_state_strict(
+    model: torch.nn.Module,
+    state: Dict[str, torch.Tensor],
+    path: str | Path,
+) -> None:
+    try:
+        model.load_state_dict(state, strict=True)
+    except RuntimeError as exc:
+        raise ValueError(f"Checkpoint is incompatible with model {path}: {exc}") from exc
 
 
 def _make_regression_config_from_checkpoint(
@@ -308,6 +323,10 @@ def _split_loader(
 ) -> Tuple[DataLoader, DataLoader]:
     """Calibration train/validation split, optionally by class and concentration."""
     dataset = loader.dataset
+    if len(dataset) < 2:
+        raise InsufficientValidationDataError(
+            "Calibration dataset needs at least two rows for independent validation"
+        )
     labels = np.asarray(getattr(dataset, "classification_labels", []), dtype=np.int64)
     if len(labels) != len(dataset):
         raise RuntimeError("Calibration dataset must expose classification_labels.")
@@ -338,12 +357,30 @@ def _split_loader(
         train_indices.extend(indices[n_val:])
 
     if not val_indices:
+        train_indices = []
+        val_indices = []
         for cls_id in sorted(np.unique(labels).tolist()):
             cls_indices = np.where(labels == cls_id)[0].tolist()
             rng.shuffle(cls_indices)
             if len(cls_indices) >= 2:
                 val_indices.append(cls_indices[0])
                 train_indices.extend(cls_indices[1:])
+            else:
+                train_indices.extend(cls_indices)
+        if not val_indices:
+            all_indices = list(range(len(dataset)))
+            rng.shuffle(all_indices)
+            val_indices = [all_indices[0]]
+            train_indices = all_indices[1:]
+
+    if not train_indices or not val_indices:
+        raise InsufficientValidationDataError(
+            "Calibration data cannot produce non-empty disjoint train/validation splits"
+        )
+    if set(train_indices) & set(val_indices):
+        raise RuntimeError("Calibration train/validation split overlaps")
+    if set(train_indices) | set(val_indices) != set(range(len(dataset))):
+        raise RuntimeError("Calibration train/validation split is incomplete")
 
     rng.shuffle(train_indices)
     rng.shuffle(val_indices)
@@ -369,6 +406,7 @@ def _train_specialist(
     class_weight: float,
     huber_delta: float,
     reg_range_penalty: float = 0.0,
+    classifier: Optional[torch.nn.Module] = None,
 ) -> float:
     """Train regression branch with an extra weight for one target class."""
     for param in model.parameters():
@@ -397,6 +435,8 @@ def _train_specialist(
     iterator = iter(loader)
     running = 0.0
     model.train()
+    if classifier is not None:
+        classifier.eval()
     for _ in range(max(1, steps)):
         try:
             x, y_cls, y_reg_full, y_phase = next(iterator)
@@ -409,20 +449,26 @@ def _train_specialist(
         y_reg_full = y_reg_full.to(device)
         y_phase = y_phase.to(device).long()
         y_true = y_reg_full[torch.arange(y_cls.size(0), device=device), y_cls].unsqueeze(1)
-        y_norm = normalize_concentration(y_true, y_cls)
+        if classifier is None:
+            route_class = y_cls
+        else:
+            with torch.no_grad():
+                logits, _, _ = classifier(x)
+                route_class = logits.argmax(dim=1)
+        y_norm = normalize_concentration(y_true, route_class)
 
         optimizer.zero_grad()
         _, _, reg_feat = model(x)
         pred_norm = model.forward_reg(
             reg_feat,
-            y_cls=y_cls,
+            y_cls=route_class,
             y_phase=y_phase,
             clamp_output=not use_unclamped_linear_train,
         )
         losses = F.smooth_l1_loss(pred_norm, y_norm, beta=huber_delta, reduction="none").view(-1)
         weights = torch.ones_like(losses)
         if class_id is not None and int(class_id) >= 0:
-            weights[y_cls.view(-1) == int(class_id)] = float(class_weight)
+            weights[route_class.view(-1) == int(class_id)] = float(class_weight)
         loss = (losses * weights).mean()
         if use_unclamped_linear_train and reg_range_penalty > 0:
             range_violation = F.relu(-pred_norm).pow(2) + F.relu(pred_norm - 1.0).pow(2)
@@ -505,6 +551,51 @@ def _collect_predictions(
     )
 
 
+def _collect_deployable_predictions(
+    classifier: torch.nn.Module,
+    regressor: torch.nn.Module,
+    loader: DataLoader,
+    device: torch.device,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Collect predictions using the classifier route used by deployment."""
+    classifier.eval()
+    regressor.eval()
+    all_true: List[float] = []
+    all_pred: List[float] = []
+    all_true_class: List[int] = []
+    all_route_class: List[int] = []
+    all_phase: List[int] = []
+    with torch.no_grad():
+        for x, y_cls, y_reg_full, y_phase in loader:
+            x = x.to(device)
+            true_class = y_cls.to(device).long()
+            y_reg_full = y_reg_full.to(device)
+            y_phase = y_phase.to(device).long()
+            logits, _, _ = classifier(x)
+            route_class = logits.argmax(dim=1)
+            _, _, reg_feat = regressor(x)
+            pred_norm = regressor.forward_reg(
+                reg_feat,
+                y_cls=route_class,
+                y_phase=y_phase,
+            )
+            row_ids = torch.arange(true_class.size(0), device=device)
+            y_true = y_reg_full[row_ids, true_class]
+            pred_ppm = _denormalize_by_class_torch(pred_norm, route_class)
+            all_true.extend(y_true.cpu().numpy().tolist())
+            all_pred.extend(pred_ppm.cpu().numpy().tolist())
+            all_true_class.extend(true_class.cpu().numpy().astype(int).tolist())
+            all_route_class.extend(route_class.cpu().numpy().astype(int).tolist())
+            all_phase.extend(y_phase.cpu().numpy().astype(int).tolist())
+    return (
+        np.asarray(all_true, dtype=np.float64),
+        np.asarray(all_pred, dtype=np.float64),
+        np.asarray(all_true_class, dtype=int),
+        np.asarray(all_route_class, dtype=int),
+        np.asarray(all_phase, dtype=int),
+    )
+
+
 def _metrics_from_arrays(
     true_arr: np.ndarray,
     pred_arr: np.ndarray,
@@ -544,6 +635,7 @@ def _metrics_from_arrays(
 
 
 def _evaluate_routed(
+    classifier: torch.nn.Module,
     base_model: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
@@ -552,22 +644,28 @@ def _evaluate_routed(
     full_model: Optional[torch.nn.Module] = None,
     specialist_models: Optional[Dict[int, torch.nn.Module]] = None,
 ) -> Dict[str, Any]:
-    true_arr, pred_arr, cls_arr, phase_arr = _collect_predictions(base_model, loader, device)
+    true_arr, pred_arr, _true_cls, route_cls, phase_arr = (
+        _collect_deployable_predictions(classifier, base_model, loader, device)
+    )
     selected_modes = {int(k): v for k, v in routing_config.get("selected_modes", {}).items()}
 
     if full_model is not None and any(mode == "full" for mode in selected_modes.values()):
-        _, full_pred, full_cls, _ = _collect_predictions(full_model, loader, device)
+        _, full_pred, _, full_route, _ = _collect_deployable_predictions(
+            classifier, full_model, loader, device
+        )
         for cls_id, mode in selected_modes.items():
             if mode == "full":
-                mask = full_cls == int(cls_id)
+                mask = full_route == int(cls_id)
                 pred_arr[mask] = full_pred[mask]
 
     for cls_id, specialist in (specialist_models or {}).items():
         mode = selected_modes.get(int(cls_id), "none")
         if mode not in {"specialist", "specialist_full"}:
             continue
-        _, spec_pred, spec_cls, _ = _collect_predictions(specialist, loader, device)
-        mask = spec_cls == int(cls_id)
+        _, spec_pred, _, spec_route, _ = _collect_deployable_predictions(
+            classifier, specialist, loader, device
+        )
+        mask = spec_route == int(cls_id)
         pred_arr[mask] = spec_pred[mask]
 
     affine_params = {int(k): v for k, v in routing_config.get("affine_params", {}).items()}
@@ -575,13 +673,16 @@ def _evaluate_routed(
     affine_for_active = {c: p for c, p in affine_params.items() if selected_modes.get(c) in {"bias_only", "affine_only"}}
     phase_for_active = {c: p for c, p in phase_params.items() if selected_modes.get(c) == "phase_affine_only"}
     if affine_for_active:
-        pred_arr = _apply_affine(pred_arr, cls_arr, affine_for_active)
+        pred_arr = _apply_affine(pred_arr, route_cls, affine_for_active)
     if phase_for_active:
-        pred_arr = _apply_phase_affine(pred_arr, cls_arr, phase_arr, phase_for_active)
-    return _metrics_from_arrays(true_arr, pred_arr, cls_arr, num_classes)
+        pred_arr = _apply_phase_affine(
+            pred_arr, route_cls, phase_arr, phase_for_active
+        )
+    return _metrics_from_arrays(true_arr, pred_arr, route_cls, num_classes)
 
 
 def _fit_affine_params_on_loader(
+    classifier: torch.nn.Module,
     model: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
@@ -589,32 +690,16 @@ def _fit_affine_params_on_loader(
     mode: str = "affine_only",
 ) -> Dict[int, Dict[str, Any]]:
     """Fit per-class bias/affine parameters on an existing loader."""
-    raw_metrics = _evaluate_oracle(model, loader, device, num_classes, affine_params=None)
     params: Dict[int, Dict[str, Any]] = {}
-
-    stores: Dict[int, Dict[str, List[float]]] = {
-        cls_id: {"true": [], "pred": []} for cls_id in range(num_classes)
-    }
-    model.eval()
-    with torch.no_grad():
-        for x, y_cls, y_reg_full, y_phase in loader:
-            x = x.to(device)
-            y_cls = y_cls.to(device).long()
-            y_reg_full = y_reg_full.to(device)
-            y_phase = y_phase.to(device).long()
-            _, _, reg_feat = model(x)
-            pred_norm = model.forward_reg(reg_feat, y_cls=y_cls, y_phase=y_phase)
-            pred_ppm = _denormalize_by_class_torch(pred_norm, y_cls)
-            y_true = y_reg_full[torch.arange(y_cls.size(0), device=device), y_cls]
-            for cls_id in range(num_classes):
-                mask = y_cls == cls_id
-                if mask.any():
-                    stores[cls_id]["true"].extend(y_true[mask].cpu().numpy().tolist())
-                    stores[cls_id]["pred"].extend(pred_ppm[mask].cpu().numpy().tolist())
+    true_arr, pred_arr, _true_cls, route_cls, _phase = (
+        _collect_deployable_predictions(classifier, model, loader, device)
+    )
+    raw_metrics = _metrics_from_arrays(true_arr, pred_arr, route_cls, num_classes)
 
     for cls_id in range(num_classes):
-        y_true = np.asarray(stores[cls_id]["true"], dtype=np.float64)
-        y_pred = np.asarray(stores[cls_id]["pred"], dtype=np.float64)
+        mask = route_cls == cls_id
+        y_true = true_arr[mask]
+        y_pred = pred_arr[mask]
         if len(y_true) < 2:
             params[cls_id] = {"a": 1.0, "b": 0.0, "mode": mode, "n_samples": int(len(y_true)), "calib_r2": 0.0, "calib_mae": 0.0}
             continue
@@ -646,6 +731,7 @@ def _fit_affine_params_on_loader(
 
 
 def _fit_phase_affine_params_on_loader(
+    classifier: torch.nn.Module,
     model: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
@@ -654,7 +740,9 @@ def _fit_phase_affine_params_on_loader(
     mode: str = "affine_only",
 ) -> Dict[int, Dict[str, Any]]:
     """Fit per-class, per-phase affine calibrators on ppm predictions."""
-    true_arr, pred_arr, cls_arr, phase_arr = _collect_predictions(model, loader, device)
+    true_arr, pred_arr, _true_cls, cls_arr, phase_arr = (
+        _collect_deployable_predictions(classifier, model, loader, device)
+    )
     params: Dict[int, Dict[str, Any]] = {}
     for cls_id in range(num_classes):
         mask = cls_arr == cls_id
@@ -734,13 +822,19 @@ def _evaluate_oracle(
     }
 
 
-def _score(metrics: Dict[str, Any], class_id: int, metric: str) -> float:
+def _score(metrics: Dict[str, Any], class_id: int, metric: str) -> float | None:
     value = metrics.get("per_class", {}).get(str(class_id), {}).get(metric)
     if value is None:
-        return -float("inf")
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(numeric):
+        return None
     if metric.upper() in {"MAE", "P90AE", "RMSE", "NRMSE_RANGE"}:
-        return -float(value)
-    return float(value)
+        return -numeric
+    return numeric
 
 
 def _nrmse_range(err: np.ndarray, cls_ids: np.ndarray) -> float:
@@ -754,18 +848,28 @@ def _nrmse_range(err: np.ndarray, cls_ids: np.ndarray) -> float:
 
 def _metric_value(metrics: Dict[str, Any], key: str) -> float | None:
     value = metrics.get(key)
-    return None if value is None else float(value)
+    if value is None:
+        return None
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    return numeric if np.isfinite(numeric) else None
 
 
 def _gate_accept(
     baseline_metrics: Dict[str, Any],
     specialist_metrics: Dict[str, Any],
-    baseline_score: float,
-    specialist_score: float,
+    baseline_score: float | None,
+    specialist_score: float | None,
     args: argparse.Namespace,
 ) -> Tuple[bool, Dict[str, Any]]:
     """Return gate decision with optional MAE/P90/Bias guardrails."""
-    primary_ok = specialist_score >= baseline_score + float(args.min_delta)
+    primary_ok = (
+        baseline_score is not None
+        and specialist_score is not None
+        and specialist_score > baseline_score + float(args.min_delta)
+    )
     details: Dict[str, Any] = {
         "gate_mode": args.gate_mode,
         "primary_ok": bool(primary_ok),
@@ -781,17 +885,17 @@ def _gate_accept(
 
     if args.use_p90_guard:
         p90_ok = (
-            baseline_p90 is None
-            or specialist_p90 is None
-            or specialist_p90 <= baseline_p90 + float(args.p90_max_worsen)
+            baseline_p90 is not None
+            and specialist_p90 is not None
+            and specialist_p90 <= baseline_p90 + float(args.p90_max_worsen)
         )
     else:
         p90_ok = True
     if args.use_bias_guard:
         bias_ok = (
-            baseline_bias is None
-            or specialist_bias is None
-            or abs(specialist_bias) <= abs(baseline_bias) + float(args.bias_max_worsen)
+            baseline_bias is not None
+            and specialist_bias is not None
+            and abs(specialist_bias) <= abs(baseline_bias) + float(args.bias_max_worsen)
         )
     else:
         bias_ok = True
@@ -812,6 +916,7 @@ def _gate_accept(
 
 def _maybe_refit_specialist(
     base_model: torch.nn.Module,
+    classifier: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
     class_id: int,
@@ -833,8 +938,26 @@ def _maybe_refit_specialist(
         class_weight=args.class_weight,
         huber_delta=args.huber_delta,
         reg_range_penalty=args.reg_range_penalty,
+        classifier=classifier,
     )
     return refit_model, avg_loss
+
+
+def _selection_provenance(
+    selected_pre_refit_val_metrics: Dict[str, Any],
+    *,
+    deployment_models_refit: bool,
+) -> Dict[str, Any]:
+    """Freeze the independent selection metrics before deployment-only refits."""
+    frozen_metrics = copy.deepcopy(selected_pre_refit_val_metrics)
+    return {
+        "selection_metrics_source": "pre_refit_independent_validation",
+        "deployment_models_refit_on_full_calibration": bool(
+            deployment_models_refit
+        ),
+        "selected_pre_refit_val_metrics": frozen_metrics,
+        "selected_val_metrics": copy.deepcopy(frozen_metrics),
+    }
 
 
 def _build_auto_v2_routing(
@@ -849,7 +972,8 @@ def _build_auto_v2_routing(
     selected_modes: Dict[str, str] = {}
     routed_affine: Dict[str, Dict[str, Any]] = {}
     routed_phase: Dict[str, Dict[str, Any]] = {}
-    class_candidate_scores: Dict[str, Dict[str, float]] = {}
+    class_candidate_scores: Dict[str, Dict[str, float | None]] = {}
+    selection_available: Dict[str, bool] = {}
 
     for cls_id in range(num_classes):
         best_mode = "none"
@@ -858,17 +982,35 @@ def _build_auto_v2_routing(
         for mode in ["none", "bias_only", "affine_only", "phase_affine_only", "full"]:
             score = _score(candidate_metrics[mode], cls_id, gate_metric)
             class_candidate_scores[str(cls_id)][mode] = score
-            if score >= best_score + float(min_delta):
+            if (
+                mode != "none"
+                and best_score is not None
+                and score is not None
+                and score > best_score + float(min_delta)
+            ):
                 best_mode = mode
                 best_score = score
 
         selected_modes[str(cls_id)] = best_mode
+        selection_available[str(cls_id)] = best_mode != "none"
         if best_mode == "bias_only":
-            routed_affine[str(cls_id)] = bias_params[cls_id]
+            if cls_id not in bias_params:
+                selected_modes[str(cls_id)] = "none"
+                selection_available[str(cls_id)] = False
+            else:
+                routed_affine[str(cls_id)] = bias_params[cls_id]
         elif best_mode == "affine_only":
-            routed_affine[str(cls_id)] = affine_params[cls_id]
+            if cls_id not in affine_params:
+                selected_modes[str(cls_id)] = "none"
+                selection_available[str(cls_id)] = False
+            else:
+                routed_affine[str(cls_id)] = affine_params[cls_id]
         elif best_mode == "phase_affine_only":
-            routed_phase[str(cls_id)] = phase_params[cls_id]
+            if cls_id not in phase_params:
+                selected_modes[str(cls_id)] = "none"
+                selection_available[str(cls_id)] = False
+            else:
+                routed_phase[str(cls_id)] = phase_params[cls_id]
 
     routing_config = {
         "selected_modes": selected_modes,
@@ -879,6 +1021,7 @@ def _build_auto_v2_routing(
     }
     diagnostics = {
         "selected_modes": selected_modes,
+        "selection_available": selection_available,
         "class_candidate_scores": class_candidate_scores,
         "candidate_val_metrics": candidate_metrics,
     }
@@ -898,14 +1041,14 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
 
     classifier = create_model_by_config(FLConfig(), with_reg_head=False).to(device)
     classifier_state = _extract_model_state(torch.load(args.classifier_ckpt, map_location=device, weights_only=False))
-    classifier.load_state_dict(classifier_state, strict=False)
+    _load_model_state_strict(classifier, classifier_state, args.classifier_ckpt)
     classifier.eval()
 
     reg_ckpt = torch.load(args.regression_ckpt, map_location=device, weights_only=False)
     reg_config = _make_regression_config_from_checkpoint(args, device, reg_ckpt)
     base_model = create_regression_model(reg_config).to(device)
     reg_state = _extract_model_state(reg_ckpt)
-    base_model.load_state_dict(reg_state, strict=False)
+    _load_model_state_strict(base_model, reg_state, args.regression_ckpt)
     base_model.eval()
 
     full_model = copy.deepcopy(base_model).to(device)
@@ -919,11 +1062,13 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
         class_weight=1.0,
         huber_delta=args.huber_delta,
         reg_range_penalty=args.reg_range_penalty,
+        classifier=classifier,
     )
 
-    bias_params = _fit_affine_params_on_loader(base_model, train_loader, device, num_classes=4, mode="bias_only")
-    affine_params = _fit_affine_params_on_loader(base_model, train_loader, device, num_classes=4, mode="affine_only")
+    bias_params = _fit_affine_params_on_loader(classifier, base_model, train_loader, device, num_classes=4, mode="bias_only")
+    affine_params = _fit_affine_params_on_loader(classifier, base_model, train_loader, device, num_classes=4, mode="affine_only")
     phase_params = _fit_phase_affine_params_on_loader(
+        classifier,
         base_model,
         train_loader,
         device,
@@ -933,8 +1078,20 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
     )
 
     candidate_metrics = {
-        "none": _evaluate_oracle(base_model, val_loader, device, 4),
+        "none": _evaluate_routed(
+            classifier,
+            base_model,
+            val_loader,
+            device,
+            4,
+            {
+                "selected_modes": {str(c): "none" for c in range(4)},
+                "affine_params": {},
+                "phase_affine_params": {},
+            },
+        ),
         "bias_only": _evaluate_routed(
+            classifier,
             base_model,
             val_loader,
             device,
@@ -946,6 +1103,7 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
             },
         ),
         "affine_only": _evaluate_routed(
+            classifier,
             base_model,
             val_loader,
             device,
@@ -953,6 +1111,7 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
             build_routing_config(affine_params, mode="affine_only"),
         ),
         "phase_affine_only": _evaluate_routed(
+            classifier,
             base_model,
             val_loader,
             device,
@@ -964,6 +1123,7 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
             },
         ),
         "full": _evaluate_routed(
+            classifier,
             base_model,
             val_loader,
             device,
@@ -990,9 +1150,11 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
     specialist_dir = output_dir / "specialists"
     specialist_dir.mkdir(parents=True, exist_ok=True)
     selected_specialists: List[int] = []
+    selection_specialist_models: Dict[int, torch.nn.Module] = {}
     specialist_models: Dict[int, torch.nn.Module] = {}
     specialist_decisions: Dict[str, Any] = {}
     general_selected_metrics = _evaluate_routed(
+        classifier,
         base_model,
         val_loader,
         device,
@@ -1013,8 +1175,20 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
             class_weight=args.class_weight,
             huber_delta=args.huber_delta,
             reg_range_penalty=args.reg_range_penalty,
+            classifier=classifier,
         )
-        specialist_metrics = _evaluate_oracle(specialist, val_loader, device, 4)
+        specialist_routing = copy.deepcopy(routing_config)
+        specialist_routing["selected_modes"][str(class_id)] = "specialist_full"
+        specialist_metrics = _evaluate_routed(
+            classifier,
+            base_model,
+            val_loader,
+            device,
+            4,
+            specialist_routing,
+            full_model=full_model,
+            specialist_models={class_id: specialist},
+        )
         baseline_score = _score(general_selected_metrics, class_id, args.gate_metric)
         specialist_score = _score(specialist_metrics, class_id, args.gate_metric)
         baseline_cls_metrics = general_selected_metrics["per_class"].get(str(class_id), {})
@@ -1038,14 +1212,17 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
             "specialist": specialist_cls_metrics,
         }
         logger.info(
-            "auto_v2 class %d specialist gate: baseline=%.4f, specialist=%.4f, accepted=%s",
+            "auto_v2 class %d specialist gate: baseline=%s, specialist=%s, accepted=%s",
             class_id,
             baseline_score,
             specialist_score,
             accepted,
         )
         if accepted:
-            specialist, refit_loss = _maybe_refit_specialist(specialist, loader, device, class_id, args)
+            selection_specialist_models[class_id] = specialist
+            specialist, refit_loss = _maybe_refit_specialist(
+                specialist, classifier, loader, device, class_id, args
+            )
             specialist_decisions[str(class_id)]["refit_loss"] = refit_loss
             routing_config["selected_modes"][str(class_id)] = "specialist_full"
             specialist_models[class_id] = specialist
@@ -1059,14 +1236,15 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
             )
             selected_specialists.append(class_id)
 
-    selected_metrics = _evaluate_routed(
+    selected_pre_refit_val_metrics = _evaluate_routed(
+        classifier,
         base_model,
         val_loader,
         device,
         4,
         routing_config,
         full_model=full_model,
-        specialist_models=specialist_models,
+        specialist_models=selection_specialist_models,
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1085,7 +1263,10 @@ def _run_auto_v2_specialist(args: argparse.Namespace, output_dir: Path, device: 
         "auto_v2": auto_diag,
         "general_selected_val_metrics": general_selected_metrics,
         "specialist_gate_decisions": specialist_decisions,
-        "selected_val_metrics": selected_metrics,
+        **_selection_provenance(
+            selected_pre_refit_val_metrics,
+            deployment_models_refit=args.refit_full_calib,
+        ),
         "routing_config": routing_config,
         "full_model_path": "full_model.pth",
         "response_refs": response_refs,
@@ -1184,17 +1365,18 @@ def main() -> None:
 
     classifier = create_model_by_config(FLConfig(), with_reg_head=False).to(device)
     classifier_state = _extract_model_state(torch.load(args.classifier_ckpt, map_location=device, weights_only=False))
-    classifier.load_state_dict(classifier_state, strict=False)
+    _load_model_state_strict(classifier, classifier_state, args.classifier_ckpt)
     classifier.eval()
 
     reg_ckpt = torch.load(args.regression_ckpt, map_location=device, weights_only=False)
     reg_config = _make_regression_config_from_checkpoint(args, device, reg_ckpt)
     base_model = create_regression_model(reg_config).to(device)
     reg_state = _extract_model_state(reg_ckpt)
-    base_model.load_state_dict(reg_state, strict=False)
+    _load_model_state_strict(base_model, reg_state, args.regression_ckpt)
     base_model.eval()
 
     affine_params = _fit_affine_params_on_loader(
+        classifier,
         base_model,
         train_loader,
         device,
@@ -1202,7 +1384,14 @@ def main() -> None:
         mode="affine_only",
     )
     routing_config = build_routing_config(affine_params, mode="affine_only")
-    baseline_metrics = _evaluate_oracle(base_model, val_loader, device, 4, affine_params=affine_params)
+    baseline_metrics = _evaluate_routed(
+        classifier,
+        base_model,
+        val_loader,
+        device,
+        4,
+        routing_config,
+    )
 
     decisions: Dict[str, Any] = {}
     selected_specialists: List[int] = []
@@ -1218,8 +1407,19 @@ def main() -> None:
             class_weight=args.class_weight,
             huber_delta=args.huber_delta,
             reg_range_penalty=args.reg_range_penalty,
+            classifier=classifier,
         )
-        specialist_metrics = _evaluate_oracle(specialist, val_loader, device, 4, affine_params=None)
+        specialist_routing = copy.deepcopy(routing_config)
+        specialist_routing["selected_modes"][str(class_id)] = "specialist_full"
+        specialist_metrics = _evaluate_routed(
+            classifier,
+            base_model,
+            val_loader,
+            device,
+            4,
+            specialist_routing,
+            specialist_models={class_id: specialist},
+        )
         baseline_score = _score(baseline_metrics, class_id, args.gate_metric)
         specialist_score = _score(specialist_metrics, class_id, args.gate_metric)
         baseline_cls_metrics = baseline_metrics["per_class"].get(str(class_id), {})
@@ -1244,7 +1444,7 @@ def main() -> None:
             "specialist": specialist_cls_metrics,
         }
         logger.info(
-            "class %d specialist gate: baseline=%.4f, specialist=%.4f, accepted=%s",
+            "class %d specialist gate: baseline=%s, specialist=%s, accepted=%s",
             class_id,
             baseline_score,
             specialist_score,
@@ -1253,6 +1453,7 @@ def main() -> None:
         if accepted:
             specialist, refit_loss = _maybe_refit_specialist(
                 specialist,
+                classifier,
                 loader,
                 device,
                 class_id,
@@ -1272,6 +1473,7 @@ def main() -> None:
 
     if args.refit_affine_full_calib:
         full_affine_params = _fit_affine_params_on_loader(
+            classifier,
             base_model,
             loader,
             device,
@@ -1299,6 +1501,10 @@ def main() -> None:
         "refit_affine_full_calib": bool(args.refit_affine_full_calib),
         "refit_full_calib": bool(args.refit_full_calib),
         "refit_steps": args.refit_steps,
+        "selection_metrics_source": "pre_refit_independent_validation",
+        "deployment_models_refit_on_full_calibration": bool(
+            args.refit_full_calib or args.refit_affine_full_calib
+        ),
         "baseline_val_metrics": baseline_metrics,
         "gate_decisions": decisions,
         "routing_config": routing_config,

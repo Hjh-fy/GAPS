@@ -1,0 +1,112 @@
+{
+  "run_name": "FONG-FULL-B20-S44",
+  "round": 25,
+  "summary": {
+    "mean_client_to_ema_drift": 1.6655333638191223,
+    "max_client_to_ema_drift": 1.6655333638191223,
+    "mean_inter_client_divergence": 0.0,
+    "max_inter_client_divergence": 0.0,
+    "n_drift_clients": 2,
+    "n_divergence_keys": 12
+  },
+  "client_to_ema_drift": {
+    "1": {
+      "avg_l2_drift": 1.6655333638191223,
+      "n_keys": 12,
+      "per_key": {
+        "0,0": 1.6825710535049438,
+        "0,1": 1.6299675703048706,
+        "0,2": 1.6795024871826172,
+        "1,0": 1.6538598537445068,
+        "1,1": 1.633076786994934,
+        "1,2": 1.6239750385284424,
+        "2,0": 1.8257211446762085,
+        "2,1": 1.697261095046997,
+        "2,2": 1.632745385169983,
+        "3,0": 1.6916768550872803,
+        "3,1": 1.6342053413391113,
+        "3,2": 1.6018377542495728
+      }
+    },
+    "2": {
+      "avg_l2_drift": 1.6655333638191223,
+      "n_keys": 12,
+      "per_key": {
+        "0,0": 1.6825710535049438,
+        "0,1": 1.6299675703048706,
+        "0,2": 1.6795024871826172,
+        "1,0": 1.6538598537445068,
+        "1,1": 1.633076786994934,
+        "1,2": 1.6239750385284424,
+        "2,0": 1.8257211446762085,
+        "2,1": 1.697261095046997,
+        "2,2": 1.632745385169983,
+        "3,0": 1.6916768550872803,
+        "3,1": 1.6342053413391113,
+        "3,2": 1.6018377542495728
+      }
+    }
+  },
+  "inter_client_divergence": {
+    "0,0": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "0,1": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "0,2": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "1,0": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "1,1": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "1,2": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "2,0": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "2,1": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "2,2": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "3,0": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "3,1": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    },
+    "3,2": {
+      "avg_pairwise_l2": 0.0,
+      "max_pairwise_l2": 0.0,
+      "n_clients": 2
+    }
+  }
+}

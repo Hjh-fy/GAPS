@@ -1,0 +1,48 @@
+{
+  "schema_version": "iotj.final_deployed_runtime_benchmark.v1",
+  "status": "PASS",
+  "runtime": "FINAL_DEPLOYED_RUNTIME",
+  "platform": "Raspberry Pi 5",
+  "protocol": {
+    "runs": 5000,
+    "warmup": 100,
+    "batch_size": 1,
+    "threads": 1,
+    "device": "cpu",
+    "input_order": "C5 test canonical order modulo 1360",
+    "test_used_for_selection": false,
+    "disk_io_in_steady_state": false
+  },
+  "latency": {
+    "p50_ms": 3.7585295,
+    "p95_ms": 3.7910029,
+    "p99_ms": 4.006750080000005,
+    "mean_ms": 3.7669278917999995,
+    "min_ms": 3.704464,
+    "max_ms": 5.970422,
+    "throughput_windows_per_s": 252.12044076394938
+  },
+  "resources": {
+    "rss_baseline_bytes": 223592448,
+    "peak_rss_bytes": 250413056,
+    "peak_rss_mib": 238.8125,
+    "temperature_start_c": 50.15,
+    "temperature_peak_c": 55.1,
+    "temperature_end_c": 52.35,
+    "throttled_before": "throttled=0x0",
+    "throttled_after": "throttled=0x0"
+  },
+  "environment": {
+    "hostname": "gaps-pi",
+    "machine": "aarch64",
+    "os": "Linux-6.18.34+rpt-rpi-2712-aarch64-with-glibc2.41",
+    "python": "3.13.5",
+    "torch": "2.6.0+cpu",
+    "numpy": "2.5.1"
+  },
+  "row_universe": {
+    "source_windows": 1360,
+    "measured_windows": 5000,
+    "unique_windows": 1360
+  }
+}

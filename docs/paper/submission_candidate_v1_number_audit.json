@@ -1,0 +1,168 @@
+{
+  "schema": "gaps.paper.submission_candidate.number_audit.v1",
+  "audit_date": "2026-07-26",
+  "frozen_system_commit": "36ee62339c025064cb415bfd13c5e7139a954edc",
+  "candidate": {
+    "path": "docs/paper/GAPS_IoTJ_submission_candidate_v1.zh.html",
+    "sha256": "f06c185078489f376292a10db6cc315b3bda3726f306ff04804970ffe85bf621"
+  },
+  "source_manuscript": {
+    "path": "docs/paper/GAPS_IoTJ_protocol_closed_20260726.zh.html",
+    "sha256": "3e23158f3772865da6e804d5799ad5a6988de7cb367637abc44c0e67d61881fa",
+    "modified": false
+  },
+  "canonical_numeric_sources": [
+    "docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md",
+    "docs/paper_evidence_freeze/claim_evidence_matrix.json",
+    "docs/paper_evidence_freeze/paper_tables/table_II_classification.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_III_regression.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_A2_per_seed_regression.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_A3_per_gas_regression.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_A6_communication_payloads.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_A7_harmonization.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_IV_qc.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_V_system.csv",
+    "docs/paper_evidence_freeze/paper_tables/table_VI_calibration.csv"
+  ],
+  "checks": [
+    {
+      "id": "N01",
+      "metric": "B5 five-seed accuracy",
+      "candidate_value": "0.989118 ± 0.005983",
+      "scope": "seeds 42–46; C1/C2→C5; N=1360 per seed",
+      "canonical_value": "0.9891176471 ± 0.0059826016",
+      "rounding": "6 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N02",
+      "metric": "B5 five-seed Macro-F1",
+      "candidate_value": "0.989134 ± 0.005960",
+      "scope": "seeds 42–46; C1/C2→C5",
+      "canonical_value": "0.9891344644 ± 0.0059603199",
+      "rounding": "6 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N03",
+      "metric": "Federated-H1 five-route S_CC RMSE",
+      "candidate_value": "11.6339 ± 0.3142 ppm",
+      "scope": "five frozen B5 routes; regression heads fixed as registered",
+      "canonical_value": "11.633858 ± 0.314203 ppm",
+      "rounding": "4 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N04",
+      "metric": "All-prior five-route S_CC RMSE",
+      "candidate_value": "11.5208 ± 0.3148 ppm",
+      "scope": "five frozen B5 routes",
+      "canonical_value": "11.520766 ± 0.314776 ppm",
+      "rounding": "4 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N05",
+      "metric": "H1 relative degradation vs all-prior",
+      "candidate_value": "0.981637%",
+      "scope": "paired five-route mean S_CC; registered non-inferiority margin 1%",
+      "canonical_value": "0.981637%",
+      "rounding": "exact reported value",
+      "status": "PASS"
+    },
+    {
+      "id": "N06",
+      "metric": "formal seed42 RG1 S_CC RMSE",
+      "candidate_value": "11.3416 ppm",
+      "scope": "historical 320-window protocol; 1333 correct routes",
+      "canonical_value": "11.3415985730 ppm",
+      "rounding": "4 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N07",
+      "metric": "regression parameter decomposition",
+      "candidate_value": "420 H1 + 424 target Ridge = 844; classifier 22,765 separately",
+      "scope": "v5 regression core functional identity",
+      "canonical_value": "420 + 424 = 844; classifier = 22,765",
+      "rounding": "integer",
+      "status": "PASS"
+    },
+    {
+      "id": "N08",
+      "metric": "v4 to v5 regression parameter change",
+      "candidate_value": "28,737 to 844",
+      "scope": "regression parameters only",
+      "canonical_value": "28,737 to 844",
+      "rounding": "integer",
+      "status": "PASS"
+    },
+    {
+      "id": "N09",
+      "metric": "Raspberry Pi v4/v5-core p50 latency",
+      "candidate_value": "4.571 ms to 3.725 ms",
+      "scope": "Pi benchmark objects; p50 only",
+      "canonical_value": "4.57137 ms to 3.72454 ms",
+      "rounding": "3 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N10",
+      "metric": "PC v4/v5-core p95 latency",
+      "candidate_value": "13.945 ms to 14.786 ms",
+      "scope": "PC benchmark objects; p95",
+      "canonical_value": "13.9448 ms to 14.7863 ms",
+      "rounding": "3 decimal places",
+      "status": "PASS",
+      "boundary": "candidate explicitly avoids an all-platform/all-percentile improvement claim"
+    },
+    {
+      "id": "N11",
+      "metric": "v5 QC2 HC90 promotion guard evidence",
+      "candidate_value": "86.99% accepted yield; 12.7723 ppm accepted RMSE; CO yield 64.12%; CO RMSE 20.8318 ppm",
+      "scope": "v5 QC2 HC90 frozen test",
+      "canonical_value": "1183/113/64; 86.9853%; 12.7723; 64.12%; 20.8318",
+      "rounding": "table precision",
+      "status": "PASS"
+    },
+    {
+      "id": "N12",
+      "metric": "group-aware calibration sensitivity",
+      "candidate_value": "320: 10.8724 ± 0.4391 ppm; 160: 23.9156 ± 5.2550 ppm",
+      "scope": "post-freeze descriptive group-aware protocol",
+      "canonical_value": "10.8724 ± 0.4391; 23.9156 ± 5.2550",
+      "rounding": "4 decimal places",
+      "status": "PASS"
+    },
+    {
+      "id": "N13",
+      "metric": "B5 25-round measured application payload",
+      "candidate_value": "17,572,650 bytes",
+      "scope": "application serialization; transport bytes not collected",
+      "canonical_value": "17,572,650 bytes",
+      "rounding": "integer",
+      "status": "PASS"
+    },
+    {
+      "id": "N14",
+      "metric": "H1 practical equivalence",
+      "candidate_value": "max prediction difference 6.2532e-8 ppm; S_CC RMSE difference 6.7040e-12 ppm",
+      "scope": "real-topology sufficient-statistics H1 vs pooled reference",
+      "canonical_value": "6.2532195e-8; 6.70397e-12",
+      "rounding": "5 significant digits",
+      "status": "PASS"
+    }
+  ],
+  "cross_scope_guards": {
+    "historical_11_3416_not_replaced_by_group_aware_10_8724": "PASS",
+    "v4_accepted_rmse_not_attributed_to_v5_core": "PASS",
+    "classifier_parameters_not_included_in_regression_844": "PASS",
+    "five_seed_regression_not_described_as_five_retrained_head_sets": "PASS",
+    "portable_release_not_used_as_performance_evidence": "PASS"
+  },
+  "result": {
+    "numeric_conflicts": 0,
+    "scope_conflicts": 0,
+    "status": "PASS"
+  }
+}

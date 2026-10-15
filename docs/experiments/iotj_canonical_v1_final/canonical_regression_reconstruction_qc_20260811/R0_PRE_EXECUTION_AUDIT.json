@@ -1,0 +1,44 @@
+{
+  "schema_version": "iotj.canonical_v1.crrq.r0.preexecution.v1",
+  "status": "PASS",
+  "study_id": "CAN-V1-CRRQ-20260811",
+  "implementation_base_commit": "9f137b52615b727b255d7f34951a810129d4557d",
+  "dataset": {
+    "name": "canonical-v1",
+    "aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+    "sampling_rate_hz": 5,
+    "window_shape": [50, 8]
+  },
+  "code_sha256": {
+    "gaps_flower/canonical_quantitative_features.py": "e279802d2ed22f23e69dd970e2dfbb4a31347340932c800807ba90f8c9f6fd70",
+    "gaps_flower/canonical_fedridge.py": "c13dc5aa71008fc9a61c1d0b0e6fca1a844ed294490a6309d1f335f10c567e0e",
+    "scripts/run_iotj_canonical_regression_reconstruction_r0.py": "e4f1773fcd575c197619cda45958aa75e35ac5e56f9839fbc01ee9755af92194",
+    "run_regression_head_ablation.py": "7627b72ee4e1823d24c374d41a6c931f66b5efedd6eaf4a839c62e7b5b1fa72a"
+  },
+  "tests": {
+    "command": "python -m pytest tests/test_iotj_canonical_regression_reconstruction.py -q --basetemp=.tmp_pytest_crrq_r0_freeze",
+    "passed": 30,
+    "failed": 0
+  },
+  "compileall": "PASS",
+  "feature_contract": {
+    "sensor_dimensions": 83,
+    "metadata_phase_dimensions": 21,
+    "h1_dimensions": 104,
+    "dynamic_descriptors": "fixed-5-Hz discrete per-sample descriptors",
+    "sampling_rate_invariant_claim": false,
+    "legacy_10hz_5hz_numeric_equivalence_claim": false,
+    "legacy_cache_read_api": false
+  },
+  "access_order": [
+    "source train/calibration feature construction",
+    "source-only alpha selection and final refit",
+    "source alpha/model lock",
+    "source test evaluation",
+    "target x/phase/metadata-only feature caches"
+  ],
+  "target_test_labels_opened_by_R0": false,
+  "target_inputs_accepted_by_source_fit_or_selection": false,
+  "practical_equivalence_fallback": false,
+  "formal_R0_execution_started": false
+}

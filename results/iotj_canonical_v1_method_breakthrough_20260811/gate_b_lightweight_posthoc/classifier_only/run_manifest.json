@@ -1,0 +1,41 @@
+{
+  "schema_version": "iotj.canonical_v1.method_breakthrough.gate_b.run.v1",
+  "experiment_id": "CAN-V1-MB-B-CLASSIFIER-ONLY",
+  "method": "classifier_only",
+  "checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\gate_b_lightweight_posthoc\\classifier_only\\posthoc_classifier_only_c5.pth",
+  "checkpoint_sha256": "ce12123d649a356d7b1ccf98b6783e0595287ac10e671706b79545d306bae788",
+  "personalization_delta": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_method_breakthrough_20260811\\gate_b_lightweight_posthoc\\classifier_only\\personalization_delta.pth",
+  "personalization_delta_sha256": "858e49230b3cd65e1295326ecd4182c90ac9a0d1a03c4a38fd679449f8907428",
+  "source_checkpoint": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\.worktrees\\iotj-final-classification-le1\\results\\iotj_canonical_v1_scientific_validation_20260809\\comparators\\source_fl\\CAN-V1-CMP-FEDAVG\\remote_server\\server_latest.pth",
+  "source_checkpoint_sha256": "2d114a8ae23fcdea574d1e7c64e638620f60e49560da594397187bd5de1505fa",
+  "source_state_fingerprint": "cad6726ec29fb574314a5f2a45ed9800d1d90906b81cbd3ba8f8efb48a0df5d7",
+  "calibration_manifest": "D:\\A Python learning\\Federated Learning\\TRAE SOLO\\dataset\\iotj_canonical_v1\\client_5\\calibration_experiment_info.json",
+  "calibration_manifest_sha256": "32fec2536e30399a525383c9b9fae73e1953b15b488523781c4aa76d818686bb",
+  "calibration_count": 320,
+  "steps": 100,
+  "lr": 0.0005,
+  "batch_size": 32,
+  "seed": 42,
+  "target_test_opened": false,
+  "system_metrics": {
+    "method": "classifier_only",
+    "steps": 100,
+    "optimizer": "Adam",
+    "lr": 0.0005,
+    "seed": 42,
+    "trainable_parameter_names": [
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "trainable_parameters": 260,
+    "total_parameters": 22765,
+    "trainable_parameter_ratio": 0.011421041071820778,
+    "adaptation_seconds": 1.4408856999361888,
+    "relative_parameter_displacement": 0.019147722237408318,
+    "peak_rss_bytes": 378609664,
+    "checkpoint_delta_bytes": 2732,
+    "checkpoint_bytes": 110114,
+    "checkpoint_sha256": "ce12123d649a356d7b1ccf98b6783e0595287ac10e671706b79545d306bae788",
+    "prediction_checkpoint_form": "ordinary_model"
+  }
+}

@@ -1,0 +1,2 @@
+experiment_id,source_clients,target_clients,split_protocol,model,checkpoint,DA,calibration,QC,seed,result_path,status,notes
+DIAG-C5-SPLIT-SWAP-20260807,C1;C2,C5,legacy_C5_test_cross_prediction,R84_FED_H1,roleaware_FCL-RW-GAPS-C5_round25,interleaved_GAPS_already_frozen,fixed_roleaware_models_no_refit,none,42,results/iotj_c5_split_swap_diagnostic_20260807,registered,LEAKAGE_RISK_DIAGNOSTIC_ONLY

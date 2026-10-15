@@ -1,0 +1,34 @@
+{
+  "algorithm_config_sha256_by_run": {
+    "c12_to_c5__b2__s42": "9f7e549e0c95ee859cb0059adfb9d614c21a7f2659f2f3d6828f6aac98ed4561",
+    "c12_to_c5__b2__s43": "769174678189327c3f15a91f6fd5a1940272f825b6edf51e240e317e5975de9f",
+    "c12_to_c5__b2__s44": "218b146f0aa12e4bab7cc675697c5e60a5096278b930b8fb5527309050a9bf57",
+    "c12_to_c5__b2__s45": "63937c9237492fbe2e6cd4ab30e1238804cf6869d29f3495231457673958c5f9",
+    "c12_to_c5__b2__s46": "97c4e6d3c19453925f32e3f1ff57850e1f48dc6e83df1f9a40c2c4d3901d108b",
+    "c12_to_c5__b5__s42": "bd886f824519c991c04f3d31a174ac31bb89d34ac5fc6f5f0234eec1e81213aa",
+    "c12_to_c5__b5__s43": "2fa3045a7bbe40672289c34e3738f128465e764228fa7fb8957c1d85d63870fe",
+    "c12_to_c5__b5__s44": "a947dd08a02bb1105cf39d2c21106ba059d7c4db01d72bc11a1c9890934f9571",
+    "c12_to_c5__b5__s45": "2a29b56645cd84be04cd8befa706a761f7955c4e75f0974a6b6341063942e503",
+    "c12_to_c5__b5__s46": "98087d58a47a3c0c0b62b68340a38f36dfa60f3c8cb2e7c5b003d7dfebaa70eb"
+  },
+  "execution_topology_manifest_sha256": "164d4429e8398f5933184c3ef1922acf55b9e2bb4c472cb35910e554b7257959",
+  "hosts": {
+    "C1": {
+      "host_id": "pi-c1"
+    },
+    "C2": {
+      "host_id": "ecs-c2",
+      "ssh_host": "root@114.55.171.63"
+    },
+    "server": {
+      "host_id": "ecs-server"
+    }
+  },
+  "schema_version": 1,
+  "source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "topology_id": "ecs_c2_pi_c1",
+  "transport": {
+    "flower_endpoint": "loopback_reverse_tunnel",
+    "public_flower_port_exposure": false
+  }
+}

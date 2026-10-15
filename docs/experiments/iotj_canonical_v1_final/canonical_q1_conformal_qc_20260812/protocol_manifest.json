@@ -1,0 +1,29 @@
+{
+  "study_id": "CAN-V1-CRRQ-Q1-CONFORMAL-QC-20260812",
+  "status": "PRE_RUN_FROZEN_NO_EXECUTION",
+  "dataset": "canonical-v1",
+  "preprocessing": "HZ5_MEAN_W10S",
+  "targets": ["C3", "C4", "C5"],
+  "primary_target": "C5",
+  "final_regression_backend": "R84_CONCAT",
+  "q0_prerequisite_root": "results/iotj_canonical_v1_final/canonical_q0_qc_necessity_20260812",
+  "q0_required_decision": "MULTISIGNAL_QC_NOT_ESTABLISHED",
+  "trigger_requires_regression_uncertainty_useful_on": ["C5", "POOLED"],
+  "method": "raw-file-group-aware split-conformal-style absolute-residual interval",
+  "split": "deterministic balanced two-fold split by raw filename within target and gas",
+  "nominal_interval_coverage": 0.90,
+  "exact_iid_coverage_claim": false,
+  "frozen_r84_alpha_reused": true,
+  "coverage_grid": {"start": 0.50, "stop": 1.00, "step": 0.01},
+  "policies": [
+    "CLASSIFICATION_CONFIDENCE_ONLY",
+    "INTERVAL_WIDTH_ONLY",
+    "EQUAL_MEAN_CDF"
+  ],
+  "normalization": "target-calibration empirical CDF",
+  "combined_weights": {"confidence": 0.5, "interval_width": 0.5},
+  "weight_search": false,
+  "support_gate": "at least 5% relative NRMSE-AURC improvement over confidence on both C5 and target-stratified pooled",
+  "target_test_role": "final fixed-policy evaluation only",
+  "formal_execution_started": false
+}

@@ -1,0 +1,84 @@
+{
+  "schema_version": "iotj.b5_server_da_budget_protocol_lock.v1",
+  "experiment_family": "POST_FREEZE_SINGLE_SEED_SERVER_DA_BUDGET_SENSITIVITY",
+  "locked_before_new_training": true,
+  "historical_test_previously_opened": true,
+  "test_role": "evaluation_only_after_each_fixed_25_round_training_protocol",
+  "selection_role": "none",
+  "baseline": {
+    "label": "LE1_DA100",
+    "reuse_without_retraining": true,
+    "metrics_path": "results/iotj_b5_local_epoch_ablation_20260729/le1/classification_evaluation/le1_classification_metrics.json",
+    "metrics_sha256": "0b7a2326cac7458e306a16b88ed9fff92693c9badb7d7444849927b37b057d2b"
+  },
+  "sequence": [
+    {
+      "label": "LE1_DA80",
+      "steps_per_round": 80,
+      "total_steps": 2000,
+      "derived_input_manifest": "results/iotj_b5_server_da_budget_ablation_20260731/da80/protocol_inputs/derived_input_manifest.json",
+      "derived_input_manifest_sha256": "4a312d4a563a66f292bea32d5ce21bd69a75720e506905d89638b0411cc5a590"
+    },
+    {
+      "label": "LE1_DA50",
+      "steps_per_round": 50,
+      "total_steps": 1250,
+      "derived_input_manifest": "results/iotj_b5_server_da_budget_ablation_20260731/da50/protocol_inputs/derived_input_manifest.json",
+      "derived_input_manifest_sha256": "3f9899666736ec7b4b32aff5e01b842dfce11fb56de518ba1c811d66dec485ba"
+    },
+    {
+      "label": "LE1_DA30",
+      "steps_per_round": 30,
+      "total_steps": 750,
+      "derived_input_manifest": "results/iotj_b5_server_da_budget_ablation_20260731/da30/protocol_inputs/derived_input_manifest.json",
+      "derived_input_manifest_sha256": "d48c085ea8183f27eb267fe86c4cb0684dc431262b0120163d1bb0877e6c186f"
+    }
+  ],
+  "held_constant": {
+    "classifier": "B5",
+    "seed": 42,
+    "source_clients": ["C1", "C2"],
+    "target_client": "C5",
+    "rounds": 25,
+    "local_epochs_per_round": 1,
+    "batch_size": 32,
+    "client_optimizer": "Adam",
+    "client_lr": 0.0005,
+    "server_da_lr": 0.0005,
+    "server_da_objectives_and_weights": "unchanged_from_LE1_DA100",
+    "topology": "ecs_c2_pi_c1"
+  },
+  "only_intended_variable": "server_adaptation.steps",
+  "primary_endpoint": "round25_target_C5_accuracy",
+  "secondary_endpoints": [
+    "round25_macro_f1",
+    "round25_nll",
+    "round25_ece",
+    "error_count",
+    "per_class_recall",
+    "training_wall_time",
+    "server_da_wall_time"
+  ],
+  "engineering_retention_tolerance": {
+    "accuracy_absolute_drop_max": 0.005,
+    "macro_f1_absolute_drop_max": 0.005,
+    "interpretation": "practical tolerance only; not a statistical noninferiority claim"
+  },
+  "prohibited": [
+    "early_stopping",
+    "checkpoint_reselection",
+    "step_level_search_after_results",
+    "frozen_B5_reselection",
+    "runtime_regression_or_QC_changes",
+    "paper_evidence_replacement"
+  ],
+  "formal_runtime_source_archive_sha256": "52bdbf96568014cc363f0ce3c666026be29f5f0279c7a130b41458d42a0d0c68",
+  "controller_code_commit": "da3e153b37dae59e5ae07aa2501c285e777bdd55",
+  "controller_source_sha256": {
+    "prepare": "21d952af1eaab5847474665321e13315b3fe55e44dc4d1efcb93c0225211d471",
+    "sequence": "c349e875cbcacce7b9c9b96ac971ccc98e8276d91b5b564adaddb1b553b50b7e",
+    "audit": "cc9070f9bfc9f96a02df5092282c912e8aaea48e841030a17658e00b7be71b09",
+    "evaluation": "e549d1d903e500bb8d1b455efb4f38057a6fe52d53bd697e2bd6520dd95aa0de"
+  },
+  "evidence_boundary": "Post-freeze single-seed sensitivity evidence; it cannot replace the frozen five-seed B5 classification result."
+}

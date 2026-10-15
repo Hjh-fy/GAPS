@@ -1,27 +1,49 @@
 # GAPS 项目代码导览
 
-本文档用于说明当前主要代码文件之间的关系，以及各文件在 `GAPS-TimeAware2080-FlowerCLS-R3aK16-AutoV2-QC` 主线中的功能定位。
+> **CANONICAL CURRENT GUIDE — 2026-07-26**
+>
+> 当前实验范围已关闭：`NO_FURTHER_EXPERIMENTS_REQUIRED_FOR_CURRENT_SCOPE`。
+> 最终系统是 B5 real-device Flower classification + calibration-assisted
+> server DA + C1/C2 sufficient-statistics Federated H1 + C5 104D rich/1D H1
+> 的 105D per-gas target Ridge。Runtime v5 core 是最终简化回归实现；
+> Runtime v4 是正式 selective-output baseline；Runtime v5 QC2 是有效但未晋级
+> candidate。
+>
+> 新接手者请先阅读：
+>
+> - `docs/system/GAPS_SYSTEM_OVERVIEW_20260726.zh.md`
+> - `docs/system/GAPS_CODE_MAP_20260726.zh.md`
+> - `docs/system/GAPS_COMMAND_COOKBOOK_20260726.zh.md`
+> - `docs/system/GAPS_PERFORMANCE_LEDGER_20260726.zh.md`
+> - `docs/system/GAPS_REPOSITORY_ARCHIVE_INVENTORY_20260726.zh.md`
+> - `RELEASE_READINESS.md`
+>
+> 本文下方 2026-07-15 及更早的 R3aK16/AutoV2/H2.3/H8 内容保留为历史代码
+> 导航；与上述文档冲突时，以 `docs/system/` 和 protocol-close index 为准。
+
+> 2026-07-15 状态提示：当前权威主线已经更新为真实云边 Flower 分类、C5 个性化 H8 回归和 deployment-visible QC。下面较早的 R3aK16/AutoV2 章节保留作历史代码导航，不能替代最新实验结论。
+>
+> 新对话或从 GitHub 接手时，请先阅读 `docs/experiments/iotj_latest_handoff_20260715.zh.md`，再阅读 `代码文件介绍.md` 和实验经验笔记本。当前证据位于分支 `codex/system-safety-hardening`。
+
+本文档用于说明主要代码文件之间的关系。当前正式系统名和论文主线以最新交接文档及 `代码文件介绍.md` 为准。
 
 当前主线可以概括为：
 
 ```text
-time-aware 60-170 s window 数据
--> fixed-DA Flower 联邦分类
--> adapted classifier checkpoint 评估
--> R3aK16 浓度回归训练
--> per-target-client auto_v2 calibration package
--> deployment inference
--> risk score
--> QC decision: accept / review / reject
--> meeting/report visuals
+time-aware 60-170 s C1/C2/C5 window 数据
+-> 真实 ECS + Pi + PC Flower 联邦分类
+-> C5 calibration-assisted server adaptation
+-> C5 target-personalized Ridge/MLP/H8 回归
+-> deployment-visible QC: accept / review / reject
+-> runtime parity、系统开销和论文证据
 ```
 
 正式命名：
 
 ```text
-分类基座: CLS-FlowerExpB-TimeAware2080
-回归基座: REG-R3aK16-AutoV2-TimeAware2080
-系统主线: GAPS-TimeAware2080-FlowerCLS-R3aK16-AutoV2-QC
+分类主线: IoTJ v2r1 + corrected v3 B1-B5
+回归主线: C5 R0-R7，固定 H8 为当前最佳可部署点估计
+系统主线: GAPS calibration-assisted cloud-edge sensing + reliable output
 ```
 
 ## 目录关系
@@ -189,11 +211,12 @@ co_corrected_ppm: CO-specific 增强层输出，不覆盖 final_ppm
 
 `gaps_flower/regression_client.py` 和 `gaps_flower/regression_server.py` 仍有参考价值，但当前主线更多通过 `run_time_aware_raw_calibrated_qc_eval.py`、`gaps_flower/regression_task.py` 和 `gaps_deploy/*` 串起回归/QC 流程。
 
-## 主线四：部署运行时与最终包
+## 历史主线四：C12→C345 package wrapper
 
 主要文件：
 
 ```text
+gaps_deploy/c5_h8_runtime.py
 gaps_deploy/final_runtime.py
 scripts/build_final_deployment_package.py
 scripts/validate_final_deployment_bundle.py
@@ -204,8 +227,11 @@ validate_package_runtime.py
 功能关系：
 
 ```text
+gaps_deploy/c5_h8_runtime.py
+-> C5H8Runtime：formal C5 Runtime-v4 selective-output baseline API
+
 gaps_deploy/final_runtime.py
--> 面向最终部署包的运行时封装
+-> maintained legacy C12→C345 package wrapper，不是正式 C5 v4 唯一入口
 
 scripts/build_final_deployment_package.py
 -> 构建最终部署包入口

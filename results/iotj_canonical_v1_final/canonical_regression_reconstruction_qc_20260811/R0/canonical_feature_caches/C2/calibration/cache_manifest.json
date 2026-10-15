@@ -1,0 +1,29 @@
+{
+  "schema_version": "iotj.canonical_v1.quantitative_feature_cache.v1",
+  "study_id": "CAN-V1-CRRQ-20260811",
+  "client": "C2",
+  "split": "calibration",
+  "row_count": 320,
+  "sampling_rate_hz": 5,
+  "window_shape": [
+    50,
+    8
+  ],
+  "dataset_aggregate_sha256": "2f810d7e93cae5f361923184e9dc87d5ae59e0f59be9f52aff7e14f9f33e94f6",
+  "source_array_sha256": "c18e759bd66078a81994b8262981dc64755b865b488fdc36ae87d9df773e72eb",
+  "phase_array_sha256": "97a13e7202050c540b737046f65b5e69c0fca96fb4c875c88a30dcd0101df7a4",
+  "metadata_sha256": "f21467df358499720cf16553f40802da42e41995ee74e194012d5a0268e36005",
+  "extractor_file_sha256": "7627b72ee4e1823d24c374d41a6c931f66b5efedd6eaf4a839c62e7b5b1fa72a",
+  "ordered_h1_feature_names_sha256": "df696d3cfbe43eff40b515f6f1a7bb51c9cd11900dba93e231a3ded0755c3259",
+  "ordered_sensor_feature_names_sha256": "4cb9e621b39cf726b18d0102d2ec395ba11b109b6ffcabb381c729dd44f26248",
+  "h1_dimensions": 104,
+  "sensor_dimensions": 83,
+  "cache_sha256": "7276efcce08803dacc0c80e7c15707a4643837aa6cc80db14175701534869d54",
+  "row_identities_sha256": "c33d9ebc7a6f23449d745d741e19cb7d1b3feabee34943b5a370c9425db7aca9",
+  "created_from_canonical_arrays": true,
+  "legacy_cache_reused": false,
+  "resized_or_interpolated_after_preprocessing": false,
+  "dynamic_descriptor_interpretation": "fixed-5-Hz discrete per-sample descriptors",
+  "sampling_rate_invariant_claim": false,
+  "legacy_10hz_5hz_numeric_equivalence_claim": false
+}

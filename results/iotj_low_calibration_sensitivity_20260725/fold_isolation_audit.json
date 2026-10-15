@@ -1,0 +1,232 @@
+{
+  "schema_version": "iotj.low_calibration_sensitivity.v1",
+  "status": "PASS",
+  "audit_scope": "post-test deterministic replay of frozen pre-test subset seeds and fold algorithm; not used for selection",
+  "assignments": [
+    {
+      "nominal_budget": 40,
+      "replicate": 0,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 10,
+        "1": 8,
+        "2": 10,
+        "3": 6,
+        "4": 6
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 1,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 6,
+        "1": 9,
+        "2": 8,
+        "3": 9,
+        "4": 8
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 2,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 8,
+        "1": 7,
+        "2": 8,
+        "3": 8,
+        "4": 9
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 3,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 7,
+        "1": 8,
+        "2": 8,
+        "3": 8,
+        "4": 9
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 40,
+      "replicate": 4,
+      "actual_rows": 40,
+      "unique_filenames": 16,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 8,
+        "1": 9,
+        "2": 8,
+        "3": 8,
+        "4": 7
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 0,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 15,
+        "1": 15,
+        "2": 17,
+        "3": 16,
+        "4": 17
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 1,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 15,
+        "1": 17,
+        "2": 15,
+        "3": 17,
+        "4": 16
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 2,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 17,
+        "1": 16,
+        "2": 16,
+        "3": 14,
+        "4": 17
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 3,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 14,
+        "1": 15,
+        "2": 17,
+        "3": 17,
+        "4": 17
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 80,
+      "replicate": 4,
+      "actual_rows": 80,
+      "unique_filenames": 28,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 16,
+        "1": 16,
+        "2": 14,
+        "3": 17,
+        "4": 17
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 0,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 31,
+        "1": 30,
+        "2": 37,
+        "3": 34,
+        "4": 28
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 1,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 34,
+        "1": 31,
+        "2": 32,
+        "3": 33,
+        "4": 30
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 2,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 32,
+        "1": 29,
+        "2": 35,
+        "3": 31,
+        "4": 33
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 3,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 34,
+        "1": 32,
+        "2": 34,
+        "3": 30,
+        "4": 30
+      },
+      "status": "PASS"
+    },
+    {
+      "nominal_budget": 160,
+      "replicate": 4,
+      "actual_rows": 160,
+      "unique_filenames": 45,
+      "filename_fold_leakage_count": 0,
+      "fold_row_counts": {
+        "0": 32,
+        "1": 34,
+        "2": 33,
+        "3": 32,
+        "4": 29
+      },
+      "status": "PASS"
+    }
+  ]
+}
