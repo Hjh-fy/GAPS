@@ -1,0 +1,30 @@
+{
+  "status": "PASS_AUDIT_DELIVERY",
+  "original_and_v5_inputs_unchanged": true,
+  "original_files_modified": 0,
+  "worktree": "PHASE05_WORKTREE",
+  "branch": "detached managed worktree",
+  "raw_files": 640,
+  "target_exposures_usable": 320,
+  "acquisition_role_gate": "PASS",
+  "three_date_gate": {
+    "C3": "PASS",
+    "C4": "BLOCKED",
+    "C5": "BLOCKED"
+  },
+  "feature_golden_exact_rows": 142,
+  "calibration_probe_rows": 96,
+  "independent_budget_tests": 6,
+  "development_valid_windows": {
+    "C3": 838,
+    "C4": 504,
+    "C5": 504
+  },
+  "planned_matrix_rows": 12,
+  "existing_C5_checkpoints_hash_verified": 7,
+  "model_fits": 0,
+  "checkpoint_loads": 0,
+  "new_deployments": 0,
+  "experiment_runs": 0,
+  "scientific_scope": "retrospective acquisition-disjoint protocol; not prospective untouched data or long-term online validation"
+}

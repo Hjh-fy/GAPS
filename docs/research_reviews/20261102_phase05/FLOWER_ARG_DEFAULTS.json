@@ -1,0 +1,56 @@
+[
+  {
+    "module": "server_app.py",
+    "line": 100,
+    "flag": "--num-clients",
+    "default": 4
+  },
+  {
+    "module": "server_app.py",
+    "line": 106,
+    "flag": "--strategy",
+    "default": "fedavg"
+  },
+  {
+    "module": "server_app.py",
+    "line": 118,
+    "flag": "--da-preset",
+    "default": "default"
+  },
+  {
+    "module": "server_app.py",
+    "line": 120,
+    "flag": "--use-domain-adapt",
+    "default": false
+  },
+  {
+    "module": "server_app.py",
+    "line": 145,
+    "flag": "--strict-calibration-split",
+    "default": true
+  },
+  {
+    "module": "server_app.py",
+    "line": 149,
+    "flag": "--use-adapted-as-global",
+    "default": false
+  },
+  {
+    "module": "server_app.py",
+    "line": 156,
+    "flag": "--da-lambda-target-ce",
+    "default": 0.0
+  },
+  {
+    "module": "client_app.py",
+    "line": 225,
+    "flag": "--num-clients",
+    "default": 4
+  },
+  {
+    "module": "client_app.py",
+    "line": 227,
+    "flag": "--eval-split",
+    "default": "test"
+  }
+]

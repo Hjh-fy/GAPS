@@ -1,0 +1,52 @@
+file,line,code
+source/workspace/gaps_flower/server_app.py,30,FIXED_DA_STRONG = {
+source/workspace/gaps_flower/server_app.py,42,"""use_adapted_as_global"": True,"
+source/workspace/gaps_flower/server_app.py,62,"for key, value in FIXED_DA_STRONG.items():"
+source/workspace/gaps_flower/server_app.py,75,"{key: getattr(args, key) for key in FIXED_DA_STRONG}"
+source/workspace/gaps_flower/server_app.py,120,"parser.add_argument(""--use-domain-adapt"", type=lambda v: v.lower() in (""true"", ""1"", ""yes""), default=False,"
+source/workspace/gaps_flower/server_app.py,145,"parser.add_argument(""--strict-calibration-split"", type=lambda v: v.lower() in (""true"", ""1"", ""yes""), default=True,"
+source/workspace/gaps_flower/server_app.py,156,"parser.add_argument(""--da-lambda-target-ce"", type=float, default=0.0)"
+source/workspace/gaps_flower/server_app.py,175,"""--use-domain-adapt requires --strict-calibration-split true"""
+source/workspace/gaps_flower/server_app.py,261,"use_adapted_as_global=args.use_adapted_as_global,"
+source/workspace/gaps_flower/strategy.py,355,"da_lambda_target_ce: float = 0.0,"
+source/workspace/gaps_flower/strategy.py,364,"use_adapted_as_global: bool = False,"
+source/workspace/gaps_flower/strategy.py,579,if self.use_adapted_as_global:
+source/workspace/gaps_flower/strategy.py,987,"""LAMBDA_TARGET_CE"": self.da_lambda_target_ce,"
+source/workspace/gaps_flower/domain_adaptation.py,573,"""weighted_target_ce_loss"": [],"
+source/workspace/gaps_flower/domain_adaptation.py,634,"if (self.hp.get('LAMBDA_TARGET_CE', 0.0) > 0.0 and"
+source/workspace/gaps_flower/domain_adaptation.py,637,target_ce_loss = F.cross_entropy(
+source/workspace/gaps_flower/domain_adaptation.py,659,"lambda_target_ce = self.hp.get('LAMBDA_TARGET_CE', 0.0)"
+source/workspace/gaps_flower/domain_adaptation.py,671,weighted_target_ce = lambda_target_ce * target_ce_loss
+source/workspace/gaps_flower/domain_adaptation.py,685,+ weighted_target_ce
+source/workspace/gaps_flower/domain_adaptation.py,727,"diagnostics[""weighted_target_ce_loss""].append(float(weighted_target_ce.item()))"
+source/workspace/gaps_flower/domain_adaptation.py,742,"summary[""lambda_target_ce""] = float(self.hp.get('LAMBDA_TARGET_CE', 0.0))"
+source/workspace/gaps_flower/task.py,213,"model = create_model_by_config(config, with_reg_head=False)"
+source/workspace/gaps_flower/task.py,264,"prev_model = create_model_by_config(gaps_client.config, with_reg_head=False).to(gaps_client.device)"
+source/workspace/gaps_flower/task.py,276,def load_client_loaders(
+source/workspace/gaps_flower/task.py,280,"eval_split: str = ""test"","
+source/workspace/gaps_flower/task.py,290,"if eval_split == ""calibration"":"
+source/workspace/gaps_flower/task.py,295,"elif eval_split == ""test"":"
+source/workspace/gaps_flower/task.py,302,"f""Unsupported eval_split={eval_split!r}; expected calibration or test"""
+source/workspace/gaps_flower/client_app.py,19,"load_client_loaders,"
+source/workspace/gaps_flower/client_app.py,40,"client_id: int,"
+source/workspace/gaps_flower/client_app.py,51,"eval_split: str = ""test"","
+source/workspace/gaps_flower/client_app.py,53,self.client_id = client_id
+source/workspace/gaps_flower/client_app.py,70,"train_loader, eval_loader = load_client_loaders("
+source/workspace/gaps_flower/client_app.py,72,"client_id,"
+source/workspace/gaps_flower/client_app.py,77,"client_id, self.model, train_loader, self.config"
+source/workspace/gaps_flower/client_app.py,89,"client_id,"
+source/workspace/gaps_flower/client_app.py,108,- client_id
+source/workspace/gaps_flower/client_app.py,118,"self.client_id,"
+source/workspace/gaps_flower/client_app.py,144,"""client_id"": int(self.client_id),"
+source/workspace/gaps_flower/client_app.py,157,"self.client_id,"
+source/workspace/gaps_flower/client_app.py,169,"self.client_id,"
+source/workspace/gaps_flower/client_app.py,185,"client_id=self.client_id,"
+source/workspace/gaps_flower/client_app.py,193,"self.client_id,"
+source/workspace/gaps_flower/client_app.py,203,"self.client_id,"
+source/workspace/gaps_flower/client_app.py,258,"client_id=args.client_id,"
+source/workspace/gaps_flower/client_app.py,273,"args.client_id,"
+source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,18,def strict_matrix():
+source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,26,"selective_warmup=3,selective_min_scale=.3,source_ce=server,target_ce=variant in ('B0','B1'),"
+source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,27,"mmd='class' if variant=='A5' else 'none',mmd_weight=.5 if variant=='A5' else 0.,"
+source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,113,if failures or len(results)!=2:raise RuntimeError('Both source clients must finish')
+source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,115,"if [int(r.metrics['client_id']) for _,r in results]!=[1,2]:raise RuntimeError('Wrong source clients')"

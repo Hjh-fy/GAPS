@@ -1,0 +1,22 @@
+{
+  "status": "AUDITED",
+  "nominal_duration_s": 600,
+  "observed_rows_minmax": [
+    19289,
+    60001
+  ],
+  "elapsed_start_minmax": [
+    0.0,
+    0.0
+  ],
+  "elapsed_end_minmax": [
+    599.89,
+    600.0
+  ],
+  "files_with_duplicate_timestamps": 466,
+  "duplicate_timestamp_rows": 51618,
+  "files_with_time_reversals": 0,
+  "nonpositive_sensor_values": 0,
+  "absolute_calendar_time": "UNKNOWN",
+  "existing_rule": "same-time sensor observations averaged by frozen process_arrays; no new interpolation"
+}

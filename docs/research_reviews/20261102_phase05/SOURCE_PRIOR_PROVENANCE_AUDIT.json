@@ -1,0 +1,62 @@
+{
+  "status": "DO_NOT_REUSE_OLD_BANK_FOR_DAY7_COHORT",
+  "reason": "old canonical source train includes R4 on Unit1Day21/Unit2Day16; old bank refits train+calibration",
+  "new_cohort": "C1R1 Day4; C2R1 Day1 and R2 Day7",
+  "records": [
+    {
+      "client": 1,
+      "old_role": "train",
+      "path": "ORIGINAL_WORKSPACE\\dataset\\iotj_canonical_v1\\client_1\\train_experiment_info.json",
+      "sha256": "e8781d40e66909aa198c832edf39e1c45c9cc0262b73ef3d008c95d5818596e4",
+      "exposures": 160,
+      "repeat_exposures": {
+        "1": 40,
+        "2": 40,
+        "3": 40,
+        "4": 40
+      }
+    },
+    {
+      "client": 1,
+      "old_role": "calibration",
+      "path": "ORIGINAL_WORKSPACE\\dataset\\iotj_canonical_v1\\client_1\\calibration_experiment_info.json",
+      "sha256": "8d71a73d77a1c780fd3ea5338e60cb95e7c5830ca9cd40dcefde213456e118fc",
+      "exposures": 150,
+      "repeat_exposures": {
+        "1": 38,
+        "2": 39,
+        "3": 37,
+        "4": 36
+      }
+    },
+    {
+      "client": 2,
+      "old_role": "train",
+      "path": "ORIGINAL_WORKSPACE\\dataset\\iotj_canonical_v1\\client_2\\train_experiment_info.json",
+      "sha256": "acf9c7a5038a5916a0880962f98a578f14cad117ef3a93c64d787084c6571957",
+      "exposures": 160,
+      "repeat_exposures": {
+        "1": 40,
+        "2": 40,
+        "3": 40,
+        "4": 40
+      }
+    },
+    {
+      "client": 2,
+      "old_role": "calibration",
+      "path": "ORIGINAL_WORKSPACE\\dataset\\iotj_canonical_v1\\client_2\\calibration_experiment_info.json",
+      "sha256": "f21467df358499720cf16553f40802da42e41995ee74e194012d5a0268e36005",
+      "exposures": 146,
+      "repeat_exposures": {
+        "1": 35,
+        "2": 36,
+        "3": 39,
+        "4": 36
+      }
+    }
+  ],
+  "source71_equals_parent_LG": true,
+  "parent_config_sha256": "158d9dfffc36263a9724efe9565b2526749835229e218f40182d89d3ea1c7685",
+  "parent_config_source_training": "train->source calibration choose; refit train+calibration; local sufficient-statistics simulation"
+}

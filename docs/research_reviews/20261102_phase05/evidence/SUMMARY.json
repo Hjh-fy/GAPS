@@ -1,0 +1,114 @@
+{
+  "status": "AUDIT_COMPLETE_WITH_SCOPE_LIMITS",
+  "worktree": "PHASE05_WORKTREE",
+  "baseline": "FROZEN_BASELINE_V5",
+  "raw_files": 640,
+  "raw_hashes_match": 640,
+  "numeric_hashes_unique": 640,
+  "relative_day_counts": [
+    {
+      "client": 1,
+      "day": 4,
+      "exposures": 40
+    },
+    {
+      "client": 1,
+      "day": 10,
+      "exposures": 40
+    },
+    {
+      "client": 1,
+      "day": 15,
+      "exposures": 40
+    },
+    {
+      "client": 1,
+      "day": 21,
+      "exposures": 40
+    },
+    {
+      "client": 2,
+      "day": 1,
+      "exposures": 40
+    },
+    {
+      "client": 2,
+      "day": 7,
+      "exposures": 40
+    },
+    {
+      "client": 2,
+      "day": 11,
+      "exposures": 40
+    },
+    {
+      "client": 2,
+      "day": 16,
+      "exposures": 40
+    },
+    {
+      "client": 3,
+      "day": 2,
+      "exposures": 40
+    },
+    {
+      "client": 3,
+      "day": 8,
+      "exposures": 40
+    },
+    {
+      "client": 3,
+      "day": 14,
+      "exposures": 40
+    },
+    {
+      "client": 3,
+      "day": 17,
+      "exposures": 40
+    },
+    {
+      "client": 4,
+      "day": 3,
+      "exposures": 40
+    },
+    {
+      "client": 4,
+      "day": 9,
+      "exposures": 40
+    },
+    {
+      "client": 5,
+      "day": 18,
+      "exposures": 40
+    },
+    {
+      "client": 5,
+      "day": 22,
+      "exposures": 40
+    }
+  ],
+  "target_quality_pass": 320,
+  "target_quality_total": 320,
+  "calibration_anchor_eligible_total": 319,
+  "anchor_unavailable_files": [
+    "B3_GCO_F040_R3.txt"
+  ],
+  "initial_check_correction": "results/ and audit_protocol_initial.py preserved; fixed anchors required only for calibration, existing valid-window mask unchanged for development/test",
+  "feature_golden_matches": 142,
+  "feature_golden_total": 142,
+  "acquisition_protocol_gate": "PASS",
+  "three_date_gate": {
+    "C3": "PASS",
+    "C4": "BLOCKED_TWO_DATES",
+    "C5": "BLOCKED_TWO_DATES"
+  },
+  "strict_precalibration_two_source_causal_gate": {
+    "C3": "PASS",
+    "C4": "BLOCKED_SOURCE_C1_FIRST_DAY4_AFTER_CAL_DAY3",
+    "C5": "PASS"
+  },
+  "absolute_dates": "UNKNOWN",
+  "old_test_history": "previously observed; retrospective re-partition, not pristine prospective confirmation",
+  "new_model_fits": 0,
+  "elapsed_seconds": 110.13765569997486
+}

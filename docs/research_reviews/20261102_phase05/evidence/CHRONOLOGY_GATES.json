@@ -1,0 +1,62 @@
+[
+  {
+    "target": "C3",
+    "days": {
+      "calibration": [
+        8
+      ],
+      "development": [
+        14
+      ],
+      "test": [
+        17
+      ]
+    },
+    "three_role_dates": "PASS",
+    "latest_source_day": 7,
+    "sources_available_before_calibration": "PASS",
+    "sources_available_before_test": "PASS",
+    "absolute_calendar_dates": "UNKNOWN",
+    "repeat_to_day_mapping": "published schedule + repetition order, not raw absolute timestamps"
+  },
+  {
+    "target": "C4",
+    "days": {
+      "calibration": [
+        3
+      ],
+      "development": [
+        3
+      ],
+      "test": [
+        9
+      ]
+    },
+    "three_role_dates": "BLOCKED",
+    "latest_source_day": 7,
+    "sources_available_before_calibration": "BLOCKED",
+    "sources_available_before_test": "PASS",
+    "absolute_calendar_dates": "UNKNOWN",
+    "repeat_to_day_mapping": "published schedule + repetition order, not raw absolute timestamps"
+  },
+  {
+    "target": "C5",
+    "days": {
+      "calibration": [
+        18
+      ],
+      "development": [
+        18
+      ],
+      "test": [
+        22
+      ]
+    },
+    "three_role_dates": "BLOCKED",
+    "latest_source_day": 7,
+    "sources_available_before_calibration": "PASS",
+    "sources_available_before_test": "PASS",
+    "absolute_calendar_dates": "UNKNOWN",
+    "repeat_to_day_mapping": "published schedule + repetition order, not raw absolute timestamps"
+  }
+]
