@@ -1,0 +1,97 @@
+{
+  "source_grid_boundaries": [
+    {
+      "gas_id": "0",
+      "parameter": "Ridge alpha",
+      "value": 1000.0,
+      "source_fold_train_n": [
+        210,
+        420
+      ],
+      "target_A2_train_n": 4,
+      "target_A4_train_n": 8,
+      "average_loss_equivalent_lambda_source": [
+        4.761904761904762,
+        2.380952380952381
+      ],
+      "average_loss_equivalent_lambda_target": [
+        250.0,
+        125.0
+      ],
+      "action": "RETAIN;no expanded grid or target tuning;do not claim fully optimized Ridge inferiority"
+    },
+    {
+      "gas_id": "1",
+      "parameter": "Ridge alpha",
+      "value": 1000.0,
+      "source_fold_train_n": [
+        210,
+        420
+      ],
+      "target_A2_train_n": 4,
+      "target_A4_train_n": 8,
+      "average_loss_equivalent_lambda_source": [
+        4.761904761904762,
+        2.380952380952381
+      ],
+      "average_loss_equivalent_lambda_target": [
+        250.0,
+        125.0
+      ],
+      "action": "RETAIN;no expanded grid or target tuning;do not claim fully optimized Ridge inferiority"
+    },
+    {
+      "gas_id": "2",
+      "parameter": "Ridge alpha",
+      "value": 1000.0,
+      "source_fold_train_n": [
+        210,
+        420
+      ],
+      "target_A2_train_n": 4,
+      "target_A4_train_n": 8,
+      "average_loss_equivalent_lambda_source": [
+        4.761904761904762,
+        2.380952380952381
+      ],
+      "average_loss_equivalent_lambda_target": [
+        250.0,
+        125.0
+      ],
+      "action": "RETAIN;no expanded grid or target tuning;do not claim fully optimized Ridge inferiority"
+    },
+    {
+      "gas_id": "3",
+      "parameter": "Ridge alpha",
+      "value": 1000.0,
+      "source_fold_train_n": [
+        210,
+        420
+      ],
+      "target_A2_train_n": 4,
+      "target_A4_train_n": 8,
+      "average_loss_equivalent_lambda_source": [
+        4.761904761904762,
+        2.380952380952381
+      ],
+      "average_loss_equivalent_lambda_target": [
+        250.0,
+        125.0
+      ],
+      "action": "RETAIN;no expanded grid or target tuning;do not claim fully optimized Ridge inferiority"
+    }
+  ],
+  "negative_budget_cases": [
+    {
+      "target": "C4",
+      "kind": "TargetSVR71",
+      "A4_minus_A2_NRMSE_points": "0.22898695944488523",
+      "interpretation": "sample count and concentration coverage change jointly;not a feature ablation"
+    }
+  ],
+  "first_preparation": "run/ stopped before any fit at sandbox Git-state read;formal run_v2 rebuilt inputs;no scientific protocol change",
+  "initial_unit_fixture": "system temporary directory denied;new temporary fixture restricted to this worktree before frozen contract",
+  "smoke_count": "2 saved smoke heads plus1 affine-reference fit=3;count clarification saved before any fit",
+  "historical_protocol_limits": "C4/C5 not3dates;C4 not immediate two-source deployment;historical test already observed",
+  "forbidden_candidates_run": 0
+}

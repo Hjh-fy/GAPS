@@ -1,0 +1,36 @@
+import unittest
+import numpy as np
+from phase1_common import exposure_metrics,validate_fit_rows,verify_sha
+from pathlib import Path
+import tempfile
+
+class Phase1Tests(unittest.TestCase):
+    def test_single_window_error_not_cancelled_by_mean_fusion(self):
+        rows=[dict(filename='a',truth_ppm=50.,prediction_ppm=p,gas_id=0) for p in (40.,60.)]
+        m=exposure_metrics(rows)
+        self.assertAlmostEqual(m['single_window_equal_exposure_RMSE_ppm'],10.)
+        self.assertAlmostEqual(m['aux_mean_fusion_RMSE_ppm'],0.)
+
+    def test_exposures_have_equal_weight_not_equal_window_weight(self):
+        rows=[dict(filename='a',truth_ppm=50.,prediction_ppm=50.,gas_id=0)]+[dict(filename='b',truth_ppm=50.,prediction_ppm=60.,gas_id=0) for _ in range(9)]
+        m=exposure_metrics(rows)
+        self.assertAlmostEqual(m['single_window_equal_exposure_RMSE_ppm'],np.sqrt(50.))
+        self.assertAlmostEqual(m['pooled_window_RMSE_ppm'],np.sqrt(90.))
+
+    def test_future_source_and_wrong_target_role_rejected(self):
+        with self.assertRaises(ValueError):validate_fit_rows([dict(role='source_train_pool',client_id=1,day=21)],'source')
+        with self.assertRaises(ValueError):validate_fit_rows([dict(role='test',client_id=3,day=17)],'target')
+        validate_fit_rows([dict(role='source_train_pool',client_id=1,day=4)],'source')
+        validate_fit_rows([dict(role='calibration',client_id=3,day=8)],'target')
+
+    def test_hash_mutation_rejected(self):
+        parent=Path(__file__).resolve().parent
+        with tempfile.TemporaryDirectory(dir=parent) as d:
+            assert Path(d).resolve().is_relative_to(parent)
+            p=Path(d)/'x';p.write_bytes(b'original')
+            import hashlib
+            h=hashlib.sha256(p.read_bytes()).hexdigest();verify_sha(p,h)
+            p.write_bytes(b'changed')
+            with self.assertRaises(ValueError):verify_sha(p,h)
+
+if __name__=='__main__':unittest.main()

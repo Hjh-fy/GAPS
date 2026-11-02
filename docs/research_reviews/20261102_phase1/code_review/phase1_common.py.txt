@@ -1,0 +1,129 @@
+"""Phase1 orchestration primitives; actual feature/Ridge/SVR numerics are imported unchanged from v5."""
+import collections,csv,hashlib,importlib.util,json,os,sys
+from pathlib import Path
+from types import SimpleNamespace
+import numpy as np
+sys.dont_write_bytecode=True
+os.environ.setdefault('GIT_OPTIONAL_LOCKS','0')
+
+HERE=Path(__file__).resolve().parent;WORK=HERE.parents[1]
+P05=WORK/'research/fedongas_phase05_20261102'
+ORIGINAL=Path('ORIGINAL_WORKSPACE')
+BASE=ORIGINAL/'research/fedongas_frozen_baseline_20261102_v5'
+LOW=np.array([12.5,25.,12.5,25.]);SPAN=np.array([112.5,225.,112.5,225.])
+ALPHAS=[0.,.01,.1,1.,10.,100.,1000.]
+GRID=[dict(C=c,gamma_factor=g) for c in (1.,10.,100.) for g in (.1,1.,10.)]
+
+def ext(p):
+    s=str(Path(p).resolve());return '\\\'+s if os.name=='nt' and not s.startswith('\\\') else s
+def sha(p):
+    h=hashlib.sha256()
+    with open(ext(p),'rb') as f:
+        for b in iter(lambda:f.read(1048576),b''):h.update(b)
+    return h.hexdigest()
+def verify_sha(p,h):
+    if sha(p)!=h:raise ValueError('SHA mismatch: '+str(p))
+def read(p):return json.loads(Path(ext(p)).read_text(encoding='utf-8-sig'))
+def rows(p):
+    with open(ext(p),encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
+def js(p,v):
+    p=Path(p);p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('x',encoding='utf-8',newline='\n') as f:json.dump(v,f,ensure_ascii=False,indent=2,allow_nan=False)
+def table(p,rr):
+    p=Path(p);p.parent.mkdir(parents=True,exist_ok=True)
+    if not rr:raise ValueError('Empty evidence table')
+    with p.open('x',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(dict.fromkeys(k for r in rr for k in r)));w.writeheader();w.writerows(rr)
+def load(name,p):
+    spec=importlib.util.spec_from_file_location(name,ext(p));m=importlib.util.module_from_spec(spec);sys.modules[name]=m;spec.loader.exec_module(m);return m
+def arrays(p):
+    with np.load(p,allow_pickle=False) as z:return {k:np.array(z[k]) for k in z.files}
+
+def frozen():
+    base=Path(ext(BASE));index={r['archive_relative_path']:r['sha256'] for r in rows(base/'manifests/SOURCE_INVENTORY.csv')};verified={}
+    def get(rel):
+        p=base/rel;verify_sha(p,index[rel]);verified[str(p).removeprefix('\\\')]=index[rel];return p
+    code='source/workspace/outputs/FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/'
+    ridge=load('frozen_target_numerics',get(code+'frozen_target_numerics.py'))
+    svr=load('_phase1_v5_svr',get(code+'svr_core.py'))
+    strict=load('_phase1_v5_strict',get('source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_data.py'))
+    fc=read(P05/'results_v2/FEATURE_CONTRACT.json')
+    feature_path=Path(ext(fc['extractor_path']));rich_path=Path(ext(fc['rich_formula_path']))
+    get(feature_path.relative_to(base).as_posix());get(rich_path.relative_to(base).as_posix())
+    load('run_regression_head_ablation',rich_path);features=load('_phase1_v5_features',feature_path)
+    idx=fc['indices_0_based'];names=fc['names']
+    assert [features.SENSOR_FEATURE_NAMES[i] for i in idx]==names and len(names)==71
+    return SimpleNamespace(ridge=ridge,svr=svr,strict=strict,features=features,idx=idx,names=names,verified=verified)
+
+def validate_fit_rows(rr,scope):
+    if not rr:raise ValueError('No legal fit rows')
+    for r in rr:
+        c=int(r['client_id']);day=int(r['day'])
+        if scope=='source':
+            if r['role']!='source_train_pool' or (c,day) not in ((1,4),(2,1),(2,7)):raise ValueError('Illegal future/source fit data')
+        elif scope=='target':
+            if r['role']!='calibration' or c not in (3,4,5) or day!={3:8,4:3,5:18}[c]:raise ValueError('Noncalibration target fit data')
+        else:raise ValueError('Unknown fit scope')
+
+def feature_file(v,row,calibration=False):
+    p=ORIGINAL/'dataset/data1'/row['filename'];verify_sha(p,row['sha256'])
+    a=np.loadtxt(p,dtype=np.float64)
+    if hashlib.sha256(np.ascontiguousarray(a).tobytes()).hexdigest()!=row['canonical_numeric_sha256']:raise ValueError('Numeric identity mismatch')
+    parsed=v.strict.parse_raw_name(p.name)
+    for k in ('client_id','repeat_id','day','class_id','concentration_code'):
+        if int(row[k])!=parsed[k]:raise ValueError('Raw identity field mismatch')
+    if float(row['concentration'])!=parsed['concentration']:raise ValueError('Label mapping mismatch')
+    data=v.strict.process_arrays(a[:,0],a[:,1:])
+    ids=v.strict.calibration_indices(data) if calibration else [i for i,m in enumerate(data['metadata']) if m['valid']]
+    if not ids:raise ValueError('No valid windows')
+    out=[];meta=[]
+    for i in ids:
+        wm=data['metadata'][i];x=v.features.extract_canonical_features(data['x'][i],phase=-1,metadata={},client='unknown',split='strict_phase1',sample_index=0).sensor83[v.idx]
+        if x.shape!=(71,) or not np.isfinite(x).all():raise ValueError('71D contract failure')
+        out.append(x);meta.append(dict(filename=p.name,client_id=parsed['client_id'],day=parsed['day'],gas_id=parsed['class_id'],
+            concentration_code=parsed['concentration_code'],truth_ppm=parsed['concentration'],start_s=wm['start_s'],end_s=wm['end_s'],
+            physical_identity=f"C{parsed['client_id']}|{p.name}|{wm['start_s']:.6f}|{wm['end_s']:.6f}",raw_sha256=row['sha256']))
+    return out,meta
+
+def make_cache(v,rr,npz,meta_path,cal=False):
+    x=[];meta=[]
+    for r in rr:
+        xx,mm=feature_file(v,r,cal);x.extend(xx);meta.extend(mm)
+    x=np.array(x,dtype=np.float64)
+    with Path(npz).open('xb') as f:np.savez_compressed(f,x71=x,y=np.array([m['truth_ppm'] for m in meta]),gas=np.array([m['gas_id'] for m in meta]),
+        filenames=np.array([m['filename'] for m in meta]),clients=np.array([f"C{m['client_id']}" for m in meta]))
+    js(meta_path,meta);return x,meta
+
+def fit(v,kind,x,y,g,params):
+    if kind=='TargetSVR71':inner=v.svr.fit_head(x,y,g,params)
+    elif kind=='TargetRidge71':inner=v.ridge.fit_ridge_model(x,(y-LOW[g])/SPAN[g],params['alpha'],(float(min(y))-LOW[g])/SPAN[g],(float(max(y))-LOW[g])/SPAN[g])
+    else:raise ValueError('Model not preregistered')
+    return dict(kind=kind,numerical=inner,gas=g,low=float(LOW[g]),span=float(SPAN[g]),clip_min=float(min(y)),clip_max=float(max(y)))
+
+def predict(v,h,x,clip=False):
+    if h['kind']=='TargetSVR71':return v.svr.predict_head(h['numerical'],x,clip=clip)
+    m=h['numerical'];p=v.ridge._predict((np.array(m['mean']),np.array(m['scale']),np.array(m['coef'])),x)*h['span']+h['low']
+    return np.clip(p,h['clip_min'],h['clip_max']) if clip else p
+
+def exposure_rows(rr):
+    grouped=collections.defaultdict(list)
+    for r in rr:grouped[r['filename']].append(r)
+    out=[]
+    for name,rs in sorted(grouped.items()):
+        g=int(rs[0]['gas_id']);y=np.array([float(r['truth_ppm']) for r in rs]);p=np.array([float(r['prediction_ppm']) for r in rs]);e=p-y
+        if not np.all(y==y[0]):raise ValueError('Changing truth within exposure')
+        out.append(dict(filename=name,gas_id=g,truth_ppm=float(y[0]),n_windows=len(rs),
+            mean_window_squared_error=float(np.mean(e*e)),mean_window_abs_error=float(np.mean(abs(e))),
+            mean_window_normalized_squared_error=float(np.mean((e/SPAN[g])**2)),mean_window_bias=float(e.mean()),
+            mean_prediction_ppm=float(p.mean()),aux_mean_fusion_error_ppm=float(p.mean()-y[0])))
+    return out
+
+def exposure_metrics(rr):
+    er=exposure_rows(rr);e=np.array([float(r['prediction_ppm'])-float(r['truth_ppm']) for r in rr]);q=np.array([r['gas_id'] for r in er],int)
+    means=np.array([r['aux_mean_fusion_error_ppm'] for r in er])
+    return dict(n_windows=len(rr),n_exposures=len(er),
+        single_window_equal_exposure_NRMSE_percent=float(100*np.sqrt(np.mean([r['mean_window_normalized_squared_error'] for r in er]))),
+        single_window_equal_exposure_RMSE_ppm=float(np.sqrt(np.mean([r['mean_window_squared_error'] for r in er]))),
+        single_window_equal_exposure_MAE_ppm=float(np.mean([r['mean_window_abs_error'] for r in er])),
+        bias_ppm=float(np.mean([r['mean_window_bias'] for r in er])),pooled_window_RMSE_ppm=float(np.sqrt(np.mean(e*e))),
+        aux_mean_fusion_RMSE_ppm=float(np.sqrt(np.mean(means**2))),aux_mean_fusion_NRMSE_percent=float(100*np.sqrt(np.mean((means/SPAN[q])**2))))

@@ -1,0 +1,1082 @@
+[
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C3-A2-TargetRidge71-S42-20261102_g0.joblib",
+    "sha256": "229efb354905db0cd2042d2073685bf6652fe09b572b8d199f0488e5c74eabed",
+    "bytes": 1904,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GEa_F010_R2.txt",
+      "B3_GEa_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C3-A2-TargetRidge71-S42-20261102_g1.joblib",
+    "sha256": "b2e9635c23734044597eb6ecb67271cddb18ccc2682a896747bc35c660ea94d5",
+    "bytes": 1897,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GCO_F010_R2.txt",
+      "B3_GCO_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C3-A2-TargetRidge71-S42-20261102_g2.joblib",
+    "sha256": "6459cb58767c59d8f28b0b22a43a91d48b4d30980b90e0f683f02e6a27120ac9",
+    "bytes": 1922,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GEy_F010_R2.txt",
+      "B3_GEy_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C3-A2-TargetRidge71-S42-20261102_g3.joblib",
+    "sha256": "1dcc44fbfd3ccb8d1cac4ba48a835991669b610c8432ffa6f1cf6f9e544bd8af",
+    "bytes": 1908,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GMe_F010_R2.txt",
+      "B3_GMe_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C3-A2-TargetSVR71-S42-20261102_g0.joblib",
+    "sha256": "c7add75eb317ff0d43599735e0ecb8c39ab5e3ede140ffdf8b068a7440ed628e",
+    "bytes": 4181,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B3_GEa_F010_R2.txt",
+      "B3_GEa_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C3-A2-TargetSVR71-S42-20261102_g1.joblib",
+    "sha256": "c52020216d3c0925d40e1b7be2c6daef4a98f3ca2bccb74493f41364f2dacb9f",
+    "bytes": 4160,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "calibration_files": [
+      "B3_GCO_F010_R2.txt",
+      "B3_GCO_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C3-A2-TargetSVR71-S42-20261102_g2.joblib",
+    "sha256": "207139bdb069683a3ddff5000db48844a48d528e8c8c2395f840063a497b7bf7",
+    "bytes": 4208,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B3_GEy_F010_R2.txt",
+      "B3_GEy_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A2-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C3-A2-TargetSVR71-S42-20261102_g3.joblib",
+    "sha256": "6c6bf13f3fe0d33769438774f5227807422bae7e271571f4560d29ea9a9535f7",
+    "bytes": 4205,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B3_GMe_F010_R2.txt",
+      "B3_GMe_F100_R2.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C3-A4-TargetRidge71-S42-20261102_g0.joblib",
+    "sha256": "17e2f784e9fa002d5879cbeab6228b5c57e579b17ea0cad05d32e2431afbd8df",
+    "bytes": 1902,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GEa_F010_R2.txt",
+      "B3_GEa_F040_R2.txt",
+      "B3_GEa_F070_R2.txt",
+      "B3_GEa_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C3-A4-TargetRidge71-S42-20261102_g1.joblib",
+    "sha256": "b7ea64dcc0846b097d8778455eaaedf2b86def82dfea4c5e01d682cb667e0800",
+    "bytes": 1908,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GCO_F010_R2.txt",
+      "B3_GCO_F040_R2.txt",
+      "B3_GCO_F070_R2.txt",
+      "B3_GCO_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C3-A4-TargetRidge71-S42-20261102_g2.joblib",
+    "sha256": "92707a32ff63a299a813c9e129b6cc2bd702b96febf9ef29770249fe54511c85",
+    "bytes": 1931,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GEy_F010_R2.txt",
+      "B3_GEy_F040_R2.txt",
+      "B3_GEy_F070_R2.txt",
+      "B3_GEy_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetRidge71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C3-A4-TargetRidge71-S42-20261102_g3.joblib",
+    "sha256": "bcf5d55c26eb69bfe863ecd56d09252494c86bba8b3d0b2a941ac67c1f8086ec",
+    "bytes": 1912,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B3_GMe_F010_R2.txt",
+      "B3_GMe_F040_R2.txt",
+      "B3_GMe_F070_R2.txt",
+      "B3_GMe_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C3-A4-TargetSVR71-S42-20261102_g0.joblib",
+    "sha256": "1691804a352d1c181f543eecd275b0673f38dff66187b35eea9d163977b32b01",
+    "bytes": 5825,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B3_GEa_F010_R2.txt",
+      "B3_GEa_F040_R2.txt",
+      "B3_GEa_F070_R2.txt",
+      "B3_GEa_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C3-A4-TargetSVR71-S42-20261102_g1.joblib",
+    "sha256": "c33bd810bc433dabd5c3bdbd6cc5add7b9cf86a8c66a3c04a5ad445ff70ceb14",
+    "bytes": 5819,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "calibration_files": [
+      "B3_GCO_F010_R2.txt",
+      "B3_GCO_F040_R2.txt",
+      "B3_GCO_F070_R2.txt",
+      "B3_GCO_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C3-A4-TargetSVR71-S42-20261102_g2.joblib",
+    "sha256": "a95b6b228412398ef2eb1bfc656e8c506bcb3c5cb906dee6da3f22157c6ece8f",
+    "bytes": 6433,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B3_GEy_F010_R2.txt",
+      "B3_GEy_F040_R2.txt",
+      "B3_GEy_F070_R2.txt",
+      "B3_GEy_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C3-A4-TargetSVR71-S42-20261102",
+    "target": "C3",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C3-A4-TargetSVR71-S42-20261102_g3.joblib",
+    "sha256": "195e9353ac041e4e4badef9dc8270eab17db3b345a7a7a71167e9134b4b5ae20",
+    "bytes": 6432,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B3_GMe_F010_R2.txt",
+      "B3_GMe_F040_R2.txt",
+      "B3_GMe_F070_R2.txt",
+      "B3_GMe_F100_R2.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C4-A2-TargetRidge71-S42-20261102_g0.joblib",
+    "sha256": "c538d976f5b1f24d0d0d1b4dd5ec6f37ff4d28ca6b0b1db3bdc2a2147d3912d5",
+    "bytes": 1951,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GEa_F010_R1.txt",
+      "B4_GEa_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C4-A2-TargetRidge71-S42-20261102_g1.joblib",
+    "sha256": "09c37d4222a75cb26e8726c503ceca42125b6baf7e16475a848c9fe0037c69b6",
+    "bytes": 1911,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GCO_F010_R1.txt",
+      "B4_GCO_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C4-A2-TargetRidge71-S42-20261102_g2.joblib",
+    "sha256": "f391b596be91e68d69ade69540bac98d6c3ade68acf628439083c2716e63e7ce",
+    "bytes": 1895,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GEy_F010_R1.txt",
+      "B4_GEy_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C4-A2-TargetRidge71-S42-20261102_g3.joblib",
+    "sha256": "f650780a789f7bcc09a6b07e1885c696f54a2a97ef02e2c20a795e1460799399",
+    "bytes": 1887,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GMe_F010_R1.txt",
+      "B4_GMe_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C4-A2-TargetSVR71-S42-20261102_g0.joblib",
+    "sha256": "66d028269b3156c65950e5d512ec80f6f2442c38e35c7a1b10f2d94c40cf0da3",
+    "bytes": 4261,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B4_GEa_F010_R1.txt",
+      "B4_GEa_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C4-A2-TargetSVR71-S42-20261102_g1.joblib",
+    "sha256": "5b3952f0596dec41df967f51d56853a44aba5f188c13e5411d2b76cb9a0b7743",
+    "bytes": 4212,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "calibration_files": [
+      "B4_GCO_F010_R1.txt",
+      "B4_GCO_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C4-A2-TargetSVR71-S42-20261102_g2.joblib",
+    "sha256": "6acbeebe1b53dfd42ddaf12c2c53f2bf338e07aaeece91e0145aeabf7bea0dba",
+    "bytes": 4168,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B4_GEy_F010_R1.txt",
+      "B4_GEy_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A2-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C4-A2-TargetSVR71-S42-20261102_g3.joblib",
+    "sha256": "f1d62204714509c163c7ace9ab6a83e26241fb45ac56dc98cc56b0055d55e103",
+    "bytes": 4161,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B4_GMe_F010_R1.txt",
+      "B4_GMe_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C4-A4-TargetRidge71-S42-20261102_g0.joblib",
+    "sha256": "f0e035bdec5e34f1a901830ddd511fc2f1422dca28027968cf032db24bf49322",
+    "bytes": 1968,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GEa_F010_R1.txt",
+      "B4_GEa_F040_R1.txt",
+      "B4_GEa_F070_R1.txt",
+      "B4_GEa_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C4-A4-TargetRidge71-S42-20261102_g1.joblib",
+    "sha256": "6eafe0d18de6e3ee238f5dc04f47cd8c875dc120377686d9f37e1ab7854c3f54",
+    "bytes": 1924,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GCO_F010_R1.txt",
+      "B4_GCO_F040_R1.txt",
+      "B4_GCO_F070_R1.txt",
+      "B4_GCO_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C4-A4-TargetRidge71-S42-20261102_g2.joblib",
+    "sha256": "d791efe797a3cb0195f8f7eae2bc2530b16fc7ce2251f9b527c08c2b6f09e57a",
+    "bytes": 1906,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GEy_F010_R1.txt",
+      "B4_GEy_F040_R1.txt",
+      "B4_GEy_F070_R1.txt",
+      "B4_GEy_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetRidge71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C4-A4-TargetRidge71-S42-20261102_g3.joblib",
+    "sha256": "a60b5a2ec843ca854f1d23baf357b138921928c1d2e9f17a504c9c91242afefd",
+    "bytes": 1899,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B4_GMe_F010_R1.txt",
+      "B4_GMe_F040_R1.txt",
+      "B4_GMe_F070_R1.txt",
+      "B4_GMe_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C4-A4-TargetSVR71-S42-20261102_g0.joblib",
+    "sha256": "073733086688f9c54947a0ce2b5fbebc4bedfc45445305f45fdcf0e820d7d787",
+    "bytes": 6515,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B4_GEa_F010_R1.txt",
+      "B4_GEa_F040_R1.txt",
+      "B4_GEa_F070_R1.txt",
+      "B4_GEa_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C4-A4-TargetSVR71-S42-20261102_g1.joblib",
+    "sha256": "67bb6be22f85fec17bb26d0de252c9105c147032d2ed74b7417c0cfa4201224d",
+    "bytes": 6478,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "calibration_files": [
+      "B4_GCO_F010_R1.txt",
+      "B4_GCO_F040_R1.txt",
+      "B4_GCO_F070_R1.txt",
+      "B4_GCO_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C4-A4-TargetSVR71-S42-20261102_g2.joblib",
+    "sha256": "d0f9885c773eab62c34c51424cdd2a7a3183db90fb651bbf6ba0fc7793d22c14",
+    "bytes": 6349,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B4_GEy_F010_R1.txt",
+      "B4_GEy_F040_R1.txt",
+      "B4_GEy_F070_R1.txt",
+      "B4_GEy_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C4-A4-TargetSVR71-S42-20261102",
+    "target": "C4",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C4-A4-TargetSVR71-S42-20261102_g3.joblib",
+    "sha256": "8f5f5923d25b08a7998c5a94f20208ae7e1ace65f60a229032d18a29ce29ef47",
+    "bytes": 5819,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B4_GMe_F010_R1.txt",
+      "B4_GMe_F040_R1.txt",
+      "B4_GMe_F070_R1.txt",
+      "B4_GMe_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C5-A2-TargetRidge71-S42-20261102_g0.joblib",
+    "sha256": "11e70c45e9ebcafd7c1598d1486be4cc30a6be702d9bd1243dcde9ad7974e38f",
+    "bytes": 1929,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GEa_F010_R1.txt",
+      "B5_GEa_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C5-A2-TargetRidge71-S42-20261102_g1.joblib",
+    "sha256": "16a24fabe2a8086f197baaa885ab7c4aeeb86a2efbeaf3a6f3dcccd5c464cf37",
+    "bytes": 1934,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GCO_F010_R1.txt",
+      "B5_GCO_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C5-A2-TargetRidge71-S42-20261102_g2.joblib",
+    "sha256": "dc8d2036b682482a9aa2091fc788dff1cbc5a921cffadfbcdacec1892145b988",
+    "bytes": 1881,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GEy_F010_R1.txt",
+      "B5_GEy_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetRidge71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C5-A2-TargetRidge71-S42-20261102_g3.joblib",
+    "sha256": "9dacbfa3c6fedbeec6d0d90a9ef7c71ec00c57fed4eb582e281041bbc817e807",
+    "bytes": 1915,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GMe_F010_R1.txt",
+      "B5_GMe_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C5-A2-TargetSVR71-S42-20261102_g0.joblib",
+    "sha256": "f56a32566dcef7127e5b8ac13f1b138e2743c603b3c3de1bb669e08e43f04b8c",
+    "bytes": 4226,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B5_GEa_F010_R1.txt",
+      "B5_GEa_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C5-A2-TargetSVR71-S42-20261102_g1.joblib",
+    "sha256": "ea59b655e103faa6ffd364644cc303e07d26bfa109a457685f7d59dd38a29ed0",
+    "bytes": 4228,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "calibration_files": [
+      "B5_GCO_F010_R1.txt",
+      "B5_GCO_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C5-A2-TargetSVR71-S42-20261102_g2.joblib",
+    "sha256": "23d1f53b564655df08febd329b2eb758ee2bff566af35975d7d0449b84577988",
+    "bytes": 4135,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B5_GEy_F010_R1.txt",
+      "B5_GEy_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A2-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 2,
+    "kind": "TargetSVR71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C5-A2-TargetSVR71-S42-20261102_g3.joblib",
+    "sha256": "b03656ec4c531598666e3d1c9245df3673e4523e5d94473de9c6d245838ebdd4",
+    "bytes": 4237,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B5_GMe_F010_R1.txt",
+      "B5_GMe_F100_R1.txt"
+    ],
+    "training_n": 4,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C5-A4-TargetRidge71-S42-20261102_g0.joblib",
+    "sha256": "726cd9b740182ed53fe7dfb18ca9b563a51d1862fc03fe2f2af8de3e42311685",
+    "bytes": 1933,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GEa_F010_R1.txt",
+      "B5_GEa_F040_R1.txt",
+      "B5_GEa_F070_R1.txt",
+      "B5_GEa_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C5-A4-TargetRidge71-S42-20261102_g1.joblib",
+    "sha256": "96d86c4d23049076528abc83a0dd894fb55bb94d23c3763ad9beb4806cb63e1c",
+    "bytes": 1944,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GCO_F010_R1.txt",
+      "B5_GCO_F040_R1.txt",
+      "B5_GCO_F070_R1.txt",
+      "B5_GCO_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C5-A4-TargetRidge71-S42-20261102_g2.joblib",
+    "sha256": "6cda18bd66b393e9026aa134ffcdf6657af7ae472b4bcb005f1d3183bf78443c",
+    "bytes": 1884,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GEy_F010_R1.txt",
+      "B5_GEy_F040_R1.txt",
+      "B5_GEy_F070_R1.txt",
+      "B5_GEy_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetRidge71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetRidge71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C5-A4-TargetRidge71-S42-20261102_g3.joblib",
+    "sha256": "c88722a96a2425303e7b2891b8d96aaa459fa66a15ad88aa2d00b3d45aae4289",
+    "bytes": 1933,
+    "params": {
+      "alpha": 1000.0
+    },
+    "calibration_files": [
+      "B5_GMe_F010_R1.txt",
+      "B5_GMe_F040_R1.txt",
+      "B5_GMe_F070_R1.txt",
+      "B5_GMe_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 0,
+    "path": "models/FONG-P1-C5-A4-TargetSVR71-S42-20261102_g0.joblib",
+    "sha256": "defe7875017ca115a2f487717dd30b5ecaf53b11525c4a7cf4ba5fdd25d390e5",
+    "bytes": 6490,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B5_GEa_F010_R1.txt",
+      "B5_GEa_F040_R1.txt",
+      "B5_GEa_F070_R1.txt",
+      "B5_GEa_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 1,
+    "path": "models/FONG-P1-C5-A4-TargetSVR71-S42-20261102_g1.joblib",
+    "sha256": "026f10778722ed314397260738635cc1b275e800ebfeb3f70e075260db6c15dd",
+    "bytes": 6489,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "calibration_files": [
+      "B5_GCO_F010_R1.txt",
+      "B5_GCO_F040_R1.txt",
+      "B5_GCO_F070_R1.txt",
+      "B5_GCO_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 2,
+    "path": "models/FONG-P1-C5-A4-TargetSVR71-S42-20261102_g2.joblib",
+    "sha256": "74d0274a442a1523ab1bfdbd8e230c3ccbc23209319a46a911b4065bbe4597a0",
+    "bytes": 6323,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B5_GEy_F010_R1.txt",
+      "B5_GEy_F040_R1.txt",
+      "B5_GEy_F070_R1.txt",
+      "B5_GEy_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 12.5,
+    "clip_max": 125.0,
+    "roundtrip_max_difference_ppm": 0.0
+  },
+  {
+    "experiment_id": "FONG-P1-C5-A4-TargetSVR71-S42-20261102",
+    "target": "C5",
+    "budget": 4,
+    "kind": "TargetSVR71",
+    "gas_id": 3,
+    "path": "models/FONG-P1-C5-A4-TargetSVR71-S42-20261102_g3.joblib",
+    "sha256": "6a3b506b0e46b65a4ec9d919667fd050dcc540919b64f597df840e76554f443b",
+    "bytes": 5934,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "calibration_files": [
+      "B5_GMe_F010_R1.txt",
+      "B5_GMe_F040_R1.txt",
+      "B5_GMe_F070_R1.txt",
+      "B5_GMe_F100_R1.txt"
+    ],
+    "training_n": 8,
+    "clip_min": 25.0,
+    "clip_max": 250.0,
+    "roundtrip_max_difference_ppm": 0.0
+  }
+]

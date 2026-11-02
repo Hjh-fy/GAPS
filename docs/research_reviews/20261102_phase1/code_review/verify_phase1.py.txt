@@ -1,0 +1,66 @@
+"""Final independent consistency audit; no fitting, no historical checkpoint loading."""
+import collections,json,subprocess
+from pathlib import Path
+import joblib,numpy as np
+from phase1_common import *
+
+RUN=HERE/'run_v2'
+def main():
+    c=read(RUN/'PRE_RUN_CONTRACT.json');lock=read(RUN/'ALL_MODELS_LOCKED.json');done=read(RUN/'EVALUATION_COMPLETE.json')
+    for p,h in c['input_and_code_sha256'].items():verify_sha(p,h)
+    for p,h in lock['files'].items():verify_sha(p,h)
+    for name,h in done['files'].items():verify_sha(RUN/'evaluation'/name,h)
+    assert read(RUN/'SMOKE_QA.json')['status']=='PASS'
+    assert read(RUN/'PRE_SMOKE_COUNT_CLARIFICATION.json')['all_planned_fit_calls']==179
+    events=[json.loads(s) for s in (RUN/'ACCESS_EVENTS.jsonl').read_text(encoding='utf-8').splitlines()]
+    seq=[e['stage'] for e in events]
+    assert seq==['prepare','smoke','source_parameters_locked','all_models_locked','target_test_features_released','evaluation_complete']
+    assert read(RUN/'TEST_RELEASE_RECEIPT.json')['lock_sha256']==sha(RUN/'ALL_MODELS_LOCKED.json')
+    index=read(RUN/'MODEL_INDEX.json');preds=rows(RUN/'evaluation/WINDOW_PREDICTIONS.csv');overall=rows(RUN/'evaluation/OVERALL_METRICS.csv')
+    registry=rows(RUN/'EXPERIMENT_REGISTRY_COMPLETED.csv')
+    assert len(registry)==12 and len({r['experiment_id'] for r in registry})==12 and len(index)==48 and len(preds)==10080
+    v=frozen();roundtrips=[]
+    for r in index:
+        verify_sha(RUN/r['path'],r['sha256']);h=joblib.load(RUN/r['path'])
+        zz=arrays(RUN/'data'/f"{r['target']}_test.npz");meta=read(RUN/'data'/f"{r['target']}_test_metadata.json")
+        ids=np.flatnonzero(zz['gas']==r['gas_id'])
+        expected={p['physical_identity']:p for p in preds if p['experiment_id']==r['experiment_id']}
+        for i in (ids[0],ids[-1]):
+            p=float(predict(v,h,zz['x71'][i:i+1],False)[0]);e=expected[meta[i]['physical_identity']]
+            assert p==float(e['prediction_raw_ppm']);roundtrips.append(dict(experiment_id=r['experiment_id'],gas_id=r['gas_id'],identity=meta[i]['physical_identity'],difference=0.))
+    for reg in registry:
+        rr=[r for r in preds if r['experiment_id']==reg['experiment_id']];assert len(rr)==840 and len({r['filename'] for r in rr})==40
+        assert all(n==21 for n in collections.Counter(r['filename'] for r in rr).values())
+        for mode in ('clipped','raw'):
+            recompute=exposure_metrics([dict(r,prediction_ppm=float(r[f'prediction_{mode}_ppm'])) for r in rr])
+            original=next(r for r in overall if r['experiment_id']==reg['experiment_id'] and r['prediction_mode']==mode)
+            for k,value in recompute.items():assert abs(float(original[k])-float(value))<1e-10
+    raw=rows(P05/'results_v2/RAW_ACQUISITION_AUDIT.csv')
+    for n,r in enumerate(raw,1):
+        verify_sha(r['absolute_path'],r['sha256'])
+        if n%160==0:print(json.dumps(dict(stage='original_raw_protection',checked=n)),flush=True)
+    status=subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no'],cwd=ORIGINAL).decode()
+    assert status==c['original_tracked_status']
+    boundary=[]
+    for g,choice in read(RUN/'FROZEN_PARAMETERS.json')['choices'].items():
+        if choice['ridge_alpha']==max(ALPHAS):boundary.append(dict(gas_id=g,parameter='Ridge alpha',value=choice['ridge_alpha'],
+            source_fold_train_n=[210,420],target_A2_train_n=4,target_A4_train_n=8,
+            average_loss_equivalent_lambda_source=[1000/210,1000/420],average_loss_equivalent_lambda_target=[250.,125.],
+            action='RETAIN;no expanded grid or target tuning;do not claim fully optimized Ridge inferiority'))
+    js(RUN/'ANOMALIES.json',dict(source_grid_boundaries=boundary,negative_budget_cases=[r for r in rows(RUN/'analysis/BUDGET_DELTAS.csv') if float(r['A4_minus_A2_NRMSE_points'])>0],
+        first_preparation='run/ stopped before any fit at sandbox Git-state read;formal run_v2 rebuilt inputs;no scientific protocol change',
+        initial_unit_fixture='system temporary directory denied;new temporary fixture restricted to this worktree before frozen contract',
+        smoke_count='2 saved smoke heads plus1 affine-reference fit=3;count clarification saved before any fit',
+        historical_protocol_limits='C4/C5 not3dates;C4 not immediate two-source deployment;historical test already observed',
+        forbidden_candidates_run=0))
+    js(RUN/'MODEL_REPLAY_QA.json',dict(status='PASS',fresh_saved_head_window_replays=len(roundtrips),checks=roundtrips))
+    js(RUN/'FINAL_VERIFICATION.json',dict(status='PASS_WITH_DOCUMENTED_PROTOCOL_AND_HP_LIMITS',configurations=12,target_heads=48,
+        formal_source_cv_fits=128,formal_target_fits=48,synthetic_smoke_fit_calls=3,total_fit_calls=179,
+        prediction_rows=10080,exposure_metric_rows=960,primary_metric='single-window errors averaged equally over exposures',
+        mean_fusion='auxiliary only',formula_checks=24,model_window_replay_checks=96,all_640_raw_hashes_unchanged=True,
+        v5_selected_sources_and_zip_unchanged=True,original_tracked_status_unchanged=True,source_parameter_selection_only=True,
+        development_model_selection=False,target_test_released_after_all_models_locked=True,old_checkpoints_loaded=0,
+        predicted_class_routing='NOT_RUN',extra_hyperparameter_rounds=0,KRR_residual_neural_Flower_or_deployment_runs=0,
+        comparison_scope='C3 3dates;C4/C5 separately labelled2date alternatives;retrospective historical-data evaluation'))
+    print(json.dumps(dict(status='PASS',configurations=12,heads=48,window_rows=10080,raw_files_protected=640,roundtrip_window_replays=96),ensure_ascii=False))
+if __name__=='__main__':main()

@@ -1,0 +1,598 @@
+[
+  {
+    "gas_id": 0,
+    "ridge_alpha": 1000.0,
+    "ridge_candidates": [
+      {
+        "alpha": 0.0,
+        "validation_RMSE_ppm": 56.530507096591826
+      },
+      {
+        "alpha": 0.01,
+        "validation_RMSE_ppm": 46.78409836979887
+      },
+      {
+        "alpha": 0.1,
+        "validation_RMSE_ppm": 32.41931411299499
+      },
+      {
+        "alpha": 1.0,
+        "validation_RMSE_ppm": 27.923724192905016
+      },
+      {
+        "alpha": 10.0,
+        "validation_RMSE_ppm": 19.370543078178596
+      },
+      {
+        "alpha": 100.0,
+        "validation_RMSE_ppm": 12.549157819711311
+      },
+      {
+        "alpha": 1000.0,
+        "validation_RMSE_ppm": 11.301551806314247
+      }
+    ],
+    "svr_candidates": [
+      {
+        "candidate_index": 0,
+        "C": 1.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 16.728461922137193,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 1,
+        "C": 1.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 16.233121775677837,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 2,
+        "C": 1.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 32.89028888134634,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 3,
+        "C": 10.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 23.42856699123781,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 4,
+        "C": 10.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 16.3859759059813,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 5,
+        "C": 10.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 32.89028888134634,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 6,
+        "C": 100.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 31.074521747138455,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 7,
+        "C": 100.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 16.3859759059813,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 8,
+        "C": 100.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 32.89028888134634,
+        "validation_n": 630
+      }
+    ],
+    "svr_selected_params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "fold_by_group": {
+      "C1": 1,
+      "C2": 0
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "train_clients": [
+          "C1"
+        ],
+        "validation_clients": [
+          "C2"
+        ],
+        "train_n": 210,
+        "validation_n": 420
+      },
+      {
+        "fold": 1,
+        "train_clients": [
+          "C2"
+        ],
+        "validation_clients": [
+          "C1"
+        ],
+        "train_n": 420,
+        "validation_n": 210
+      }
+    ]
+  },
+  {
+    "gas_id": 1,
+    "ridge_alpha": 1000.0,
+    "ridge_candidates": [
+      {
+        "alpha": 0.0,
+        "validation_RMSE_ppm": 349.7261603625849
+      },
+      {
+        "alpha": 0.01,
+        "validation_RMSE_ppm": 294.20127880044976
+      },
+      {
+        "alpha": 0.1,
+        "validation_RMSE_ppm": 280.54351794035904
+      },
+      {
+        "alpha": 1.0,
+        "validation_RMSE_ppm": 214.79226417567497
+      },
+      {
+        "alpha": 10.0,
+        "validation_RMSE_ppm": 74.95353234649917
+      },
+      {
+        "alpha": 100.0,
+        "validation_RMSE_ppm": 29.79530671372053
+      },
+      {
+        "alpha": 1000.0,
+        "validation_RMSE_ppm": 25.796619289700853
+      }
+    ],
+    "svr_candidates": [
+      {
+        "candidate_index": 0,
+        "C": 1.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 33.46988391239003,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 1,
+        "C": 1.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 55.25636229533716,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 2,
+        "C": 1.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 59.94295374175371,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 3,
+        "C": 10.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 121.49858577139925,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 4,
+        "C": 10.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 77.19298407268347,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 5,
+        "C": 10.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 59.944713645456076,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 6,
+        "C": 100.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 221.12786464376543,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 7,
+        "C": 100.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 78.6080373852123,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 8,
+        "C": 100.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 59.944713645456076,
+        "validation_n": 630
+      }
+    ],
+    "svr_selected_params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "fold_by_group": {
+      "C1": 1,
+      "C2": 0
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "train_clients": [
+          "C1"
+        ],
+        "validation_clients": [
+          "C2"
+        ],
+        "train_n": 210,
+        "validation_n": 420
+      },
+      {
+        "fold": 1,
+        "train_clients": [
+          "C2"
+        ],
+        "validation_clients": [
+          "C1"
+        ],
+        "train_n": 420,
+        "validation_n": 210
+      }
+    ]
+  },
+  {
+    "gas_id": 2,
+    "ridge_alpha": 1000.0,
+    "ridge_candidates": [
+      {
+        "alpha": 0.0,
+        "validation_RMSE_ppm": 92.34269022205471
+      },
+      {
+        "alpha": 0.01,
+        "validation_RMSE_ppm": 101.7600350016874
+      },
+      {
+        "alpha": 0.1,
+        "validation_RMSE_ppm": 95.73618562149163
+      },
+      {
+        "alpha": 1.0,
+        "validation_RMSE_ppm": 59.081894903218
+      },
+      {
+        "alpha": 10.0,
+        "validation_RMSE_ppm": 25.261309119653124
+      },
+      {
+        "alpha": 100.0,
+        "validation_RMSE_ppm": 18.0889669156247
+      },
+      {
+        "alpha": 1000.0,
+        "validation_RMSE_ppm": 13.629167707634885
+      }
+    ],
+    "svr_candidates": [
+      {
+        "candidate_index": 0,
+        "C": 1.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 20.772618106894555,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 1,
+        "C": 1.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 16.285705398716246,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 2,
+        "C": 1.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 27.842462329479496,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 3,
+        "C": 10.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 28.71065802228198,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 4,
+        "C": 10.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 14.515168432712379,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 5,
+        "C": 10.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 27.842462329479496,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 6,
+        "C": 100.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 30.1396132971059,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 7,
+        "C": 100.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 14.303118587484343,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 8,
+        "C": 100.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 27.842462329479496,
+        "validation_n": 630
+      }
+    ],
+    "svr_selected_params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "fold_by_group": {
+      "C1": 1,
+      "C2": 0
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "train_clients": [
+          "C1"
+        ],
+        "validation_clients": [
+          "C2"
+        ],
+        "train_n": 210,
+        "validation_n": 420
+      },
+      {
+        "fold": 1,
+        "train_clients": [
+          "C2"
+        ],
+        "validation_clients": [
+          "C1"
+        ],
+        "train_n": 420,
+        "validation_n": 210
+      }
+    ]
+  },
+  {
+    "gas_id": 3,
+    "ridge_alpha": 1000.0,
+    "ridge_candidates": [
+      {
+        "alpha": 0.0,
+        "validation_RMSE_ppm": 214.07928544150636
+      },
+      {
+        "alpha": 0.01,
+        "validation_RMSE_ppm": 161.47012025866425
+      },
+      {
+        "alpha": 0.1,
+        "validation_RMSE_ppm": 131.11869767724826
+      },
+      {
+        "alpha": 1.0,
+        "validation_RMSE_ppm": 115.60730213169164
+      },
+      {
+        "alpha": 10.0,
+        "validation_RMSE_ppm": 76.85456089543703
+      },
+      {
+        "alpha": 100.0,
+        "validation_RMSE_ppm": 29.184706454499132
+      },
+      {
+        "alpha": 1000.0,
+        "validation_RMSE_ppm": 20.09891583289122
+      }
+    ],
+    "svr_candidates": [
+      {
+        "candidate_index": 0,
+        "C": 1.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 49.04078498056055,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 1,
+        "C": 1.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 32.773961127537135,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 2,
+        "C": 1.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 48.836705603929445,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 3,
+        "C": 10.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 69.7936097785917,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 4,
+        "C": 10.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 31.853205555262335,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 5,
+        "C": 10.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 48.8306143942793,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 6,
+        "C": 100.0,
+        "gamma_factor": 0.1,
+        "gamma": 0.0014084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 59.57101469648509,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 7,
+        "C": 100.0,
+        "gamma_factor": 1.0,
+        "gamma": 0.014084507042253521,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 31.86642069117312,
+        "validation_n": 630
+      },
+      {
+        "candidate_index": 8,
+        "C": 100.0,
+        "gamma_factor": 10.0,
+        "gamma": 0.14084507042253522,
+        "epsilon": 0.01,
+        "pooled_validation_RMSE_ppm": 48.8306143942793,
+        "validation_n": 630
+      }
+    ],
+    "svr_selected_params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "fold_by_group": {
+      "C1": 1,
+      "C2": 0
+    },
+    "folds": [
+      {
+        "fold": 0,
+        "train_clients": [
+          "C1"
+        ],
+        "validation_clients": [
+          "C2"
+        ],
+        "train_n": 210,
+        "validation_n": 420
+      },
+      {
+        "fold": 1,
+        "train_clients": [
+          "C2"
+        ],
+        "validation_clients": [
+          "C1"
+        ],
+        "train_n": 420,
+        "validation_n": 210
+      }
+    ]
+  }
+]

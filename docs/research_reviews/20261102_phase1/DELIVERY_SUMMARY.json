@@ -1,0 +1,17 @@
+{
+  "status": "COMPLETE_WITH_DOCUMENTED_LIMITS",
+  "formal_result_directory": "run_v2",
+  "configurations": 12,
+  "target_gas_heads": 48,
+  "window_prediction_rows": 10080,
+  "source_cv_fit_calls": 128,
+  "target_fit_calls": 48,
+  "synthetic_fit_calls": 3,
+  "total_fit_calls": 179,
+  "main_scope": "Oracle_ALL single-window errors, exposure-equal",
+  "auxiliary_scope": "mean fusion only",
+  "routing_scope": "not run",
+  "SVR_lower_primary_NRMSE_cases": 6,
+  "critical_limit": "source full-size CV alpha transfer is not fewshot-size matched; Ridge alpha1000 at grid ceiling; no target tuning added",
+  "github_publication": "separate derived review package; no data/models/ZIP uploads"
+}

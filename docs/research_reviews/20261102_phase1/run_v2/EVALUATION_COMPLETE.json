@@ -1,0 +1,17 @@
+{
+  "status": "COMPLETE_ORACLE_ONLY",
+  "configurations": 12,
+  "target_heads": 48,
+  "prediction_rows": 10080,
+  "model_lock_sha256": "1dd46eda7e714c9bff48f5fbf597d6c04e122d0f02fa5de219abf9f73c47e316",
+  "files": {
+    "EXPOSURE_ERRORS.csv": "b660080fa48bc02026d6ef620ad63c446c1076d9621ff4268cf5ef5e44a5009e",
+    "GAS_CONCENTRATION_SLICES.csv": "02eb371929f09f8d4f8b5525e164b7ee859908e422e79a4f4ed5dbfa97c89303",
+    "INFERENCE_COSTS.csv": "882e7f3c37c1a27c861eacc2a976540c51fe8ac7c22c78ef5a75c6385dca1ae5",
+    "OVERALL_METRICS.csv": "c2cc0417e0b6bdb3d3e57e67cdc4496d88049e3337409372be82faebb2f4c6be",
+    "WINDOW_PREDICTIONS.csv": "401ab06cbfb99f872ba022aaa787d1d5a8314bd7bf0196eac6435829484dc6aa"
+  },
+  "target_development_used": false,
+  "predicted_routing": "NOT_RUN_NO_CLASSIFIER_CONTRACT",
+  "mean_fusion": "AUXILIARY_ONLY"
+}

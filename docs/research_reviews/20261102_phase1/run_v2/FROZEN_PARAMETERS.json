@@ -1,0 +1,40 @@
+{
+  "status": "FROZEN_SOURCE_ONLY",
+  "choices": {
+    "0": {
+      "ridge_alpha": 1000.0,
+      "svr": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    "1": {
+      "ridge_alpha": 1000.0,
+      "svr": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    "2": {
+      "ridge_alpha": 1000.0,
+      "svr": {
+        "C": 100.0,
+        "gamma_factor": 1.0
+      }
+    },
+    "3": {
+      "ridge_alpha": 1000.0,
+      "svr": {
+        "C": 10.0,
+        "gamma_factor": 1.0
+      }
+    }
+  },
+  "source_cv_fits": 128,
+  "source_data_sha256": "2af395dfcf0580b834c7cf3e3bce191a97339fd726516dc3daf92758b839f601",
+  "cv_record_sha256": "bc8b53f521d887f3b0bb4b856f6ff8ebacf627f0e4ee3654e4616b2fc5739dd8",
+  "contract_sha256": "b9708a02cb03c417b526b9cac161736076d12637c189430a49a57e511c1c930a",
+  "target_development_used": false,
+  "target_test_used": false,
+  "wall_seconds": 1.6871287000831217
+}

@@ -1,0 +1,12 @@
+{
+  "status": "BEFORE_ANY_FIT",
+  "contract_sha256": "b9708a02cb03c417b526b9cac161736076d12637c189430a49a57e511c1c930a",
+  "saved_synthetic_model_heads": 2,
+  "affine_equivalence_reference_fits": 1,
+  "total_synthetic_fit_calls": 3,
+  "formal_source_cv_fits": 128,
+  "formal_target_heads": 48,
+  "all_planned_fit_calls": 179,
+  "reason": "The predeclared Ridge ppm-vs-normalized affine-equivalence check performs one extra synthetic reference fit; this is not a hyperparameter candidate or target run.",
+  "algorithms_and_hyperparameter_grids_unchanged": true
+}

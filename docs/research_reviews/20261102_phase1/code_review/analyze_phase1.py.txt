@@ -1,0 +1,62 @@
+"""Predeclared Phase1 summaries; never selects or refits a model from target results."""
+import json,time
+from pathlib import Path
+import numpy as np
+from phase1_common import *
+
+RUN=HERE/'run_v2'
+def main():
+    comp=read(RUN/'EVALUATION_COMPLETE.json')
+    for name,h in comp['files'].items():verify_sha(RUN/'evaluation'/name,h)
+    out=RUN/'analysis';out.mkdir(exist_ok=False)
+    overall=rows(RUN/'evaluation/OVERALL_METRICS.csv');exposure=rows(RUN/'evaluation/EXPOSURE_ERRORS.csv');window=rows(RUN/'evaluation/WINDOW_PREDICTIONS.csv')
+    primary=[r for r in overall if r['prediction_mode']=='clipped'];assert len(primary)==12
+    rng=np.random.default_rng(42);comparisons=[];budget_rows=[]
+    for target in ('C3','C4','C5'):
+        for budget in (2,4):
+            pair={}
+            for kind in ('TargetRidge71','TargetSVR71'):
+                rr=sorted([r for r in exposure if r['target']==target and int(r['budget'])==budget and r['kind']==kind and r['prediction_mode']=='clipped'],key=lambda r:r['filename'])
+                assert len(rr)==40;pair[kind]=rr
+            a=pair['TargetRidge71'];b=pair['TargetSVR71'];assert [r['filename'] for r in a]==[r['filename'] for r in b]
+            qa=np.array([float(r['mean_window_normalized_squared_error']) for r in a]);qb=np.array([float(r['mean_window_normalized_squared_error']) for r in b]);gas=np.array([int(r['gas_id']) for r in a])
+            ids=np.concatenate([rng.choice(np.flatnonzero(gas==g),size=(2000,10),replace=True) for g in range(4)],axis=1)
+            delta=100*(np.sqrt(qb.mean())-np.sqrt(qa.mean()));boot=100*(np.sqrt(qb[ids].mean(1))-np.sqrt(qa[ids].mean(1)))
+            comparisons.append(dict(target=target,budget=budget,protocol=a[0]['protocol'],scope='Oracle_ALL_single_window_clipped_equal_exposure',
+                SVR_minus_Ridge_NRMSE_points=float(delta),conditional_bootstrap_CI_low=float(np.percentile(boot,2.5)),conditional_bootstrap_CI_high=float(np.percentile(boot,97.5)),
+                paired_exposures=40,bootstrap_replicates=2000,seed=42,paired_exposures_lower_SVR_MSE=int((qb<qa).sum()),
+                uncertainty_scope='conditional fixed-fit one-day acquisition resampling;not independent dates/seeds;no multiplicity-adjusted significance claim'))
+        for kind in ('TargetRidge71','TargetSVR71'):
+            pp={int(r['budget']):r for r in primary if r['target']==target and r['kind']==kind}
+            budget_rows.append(dict(target=target,kind=kind,A4_minus_A2_NRMSE_points=float(pp[4]['single_window_equal_exposure_NRMSE_percent'])-float(pp[2]['single_window_equal_exposure_NRMSE_percent']),
+                interpretation='sample count and concentration coverage change jointly;not a feature ablation'))
+    table(out/'PAIRED_SVR_VS_RIDGE.csv',comparisons);table(out/'BUDGET_DELTAS.csv',budget_rows)
+    kernel=[]
+    for target in ('C3','C4','C5'):
+        for budget in (2,4):
+            for gas in range(4):
+                rr=[r for r in window if r['target']==target and int(r['budget'])==budget and int(r['gas_id'])==gas and r['kind']=='TargetSVR71']
+                s=np.array([float(r['rbf_max_similarity_to_calibration']) for r in rr])
+                kernel.append(dict(target=target,budget=budget,gas_id=gas,median_max_RBF_similarity=float(np.median(s)),fraction_below_1e_3=float(np.mean(s<1e-3)),n_windows=len(s)))
+    table(out/'KERNEL_COVERAGE_DIAGNOSTICS.csv',kernel)
+    # Verify the primary formula directly from stored per-window errors (not mean predictions).
+    for r in primary:
+        rr=[x for x in window if x['experiment_id']==r['experiment_id']]
+        groups={name:[x for x in rr if x['filename']==name] for name in sorted({x['filename'] for x in rr})}
+        q=[np.mean([(float(x['clipped_error_ppm'])/SPAN[int(x['gas_id'])])**2 for x in xx]) for xx in groups.values()]
+        assert abs(100*np.sqrt(np.mean(q))-float(r['single_window_equal_exposure_NRMSE_percent']))<1e-10
+    text=['# Phase1 严格回归强基线结果','','状态：12配置/48目标头完成；本轮仅Oracle_ALL。主指标是单窗口误差、暴露等权；暴露均值融合单列辅助，未运行预测路由。',
+          '','|目标/协议|预算每气体|模型|主NRMSE %|主MAE ppm|辅助均值融合NRMSE %|裁剪比例|','|---|---:|---|---:|---:|---:|---:|']
+    for r in primary:
+        text.append(f"|{r['target']} / {r['protocol']}|{r['budget']}|{r['kind']}|{float(r['single_window_equal_exposure_NRMSE_percent']):.4f}|{float(r['single_window_equal_exposure_MAE_ppm']):.4f}|{float(r['aux_mean_fusion_NRMSE_percent']):.4f}|{float(r['clipped_fraction']):.3f}|")
+    wins=sum(r['SVR_minus_Ridge_NRMSE_points']<0 for r in comparisons)
+    text+=['',f'SVR在6个设备×预算比较中有{wins}个主NRMSE更低。这是描述性计数，不能将不同日期协议合并为同一个泛化结论。CI见PAIRED_SVR_VS_RIDGE.csv，仅为给定模型和单个test日的条件性重采样，不能代表跨日期或跨种子稳定。',
+           '', '预算变化见BUDGET_DELTAS.csv：A2→A4同时增加样本数量和浓度档，不能单独归因于特征或覆盖。所有气体/浓度/已见未见/早晚时间片结果见evaluation/GAS_CONCENTRATION_SLICES.csv；核覆盖诊断不用于调参。',
+           '', '源参数只由C1 Day4、C2 Day1/7选择。Development未用于目标选择；C4源晚于其首日标定，只作回顾性source-before-test。历史test已被观察，本结果不是前瞻未触碰测试。',
+           '', 'CPU成本为本机软件回归调用，输入71D已计算；不含原始采样、特征、分类、QC、通信或Pi硬件。训练/序列化/模型大小及逐窗调用时延分别见TRAINING_COSTS.csv与evaluation/INFERENCE_COSTS.csv。',
+           '', '没有额外调参、浓度重选、72D、KRR、残差、联合网络、Flower训练或部署。创新方向解释另见本轮审阅文档，不能从一次比较直接宣称新方法有效。']
+    with (out/'RESULTS.md').open('x',encoding='utf-8') as f:f.write('\n'.join(text)+'\n')
+    js(out/'ANALYSIS_QA.json',dict(status='PASS',primary_formulas_recomputed_from_window_errors=True,comparisons=6,SVR_lower_NRMSE_count=wins,
+        models_refitted=0,target_test_selection=False,reported_metrics='recomputed from this run stored predictions',classifiers_used=False))
+    print(json.dumps(dict(status='ANALYSIS_COMPLETE',SVR_lower_NRMSE_cases=wins,comparisons=comparisons),ensure_ascii=False))
+if __name__=='__main__':main()
