@@ -13,22 +13,22 @@
   "files": [
     {
       "path": "README.md",
-      "bytes": 11176,
-      "sha256": "c77043da97662d927d4f4f6c24872b668df57e39adb4f516d69ef69512eb5995",
+      "bytes": 11076,
+      "sha256": "bea260715be564f1780ed06184bc4e9c3ae5ac592984b59039c0a43e09273eb8",
       "local_source": "research/fedongas_phase05_20261102/README.md",
       "local_source_sha256": "9fbce118f1a00e88b4c2654ae75f975638f73864bf80a1ca12b1ef033e0c0330"
     },
     {
       "path": "EXPERIMENT_PLAN.md",
-      "bytes": 4131,
-      "sha256": "5fad9a608893cfd0941ebb01e859258fefdff8d421c64ee3f937dcf8a78852aa",
+      "bytes": 4106,
+      "sha256": "69971eeb6ee2b524b0209a6c3bebeead113de7a840e7d0c8e15598003774cc27",
       "local_source": "research/fedongas_phase05_20261102/EXPERIMENT_PLAN.md",
       "local_source_sha256": "c856369889526151957235a962ed3e149315a15c14889a5bc16c37eacb2ead7e"
     },
     {
       "path": "EXPERIMENT_MATRIX.csv",
-      "bytes": 9881,
-      "sha256": "cde89b4f6eb342df1efa4bf8436676de30b627b18b2e00e359571217f53a01fc",
+      "bytes": 9868,
+      "sha256": "98b24c48717438071bec142d0e1f219834e20c4ea17fbb95ad98f78b282da231",
       "local_source": "research/fedongas_phase05_20261102/EXPERIMENT_MATRIX.csv",
       "local_source_sha256": "d243503748b87251e3107da72a4007a100b304f4a30ee8795c540019805452dd"
     },
@@ -76,8 +76,8 @@
     },
     {
       "path": "CHECKPOINT_REUSE_CANDIDATES.csv",
-      "bytes": 2795,
-      "sha256": "8adbcad9ce6e01f90284ca9895b237991f1751e16008b4860865caf5ccacae0b",
+      "bytes": 2787,
+      "sha256": "e1c84f1f2c9d90089e7d2cff031e5e84805cddc006efdc94d73b571efa28b9ff",
       "local_source": "research/fedongas_phase05_20261102/CHECKPOINT_REUSE_CANDIDATES.csv",
       "local_source_sha256": "97497cbd8d8e0b14e8264730a5e69c16183fa0b74665b0c9b96b86a61c9fd5e8"
     },
@@ -160,36 +160,36 @@
     },
     {
       "path": "evidence/BUDGET_AND_CONCENTRATION_COVERAGE.csv",
-      "bytes": 2541,
-      "sha256": "87903f03bfb95215fb07c163fbbc1fb4dad518f5a7aade6fe30ad6992b176bb7",
+      "bytes": 2516,
+      "sha256": "4868df07bd564b8d0faee50c967392a9ce282a89d9e9c68db33f04611a97dd14",
       "local_source": "research/fedongas_phase05_20261102/results_v2/BUDGET_AND_CONCENTRATION_COVERAGE.csv",
       "local_source_sha256": "f18e031689e737773b9854fc84db0671841c4d752f6deeeb3cd2aa491cf39bc2"
     },
     {
       "path": "evidence/EXISTING_STRICT_C5_RUNS.csv",
-      "bytes": 3163,
-      "sha256": "b51c5f1f8badccd9a45ea6701b9f0ffb72c3b44e52b72c2c60673cab09591b38",
+      "bytes": 3155,
+      "sha256": "e99f2caab3ceb6084a2c77dd5725931384badf85c317683aaf46dde33c1a1e8a",
       "local_source": "research/fedongas_phase05_20261102/results_v2/EXISTING_STRICT_C5_RUNS.csv",
       "local_source_sha256": "f3718fbf0c8b4388384339403bf36b8f1ea9f4bacef0dbb9964f6573cf0d823f"
     },
     {
       "path": "evidence/FLOWER_STATIC_EVIDENCE.csv",
-      "bytes": 5216,
-      "sha256": "2d9a7ffc112ca306d5be3f45ad470f7d46b366d46a897c917ac50b52b498bc89",
+      "bytes": 5164,
+      "sha256": "80262993b47cc0104a03430bc2334dd0af324e02b58cd46db812bbb9d83d2727",
       "local_source": "research/fedongas_phase05_20261102/results_v2/FLOWER_STATIC_EVIDENCE.csv",
       "local_source_sha256": "52fc8bab722695f8ba72b564ab65a37c9f80986620c1a491846ec1209e425c85"
     },
     {
       "path": "evidence/TARGET_PREPROCESSING_QA.csv",
-      "bytes": 14762,
-      "sha256": "a81c50334afc7f07431ba82e7ae3fbd1dfa1fbb08f4d55664ba986578ee592e9",
+      "bytes": 14441,
+      "sha256": "817fa6808f5812bd75d967c286030672b6e9f2403617692c0e2bf65531761e27",
       "local_source": "research/fedongas_phase05_20261102/results_v2/TARGET_PREPROCESSING_QA.csv",
       "local_source_sha256": "3323e8e53c71002c62b44cad1a97cdcb02c33325277e8591183d55215a0bc19a"
     },
     {
       "path": "evidence/ACQUISITION_ROLES.csv",
-      "bytes": 71166,
-      "sha256": "3982b01d2e94aba7def7c45002070140ad2e99e80f235db73110e1cc28f5156b",
+      "bytes": 70789,
+      "sha256": "a10d7e8ad761fe8cd90d5373260977ecef75a06246632d8505b993a177eea724",
       "local_source": "generated review metadata",
       "local_source_sha256": null
     },
@@ -215,5 +215,6 @@
     "local absolute path aliases",
     "results_v2 references to evidence directory",
     "role manifests projected to one shared376-row manifest with role_A2/role_A4 columns"
-  ]
+  ],
+  "published_serialization": "UTF-8 text with LF line endings; source SHA remains original local bytes"
 }
