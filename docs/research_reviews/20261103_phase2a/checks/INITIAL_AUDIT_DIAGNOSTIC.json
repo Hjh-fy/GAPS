@@ -1,0 +1,9 @@
+{
+  "status": "INITIAL_AUDIT_ASSERTION_TOO_STRICT_NO_DATA_CHANGE",
+  "error": "exact Python float equality on10-second metadata duration",
+  "maximum_duration_roundoff_s": 1.4210854715202004e-14,
+  "maximum_start_grid_roundoff_s": 0.0,
+  "approved_existing_strict_tolerance_s": 1e-06,
+  "fix": "reuse frozen calibration_indices tolerance1e-6 for audit;preserve evidence/attempt;formal evidence_v2/",
+  "real_fits": 0
+}

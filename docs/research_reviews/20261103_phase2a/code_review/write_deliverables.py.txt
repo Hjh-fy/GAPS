@@ -1,0 +1,177 @@
+"""Generate audit conclusions and falsifiable Phase2B plan; never runs that plan."""
+from audit_common import *
+import numpy as np
+E=HERE/'evidence_v2'
+def write(name,text):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(text)
+def main():
+    qa=read(HERE/'checks/INTERFACE_CHECKS.json');inp=read(E/'SOURCE71_INPUT_AUDIT.json');assert qa['status']=='PASS' and inp['actual_new_source_weights']=='NOT_CREATED'
+    old=read(E/'HISTORICAL_METHOD_SPECS.json');source=rows(E/'LEGAL_SOURCE_EXPOSURES.csv');feature=read(p1.P05/'results_v2/FEATURE_CONTRACT.json')
+    reuse=[
+      dict(asset='SourceRidge71 historical weights',dimension='71',training='canonical C1/C2 train+cal;R1-R4',calibration='source old calibration for alpha;no target model fit',scaler='source per-gas merged ddof0;floor1e-9',objective='sum squared physical-ppm loss+alpha*||beta||2^2;unpenalized intercept',hyperparameters='old alpha .1/.01/.1/.1',routing='Oracle gas head;71D LG',clipping='source training support physical ppm',protocol='historical canonical windows,not Day7',reuse='NUMERICS_YES;WEIGHTS_NO',reason='C1R4 Day21/C2R4 Day16 exceed approved source cutoff7',evidence='v5 SOURCE71.json;Phase05 SOURCE_PRIOR_PROVENANCE_AUDIT'),
+      dict(asset='SourceRidge104 historical weights',dimension='104=83 sensor+21 metadata/context',training='validated R0-v2 C1/C2 canonical train+cal;all repetitions',calibration='source-only old calibration alpha',scaler='merged source moments and normal equations',objective='physical-ppm Ridge;unpenalized intercept',hyperparameters='old alpha .1/.01/.01/.01',routing='Oracle4head;requires104D whitelist incl time/phase',clipping='source physical training range',protocol='old C1/C2 canonical protocol,not Day7',reuse='REFERENCE_ONLY_WEIGHTS;MATH_REUSABLE',reason='input104 vs71;future source cohorts;metadata availability assumption differs',evidence='HISTORICAL_SOURCE104_PROVENANCE.json;v5 residual SOURCE_MODELS_FROZEN.json'),
+      dict(asset='ResidualSVR M0/M1',dimension='target83/source104',training='no new source fit;old frozen104 prior',calibration='C5 1%=16windows or5%=80windows;4/20windows pergas',scaler='per-gas own-budget ddof0;std<1e-9 to1',objective='epsilon-SVR;M0 (y-LOW)/SPAN;M1 (y-fS_clipped)/SPAN',hyperparameters='C10;gamma .1/83;epsilon .01;source-only historical recipe',routing='Oracle_ALL',clipping='source prior clipped first;final physical range clip',protocol='1360testwindows;16/80 calibration raw files also in test',reuse='FORMULA_AND_HELPERS_YES;FIT83_AND_WEIGHTS_NO',reason='native fit_pair hardcodes83;old target budget/window roles differ',evidence='residual_core.fit_pair/ModelBank;CONFIG;DATA_AUDIT'),
+      dict(asset='Alpha source contribution',dimension='target83/source104',training='fixed old source104',calibration='C5 own-budget labels;filename LOEO',scaler='trainfold gas-local;refit full cal',objective='b=LOW+alpha*(fS-LOW);fit (y-b)/SPAN',hyperparameters='strength0/.25/.5/.75/1;fixed C10,gamma.1/83;MSE tie1e-12 lower strength',routing='Oracle;shared primary/gaswise exploratory',clipping='source physical clip;final physical clip',protocol='old observed canonical1360test;not independent exposures',reuse='BASE_AND_SELECTOR_REUSABLE;OLD_SELECTION_NOT_TRANSFERABLE',reason='A2 has2groups/gas;old LOEO guard requires>=3;source-only selection now required',evidence='alpha_core.base/fit_head/folds/choose_alphas;CONFIG'),
+      dict(asset='AdaptiveSourcePriorSVR Centered',dimension='target83/source104',training='fixed old source104',calibration='C5 1/5percent cal;gas-balanced filename4fold',scaler='foldtrain-only ddof0 floor1e-9',objective='offset=(1-rho)*LOW;fit (y-rho*fS-offset)/SPAN;predict rho*fS+offset+SPAN*h',hyperparameters='rho0/.25/.5/.75/1 shared;old selected1/.25;fixed C10 gamma.1/83;exact-tie lower rho',routing='Oracle_ALL',clipping='source prior physical-clipped;final physical clip',protocol='old canonical1360test already observed;initial uncentered endpoint failure retained',reuse='CENTERED_ALGEBRA/PREDICT/CHOOSE_RHO_YES;FIT83/OLD_RHO/WEIGHTS_NO',reason='A2 fails4fold exposure requirement;rho0 sourceNaN still fails;new71 fit needs thin compatibility boundary',evidence='prior_core;NUMERICAL_REPAIR.md;old selected_rho;checks'),
+      dict(asset='Strict71D feature/TargetSVR/F-SVR',dimension='71 sensor-only,64channel+7global',training='source-only HP selected Phase1.5;no source weights needed',calibration='A2/A4 2/4exposures/gas;2anchors each',scaler='own target gas4/8windows;ddof0 floor1e-9',objective='SVR normalized(y-LOW)/SPAN;epsilon .01',hyperparameters='frozen F pergas/budget;C/gamma_factor from Phase1.5;gamma=gamma_factor/71',routing='Oracle_ALL',clipping='cal label support,equals physical endpoints here;raw retained',protocol='C3three_dates;C4/C5two_dates;singlewindow exposureequal',reuse='DIRECT_REUSE_CODE_AND_FROZEN_BASELINES',reason='F-SVR primary;N-SVR/KRR reference only;rho0 should aliasF checkpoint',evidence='Phase1/1.5 hashes;SOURCE71_INPUT_AUDIT;INTERFACE_CHECKS')]
+    table(HERE/'REUSE_INVENTORY.csv',reuse)
+    # Explicit source pseudo-episodes; source-bank rows never include pseudo-cal or validation.
+    meta=read(P1/'run_v2/data/source_metadata.json');episodes=[]
+    for b in (2,4):
+        codes=[10,100] if b==2 else [10,40,70,100]
+        for eid,src_client,src_day,t_client,t_day in [('P1',2,1,1,4),('P2',1,4,2,7)]:
+            ss=[m for m in meta if (m['client_id'],m['day'])==(src_client,src_day)]
+            cc=[m for m in meta if (m['client_id'],m['day'])==(t_client,t_day) and m['concentration_code'] in codes and m['start_s'] in (60.,150.)]
+            vv=[m for m in meta if (m['client_id'],m['day'])==(t_client,t_day) and m['concentration_code'] in [20,30,50,60,80,90]]
+            assert len(ss)==840 and len(cc)==b*8 and len(vv)==504 and not make_ids(ss)&make_ids(cc+vv) and not make_ids(cc)&make_ids(vv)
+            episodes.append(dict(episode=eid,budget=b,source_client=src_client,source_day=src_day,pseudo_target_client=t_client,pseudo_calibration_day=t_day,pseudo_validation_day=t_day,
+                source_files=sorted(make_ids(ss)),calibration_files=sorted(make_ids(cc)),validation_files=sorted(make_ids(vv)),source_windows_per_gas=210,calibration_windows_per_gas=2*b,validation_exposures_per_gas=6,
+                calibration_validation_cross_date=False,source_training_identity_before_pseudo_cal=True,all_hyperparameters_available_as_of_pseudo_cal_day=False,
+                caveat='sourceHP inherited from entire approved Day7 pool;retrospective meta-selection tasks,not prospective pseudo-onboarding or independent generalization evidence'))
+    js(HERE/'SOURCE_PSEUDO_EPISODE_PLAN.json',dict(status='PLANNED_NOT_RUN',episodes=episodes))
+    model_plan=dict(status='AUDITED_INPUTS_AND_SYNTHETIC_INTERFACES;REAL_WEIGHTS_NOT_CREATED',source_input_audit_sha256=sha(E/'SOURCE71_INPUT_AUDIT.json'),
+        source_cache_sha256=inp['source_cache_sha256'],source_metadata_sha256=inp['source_metadata_sha256'],source_window_identity_sha256=inp['ordered_physical_identity_sha256'],
+        feature_names=feature['names'],feature_contract_path=str(p1.P05/'results_v2/FEATURE_CONTRACT.json'),feature_contract_sha256=sha(p1.P05/'results_v2/FEATURE_CONTRACT.json'),
+        source_cohorts=['C1R1_Day4','C2R1_Day1','C2R2_Day7'],source_windows=2520,source_exposures=120,per_gas_windows=630,source_objective_weights='window/exposure weighted;C1:C2=1:2;not device-equal',
+        source_alpha={str(g):1000. for g in range(4)},alpha_origin='reuse Phase1 source-only client-grouped CV;no new selection;upper grid remains a limitation',
+        source_y_units='physical ppm',source_scaler='pergas pooled legal source ddof0 via existing merged moments;std<1e-9 to1',intercept_regularized=False,
+        source_numerics='v5 ablation_core.source_module(71):local_central_moments/merge_central_moments/local_normal_equations_v2/aggregate_normal_equations_v2/reconstruct_ridge_v2',
+        real_source_required_parity='all4 final heads plus8 pseudo heads vs identical pooled reference,raw/clipped maxdiff<=1e-6ppm;model SHA and identity lock',
+        process_distribution='offline central-host caches and logical client calls;not an executed remote federated training/privacy proof',
+        source_prediction_for_all_new_methods='predict_matrix(clip=False);raw prior;one final clip only',historical_boundary_difference='old residual used clipped source;new fixed raw-source contract is deliberate,not exact historical replication',
+        residual_baseline='b=LOW+rho*(raw_source-LOW);exact rho0/1 endpoint branches reuse alpha_core.base',
+        residual_training='reuse TargetSVR71 on y_adjusted=y-(b-LOW);native normalization gives(y-b)/SPAN;no new learner/objective',
+        residual_hyperparams='exact Phase1.5 F_SVR by budget/gas,unchanged for rho;native old83fit not used',
+        rho_grid=[0.,.25,.5,.75,1.],rho_selection='one shared scalar per A2/A4;source episodes only;episode/exposure equal raw normalizedMSE;exact ties lower rho;reuse choose_rho sorting',
+        rho0_operational_fallback='explicit branch returns frozen F-SVR71 checkpoint;never call/require source;do not refit target',target_routing='Oracle_ALL,not predicted class',
+        final_clip='same fixed A2/A4 calibration support asF-SVR;LOW toLOW+SPAN endpoints',metrics='single-window exposure-equal NRMSE%;raw andclip;gas/level/seen/time;fusion auxiliary only',
+        target_development_used=False,target_test_for_parameter_selection=False,target_day_contract=inp['target_role_contracts'],
+        new_target_training_gate='NOT_RELEASED_until_actual_source_model_and_71D_compatibility_contract_verified',
+        residual_adjusted_label_clip_fields='never use adjusted-y clip_min/max as concentration support;predict SVR component clip=False,restore prior,then clip original calibration truth support',source_fit_phase2a=0,target_fit_phase2a=0)
+    js(HERE/'SOURCE71_MODEL_CONTRACT_PLAN.json',model_plan)
+    registry=[]
+    idx=read(P15/'run/MODEL_INDEX.json')
+    for c in ['C3','C4','C5']:
+        for b in (2,4):
+            for method in ['SourceOnly71','FixedRhoResidual71','F-SVR71_rho0','N-SVR71_reference','F-KRR71_reference']:
+                reuse_base=method.endswith('reference') or method=='F-SVR71_rho0';family='KRR' if method.startswith('F-KRR') else 'SVR';rule='N' if method.startswith('N-') else 'F'
+                checkpoint='Phase2B_new_source71_locked_bank_PENDING' if method=='SourceOnly71' else 'Phase2B_new_residual_g[0-3]_PENDING'
+                if reuse_base:checkpoint=';'.join(r['path'] for r in idx if r['target']==c and r['budget']==b and r['family']==family and r['rule']==rule)
+                registry.append(dict(experiment_id=f'FONG-P2B-{c}-A{b}-{method}-PLAN20261103',source_clients='none' if reuse_base else 'C1;C2',target_clients=c,
+                    split_protocol='C3_three_dates' if c=='C3' else c+'_two_date_alternative',model=method,checkpoint=checkpoint,DA='none' if reuse_base else 'frozen_function_prior',calibration='none' if method=='SourceOnly71' else f'A{b}_exposures_pergas_2anchors',QC='Phase05_fixed_valid_mask;Oracle_ALL',seed='deterministic',
+                    result_path='Phase2B_new_worktree/results_PENDING',metrics='single_window_equal_exposure_NRMSE_percent;raw/clip andallgas/levels',status='draft',notes='PLAN_ONLY;no new targetfit inPhase2A;C4retrospective;rho0 aliasesF-SVR',
+                    code_commit='unknown_future_execution;v5/P1/P15_sources_hashed',config_path='SOURCE71_MODEL_CONTRACT_PLAN.json',dataset_path='Phase1/run_v2/data caches;no re-split',created_at='2026-11-03',evidence_status='draft',provenance='Phase05_roles;Phase15fixed4988abb;MODEL_INDEX;thisaudit',
+                    hypothesis_id='H-TRANSFER' if not reuse_base else 'CONTROL',baseline_id='F-SVR71_rho0',ablation_factor='raw_source_prior_contribution',expected_evidence='gain_or_negative_transfer_under_same_budget',acceptance_criterion='source/feature/rho locks first;full fixedmatrix;no targetselection'))
+    table(HERE/'EXPERIMENT_MATRIX.csv',registry)
+    write('EXPERIMENT_PLAN.md','''# Phase2B最小可证伪计划（Phase2A只设计，未运行）
+
+H-TRANSFER：在固定71D及A2/A4标定下，合法源SourceRidge71的加性浓度先验，经单个源侧选择的固定rho残差校准，相对冻结F-SVR可能降低跨暴露预测误差；允许无增益或负迁移推翻该方向。本轮没有对此假设做目标实验。
+
+## 唯一比较集合和固定变量
+
+候选：Source-only、FixedRhoResidual、rho=0回退（严格等价F-SVR），N-SVR和KRR只读作参考。C3/C4/C5×A2/A4×5视图=30矩阵行。没有自适应目标rho、门控网络、源选择模块或额外特征候选。Source-only的4个全源气体头共享全部目标/预算，A2/A4只保留相同预算对照视图，不算6次独立源训练；rho0的6行引用既有F-SVR，不新拟合。
+
+合法源同Phase1的120独立暴露/2520窗，每gas630窗；目标cal/test身份、71D、标准化、支持、21窗质量掩码均沿用Phase0.5/1/1.5。主评价是单窗口误差暴露等权NRMSE%，不是暴露均值融合；raw/clip、全gas/全浓度、已见/未见、时间段全部保存，Oracle_ALL不冒充分类路由。
+
+## 先建源合同，再选rho，再锁目标
+
+1. 复用既有71D维度绑定器和Ridge合并统计量算法，alpha=Phase1源CV已锁1000，不新调参。全源4头、两个伪源银行各4头，每一头都与相同行列/参数的pooled参考核对1e-6ppm；保存原/裁剪预测差、矩、scaler、alpha、行身份和SHA。真实数据一致性未过即停止，不能以24次合成测试代替。
+2. rho源任务P1：C2 Day1源银行→C1 Day4校准和同日文件留出；P2：C1 Day4源银行→C2 Day7校准和同日文件留出。cal A2={F010,F100}，A4增加F040/F070，起点60/150；validation固定F020/030/050/060/080/090全部有效21窗。源银行不能含伪目标cal或validation文件，不能用全源bank给自己的训练暴露算“迁移验证”。SOURCE_PSEUDO_EPISODE_PLAN.json逐文件列出身份。
+3. 两个伪任务都不是跨日期cal→test验证；日内真实顺序未知。继承的alpha和F-SVR参数来自完整Day7源选择，故整个伪任务只作为as-of-Day7回顾性选参，不能声称当Day1/4已具备这些元参数。也不是两个独立确认数据集。
+4. 固定rho=[0,.25,.5,.75,1]，每预算一个共享rho，不逐气体/目标选值。每个候选在每任务每gas的4/8校准窗拟合原SVR71参数；验证按暴露等权raw归一化MSE，再两个任务等权汇总，最小者选中，精确同分选较小rho。复用历史choose_rho排序，不能复用历史选中的1/.25。Development和目标test一律不参与。
+5. 源上若选rho0，直接记录该预算无源收益，复用F-SVR回退，不启动该预算非零目标残差拟合；若非零rho虽然汇总更好、但任一源伪任务比rho0更差，该预算停止进入目标非零训练，保留源负结果，不改网格寻找替代赢家。这是预定研究继续/停止条件，不是按目标输入训练或运行的新门控。
+6. 其余预算在真实新源合同及薄71D兼容接口通过后，冻结rho/代码再按cal拟合目标残差。全部新目标头与参照清单锁定后才释放已有test用于回顾性比较。rho0运行路径必须返回既有F-SVR且不访问source，源缺失/NaN不能破坏回退；不能用偷偷重拟合代替相同checkpoint。
+
+## 数值和裁剪合同
+
+新源y用物理ppm，source raw predictor明确clip=False。b=LOW+rho*(raw_source-LOW)，复用历史base的0/1精确分支。将y_adjusted=y-(b-LOW)送原TargetSVR71，其训练标签恰为(y-b)/SPAN；预测恢复b+SPAN*h，Centered offset=(1-rho)*LOW必须保持。非零rho使用同F-SVR的C/gamma_factor/epsilon/tol，target scaler只看相同cal窗。
+
+统一只在最终输出裁剪一次，Source-only同样保留真实raw头输出。**这与历史先clip源再加残差的边界不同**，是新协议的明确选择，不声称原历史数值复现；不将中间clip掩盖的输出称未裁剪结果。未来兼容层只能绑定维度/参数/单位及这些已有函数，不能新写近似SVR或偷偷补12列到83。
+
+原SVR71对y_adjusted拟合后保存的clip_min/max属于调整标签，不是物理浓度支持；必须调用predict_head(...,clip=False)，恢复源基准后才按**原始cal truth**支持裁剪。不得把调整标签的clip字段直接用于最终输出，也不能在组件预测时先clip。这一边界需列入Phase2B兼容层检查，当前没有生产适配器通过该项。
+
+## 资源上限和证伪
+
+最多12个真实源Ridge头（全源4+伪源8）及12个pooled参考拟合、80个源侧rho残差拟合（2预算×2任务×4gas×5rho）、24个新目标残差头（3目标×2预算×4gas），合计最多128次真实数据拟合；rho0或源负迁移停止可减少。Source-only/旧强参照不重复拟合。额外兼容层合成检查需另先登记，不挪用/扩大目标搜索。Phase2A已完成的24次合成fit不算Phase2B实训。
+
+全部目标比较只作回顾性探索。未来报告固定总体及每gas/浓度误差，配对暴露不确定性条件于单test日；不以窗口数代表日期重复。若非零迁移相对F-SVR无稳定、跨目标/预算方向一致的增益，或困难高浓度恶化，则停止该固定迁移方向，不叠门控来修饰本次结果。确认性推广必须另有未参与构思/选择的独立设备/日期证据，当前未建立。
+''')
+    write('ABLATION_PLAN.md','''# 最小消融和停止条件
+
+|因素|水平|固定项|预期证据（尚未获得）|停止条件|
+|---|---|---|---|---|
+|历史浓度知识|Source-only、固定rho残差、rho0=F-SVR|71D/日期身份/cal/尺度和支持/test/Oracle/指标|直接源偏差与少样本校准的增益或负迁移|源合同失败；源选择rho0；源任务一项负迁移；目标无可靠改善|
+|标定预算|A2/A4|Phase05预定暴露；60/150两窗|增益是否依赖额外浓度覆盖|不得test挑档或切窗|
+|目标条件|C3三日期；C4/C5两日期|完整固定矩阵|设备/气体/浓度失败范围|C4不得称Day3共同源部署|
+|实现退化|rho0回退|同一冻结F-SVR头|逐窗raw/clip严格恢复，源失效无影响|任一输出或checkpoint身份不同立即停止|
+
+N-SVR和KRR只是原固定参考，没有新增rho网格、C网格或门控候选。H-CONSISTENCY只留研究假设，不在本表增加执行行。
+''')
+    write('SOURCE71_INPUT_AND_TIME_CONTRACT.md','''# 71D合法输入、时间与源模型方案合同
+
+状态：合法输入已审计，71D充分统计量接口已通过合成验证；**真实新SourceRidge71权重尚未建立**。SOURCE71_MODEL_CONTRACT_PLAN.json为计划合同，不冒充已训练模型证明。
+
+允许源仅C1 R1 Day4、C2 R1 Day1/R2 Day7，共120原始暴露、2520有效窗；每gas30暴露630窗（C1 210、C2 420）。每暴露F010…F100十档，21个起点60:5:160；每窗50×8、5Hz、10s。源行身份、原始字节SHA、数值SHA、气体/浓度/日期与Phase05角色逐项对齐；来源缓存SHA和2520行有序身份SHA见evidence_v2/SOURCE71_INPUT_AUDIT.json。只读取源71D数值，不打开目标特征。本阶段验证120源原始文件字节SHA，不重新提取特征；旧缓存/提取代码的封存SHA及既有黄金/预处理核验共同构成来源证据。
+
+特征严格沿用71个同名同序的64通道统计+7全局项，排除12跨通道比率及所有气体/浓度/窗口时钟/阶段/客户ID特征。SourceRidge输入不追加先验（不是72D），更不是104D；源码predict_matrix本身只按列宽计算，入站必须额外验证完整名称/顺序与schema hash，单凭shape不保证语义。现有validate_source_bank可完成名称审查。
+
+## 源训练、参数和缩放的闭包
+
+新源拟合器仅接收批准source.npz与源元数据角色清单，不接收目标cal/dev/test矩阵。每gas在这630行上合并mean/M2并形成ddof0的全源scaler，再各client计算标准化正规方程A=X'X、b=X'y、y'y和n等，服务器以固定C1→C2序合并。物理ppm平方损失+alpha||beta||²、截距不惩罚、pinv。alpha固定复用Phase1合法源CV的1000（四gas），不用目标误差重选；原上界与CV210/420窗→全源630窗的有效惩罚变化仍是局限，不声称新源最优。
+
+该目标按现有窗数/暴露加权，C2拥有两日期，约占2/3；不是设备等权。源列语义/气体标签/单位一致并不保证不同硬件的P(y|x)相同，集中拟合可能混合相互矛盾的浓度关系。只有输入合法，不意味着迁移一定有用。
+
+真实权重发布前必须保存全部训练身份和源代码/参数/mean/scale/coef/支持/SHA，逐gas与同数据pooled参考raw/clip<=1e-6ppm核对，并建立SOURCE_MODELS_LOCKED。现有source_module(71)只绑定既有schema宽度，不改矩/求解算法；R0原容差参数和单机代数证明不能自动当成新真实数据已经验收，实际核对仍待Phase2B。
+
+残差薄接口须保留原始cal标签支持，与SVR内部y_adjusted的支持分开。后者的clip_min/max不得用于物理浓度裁剪；所有组件predict(...,clip=False)，恢复完整浓度后只裁剪一次。rho0则直接使用同一F-SVR头，不重新生成残差支持。
+
+## 时间边界
+
+|目标|cal/dev/test相对Day|新源最新Day7|允许的解释|
+|---|---|---|---|
+|C3|8/14/17|早于cal和test|三日期回顾性暴露独立比较|
+|C4|3/3/9|晚于cal、早于test|两日期回顾性源复用；禁止Day3共同双源已存在的说法|
+|C5|18/18/22|早于cal和test|两日期替代，不冒充三日期|
+
+绝对采集日期仍未知，Day为已批准的相对采集计划，不用文件mtime推断。旧SourceRidge71/104使用R1–R4，含C1 Day21、C2 Day16；不满足共同Day7合同。目标test已被历史研究观察过，新参数只用合法源不使旧test重新变成首次盲测。
+
+## 联邦与服务器实际可见性
+
+已有数值模块支持客户端局部moment→服务器scaler→客户端A/b→服务器Ridge的充分统计量计算，模型训练在数学上无需传输原始传感序列或逐行特征。合成检查复用这些原函数并与集中参考一致。
+
+**当前证据和下一轮本地研究方案仍是集中主机上的逻辑客户端模拟。** Phase1缓存由同一主机读原始信号产生，新审计打开了集中可访问的源71D缓存；已有source选择函数亦在一个进程接收源数组mapping。没有远程client隔离、网络协议或数据访问控制证据。因此不得称本轮已完成纯充分统计量联邦汇总/隐私保护部署。当前研究实现依赖主机可访问预先集中生成的源特征，不需要在拟合阶段重新读原始波形；若论文主张服务器从未接触逐行源数据，还需实现并审计真实消息边界及客户端留存，不能用代数相等代替。统计量本身也无DP/安全聚合保证。
+''')
+    write('REUSE_AUDIT.md','''# 历史算法与源资产复用审计
+
+REUSE_INVENTORY.csv逐方法给出维度、源训练、标定、缩放、损失、参数、气体路由、裁剪和协议；evidence_v2/V5_REUSE_PROVENANCE.csv保存28项v5字节SHA，STATIC_CODE_REFERENCES.csv保存函数起止行/片段SHA。源码生成commit未记录时保持unknown，不用当前worktree HEAD冒充生产版本。
+
+## 已确认可以直接复用
+
+1. ablation_core.source_module(71)已有维度绑定器；frozen_source_numerics的local_central_moments、merge_central_moments、local_normal_equations_v2、aggregate_normal_equations_v2、reconstruct_ridge_v2和pooled参考；不是重新实现FedRidge。
+2. 同源的SourceRidge71预测器、state/schema检查，以及Phase1 strict71缓存、固定LOW/SPAN、TargetSVR71 fit/predict；F/N-SVR和KRR冻结参数/权重作为未来参照，不本轮推理。
+3. alpha_core.base已有LOW+rho(fS−LOW)及0/1精确分支；Centered prior已有offset=(1−rho)LOW，训练(y−rho*fS−offset)/SPAN、预测rho*fS+offset+SPAN*h；choose_rho可复用为源侧已计算分数的排序器。
+
+## 不可直接搬用的部分
+
+旧71D银行alpha=.1/.01/.1/.1，源canonical train→source calibration选alpha、train+cal重拟合，覆盖所有R1–R4。104D源银行alpha=.1/.01/.01/.01，本阶段通过原legacy.validate_r0_bundle校验原index/model_lock并确认四头JSON等于v5副本；execution manifest明确source C1/C2、target空。104D元数据白名单在旧实验成立，不代表这些上下文已进入71D或实际部署可观测。
+
+ResidualSVR用target83/source104，固定C10、gamma .1/83、epsilon .01，M0标签(y−LOW)/SPAN，M1标签(y−fS_clipped)/SPAN；训练自己的gas/cal scaler，先clip源、再clip最终物理范围。1%16窗/5%80窗与1360测试窗均属旧C5 canonical协议；标定分别16/80个原始文件同时出现在test中，只有精确窗口互斥，不能当独立暴露结果。
+
+源贡献alpha旧LOEO以目标标定标签选共享/逐气体系数；Centered AdaptiveSourcePrior旧4折以目标标定OOF选共享rho，历史选中1%rho1、5%rho.25。它们是已实现先行机制，不是本轮新发明，也不适合直接继承到源侧选参的新比较。A2每gas只有2个暴露，旧LOEO要求至少3、4折要求至少4，两个入口均正确拒绝A2。A4可分4折也不授权用目标Development/Test重选参数，本方案不用目标cal选rho。
+
+三个旧拟合入口都硬编码83D，本阶段已验证它们拒绝71D，不能直接调用，更不能补零12列假装复用。未来只能以原SVR71数值核、原base/Centered代数构建薄兼容边界；本阶段的test_interfaces仅是合成接口探针，不是可运行的生产迁移器。
+
+## rho0：数值退化与运行回退
+
+历史未经中心化版本曾不能复现M0：最大差.083503/.184622ppm，修正版保留失败现场，通过固定offset恢复原训练标签数值路径。不能仅因自由截距下代数等价，就认为有限容差SMO输出逐点相同。
+
+本阶段2预算×4gas的71D探针复用原base及原SVR71，以相同合成样本分别拟合直接标签和rho0调整标签，再交给原Centered预测接口；训练标签、scaler、dual/intercept及raw/clip预测逐元素相同，最大差0ppm。没有改变历史83D入口，也没有在真实cal上训练。
+
+同时确认旧predict_head无rho0短路，仍算0*source；source为NaN时结果NaN。未来回退必须显式返回**同一冻结F-SVR checkpoint**，不依赖源模型或源输入成功，不能仅rho=0后继续要求source可用。所有非零rho仍需完整源维度/单位/有限性合同。
+
+## 审计结果
+
+数值部件可复用；历史权重/历史rho/历史切分不能用于严格主比较。合法新输入合同通过，真实SourceRidge71模型及完整71D残差兼容接口尚未实例化验收，目标迁移训练未释放。没有新增神经网络、门控、Flower、部署或真实数据拟合。
+''')
+    print(json.dumps(dict(status='CORE_DELIVERABLES_WRITTEN',matrix_rows=len(registry),source_model_status='NOT_CREATED')))
+if __name__=='__main__':main()

@@ -1,0 +1,92 @@
+"""Synthetic-only interface probes, not an executable target transfer trainer."""
+import unittest
+from types import SimpleNamespace
+import numpy as np
+from audit_common import *
+DETAILS=[];FITS=[]
+
+class Interfaces(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.v,cls.source,cls.c,cls.alpha,cls.prior=import_old()
+
+    def test_source71_sufficient_statistics_against_pooled(self):
+        s=self.source;rng=np.random.default_rng(20261103);role='source_train';names=self.v.names
+        validate=p1.load('_p2a_study',verified(SOURCE+'/source_code/study_core.py')).validate_source_bank
+        for g in range(4):
+            x1=rng.normal(size=(13,71));x2=rng.normal(size=(17,71))+.2;x1[:,-1]=7.;x2[:,-1]=7.
+            y1=LOW[g]+SPAN[g]*rng.uniform(size=len(x1));y2=LOW[g]+SPAN[g]*rng.uniform(size=len(x2))
+            moments=[s.local_central_moments('C1',g,role,x1),s.local_central_moments('C2',g,role,x2)]
+            scaler=s.merge_central_moments(moments);self.assertEqual(scaler.scale[-1],1.)
+            eqs=[s.local_normal_equations_v2('C1',g,role,x1,y1,scaler),s.local_normal_equations_v2('C2',g,role,x2,y2,scaler)]
+            eq=s.aggregate_normal_equations_v2(eqs);fed=s.reconstruct_ridge_v2(eq,scaler,names,1000.);FITS.append(dict(type='synthetic_Ridge_reconstruction',gas=g))
+            pooled,_=s.pooled_reference_fit_v2(np.vstack([x1,x2]),np.r_[y1,y2],gas_id=g,role=role,feature_names=names,alpha=1000.);FITS.append(dict(type='synthetic_Ridge_pooled_reference',gas=g))
+            probe=rng.normal(size=(11,71));rawdiff=float(np.max(abs(fed.predict_matrix(probe,clip=False)-pooled.predict_matrix(probe,clip=False))))
+            clipdiff=float(np.max(abs(fed.predict_matrix(probe)-pooled.predict_matrix(probe))))
+            self.assertLess(rawdiff,1e-6);self.assertLess(clipdiff,1e-6);self.assertFalse(fed.intercept_regularized)
+            bank={str(k):dict(fed.to_json(),gas_id=k) for k in range(4)};validate({'LG':bank},names,{'LG':list(range(71))})
+            bad={k:dict(v,feature_names=list(reversed(names))) for k,v in bank.items()}
+            with self.assertRaises(ValueError):validate({'LG':bad},names,{'LG':list(range(71))})
+            DETAILS.append(dict(check='source71_merge_vs_pooled',gas_id=g,raw_maxdiff_ppm=rawdiff,clipped_maxdiff_ppm=clipdiff,safe_constant_feature=True,names_guard='existing_validate_source_bank'))
+
+    def test_old83_fit_interfaces_reject71_without_fitting(self):
+        x=np.ones((8,71));y=np.linspace(12.5,125,8);gas=np.arange(8)%4;source=np.zeros((8,4))
+        with self.assertRaises(ValueError):self.c.fit_pair(x,y,gas,source)
+        with self.assertRaises(ValueError):self.alpha.fit_head(x,y,source[:,0],0,0.)
+        with self.assertRaises(ValueError):self.prior.fit_head(x,y,source[:,0],0,0.)
+        DETAILS.append(dict(check='legacy83_fit_rejects71',ResidualSVR=True,AlphaSVR=True,CenteredPrior=True,fit_calls=0))
+
+    def test_rho0_centering_probe_strictly_recovers_svr71(self):
+        rng=np.random.default_rng(42);params=read(P15/'run/A_FROZEN_PARAMETERS.json')['choices']['F'];maxdiff=0.
+        for b in (2,4):
+            for g in range(4):
+                x=rng.normal(size=(b*2,71));x[:,-1]=3.;norm=np.repeat(np.array([0.,1.]) if b==2 else np.array([0.,1/3,2/3,1.]),2)
+                truth=LOW[g]+SPAN[g]*norm;source=rng.normal(size=len(x))*200+500
+                pa=params[str(b)][str(g)]['SVR'];direct=self.v.svr.fit_head(x,truth,g,pa);FITS.append(dict(type='synthetic_TargetSVR71_direct',budget=b,gas=g))
+                base=self.alpha.base(source,g,0.);adjusted=truth-(base-LOW[g]);np.testing.assert_array_equal(adjusted,truth)
+                fitted=self.v.svr.fit_head(x,adjusted,g,pa);FITS.append(dict(type='synthetic_SVR71_rho0_training_path',budget=b,gas=g))
+                np.testing.assert_array_equal(direct['mean'],fitted['mean']);np.testing.assert_array_equal(direct['scale'],fitted['scale'])
+                np.testing.assert_array_equal(direct['learner'].dual_coef_,fitted['learner'].dual_coef_);np.testing.assert_array_equal(direct['learner'].intercept_,fitted['learner'].intercept_)
+                # Only compose the existing Centered prediction interface with a native71 learner.
+                # Its old fit_head still rejects71; this probe is not production adaptation code.
+                head=self.prior.PriorHead(fitted['mean'],fitted['scale'],fitted['learner'],g,0.,float(LOW[g]))
+                probe=rng.normal(size=(9,71));source_pred=rng.normal(size=9)*1000
+                for clip in (False,True):
+                    expected=self.v.svr.predict_head(direct,probe,clip=clip);observed=self.prior.predict_head(head,probe,source_pred,clip=clip)
+                    np.testing.assert_array_equal(expected,observed);maxdiff=max(maxdiff,float(np.max(abs(expected-observed))))
+                    for i in range(len(probe)):np.testing.assert_array_equal(observed[i:i+1],self.prior.predict_head(head,probe[i:i+1],source_pred[i:i+1],clip=clip))
+                DETAILS.append(dict(check='rho0_71_centering_probe',gas_id=g,budget=b,raw_and_clipped_bitwise_equal=True,training_label_and_scaler_bitwise_equal=True,maxdiff_ppm=0.,fit_calls=2,production_legacy_fit71='REJECTED'))
+        self.assertEqual(maxdiff,0.)
+
+    def test_native_rho0_source_failure_is_not_operational_fallback(self):
+        learner=SimpleNamespace(predict=lambda z:np.zeros(len(z)))
+        h=self.prior.PriorHead(np.zeros(71),np.ones(71),learner,0,0.,float(LOW[0]))
+        q=self.prior.predict_head(h,np.zeros((2,71)),np.full(2,np.nan),clip=False)
+        self.assertTrue(np.isnan(q).all())
+        DETAILS.append(dict(check='rho0_nan_source_behavior',observed='legacy predictor still multiplies0*NaN and returnsNaN',required_future_contract='explicit rho0 branch returns stored F-SVR without calling source',fit_calls=0))
+
+    def test_grouped_selection_budget_limit_and_exposure_integrity(self):
+        for b in (2,4):
+            gs=np.repeat(np.arange(4),b*2);names=np.array([f'g{g}_f{k}' for g in range(4) for k in range(b) for _ in range(2)])
+            if b==2:
+                with self.assertRaises(ValueError):self.prior.assign_folds(gs,names)
+                with self.assertRaises(ValueError):list(self.alpha.folds(names[gs==0]))
+            else:
+                fold=self.prior.assign_folds(gs,names)
+                for k in range(4):self.assertFalse(set(names[fold==k])&set(names[fold!=k]))
+        DETAILS.append(dict(check='old_target_CV_A2_not_feasible',fourfold_A2='REJECTED',LOEO_A2='REJECTED',A4_groups='file_disjoint_but_not_adopted_for_target_selection',fit_calls=0))
+
+    def test_similarity_one_does_not_identify_concentration_relation(self):
+        x=np.array([[-1.],[1.]]);same=x.copy();similarity=np.exp(-np.sum((x-same)**2,axis=1));ys=np.array([0.,1.]);yt=1-ys
+        np.testing.assert_array_equal(similarity,np.ones(2));self.assertGreater(float(np.mean((ys-yt)**2)),0.)
+        DETAILS.append(dict(check='identical_inputs_different_conditional_mapping_counterexample',rbf_similarity=1.,source_mapping_error=1.,scope='algebraic illustration;not gas experimental evidence',fit_calls=0))
+
+    def test_centered_prior_and_alpha_bases_are_same_function(self):
+        s=np.array([-100.,25.,260.])
+        for g in range(4):
+            for rho in (0.,.25,.5,.75,1.):
+                a=self.alpha.base(s,g,rho);literal=rho*s+(1-rho)*LOW[g]
+                np.testing.assert_allclose(a,literal,rtol=0,atol=1e-12)
+        DETAILS.append(dict(check='alpha_and_centered_rho_baseline_algebra',rho_values=[0.,.25,.5,.75,1.],scope='mature identical additive function prior',fit_calls=0))
+
+if __name__=='__main__':unittest.main()

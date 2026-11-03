@@ -1,0 +1,41 @@
+{
+  "from_skill": [
+    "experiment-audit",
+    "experiment-planner",
+    "claim-evidence"
+  ],
+  "to_skill": [
+    "experiment-registry",
+    "future_source_only_execution"
+  ],
+  "inputs": [
+    "v5 bytes per evidence_v2/V5_REUSE_PROVENANCE.csv",
+    "Phase05_roles",
+    "Phase1_fixed772c0e9",
+    "Phase15_fixed4988abb"
+  ],
+  "completed_checks": [
+    "sourceinputidentity",
+    "oldJSONprovenance",
+    "synthetic24fits",
+    "static83/71API",
+    "rho0finiteparity_andNaNfailure",
+    "historycoverage"
+  ],
+  "unresolved": [
+    "real_source71_bank_not_built",
+    "71Dcompatibility_not_production",
+    "target_confirmation_unavailable"
+  ],
+  "blocking_evidence_gap": "actual_legal_source_weights_and_interface_contract_before_target_training",
+  "requested_next": "source-only build/parity/lock then fixedsource_rho only under registeredPhase2B;no targettrainingnow",
+  "readonly": [
+    "v5",
+    "Phase05",
+    "Phase1",
+    "Phase1.5",
+    "rawdata",
+    "oldresults",
+    "ZIP"
+  ]
+}

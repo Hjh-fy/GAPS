@@ -1,0 +1,13 @@
+id,severity,finding,evidence,action,status
+A01,blocking_direct_weight_reuse,historical71/104 weights violate new source cutoff/dimension,v5 SOURCE71/SOURCE104 + Phase05 provenance,reuse numerics;fit new legal71source inPhase2B only,documented_not_waived
+A02,blocking_target_training,real legal SourceRidge71 weights/real-data parity lock absent,SOURCE71_MODEL_CONTRACT_PLAN;0real_fits,source-only build+pooled parity+hash lock before targetfit,pending_next_stage
+A03,blocking_target_training,native residual fit83 rejects71;production compatibility path not delivered,checks/INTERFACE_CHECKS;static line hashes,thin reuse boundary plus schema/unit/finite andrho0 contract;no new algorithm,pending_next_stage
+A04,major,rho0 old predictor still requires finite source;NaN yieldsNaN,synthetic check0*NaN,explicit aliasF-SVR branch independent ofsource,future_gate
+A05,major,C4 calD3 before sourceD7,target role timeline,retrospective source-before-test only,scope_limited
+A06,major,central-host simulation not executed privacy-isolated federation,source cache access and source module signatures,declare central feature access and logical sufficient-statistics simulation,scope_limited
+A07,major,no confirmed fresh independent target set;640oldmetadata covered,CONFIRMATORY_AVAILABILITY,retrospective only;seek separately audited evidence,unresolved_confirmatory_gap
+A08,major,source pseudo tasks same-day cal/validation;inheritedHP use entireD7 pool,SOURCE_PSEUDO_EPISODE_PLAN,source-only retrospective selection;not prospective/cross-day confirmation,scope_limited
+A09,major,new source raw-prior boundary differs historical source-clipped residual,new plan vs old residual CONFIG,freeze rawprior and finalclip;report raw/clip;no historical-equivalence claim,explicit_design_difference
+A10,major,RBF neighbor score not proof ofconditional concentration mapping,P15 targetkernel diagnostics;algebraic counterexample,no similarity-only gate claim;one hypothesis only,scope_limited
+A11,informational,A2 cannot satisfy original LOEO>=3 or fixed4fold>=4 pergas,synthetic rejection guards,source-only pseudo selection;do not split windows to repair,resolved_by_plan
+A12,minor_resolved,initial audit used exactfloat10s check;roundoff1.42e-14s,checks/INITIAL_AUDIT_DIAGNOSTIC;first evidence/ retained,use frozen strict1e-6s tolerance;new evidence_v2;no data changed/no refits,resolved

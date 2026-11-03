@@ -1,0 +1,48 @@
+{
+  "status": "PASS_SCOPED_AUDIT_AND_SYNTHETIC_INTERFACES",
+  "verified_at_UTC": "2026-11-03T07:08:13.808119+00:00",
+  "prior_payloads_unchanged": {
+    "fedongas_phase1_20261102": 125,
+    "fedongas_phase15_20261102": 185
+  },
+  "phase05_manifest_payloads_unchanged": 53,
+  "v5_read_assets_unchanged": 28,
+  "v5_zip_unchanged": true,
+  "source_120_raw_hash_checks": "completed_in_collect_audit_evidence_v2",
+  "source_cache_and_metadata_still_match": true,
+  "target_numeric_arrays_read_for_training_or_inference": false,
+  "original_tracked_status_unchanged": true,
+  "worktree_tracked_algorithms_unchanged": true,
+  "unit_tests": 7,
+  "synthetic_fits": 24,
+  "real_source_fits": 0,
+  "real_target_fits": 0,
+  "new_gate_fits": 0,
+  "historical_checkpoint_inference": 0,
+  "synthetic_rho0_probes": 8,
+  "synthetic_rho0_maxdiff_ppm": 0.0,
+  "synthetic_Ridge_merge_pooled_probes": 4,
+  "synthetic_Ridge_raw_maxdiff_ppm": 1.1368683772161603e-13,
+  "transformed_label_clip_fixture": {
+    "correct_final_only_ppm": 125.0,
+    "wrong_early_clip_ppm": 100.0,
+    "scope": "arithmetic_fixture_not_production_adapter_test"
+  },
+  "current_scope": "read-only inputs/code/modelJSON;synthetic checks;plans_only",
+  "actual_source71_bank": "NOT_CREATED",
+  "production71_residual_adapter": "NOT_IMPLEMENTED_OR_ACCEPTED",
+  "phase2b_source_build": "CONDITIONAL_CONTINUE",
+  "phase2b_target_training": "NOT_RELEASED",
+  "independent_confirmation": "NOT_ESTABLISHED",
+  "planned_matrix_rows": 30,
+  "planned_phase2b_fit_cap": 128,
+  "hypothesis_run_count": 0,
+  "extra_test_tuning_rounds": 0,
+  "environment": {
+    "numpy": "1.26.4",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.13.1",
+    "joblib": "1.4.2",
+    "threadpoolctl": "3.6.0"
+  }
+}

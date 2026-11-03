@@ -1,0 +1,332 @@
+{
+  "source71": {
+    "dimension": 71,
+    "gas_heads": 4,
+    "role": "source_train_plus_calibration_refit",
+    "alpha": {
+      "0": 0.1,
+      "1": 0.01,
+      "2": 0.1,
+      "3": 0.1
+    },
+    "source_training": "train->source calibration choose; refit train+calibration; local sufficient-statistics simulation",
+    "cohort_conflict": "old canonical source train includes R4 on Unit1Day21/Unit2Day16; old bank refits train+calibration"
+  },
+  "source104": {
+    "dimension": 104,
+    "gas_heads": 4,
+    "role": "source_train_plus_calibration_refit",
+    "alpha": {
+      "0": 0.1,
+      "1": 0.01,
+      "2": 0.01,
+      "3": 0.01
+    },
+    "original_index_validated": true
+  },
+  "residual": {
+    "seed": 42,
+    "budgets": [
+      1,
+      5
+    ],
+    "methods": [
+      "M0",
+      "M1"
+    ],
+    "params": {
+      "C": 10.0,
+      "gamma": 0.0012048192771084338,
+      "epsilon": 0.01,
+      "kernel": "rbf"
+    },
+    "source_predict": "original physical-clipped frozen Ridge predict",
+    "residual": "(true_ppm-source_predict_ppm)/range_true_gas",
+    "direct_target": "(true_ppm-known_low)/range_true_gas",
+    "scaling": "same per-gas budget-local mean/std for both methods",
+    "hyperparameter_selection": "none; pre-fixed shared parameters",
+    "parameter_origin": "ORIGINAL_WORKSPACE\\outputs\\FedOnGas_回归机制验证_20261020\\SELECTED_RECIPES.json",
+    "parameter_origin_sha256": "2e678bd52bdfa4303991679c4fef2486f819252faea47f9e8b9361a3a96605d9",
+    "parameter_origin_scope": "C1/C2 source-only pseudo-onboarding, before strictC5test",
+    "low_budget_selection": "existing frozen MMD low_budget_indices seed42 from original5pct list",
+    "source_index_sha256": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82",
+    "source_model_lock_sha256": "40c06848f19d211920b200946328e6e95cae9656a17ae0d18036951b7c5d67f6",
+    "known_low": [
+      12.5,
+      25.0,
+      12.5,
+      25.0
+    ],
+    "known_range": [
+      112.5,
+      225.0,
+      112.5,
+      225.0
+    ],
+    "final_clip": "known physical range, after source+residual sum",
+    "target_dtype": "explicit float64",
+    "new_classifier_training": false,
+    "new_source_training": false,
+    "endpoints": 4,
+    "target_SVR_fits": 16
+  },
+  "alpha": {
+    "seed": 42,
+    "budgets": [
+      1,
+      5
+    ],
+    "alpha_grid": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "methods": [
+      "M0",
+      "M1",
+      "M2_shared",
+      "M3_gaswise"
+    ],
+    "primary": "M2_shared",
+    "exploratory": "M3_gaswise",
+    "params": {
+      "C": 10.0,
+      "gamma": 0.0012048192771084338,
+      "epsilon": 0.01,
+      "kernel": "rbf"
+    },
+    "cv": "per-budget per-gas LeaveOneGroupOut(filename)",
+    "selection_metric": "pooled OOF normalized squared error",
+    "tie": "absolute normalized-MSE tolerance1e-12, lower alpha",
+    "scaler": "per-fold train-only, refit on own full calibration",
+    "baseline": "LOW+alpha*(source-LOW), exact branches alpha0/1",
+    "truth_route": true,
+    "test_windows": 1360,
+    "prior_study": "ORIGINAL_WORKSPACE\\outputs\\FedOnGas_ResidualSVR低预算最小验证_20261021",
+    "test_previously_used": true,
+    "fresh_independent_confirmation": false,
+    "new_classifiers": false,
+    "new_source_training": false,
+    "normalization_low": [
+      12.5,
+      25.0,
+      12.5,
+      25.0
+    ],
+    "normalization_range": [
+      112.5,
+      225.0,
+      112.5,
+      225.0
+    ]
+  },
+  "centered_prior": {
+    "seed": 42,
+    "budgets": [
+      1,
+      5
+    ],
+    "methods": [
+      "M0",
+      "M1",
+      "M2"
+    ],
+    "rho_grid": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "shared_rho": true,
+    "params": {
+      "C": 10.0,
+      "gamma": 0.0012048192771084338,
+      "epsilon": 0.01,
+      "kernel": "rbf"
+    },
+    "residual_physical": "y-rho*frozen_source_prediction",
+    "internal_offset": "(1-rho)*known_LOW; fixed, not learned",
+    "internal_target": "(residual_physical-internal_offset)/known_range",
+    "output": "rho*source+internal_offset+known_range*SVR",
+    "final_clip": "known physical range",
+    "numerical_repair": "restore legacy numerical centering; initial failed attempt preserved; folds/candidates/params unchanged",
+    "cv": "fixed4fold gas-balanced original-filename grouped",
+    "fold_assignment": "sorted groups; default_rng(42), gas0..3 permutations then cyclic modulo4",
+    "selection": "pooled original overall NRMSE of all calibration OOF predictions",
+    "ties": "exact equality only, smaller rho",
+    "scaling": "fold training rows only; full own-budget calibration at final fit; ddof0; std<1e-9 to1",
+    "endpoint_max_abs_ppm_tolerance": 1e-06,
+    "endpoint_abs_NRMSE_tolerance": 1e-09,
+    "known_low": [
+      12.5,
+      25.0,
+      12.5,
+      25.0
+    ],
+    "known_range": [
+      112.5,
+      225.0,
+      112.5,
+      225.0
+    ],
+    "source_index_sha256": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82",
+    "new_source_or_classifier_training": false,
+    "routing": "true gas Oracle",
+    "QC": "none",
+    "test_windows": 1360,
+    "test_previously_used": true,
+    "new_test_confirmation": false,
+    "cv_target_head_fits": 160,
+    "final_target_heads": 24,
+    "prior": "ORIGINAL_WORKSPACE\\outputs\\FedOnGas_ResidualSVR低预算最小验证_20261021",
+    "blocked_budgets": []
+  },
+  "residual_data_audit": {
+    "status": "PASS",
+    "created_at": "2026-10-21T02:16:26.045013+00:00",
+    "budgets": [
+      {
+        "budget_pct": 1,
+        "calibration_windows": 16,
+        "per_gas_windows": 4,
+        "calibration_raw_exposures": 16,
+        "shared_calibration_test_raw_exposures": 16,
+        "exact_window_overlap": 0,
+        "levels_per_gas": {
+          "0": [
+            25.0,
+            37.5,
+            62.5,
+            112.5
+          ],
+          "1": [
+            50.0,
+            100.0,
+            150.0,
+            250.0
+          ],
+          "2": [
+            25.0,
+            37.5,
+            87.5,
+            125.0
+          ],
+          "3": [
+            50.0,
+            200.0,
+            225.0,
+            250.0
+          ]
+        }
+      },
+      {
+        "budget_pct": 5,
+        "calibration_windows": 80,
+        "per_gas_windows": 20,
+        "calibration_raw_exposures": 80,
+        "shared_calibration_test_raw_exposures": 80,
+        "exact_window_overlap": 0,
+        "levels_per_gas": {
+          "0": [
+            12.5,
+            25.0,
+            37.5,
+            50.0,
+            62.5,
+            75.0,
+            87.5,
+            100.0,
+            112.5,
+            125.0
+          ],
+          "1": [
+            25.0,
+            50.0,
+            75.0,
+            100.0,
+            125.0,
+            150.0,
+            175.0,
+            200.0,
+            225.0,
+            250.0
+          ],
+          "2": [
+            12.5,
+            25.0,
+            37.5,
+            50.0,
+            62.5,
+            75.0,
+            87.5,
+            100.0,
+            112.5,
+            125.0
+          ],
+          "3": [
+            25.0,
+            50.0,
+            75.0,
+            100.0,
+            125.0,
+            150.0,
+            175.0,
+            200.0,
+            225.0,
+            250.0
+          ]
+        }
+      }
+    ],
+    "n_test_windows": 1360,
+    "source104_legal_without_gas_concentration_labels": true,
+    "source104_whitelist_equivalence": true,
+    "source104_test_metadata_rows_checked": 1360,
+    "source104_feature_count": 104,
+    "original_calibration_cache_max_abs_differences": {
+      "sensor83": 0.0,
+      "h1": 0.0,
+      "source": 0.0
+    },
+    "target_test_tensor_decoded": false,
+    "test_stats_used_for_features_or_training": false,
+    "source_only_hash_anchor": "04e62b0a2b363fcb79cbeb60ad6c2c6c9a3dedef380b2b0f7c2aa808732d4d82"
+  },
+  "old_selected_alpha": [
+    {
+      "budget_pct": 1,
+      "shared_alpha": 1.0,
+      "per_gas_alpha": {
+        "0": 0.0,
+        "1": 1.0,
+        "2": 0.0,
+        "3": 1.0
+      }
+    },
+    {
+      "budget_pct": 5,
+      "shared_alpha": 0.0,
+      "per_gas_alpha": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.0,
+        "3": 0.5
+      }
+    }
+  ],
+  "old_selected_rho": [
+    {
+      "budget_pct": 1,
+      "rho": 1.0,
+      "selection_scope": "all4gases shared, calibration OOF only"
+    },
+    {
+      "budget_pct": 5,
+      "rho": 0.25,
+      "selection_scope": "all4gases shared, calibration OOF only"
+    }
+  ]
+}

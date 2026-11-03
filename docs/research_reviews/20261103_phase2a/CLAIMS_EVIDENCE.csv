@@ -1,0 +1,11 @@
+claim_id,claim,scope,evidence_id,source,audit_status,support,limitation
+C01,historical source71/104 weights cannot satisfy new Day7/71D input contract,inspected frozen banks only,E01,evidence_v2/HISTORICAL_METHOD_SPECS.json;HISTORICAL_SOURCE104_PROVENANCE.json;Phase05provenance,approved_scoped_readonly,direct,not a judgment on original protocol conclusions
+C02,120exposures/2520source71rows are legal inputs;630rows pergas,C1D4 C2D1/7 and current frozen cache,E02,evidence_v2/SOURCE71_INPUT_AUDIT.json;LEGAL_SOURCE_EXPOSURES.csv,approved_inputs_only,direct,new actual source weights not fit
+C03,existing dimension71 source numerics give merged/pooled equivalence within1e-6ppm,4gas synthetic fixtures only,E03,checks/INTERFACE_CHECKS.json,approved_synthetic_only,qualified,real source630rows parity still pending
+C04,rho0 centered71 probe strictly recovers nativeSVR71,2budgets4gas finite synthetic source;raw/clip,E04,checks/INTERFACE_CHECKS.json,approved_synthetic_only,qualified,old fit83 still rejects71;not production fallback
+C05,oldrho0 predictor does not surviveNaNsource,old centered predict implementation,E05,checks/INTERFACE_CHECKS.json,approved_scoped_readonly,direct,future explicitalias branch not implemented here
+C06,current data contains no confirmed fresh independent target evidence,640rawfiles +12inspected canonical metadata files,E06,evidence_v2/CONFIRMATORY_AVAILABILITY.json,approved_scoped_readonly,qualified,not allworktree/externaldata absence proof
+C07,fixedrho migration improves strict71D regression,new C3/C4/C5 A2/A4,NONE,EXPERIMENT_PLAN.md,blocked_not_run,missing,0targetfits inPhase2A
+C08,concentration increment contradiction predicts negative transfer,H-CONSISTENCY future hypothesis,NONE,INNOVATION_AND_NEGATIVE_TRANSFER.md,draft_hypothesis_only,missing,not computed/trained/gated
+C09,RBF input similarity alone does not certify conditional mapping,algebraic counterexample +theoretical motivation,E09,checks/INTERFACE_CHECKS.json;L3,approved_scoped,qualified,"P15kernel is target-cal kernel,not new source bank measure"
+C10,additive source prior/rho0/negative transfer filtering are prior mechanisms,inspected local20261021code andL1/L2/L4,E10,REUSE_INVENTORY.csv;LITERATURE_NOVELTY_MATRIX.csv,approved_mechanism_comparison,direct,not exhaustive novelty search;no inherited safety theorem

@@ -1,0 +1,168 @@
+"""Scoped claim/evidence, literature differences and stage gates; no experiments."""
+from audit_common import *
+E=HERE/'evidence_v2'
+def write(name,text):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(text)
+def main():
+    qa=read(HERE/'checks/INTERFACE_CHECKS.json');assert qa['status']=='PASS'
+    refs=[
+      dict(id='L1',title='Cross-Domain Video Concept Detection Using Adaptive SVMs',authors='Jun Yang;Rong Yan;Alexander G. Hauptmann',year=2007,venue='ACM Multimedia',url='https://www.cs.cmu.edu/~juny/Prof/papers/acmmm07jyang.pdf',
+        verified_basis='author-hosted original paper title/authors/MM07 notice and author software page',mechanism='source classifier plus learned delta function;source model weighting/selection',mature_overlap='additive source function prior and limited target supervision predate this study',difference='classification hinge loss,not this ppm epsilon-SVR or strict71D protocol',limit='analogy/prior mechanism;does not establish current gas regression gain'),
+      dict(id='L2',title='Characterizing and Avoiding Negative Transfer',authors='Zirui Wang;Zihang Dai;Barnabas Poczos;Jaime Carbonell',year=2019,venue='CVPR pp11293-11302',url='https://openaccess.thecvf.com/content_CVPR_2019/html/Wang_Characterizing_and_Avoiding_Negative_Transfer_CVPR_2019_paper.html',
+        verified_basis='CVF official proceedings abstract/BibTeX;PDF search text verified;later HTML open403 retained as access limit',mechanism='negative transfer defined against appropriate target learning baseline;filter harmful source information',mature_overlap='recognizing harmful source and filtering is established,not new gate concept',difference='adversarial source-data filtering,not frozen scalar ppm prior with2/4exposures',limit='no direct finite-sample safety guarantee for current regression'),
+      dict(id='L3',title='Impossibility Theorems for Domain Adaptation',authors='Shai Ben-David;Tyler Lu;Teresa Luu;David Pal',year=2010,venue='AISTATS PMLR9 pp129-136',url='https://proceedings.mlr.press/v9/david10a.html',
+        verified_basis='official PMLR record and abstract',mechanism='input-distribution assumptions alone do not give general adaptation success without appropriate joint/label assumptions',mature_overlap='marginal similarity cannot certify conditional concentration relation',difference='classification/PAC unlabeled-target setting,not a theorem about this few-shot regressor',limit='motivation only;no copied numerical bounds or guarantee'),
+      dict(id='L4',title='Residual Feature Integration is Sufficient to Prevent Negative Transfer',authors='Yichen Xu;Ryumei Nakada;Linjun Zhang;Lexin Li',year=2026,venue='ICLR2026',url='https://proceedings.iclr.cc/paper_files/paper/2026/hash/7d998ff3e6ecce821986c9dd876be9bc-Abstract-Conference.html',
+        verified_basis='official ICLR2026 proceedings abstract',mechanism='frozen source representation augmented by target trainable residual encoder;conditional convergence-rate guarantee',mature_overlap='residual integration and safety are already active established research themes',difference='feature/encoder construction and target-distribution assumptions differ from literal rho*fS+SVR with4/8windows',limit='abstract-level comparison only;does not prove current finite-sample or pointwise no-harm;no new encoder planned')]
+    table(HERE/'LITERATURE_NOVELTY_MATRIX.csv',refs)
+    write('INNOVATION_AND_NEGATIVE_TRANSFER.md','''# 可靠性、先行机制与唯一保守假设
+
+## 源知识可能有效与失效的条件
+
+这是待验证的机制分析，不是本轮获得的迁移增益。若不同设备的同71D浓度关系大体保持、少量标定能修正偏移而保留源浓度趋势，固定函数先验可能降低小样本方差；反之，源混合映射方向/尺度不适合目标、4/8窗残差不足以纠正、源端点超界或窗口响应状态改变，非零rho可能比F-SVR更差。C2样本权重2/3、跨设备缩放与非线性差异、Ridge源模型欠拟合都需要保留，不能先假设同维度意味着同分布。
+
+本阶段没有在C3/C4/C5计算新源预测或迁移误差，因此“什么条件实际有效”仍待Phase2B固定比较。旧83D/104D残差已有5%负结果、可调源贡献已有rho0或较小系数，但它们只构成历史风险动机，不是新71D严格协议证据。
+
+## 为什么RBF相似度不能单独决定迁移
+
+Phase1.5里C5 CO高档在F-SVR核相似度中位数约.85时仍明显低估；C3 Ethylene中档约.95以上仍偏高。这些相似度是**目标SVR相对目标标定点的核邻近**，不是尚未建立的新SourceRidge71的可靠性指标，不能偷换成“本轮已经测到源相似度与负迁移相关”。源Ridge本身是线性模型，也没有一个天然的RBF置信分数。
+
+它们说明邻近不是校准正确性的充分证据。另一个无数据拟合的代数反例：源/目标输入完全相同，RBF相似度=1，但目标浓度映射与源相反，源预测仍会错。反例不是气体实验结果，也不证明这个数据集必有完全反向映射。
+
+[Ben-David等，AISTATS2010](https://proceedings.mlr.press/v9/david10a.html)讨论域适应所需的分布/联合假设；该分类、无目标标签理论不能直接当作当前少样本回归的性能定理。这里仅据此限制“边际接近即可迁移”的表述。
+
+## 仅一个保守研究假设：H-CONSISTENCY（未实现、未训练、未进入执行矩阵）
+
+已知目标标定的低/高端点各1次独立暴露、各60/150两窗。令ΔS为源模型在高端点两窗的平均raw预测，减去低端点两窗的平均raw预测；真实浓度增量ΔY>0已由标定知道。假设：**若ΔS≤0，源浓度增量方向与目标标定矛盾，此类任务更易发生负迁移；该矛盾可以作为拒绝迁移的必要检查，比仅看RBF邻近更有诊断价值。**
+
+这只是一条将来验证的拒绝条件，不是认可迁移的充分条件，更不是无害保证。正向但尺度严重错误、中间档非单调或跨日改变可绕过该检查；残差模型也可能修复反向源，产生误拒绝。两端点各仅一次暴露，两个相关窗口不能提供独立重复置信度。A2/A4使用同两个端点，不能把两预算检查当成两份独立证据。
+
+零阈值来自方向矛盾的预定义，不从目标test选择；若未来要改尺度阈值、组合分数或训练门控，必须另行注册并仅用合法源侧确定。本轮不计算目标ΔS、不实现触发器、不据此改rho。先执行Source-only/固定rho/rho0的Phase2B最小比较；无可靠静态增益就停止，不把此假设当作追加模块挽救旧指标。
+
+## 成熟复用与可能的新贡献边界
+
+[Yang等，ACM Multimedia2007](https://www.cs.cmu.edu/~juny/AdaptSVM/index.html)已有源函数加delta及源模型选择，属于分类器适配，不是本实验的epsilon回归定理。项目2026-10-21源码也已有残差SVR、可调rho、rho0回退、共享/逐气体选择与Centered数值修复。故改71D、换LOW中心化或重新命名残差/门控都不是原创算法。
+
+[Wang等，CVPR2019](https://openaccess.thecvf.com/content_CVPR_2019/html/Wang_Characterizing_and_Avoiding_Negative_Transfer_CVPR_2019_paper.html)已讨论负迁移和过滤源信息，说明“判断何时迁移”这一概念也不是新颖性本身。当前冻结F-SVR为适当的目标单独学习基线，不能只赢弱Source-only就称避免负迁移。
+
+[Xu等，ICLR2026](https://proceedings.iclr.cc/paper_files/paper/2026/hash/7d998ff3e6ecce821986c9dd876be9bc-Abstract-Conference.html)研究冻结源表征加目标残差编码器，在指定分布类给出收敛率保证；它不是本方案的函数残差SVR，不能据其标题宣称rho0候选或模型集合包含目标基线就必然无害。本轮只对官方摘要层机制做对照，不把全文定理当作已审查可用结论。
+
+真正可能形成贡献的是：在2/4次独立暴露下，证明特定浓度关系矛盾对负迁移具有可复现诊断力，并在未参与构思的独立日期/设备上验证一个保守复用规则。当前仅有问题、代码/协议基础和可证伪假设，没有新算法有效性证据。LITERATURE_NOVELTY_MATRIX.csv是先行机制初审，不是穷尽检索，不能据此宣称首次提出。
+''')
+    write('CONFIRMATORY_DATA_AUDIT.md','''# 独立确认性数据可用性审计
+
+范围：Phase0.5 data1审计的640次原始暴露，以及当前原仓库canonical C1–C5的train/calibration/test暴露元数据，共12个存在的元数据文件。只检查身份和SHA，不打开目标信号/71D数值作新预测，也没有审遍所有其它worktree或外部数据源。
+
+结果：640/640原始文件名均出现在这些历史元数据中；未在检查集合中找到的文件数为0。逐文件新A2/A4角色和旧split成员关系见evidence_v2/HISTORICAL_EXPOSURE_COVERAGE.csv，元数据路径、SHA、行数和独立文件数见HISTORICAL_METADATA_PROVENANCE.json。
+
+历史元数据成员关系证明该暴露已进入既有数据流程，不能单凭它断言每一旧模型都训练/预测过每个窗口。但是它不支持“新协议unused/reserved角色就是从未观察的数据”的说法。尤其C3 R1的unused和A2保留档也不自动成为新盲测；近期Development未参与选参，同样不能证明全历史未使用。
+
+当前已确认未触及、独立日期/设备的目标确认集数量=0；确切逐方法历史使用记录仍有unknown。本批目标test已知被历史研究查看，本轮全部推断仍回顾性。严格暴露互斥能回答新模型在固定留出暴露上的探索性表现，不能抹除先前方法构思/选择已看过同批数据的事实。
+
+仅现有数据约束下的替代：预先固定合法源侧跨设备外层验证，明确仍是有限既有源任务的探索性诊断；如有未审查的独立历史日期/设备资产，先另做身份/使用谱系审计并封存，证据不足保持unknown。外部独立公开设备数据本轮未导入/审查，不假称已可用。若没有新的独立证据，后续不得宣称新算法普遍跨设备、前瞻性或长期闭环有效。
+''')
+    findings=[
+      dict(id='A01',severity='blocking_direct_weight_reuse',finding='historical71/104 weights violate new source cutoff/dimension',evidence='v5 SOURCE71/SOURCE104 + Phase05 provenance',action='reuse numerics;fit new legal71source inPhase2B only',status='documented_not_waived'),
+      dict(id='A02',severity='blocking_target_training',finding='real legal SourceRidge71 weights/real-data parity lock absent',evidence='SOURCE71_MODEL_CONTRACT_PLAN;0real_fits',action='source-only build+pooled parity+hash lock before targetfit',status='pending_next_stage'),
+      dict(id='A03',severity='blocking_target_training',finding='native residual fit83 rejects71;production compatibility path not delivered',evidence='checks/INTERFACE_CHECKS;static line hashes',action='thin reuse boundary plus schema/unit/finite andrho0 contract;no new algorithm',status='pending_next_stage'),
+      dict(id='A04',severity='major',finding='rho0 old predictor still requires finite source;NaN yieldsNaN',evidence='synthetic check0*NaN',action='explicit aliasF-SVR branch independent ofsource',status='future_gate'),
+      dict(id='A05',severity='major',finding='C4 calD3 before sourceD7',evidence='target role timeline',action='retrospective source-before-test only',status='scope_limited'),
+      dict(id='A06',severity='major',finding='central-host simulation not executed privacy-isolated federation',evidence='source cache access and source module signatures',action='declare central feature access and logical sufficient-statistics simulation',status='scope_limited'),
+      dict(id='A07',severity='major',finding='no confirmed fresh independent target set;640oldmetadata covered',evidence='CONFIRMATORY_AVAILABILITY',action='retrospective only;seek separately audited evidence',status='unresolved_confirmatory_gap'),
+      dict(id='A08',severity='major',finding='source pseudo tasks same-day cal/validation;inheritedHP use entireD7 pool',evidence='SOURCE_PSEUDO_EPISODE_PLAN',action='source-only retrospective selection;not prospective/cross-day confirmation',status='scope_limited'),
+      dict(id='A09',severity='major',finding='new source raw-prior boundary differs historical source-clipped residual',evidence='new plan vs old residual CONFIG',action='freeze rawprior and finalclip;report raw/clip;no historical-equivalence claim',status='explicit_design_difference'),
+      dict(id='A10',severity='major',finding='RBF neighbor score not proof ofconditional concentration mapping',evidence='P15 targetkernel diagnostics;algebraic counterexample',action='no similarity-only gate claim;one hypothesis only',status='scope_limited'),
+      dict(id='A11',severity='informational',finding='A2 cannot satisfy original LOEO>=3 or fixed4fold>=4 pergas',evidence='synthetic rejection guards',action='source-only pseudo selection;do not split windows to repair',status='resolved_by_plan'),
+      dict(id='A12',severity='minor_resolved',finding='initial audit used exactfloat10s check;roundoff1.42e-14s',evidence='checks/INITIAL_AUDIT_DIAGNOSTIC;first evidence/ retained',action='use frozen strict1e-6s tolerance;new evidence_v2;no data changed/no refits',status='resolved')]
+    table(HERE/'AUDIT_FINDINGS.csv',findings)
+    write('EXPERIMENT_AUDIT.md','''# 审计结论与门禁
+
+审计声称仅覆盖：历史方法语义与字节来源、批准71D源输入/时间角色、合成接口等价及未来可执行计划。对新迁移有效性没有证据批准。
+
+AUDIT_FINDINGS.csv按blocking/major/minor/informational列出12项发现。A01阻止旧权重直接复用；A02/A03/A04阻止当前目标迁移训练；它们不妨碍完成只读审计和发布。数据输入合法与合成数值可复用已经确认，不能提升成真实新模型或端到端系统已验收。
+
+泄漏审计：源数据120暴露全部来自Day7白名单，与所有目标cal/dev/test文件互斥；输入scaler计划只访问合法源，目标残差scaler只看相同4/8cal窗；源alpha/F-SVR参数来自已锁源选择。新rho尚未选择。没有打开目标数值矩阵或加载历史checkpoint作推理；旧模型JSON仅结构/来源校验。C4的时间例外和全部回顾性属性不隐藏。
+
+公平比较计划：F-SVR是主基线和rho0的同一权重，N-SVR/KRR只读参考；所有新候选同71D、A2/A4身份/窗口、Oracle、支持和单窗暴露等权主评价；Source-only不消耗targetcal标签。旧83/104与历史窗口指标不拼入新矩阵。Source-only跨预算视图不当独立训练重复。
+
+验证：7项接口检查通过，24次合成拟合（8个Ridge数值重建/参考，16个SVR直接/rho0训练路径），0真实源拟合、0真实目标拟合、0历史pickle/joblib推理。四gas充分统计量与pooled参考达原1e-6ppm门槛；8个rho0探针raw/clip逐元素相同。源文件120个与v5读取资产28个SHA核对；Phase1 125项、Phase1.5 185项封存负载未变。完整记录见checks与evidence_v2。
+
+Verdict：只读事实及合成接口证据可在限定范围内approved；71D新真实源模型和目标迁移性能仍blocked/pending。Phase2B可以进入源侧构建与合同验收，不能直接进入目标迁移训练。历史谱系不完整、确认集缺失、模型尚未建立不靠改命名或目标test调参修复。
+''')
+    claims=[
+      dict(claim_id='C01',claim='historical source71/104 weights cannot satisfy new Day7/71D input contract',scope='inspected frozen banks only',evidence_id='E01',source='evidence_v2/HISTORICAL_METHOD_SPECS.json;HISTORICAL_SOURCE104_PROVENANCE.json;Phase05provenance',audit_status='approved_scoped_readonly',support='direct',limitation='not a judgment on original protocol conclusions'),
+      dict(claim_id='C02',claim='120exposures/2520source71rows are legal inputs;630rows pergas',scope='C1D4 C2D1/7 and current frozen cache',evidence_id='E02',source='evidence_v2/SOURCE71_INPUT_AUDIT.json;LEGAL_SOURCE_EXPOSURES.csv',audit_status='approved_inputs_only',support='direct',limitation='new actual source weights not fit'),
+      dict(claim_id='C03',claim='existing dimension71 source numerics give merged/pooled equivalence within1e-6ppm',scope='4gas synthetic fixtures only',evidence_id='E03',source='checks/INTERFACE_CHECKS.json',audit_status='approved_synthetic_only',support='qualified',limitation='real source630rows parity still pending'),
+      dict(claim_id='C04',claim='rho0 centered71 probe strictly recovers nativeSVR71',scope='2budgets4gas finite synthetic source;raw/clip',evidence_id='E04',source='checks/INTERFACE_CHECKS.json',audit_status='approved_synthetic_only',support='qualified',limitation='old fit83 still rejects71;not production fallback'),
+      dict(claim_id='C05',claim='oldrho0 predictor does not surviveNaNsource',scope='old centered predict implementation',evidence_id='E05',source='checks/INTERFACE_CHECKS.json',audit_status='approved_scoped_readonly',support='direct',limitation='future explicitalias branch not implemented here'),
+      dict(claim_id='C06',claim='current data contains no confirmed fresh independent target evidence',scope='640rawfiles +12inspected canonical metadata files',evidence_id='E06',source='evidence_v2/CONFIRMATORY_AVAILABILITY.json',audit_status='approved_scoped_readonly',support='qualified',limitation='not allworktree/externaldata absence proof'),
+      dict(claim_id='C07',claim='fixedrho migration improves strict71D regression',scope='new C3/C4/C5 A2/A4',evidence_id='NONE',source='EXPERIMENT_PLAN.md',audit_status='blocked_not_run',support='missing',limitation='0targetfits inPhase2A'),
+      dict(claim_id='C08',claim='concentration increment contradiction predicts negative transfer',scope='H-CONSISTENCY future hypothesis',evidence_id='NONE',source='INNOVATION_AND_NEGATIVE_TRANSFER.md',audit_status='draft_hypothesis_only',support='missing',limitation='not computed/trained/gated'),
+      dict(claim_id='C09',claim='RBF input similarity alone does not certify conditional mapping',scope='algebraic counterexample +theoretical motivation',evidence_id='E09',source='checks/INTERFACE_CHECKS.json;L3',audit_status='approved_scoped',support='qualified',limitation='P15kernel is target-cal kernel,not new source bank measure'),
+      dict(claim_id='C10',claim='additive source prior/rho0/negative transfer filtering are prior mechanisms',scope='inspected local20261021code andL1/L2/L4',evidence_id='E10',source='REUSE_INVENTORY.csv;LITERATURE_NOVELTY_MATRIX.csv',audit_status='approved_mechanism_comparison',support='direct',limitation='not exhaustive novelty search;no inherited safety theorem')]
+    table(HERE/'CLAIMS_EVIDENCE.csv',claims)
+    write('PHASE2B_DECISION.md','''# Phase2B继续/停止决定
+
+**继续仅限源侧构建和合同验收；当前目标迁移训练不释放。** 此结论不需要新增网络/门控，也不需要重新开发ResidualSVR。Phase2A交付已经完成，并非把未运行目标实验算作失败或省略。
+
+|门禁|当前结果|下一步|
+|---|---|---|
+|合法71D输入/源日期/特征身份|PASS|直接复用源缓存及掩码|
+|已有71D源统计量/求解接口|PASS_SYNTHETIC|真实源4头及伪源8头与pooled参考核对，保存锁定模型|
+|旧权重/旧rho可直接复用|STOP|保留历史，重新建立合法源银行；rho只在合法源任务选|
+|71D残差生产兼容接口|PENDING|只绑定原SVR71、base及Centered语义，检查schema/单位/NaN/rho0同权重|
+|真实SourceRidge71模型与参数哈希锁|NOT_CREATED|通过后才能释放非零目标残差拟合|
+|源侧rho选择|NOT_RUN|固定五值、两预算共享rho、两源伪任务；0或任一源负迁移按计划停止对应预算|
+|新目标迁移有效性|NOT_RUN|仅前置全部通过才可执行固定最小矩阵；不据目标test扩搜索|
+|独立确认性数据|NOT_ESTABLISHED|限制为回顾性探索，不能宣布普遍或前瞻有效|
+
+如真实源数据代数一致性、来源时间、71D顺序或rho0恢复有一项失败，停止对应路径，不以新数据混合、补零列、调容差或测试调参绕过。若最小固定迁移没有可靠收益，停止该方向，不立刻增加门控、联合神经网络或动态维护。唯一H-CONSISTENCY只留作未来可证伪假设。
+''')
+    maxridge=max(d['raw_maxdiff_ppm'] for d in qa['details'] if d['check']=='source71_merge_vs_pooled')
+    write('README.md',f'''# FedOnGas Phase2A：71D历史浓度知识迁移资产审计
+
+日期2026-11-03，基于v5、Phase0.5、[Phase1固定772c0e9](https://github.com/Hjh-fy/GAPS/blob/772c0e9087435b9deb8ea4ac50b7c24814f6b345/docs/research_reviews/20261102_phase1/README.md)、[Phase1.5固定4988abb](https://github.com/Hjh-fy/GAPS/blob/4988abb3160c0b0b9230a48a817f2d7baed137d2/docs/research_reviews/20261102_phase15/README.md)。本阶段只读审计、合成单元测试及接口检查；**真实源训练0、目标迁移训练0、门控训练0**。
+
+## 主要结论
+
+- 历史SourceRidge71和104权重不满足新的Day7/71D合同，旧ResidualSVR及AdaptiveSourcePrior用target83/source104，不能直接搬模型或历史rho。可直接复用71D维度绑定、Ridge矩统计/求解、SVR71、base和Centered预测代数/排序器；没有重开发成熟算法。
+- 合法新源输入已闭合：120暴露/2520窗，每gas630窗，来自C1 Day4和C2 Day1/7。旧源未来队列排除，目标文件/数值不参与源拟合方案或source-only参数来源；C4仍只作Day3cal/Day9test下的回顾性共同Day7源解释。
+- 7项检查通过，24次合成拟合。4gas源充分统计量与pooled预测最大差{maxridge:.3g}ppm，符合既有1e-6ppm门槛；2预算×4gas的rho0探针raw/clip严格相同，最大差0。原83D fit仍拒绝71D，旧rho0遇source NaN仍失败，需要下一阶段薄兼容边界和不访问源的同F-SVR回退分支。
+- 数学上源Ridge可充分统计量汇总；当前研究实际为集中主机读取源缓存的逻辑客户端模拟，不是已执行的纯联邦隐私训练。
+- 640/640暴露均在已检查历史元数据中，没有确认未触及的独立目标确认集。全阶段仍是回顾性，不能把unused/reserved或窗口重切当新盲测。
+
+## 阅读入口
+
+1. [复用审计](REUSE_AUDIT.md)及[逐方法规格清单](REUSE_INVENTORY.csv)。
+2. [71D合法输入与时间合同](SOURCE71_INPUT_AND_TIME_CONTRACT.md)及SOURCE71_MODEL_CONTRACT_PLAN.json（计划，真实权重未建立）。
+3. [最小实验计划](EXPERIMENT_PLAN.md)、[30行矩阵](EXPERIMENT_MATRIX.csv)、[消融/停止条件](ABLATION_PLAN.md)。
+4. [创新性与负迁移](INNOVATION_AND_NEGATIVE_TRANSFER.md)及[LITERATURE_NOVELTY_MATRIX.csv](LITERATURE_NOVELTY_MATRIX.csv)：成熟机制不包装成新贡献，仅提出1条端点浓度增量矛盾的拒绝迁移假设，未实现/训练。
+5. [确认性数据审计](CONFIRMATORY_DATA_AUDIT.md)、[研究审计](EXPERIMENT_AUDIT.md)、[Phase2B门禁](PHASE2B_DECISION.md)、[CLAIMS_EVIDENCE.csv](CLAIMS_EVIDENCE.csv)。
+
+## 下一阶段规模与门禁
+
+主要比较固定F-SVR71=rho0，保留N-SVR/KRR参考；新候选仅Source-only与源侧固定rho残差。三个目标×两预算×五视图30行，所有行仅计划。最多4个全源头+8个伪源头及12个pooled参考、80个源侧rho残差、24个新目标残差，共128次真实数据拟合上限，rho0/源负迁移停止可减少。Source-only4头跨预算共享，F/N/KRR不重复训练。
+
+**可以继续源侧构建与合同验收；现在不释放目标迁移训练。** 新真实SourceRidge71权重、真实数据一致性和71D生产兼容路径尚待验收；通过后再固定rho、锁目标模型并回顾性评价，不能从test选择rho或策略。新增门控/神经网络/部署不在范围。
+
+## 可复现证据与保留限制
+
+checks/保存7项完整输出、24次合成fit账本、rho0/维度/NaN等结果；evidence_v2/保存合法源120暴露清单、源cache/metadata/身份hash、28项v5来源SHA及函数起止行、历史104源JSON原index核验、640暴露历史覆盖。没有加载pickle/joblib作新推理，没有打开目标数值矩阵。读旧JSON只是来源/结构核对。
+
+初次只读审计把10秒元数据浮点差要求成精确相等而停止；最大偏差1.42e-14秒。已依据冻结strict既有1e-6秒身份容差改审计断言，保留原evidence/与checks/INITIAL_AUDIT_DIAGNOSTIC，正式结果在evidence_v2/。没有改变数据/算法，也没有重复24次合成拟合。Phase1的125项和Phase1.5的185项封存负载均保持原SHA。
+
+实际入口：audit_common.py（只读导入）、run_interface_checks.py（合成测试）、collect_audit.py（身份/静态核验）、write_deliverables.py和write_review.py（生成报告），后续verify_delivery.py做不拟合复核。所有输出拒绝覆盖；独立重现需复制脚本/PLAN到新的research同级目录并使用全新输出目录，不在本阶段目录重跑覆盖。
+
+本地完整制品和总ARTIFACT_SHA256.csv封存；GitHub只发布精简审阅副本，原始信号、源71D输入、模型系数/scaler、v5及ZIP不上传。公开副本的路径别名/UTF8-LF使其hash不同，由PUBLICATION_MANIFEST区分来源与副本。
+''')
+    js(HERE/'STAGE_STATUS.json',dict(status='PHASE2A_AUDIT_COMPLETE_NO_REAL_TRAINING',as_of='2026-11-03_Asia_Shanghai',phase15_fixed_commit='4988abb3160c0b0b9230a48a817f2d7baed137d2',
+        tests=7,synthetic_fits=24,real_source_fits=0,real_target_fits=0,new_gate_fits=0,old_checkpoint_inference=0,target_numeric_features_opened=False,
+        source_input_contract='PASS',source71_numerics='PASS_SYNTHETIC_ONLY',real_source71_bank='NOT_CREATED',rho0='BITWISE_SYNTHETIC_PROBE_ONLY;PRODUCTION_ALIAS_PENDING',
+        phase2b_source_build='CONDITIONAL_CONTINUE',phase2b_target_training='NOT_RELEASED',independent_confirmation='NOT_ESTABLISHED',new_conservative_hypotheses=1,new_hypotheses_run=0,
+        fit_plan_phase2b_max=128,planned_target_matrix_rows=30,novel_algorithm_effectiveness='NOT_TESTED'))
+    js(HERE/'HANDOFF.json',dict(from_skill=['experiment-audit','experiment-planner','claim-evidence'],to_skill=['experiment-registry','future_source_only_execution'],
+        inputs=['v5 bytes per evidence_v2/V5_REUSE_PROVENANCE.csv','Phase05_roles','Phase1_fixed772c0e9','Phase15_fixed4988abb'],completed_checks=['sourceinputidentity','oldJSONprovenance','synthetic24fits','static83/71API','rho0finiteparity_andNaNfailure','historycoverage'],
+        unresolved=['real_source71_bank_not_built','71Dcompatibility_not_production','target_confirmation_unavailable'],blocking_evidence_gap='actual_legal_source_weights_and_interface_contract_before_target_training',
+        requested_next='source-only build/parity/lock then fixedsource_rho only under registeredPhase2B;no targettrainingnow',readonly=['v5','Phase05','Phase1','Phase1.5','rawdata','oldresults','ZIP']))
+    print(json.dumps(dict(status='REVIEW_WRITTEN',max_synthetic_Ridge_rawdiff_ppm=maxridge,decision='SOURCE_BUILD_ONLY;TARGET_TRAINING_NOT_RELEASED')))
+if __name__=='__main__':main()

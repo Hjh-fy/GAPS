@@ -1,0 +1,56 @@
+"""Fresh no-fit verification of all Phase2A evidence, scope and preservation."""
+import subprocess,datetime,importlib.metadata,ast
+import numpy as np
+from audit_common import *
+def main():
+    previous=verify_previous();p05rows=rows(p1.P05/'MANIFEST_SHA256.csv')
+    for r in p05rows:p1.verify_sha(p1.P05/r['path'],r['sha256'])
+    E=HERE/'evidence_v2';source=read(E/'SOURCE71_INPUT_AUDIT.json');p1.verify_sha(P1/'run_v2/data/source.npz',source['source_cache_sha256']);p1.verify_sha(P1/'run_v2/data/source_metadata.json',source['source_metadata_sha256'])
+    provenance=rows(E/'V5_REUSE_PROVENANCE.csv')
+    for r in provenance:p1.verify_sha(r['archive_path'],r['sha256'])
+    for r in read(E/'HISTORICAL_METADATA_PROVENANCE.json'):p1.verify_sha(r['path'],r['sha256'])
+    qa=read(HERE/'checks/INTERFACE_CHECKS.json');ledger=read(HERE/'checks/SYNTHETIC_FIT_LEDGER.json');assert qa['status']=='PASS' and qa['tests']==7 and ledger['synthetic_fits']==24 and len(ledger['entries'])==24
+    assert ledger['real_source_fits']==ledger['real_target_fits']==0
+    rho=[r for r in qa['details'] if r['check']=='rho0_71_centering_probe'];assert len(rho)==8 and all(r['maxdiff_ppm']==0. and r['raw_and_clipped_bitwise_equal'] for r in rho)
+    ridge=[r for r in qa['details'] if r['check']=='source71_merge_vs_pooled'];assert len(ridge)==4 and max(r['raw_maxdiff_ppm'] for r in ridge)<=1e-6
+    matrix=rows(HERE/'EXPERIMENT_MATRIX.csv');assert len(matrix)==len({r['experiment_id'] for r in matrix})==30 and all(r['status']=='draft' for r in matrix)
+    assert set(r['model'] for r in matrix)=={'SourceOnly71','FixedRhoResidual71','F-SVR71_rho0','N-SVR71_reference','F-KRR71_reference'}
+    contract=read(HERE/'SOURCE71_MODEL_CONTRACT_PLAN.json');assert contract['source_windows']==2520 and contract['source_exposures']==120 and contract['per_gas_windows']==630
+    assert contract['new_target_training_gate'].startswith('NOT_RELEASED') and contract['source_fit_phase2a']==contract['target_fit_phase2a']==0
+    assert contract['rho_grid']==[0.,.25,.5,.75,1.] and not contract['target_development_used'] and not contract['target_test_for_parameter_selection']
+    assert 'clip=False' in contract['residual_adjusted_label_clip_fields']
+    # No fitting: demonstrate that clipping a transformed-label head before restoring prior is a different predictor.
+    component_raw=np.array([60.]);prior_offset=80.;correct=np.clip(component_raw+prior_offset,12.5,125.);incorrect=np.clip(np.clip(component_raw,-20,20)+prior_offset,12.5,125.)
+    assert correct[0]==125. and incorrect[0]==100.
+    episodes=read(HERE/'SOURCE_PSEUDO_EPISODE_PLAN.json')['episodes'];assert len(episodes)==4
+    for e in episodes:
+        assert set(e['source_files']).isdisjoint(e['calibration_files']+e['validation_files']) and set(e['calibration_files']).isdisjoint(e['validation_files'])
+        assert len(e['source_files'])==40 and len(e['calibration_files'])==e['budget']*4 and len(e['validation_files'])==24
+        assert e['source_day']<e['pseudo_calibration_day'] and not e['calibration_validation_cross_date'] and not e['all_hyperparameters_available_as_of_pseudo_cal_day']
+    assert len(rows(E/'HISTORICAL_EXPOSURE_COVERAGE.csv'))==640 and read(E/'CONFIRMATORY_AVAILABILITY.json')['known_historical_metadata_membership']==640
+    for t in source['target_role_contracts']:
+        assert t['source_before_test'] and t['source_before_calibration']==(t['target']!='C4')
+    assert read(HERE/'STAGE_STATUS.json')['new_conservative_hypotheses']==1
+    assert not list(HERE.rglob('*.joblib')) and not list(HERE.rglob('*.pkl')) and not list(HERE.rglob('*.npz'))
+    # Compile without writing bytecode; verifies current source syntax, not a training rerun.
+    for p in HERE.glob('*.py'):compile(p.read_text(encoding='utf-8'),str(p),'exec')
+    before=read(E/'PROTECTION_AND_ACCESS_QA.json')['original_git_tracked_status'];now=subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no'],cwd=p1.ORIGINAL).decode();assert now==before
+    assert subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no']).decode()==''
+    p1.verify_sha(p1.ORIGINAL/'backups/fedongas_frozen_baseline_20261102_v5.zip','a018a4bf26fb0d76620905a87498ecc256f6f9d31f6fb5b7caeef96df159aeca')
+    final=dict(status='PASS_SCOPED_AUDIT_AND_SYNTHETIC_INTERFACES',verified_at_UTC=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        prior_payloads_unchanged=previous,phase05_manifest_payloads_unchanged=len(p05rows),v5_read_assets_unchanged=len(provenance),v5_zip_unchanged=True,
+        source_120_raw_hash_checks='completed_in_collect_audit_evidence_v2',source_cache_and_metadata_still_match=True,target_numeric_arrays_read_for_training_or_inference=False,
+        original_tracked_status_unchanged=True,worktree_tracked_algorithms_unchanged=True,unit_tests=7,synthetic_fits=24,real_source_fits=0,real_target_fits=0,new_gate_fits=0,historical_checkpoint_inference=0,
+        synthetic_rho0_probes=8,synthetic_rho0_maxdiff_ppm=0.,synthetic_Ridge_merge_pooled_probes=4,synthetic_Ridge_raw_maxdiff_ppm=max(r['raw_maxdiff_ppm'] for r in ridge),
+        transformed_label_clip_fixture=dict(correct_final_only_ppm=125.,wrong_early_clip_ppm=100.,scope='arithmetic_fixture_not_production_adapter_test'),
+        current_scope='read-only inputs/code/modelJSON;synthetic checks;plans_only',actual_source71_bank='NOT_CREATED',production71_residual_adapter='NOT_IMPLEMENTED_OR_ACCEPTED',
+        phase2b_source_build='CONDITIONAL_CONTINUE',phase2b_target_training='NOT_RELEASED',independent_confirmation='NOT_ESTABLISHED',planned_matrix_rows=30,planned_phase2b_fit_cap=128,
+        hypothesis_run_count=0,extra_test_tuning_rounds=0,environment={k:importlib.metadata.version(k) for k in ['numpy','scikit-learn','scipy','joblib','threadpoolctl']})
+    js(HERE/'VERIFICATION_FINAL.json',final)
+    records=[]
+    for p in sorted(HERE.rglob('*')):
+        if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv':records.append(dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)))
+    table(HERE/'ARTIFACT_SHA256.csv',records)
+    for r in records:p1.verify_sha(HERE/r['path'],r['sha256'])
+    print(json.dumps(dict(status=final['status'],payload_files=len(records),payload_bytes=sum(r['bytes'] for r in records),manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'),tests=7,synthetic_fits=24,real_fits=0,target_training='NOT_RELEASED')),flush=True)
+if __name__=='__main__':main()

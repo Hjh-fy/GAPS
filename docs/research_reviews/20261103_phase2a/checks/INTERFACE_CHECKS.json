@@ -1,0 +1,164 @@
+{
+  "status": "PASS",
+  "tests": 7,
+  "failures": 0,
+  "errors": 0,
+  "synthetic_fit_calls": 24,
+  "real_source_fits": 0,
+  "real_target_fits": 0,
+  "historical_checkpoints_loaded": 0,
+  "details": [
+    {
+      "check": "alpha_and_centered_rho_baseline_algebra",
+      "rho_values": [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0
+      ],
+      "scope": "mature identical additive function prior",
+      "fit_calls": 0
+    },
+    {
+      "check": "old_target_CV_A2_not_feasible",
+      "fourfold_A2": "REJECTED",
+      "LOEO_A2": "REJECTED",
+      "A4_groups": "file_disjoint_but_not_adopted_for_target_selection",
+      "fit_calls": 0
+    },
+    {
+      "check": "rho0_nan_source_behavior",
+      "observed": "legacy predictor still multiplies0*NaN and returnsNaN",
+      "required_future_contract": "explicit rho0 branch returns stored F-SVR without calling source",
+      "fit_calls": 0
+    },
+    {
+      "check": "legacy83_fit_rejects71",
+      "ResidualSVR": true,
+      "AlphaSVR": true,
+      "CenteredPrior": true,
+      "fit_calls": 0
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 0,
+      "budget": 2,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 1,
+      "budget": 2,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 2,
+      "budget": 2,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 3,
+      "budget": 2,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 0,
+      "budget": 4,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 1,
+      "budget": 4,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 2,
+      "budget": 4,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "rho0_71_centering_probe",
+      "gas_id": 3,
+      "budget": 4,
+      "raw_and_clipped_bitwise_equal": true,
+      "training_label_and_scaler_bitwise_equal": true,
+      "maxdiff_ppm": 0.0,
+      "fit_calls": 2,
+      "production_legacy_fit71": "REJECTED"
+    },
+    {
+      "check": "identical_inputs_different_conditional_mapping_counterexample",
+      "rbf_similarity": 1.0,
+      "source_mapping_error": 1.0,
+      "scope": "algebraic illustration;not gas experimental evidence",
+      "fit_calls": 0
+    },
+    {
+      "check": "source71_merge_vs_pooled",
+      "gas_id": 0,
+      "raw_maxdiff_ppm": 4.263256414560601e-14,
+      "clipped_maxdiff_ppm": 4.263256414560601e-14,
+      "safe_constant_feature": true,
+      "names_guard": "existing_validate_source_bank"
+    },
+    {
+      "check": "source71_merge_vs_pooled",
+      "gas_id": 1,
+      "raw_maxdiff_ppm": 1.1368683772161603e-13,
+      "clipped_maxdiff_ppm": 1.1368683772161603e-13,
+      "safe_constant_feature": true,
+      "names_guard": "existing_validate_source_bank"
+    },
+    {
+      "check": "source71_merge_vs_pooled",
+      "gas_id": 2,
+      "raw_maxdiff_ppm": 1.4210854715202004e-14,
+      "clipped_maxdiff_ppm": 1.4210854715202004e-14,
+      "safe_constant_feature": true,
+      "names_guard": "existing_validate_source_bank"
+    },
+    {
+      "check": "source71_merge_vs_pooled",
+      "gas_id": 3,
+      "raw_maxdiff_ppm": 1.1368683772161603e-13,
+      "clipped_maxdiff_ppm": 1.1368683772161603e-13,
+      "safe_constant_feature": true,
+      "names_guard": "existing_validate_source_bank"
+    }
+  ],
+  "python": "3.12.4"
+}

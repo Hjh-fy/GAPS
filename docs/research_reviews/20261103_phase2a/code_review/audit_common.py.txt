@@ -1,0 +1,36 @@
+"""Read-only imports and evidence helpers for Phase2A, not a transfer trainer."""
+import sys,os,ast,json,csv,hashlib,collections
+from pathlib import Path
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent;WORK=HERE.parents[1];P1=HERE.parent/'fedongas_phase1_20261102';P15=HERE.parent/'fedongas_phase15_20261102'
+sys.path.insert(0,str(P1));import phase1_common as p1
+from phase1_common import read,rows,sha,ext,arrays,js,table,LOW,SPAN
+BASE=p1.BASE;ARCH=BASE/'source/workspace/outputs'
+SOURCE='FedOnGas_SVR71_C3C4C5_5pct_20261025'
+RESID='FedOnGas_ResidualSVR低预算最小验证_20261021'
+ALPHA='FedOnGas_源贡献可调ResidualSVR验证_20261021'
+PRIOR='FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered'
+INDEX={r['archive_relative_path']:r for r in rows(BASE/'manifests/SOURCE_INVENTORY.csv')}
+def verified(relative):
+    r=INDEX['source/workspace/outputs/'+relative];path=ARCH/relative;p1.verify_sha(path,r['sha256']);return path
+def source_text(relative):return Path(ext(verified(relative))).read_text(encoding='utf-8-sig')
+def source_json(relative):return read(verified(relative))
+def import_old():
+    # No legacy runner imports; no raw/test access or model deserialization.
+    v=p1.frozen()
+    ab=p1.load('_p2a_original_ablation',verified(SOURCE+'/source_code/ablation_core.py'))
+    # The pre-existing width binder is reused as written, not a new patched file.
+    verified(SOURCE+'/source_code/frozen_source_numerics.py');source71=ab.source_module(71)
+    p1.load('vendor_features',verified(RESID+'/source_code/vendor_features.py'))
+    c=p1.load('residual_core',verified(RESID+'/source_code/residual_core.py'))
+    alpha=p1.load('_p2a_alpha',verified(ALPHA+'/source_code/alpha_core.py'))
+    prior=p1.load('_p2a_prior',verified(PRIOR+'/source_code/prior_core.py'))
+    return v,source71,c,alpha,prior
+def verify_previous():
+    counts={}
+    for folder,expected in [(P1,'273a7e6a92dc48d1a7c24410aa558b216512e4ac297f6fca47e6166942f7a764'),(P15,'7c679f21b50b7d3c5af7567885d8252f74abc3c0014e423f7ddf9109a72fcdc8')]:
+        p1.verify_sha(folder/'ARTIFACT_SHA256.csv',expected);rr=rows(folder/'ARTIFACT_SHA256.csv')
+        for r in rr:p1.verify_sha(folder/r['path'],r['sha256'])
+        counts[folder.name]=len(rr)
+    return counts
+def make_ids(metadata):return {m['filename'] for m in metadata}

@@ -1,0 +1,13 @@
+# Phase2A外部agent审阅范围
+
+先读README→REUSE_AUDIT→SOURCE71_INPUT_AND_TIME_CONTRACT→EXPERIMENT_PLAN/EXPERIMENT_MATRIX→INNOVATION_AND_NEGATIVE_TRANSFER→CONFIRMATORY_DATA_AUDIT→PHASE2B_DECISION。AUDIT_FINDINGS/CLAIMS_EVIDENCE给出逐项状态，VERIFICATION_FINAL为本轮核验。
+
+重点：旧71/104源权重不满足共同Day7；Residual83入口不能直接收71；rho0严格合成恢复不等于生产源失效回退；调整标签的clip边界不能作物理浓度支持；现有源统计量是代数可分布、当前执行是集中主机模拟；源伪任务没有跨日cal/test与完整元参数时序盲测；本批640暴露都有旧元数据成员关系，确认性证据未建立。
+
+本包发布完整本阶段报告、计划/矩阵、源120文件身份清单、640暴露历史成员关系、原始来源SHA/函数行号、旧方法参数/规格、数值函数片段、7项合成检查和24次fit账本，以及新审计脚本文本。没有真实源/目标模型训练，也没有目标新预测结果。30矩阵行全为draft计划，Source71_MODEL_CONTRACT为未建真实权重的方案。
+
+不上传原始波形、71D输入数值、旧或新模型系数/scaler、v5/ZIP和凭据。来源SHA指本地原始字节，PUBLICATION_MANIFEST另记路径别名/UTF8-LF副本SHA。code_review仅为文本审阅，依赖本地v5和前阶段资产，不是仅凭本包可独立训练的数据/模型包。
+
+初次audit精确浮点10秒断言失败，原evidence/重复JSON留本地；checks/INITIAL_AUDIT_DIAGNOSTIC和正式evidence_v2均发布。修复沿用冻结strict已有1e-6秒身份容差，最大roundoff1.42e-14秒；无数据修改或重复合成fit。
+
+先行文献只做机制初审；保守方向仅1条H-CONSISTENCY假设，未训练/实现门控。请勿把本轮报告解读为迁移已有增益、已实现纯联邦隐私或新算法已确认。

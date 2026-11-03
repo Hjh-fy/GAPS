@@ -1,0 +1,101 @@
+"""Read-only identity/provenance audit. No target feature access, no real-data fits."""
+import ast,subprocess,platform
+import numpy as np
+from audit_common import *
+
+def main():
+    out=HERE/'evidence_v2';out.mkdir(exist_ok=False);previous=verify_previous();provenance=[];static=[]
+    folders={SOURCE:['source_code/ablation_core.py','source_code/frozen_source_numerics.py','source_code/frozen_target_numerics.py','source_code/svr_core.py','source_code/study_core.py','source_code/run_b05.py','source_code/frozen_selection.py','source_code/frozen20_data_access.py','CONFIG.json','models/SOURCE71.json'],
+        RESID:['source_code/residual_core.py','source_code/legacy_numerics.py','source_code/vendor_features.py','source_code/run_minimal.py','CONFIG.json','DATA_AUDIT.json','SOURCE_MODELS_FROZEN.json'],
+        ALPHA:['source_code/alpha_core.py','source_code/run_alpha.py','CONFIG.json','selection/SELECTED_ALPHAS.json'],
+        PRIOR:['source_code/prior_core.py','source_code/residual_core.py','source_code/run_prior.py','CONFIG.json','NUMERICAL_REPAIR.md','selection/SELECTED_RHO.json','evaluation/ENDPOINT_REPRODUCTION.json']}
+    wanted={'source_module','local_central_moments','merge_central_moments','local_normal_equations_v2','aggregate_normal_equations_v2','reconstruct_ridge_v2','select_source_alpha_v2','fit_ridge_model','fit_head','predict_head','fit_pair','base','assign_folds','folds','choose_alphas','choose_rho','predict_source_head','source_models'}
+    snippets=[]
+    for folder,names in folders.items():
+        for name in names:
+            rel=folder+'/'+name;path=verified(rel);r=INDEX['source/workspace/outputs/'+rel]
+            provenance.append(dict(asset=rel,archive_path=str(path),sha256=sha(path),bytes=path.stat().st_size,producing_commit=r['producing_commit'],original_path=r['source_absolute_path'],scope='v5_byte_verified'))
+            if name.endswith('.py'):
+                t=source_text(rel)
+                for node in ast.walk(ast.parse(t)):
+                    if isinstance(node,ast.FunctionDef):
+                        segment=ast.get_source_segment(t,node);static.append(dict(asset=rel,function=node.name,start_line=node.lineno,end_line=node.end_lineno,source_fragment_sha256=hashlib.sha256(segment.encode()).hexdigest(),signature=ast.unparse(node.args)))
+                        if node.name in wanted and 'run_' not in name:snippets.append(dict(asset=rel,function=node.name,line=node.lineno,text=segment))
+    # Verify underlying source104 provenance by existing validator without performing inference.
+    legacy=p1.load('_p2a_legacy_validation',verified(RESID+'/source_code/legacy_numerics.py'))
+    old104=p1.ORIGINAL/'.worktrees/iotj-final-classification-le1/results/iotj_canonical_v1_final/canonical_fedridge_r0_v2_20260812'
+    cfg=source_json(RESID+'/CONFIG.json');actual=legacy.validate_r0_bundle(old104,expected_index_sha256=cfg['source_index_sha256'])
+    frozen104=source_json(RESID+'/SOURCE_MODELS_FROZEN.json');assert {str(k):v for k,v in actual.items()}==frozen104
+    execution=read(old104/'protocol_manifest_execution.json');assert execution['source_clients'] in [['C1','C2'],[1,2]] and execution['target_clients']==[]
+    old104_receipt=dict(status='PASS_JSON_ASSET_VALIDATION_ONLY',source_index_sha256=sha(old104/'sha256_index.json'),model_lock_sha256=sha(old104/'model_lock.json'),
+        execution_manifest_sha256=sha(old104/'protocol_manifest_execution.json'),frozen_model_JSON_equals_original_validated_bank=True,source_clients=execution['source_clients'],target_clients=execution['target_clients'],
+        cache_identities=[{k:r[k] for k in ['client','split','row_count','metadata_sha256','h1_dimensions','sensor_dimensions']} for r in execution['cache_manifests']],checkpoint_inference=False)
+    js(out/'HISTORICAL_SOURCE104_PROVENANCE.json',old104_receipt)
+    source=arrays(P1/'run_v2/data/source.npz');meta=read(P1/'run_v2/data/source_metadata.json');raw=rows(p1.P05/'results_v2/RAW_ACQUISITION_AUDIT.csv');lookup={r['filename']:r for r in raw}
+    names=read(p1.P05/'results_v2/FEATURE_CONTRACT.json')['names'];assert len(names)==71 and source['x71'].shape==(2520,71) and np.isfinite(source['x71']).all()
+    assert len(meta)==2520 and len(set(m['physical_identity'] for m in meta))==2520
+    srcnames=sorted(set(source['filenames']));assert len(srcnames)==120
+    roles4={r['filename']:r for r in rows(p1.P05/'results_v2/ROLES_A4.csv')};p1.validate_fit_rows([roles4[n] for n in srcnames],'source')
+    for i,m in enumerate(meta):
+        row=lookup[m['filename']]
+        assert (int(m['client_id']),int(m['day'])) in [(1,4),(2,1),(2,7)]
+        assert m['gas_id']==int(row['class_id'])==int(source['gas'][i]) and float(m['truth_ppm'])==float(source['y'][i])==float(row['concentration'])
+        assert m['raw_sha256']==row['sha256'] and source['filenames'][i]==m['filename'] and source['clients'][i]=='C'+str(m['client_id'])
+        # Same1e-6 time identity tolerance as frozen strict.calibration_indices.
+        assert abs(float(m['end_s'])-float(m['start_s'])-10.)<1e-6
+    exposure=[]
+    for name in srcnames:
+        mm=[m for m in meta if m['filename']==name];assert np.allclose([float(m['start_s']) for m in mm],np.arange(60.,161.,5.),rtol=0,atol=1e-6)
+        r=lookup[name];p1.verify_sha(r['absolute_path'],r['sha256'])
+        exposure.append(dict(filename=name,client_id=int(r['client_id']),day=int(r['day']),repeat_id=int(r['repeat_id']),gas_id=int(r['class_id']),concentration_code=int(r['concentration_code']),truth_ppm=float(r['concentration']),windows=len(mm),raw_sha256=r['sha256'],canonical_numeric_sha256=r['canonical_numeric_sha256']))
+    table(out/'LEGAL_SOURCE_EXPOSURES.csv',exposure)
+    counts=collections.Counter((r['client_id'],r['day'],r['gas_id']) for r in exposure)
+    assert set(counts.values())=={10}
+    bygas=[]
+    for g in range(4):bygas.append(dict(gas_id=g,exposures=30,windows=int(np.sum(source['gas']==g)),C1_windows=int(np.sum((source['gas']==g)&(source['clients']=='C1'))),C2_windows=int(np.sum((source['gas']==g)&(source['clients']=='C2')))))
+    assert all(r['windows']==630 and r['C1_windows']==210 and r['C2_windows']==420 for r in bygas)
+    target_contract=[]
+    for b in (2,4):
+        roles=rows(p1.P05/'results_v2'/f'ROLES_A{b}.csv')
+        for c in (3,4,5):
+            cr=[r for r in roles if int(r['client_id'])==c and r['role']=='calibration'];dr=[r for r in roles if int(r['client_id'])==c and r['role']=='development'];tr=[r for r in roles if int(r['client_id'])==c and r['role']=='test']
+            assert len(cr)==4*b and len(tr)==40 and not set(r['filename'] for r in cr)&set(r['filename'] for r in dr+tr) and not set(r['filename'] for r in dr)&set(r['filename'] for r in tr)
+            assert not set(srcnames)&set(r['filename'] for r in cr+dr+tr)
+            dates={k:sorted(set(int(r['day']) for r in z)) for k,z in [('cal',cr),('dev',dr),('test',tr)]};assert max(e['day'] for e in exposure)<min(dates['test'])
+            target_contract.append(dict(target='C'+str(c),budget=b,calibration_exposures=len(cr),calibration_windows_per_gas=2*b,calibration_days=dates['cal'],development_days=dates['dev'],test_days=dates['test'],test_exposures=40,
+                source_training_latest_day=7,source_before_calibration=7<min(dates['cal']),source_before_test=True,scope='three_dates' if c==3 else 'two_date_alternative',C4_immediate_Day3_claim_allowed=False))
+    js(out/'SOURCE71_INPUT_AUDIT.json',dict(status='PASS_INPUTS_ONLY_NO_REAL_SOURCE_MODEL_FIT',source_cache_sha256=sha(P1/'run_v2/data/source.npz'),source_metadata_sha256=sha(P1/'run_v2/data/source_metadata.json'),
+        ordered_physical_identity_sha256=hashlib.sha256('\n'.join(m['physical_identity'] for m in meta).encode()).hexdigest(),feature_names=names,feature_names_canonical_JSON_sha256=hashlib.sha256(json.dumps(names,separators=(',',':')).encode()).hexdigest(),
+        source_arrays_shape=[2520,71],per_gas=bygas,source_raw_files_verified=120,target_role_contracts=target_contract,target_numeric_features_opened=False,source_cohort='C1R1_D4;C2R1_D1;C2R2_D7',
+        alpha_provenance=str(P1/'run_v2/FROZEN_PARAMETERS.json'),alpha_provenance_sha256=sha(P1/'run_v2/FROZEN_PARAMETERS.json'),source_alpha_plan={g:r['ridge_alpha'] for g,r in read(P1/'run_v2/FROZEN_PARAMETERS.json')['choices'].items()},
+        actual_new_source_weights='NOT_CREATED',actual_new_target_weights='NOT_CREATED'))
+    # Historical metadata coverage: membership proves prior exposure, not every prior downstream use.
+    legacy_ids=collections.defaultdict(set);coverage=[];meta_provenance=[];legacy_root=p1.ORIGINAL/'dataset/iotj_canonical_v1'
+    for c in range(1,6):
+        for split in ['train','calibration','test']:
+            path=legacy_root/f'client_{c}'/f'{split}_experiment_info.json'
+            if not path.exists():continue
+            rr=read(path);files=make_ids(rr)
+            for name in files:legacy_ids[name].add(f'C{c}_{split}')
+            meta_provenance.append(dict(path=str(path),sha256=sha(path),client=c,split=split,window_rows=len(rr),distinct_raw_files=len(files)))
+    for r in raw:
+        roles={f'A{b}':next(x['role'] for x in rows(p1.P05/'results_v2'/f'ROLES_A{b}.csv') if x['filename']==r['filename']) for b in (2,4)}
+        coverage.append(dict(filename=r['filename'],client_id=r['client_id'],day=r['day'],gas_id=r['class_id'],A2_role=roles['A2'],A4_role=roles['A4'],historical_membership=';'.join(sorted(legacy_ids[r['filename']])),previously_in_historical_metadata=bool(legacy_ids[r['filename']])))
+    table(out/'HISTORICAL_EXPOSURE_COVERAGE.csv',coverage);js(out/'HISTORICAL_METADATA_PROVENANCE.json',meta_provenance)
+    js(out/'CONFIRMATORY_AVAILABILITY.json',dict(raw_exposures=640,known_historical_metadata_membership=sum(bool(legacy_ids[r['filename']]) for r in raw),not_found_in_inspected_metadata=sum(not bool(legacy_ids[r['filename']]) for r in raw),
+        confirmed_untouched_independent_target_sets=0,coverage_scope='data1 acquisition audit + existing canonical C1-C5 train/calibration/test metadata;not an all-worktree exhaustive absence proof',
+        historical_membership_does_not_prove_exact_downstream_use=True,development_not_used_in_recent_phase_selection_is_not_proof_historically_unseen=True,
+        external_confirmatory_dataset='NOT_AUDITED_OR_IMPORTED',future_new_acquisition='UNAVAILABLE_UNDER_CURRENT_EXISTING_DATA_CONSTRAINT',verdict='NO_CONFIRMED_FRESH_TARGET_EVIDENCE'))
+    table(out/'V5_REUSE_PROVENANCE.csv',provenance);table(out/'STATIC_CODE_REFERENCES.csv',static);js(out/'NUMERICAL_FUNCTION_EXCERPTS.json',snippets)
+    old71=source_json(SOURCE+'/models/SOURCE71.json');base_cfg=source_json('FedOnGas_83D特征组消融_C5_20pct_20261024/CONFIG.json')
+    js(out/'HISTORICAL_METHOD_SPECS.json',dict(source71=dict(dimension=71,gas_heads=4,role=old71['0']['role'],alpha={g:r['alpha'] for g,r in old71.items()},source_training=base_cfg['source_training'],cohort_conflict=read(p1.P05/'SOURCE_PRIOR_PROVENANCE_AUDIT.json')['reason']),
+        source104=dict(dimension=104,gas_heads=4,role=frozen104['0']['role'],alpha={g:r['alpha'] for g,r in frozen104.items()},original_index_validated=True),
+        residual=source_json(RESID+'/CONFIG.json'),alpha=source_json(ALPHA+'/CONFIG.json'),centered_prior=source_json(PRIOR+'/CONFIG.json'),
+        residual_data_audit={k:v for k,v in source_json(RESID+'/DATA_AUDIT.json').items() if k!='input_sha256'},
+        old_selected_alpha=source_json(ALPHA+'/selection/SELECTED_ALPHAS.json'),old_selected_rho=source_json(PRIOR+'/selection/SELECTED_RHO.json')))
+    js(out/'PROTECTION_AND_ACCESS_QA.json',dict(status='PASS',previous_payload_files_verified=previous,v5_read_assets_byte_verified=len(provenance),source_raw_files_verified=120,real_source_model_fits=0,real_target_model_fits=0,
+        target_numeric_arrays_loaded=False,historical_pickle_joblib_loaded=False,source_numeric_cache_loaded=True,source104_JSON_validated_without_inference=True,actual_source71_bank_created=False,
+        original_git_tracked_status=subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no'],cwd=p1.ORIGINAL).decode(),worktree_HEAD=subprocess.check_output(['git','rev-parse','HEAD']).decode().strip(),
+        immutable_manifest_before=dict(phase1=sha(P1/'ARTIFACT_SHA256.csv'),phase15=sha(P15/'ARTIFACT_SHA256.csv'))))
+    print(json.dumps(dict(status='PASS_READONLY_AUDIT',source_files=120,v5_assets=len(provenance),historical_covered=sum(bool(legacy_ids[r['filename']]) for r in raw),previous_payloads=previous,real_fits=0)),flush=True)
+if __name__=='__main__':main()

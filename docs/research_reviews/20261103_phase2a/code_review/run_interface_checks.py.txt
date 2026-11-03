@@ -1,0 +1,16 @@
+"""Run one synthetic-only check suite and retain complete pass/failure evidence."""
+import unittest,io,platform
+from threadpoolctl import threadpool_limits
+from audit_common import *
+import test_interfaces as t
+def main():
+    out=HERE/'checks';out.mkdir(exist_ok=False);buf=io.StringIO()
+    with threadpool_limits(limits=1):result=unittest.TextTestRunner(stream=buf,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromModule(t))
+    assert len(t.FITS)<=24
+    with (out/'UNIT_TEST_OUTPUT.txt').open('x',encoding='utf-8',newline='\n') as f:f.write(buf.getvalue())
+    js(out/'SYNTHETIC_FIT_LEDGER.json',dict(synthetic_fits=len(t.FITS),real_source_fits=0,real_target_fits=0,entries=t.FITS))
+    js(out/'INTERFACE_CHECKS.json',dict(status='PASS' if result.wasSuccessful() else 'FAIL',tests=result.testsRun,failures=len(result.failures),errors=len(result.errors),
+        synthetic_fit_calls=len(t.FITS),real_source_fits=0,real_target_fits=0,historical_checkpoints_loaded=0,details=t.DETAILS,python=platform.python_version()))
+    print(buf.getvalue());print(json.dumps(dict(status='PASS' if result.wasSuccessful() else 'FAIL',tests=result.testsRun,synthetic_fits=len(t.FITS))))
+    if not result.wasSuccessful():raise SystemExit(1)
+if __name__=='__main__':main()

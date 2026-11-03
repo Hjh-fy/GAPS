@@ -1,0 +1,146 @@
+[
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/ablation_core.py",
+    "function": "source_module",
+    "line": 25,
+    "text": "def source_module(dim):\n    if dim not in [7,12,19,64,71,76,83]:raise ValueError('Unregistered feature dimension')\n    if dim not in _MODULES:\n        name=f'_ablation_source_dimension_{dim}'\n        spec=importlib.util.spec_from_file_location(name,Path(__file__).with_name('frozen_source_numerics.py'))\n        module=importlib.util.module_from_spec(spec);sys.modules[name]=module;spec.loader.exec_module(module)\n        # Bind only validation/schema width, separately per dimension. No algorithm or old file edit.\n        module.CANONICAL_FEATURE_DIMENSIONS=dim;_MODULES[dim]=module\n    return _MODULES[dim]"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_source_numerics.py",
+    "function": "local_central_moments",
+    "line": 224,
+    "text": "def local_central_moments(\n    client_id: str, gas_id: int, role: str, values: np.ndarray\n) -> LocalCentralMomentsV2:\n    \"\"\"Summarize one client's finite feature matrix with two-pass moments.\"\"\"\n    _validate_metadata(client_id, gas_id, role)\n    x = _finite_matrix(values)\n    with np.errstate(over=\"ignore\", invalid=\"ignore\"):\n        ordinary_mean = np.mean(x, axis=0, dtype=np.float64)\n        fallback_scale = np.max(np.abs(x), axis=0)\n        normalized_mean = np.mean(\n            x / fallback_scale, axis=0, dtype=np.float64\n        )\n        fallback_mean = np.clip(normalized_mean, -1.0, 1.0) * fallback_scale\n        mean = np.where(np.isfinite(ordinary_mean), ordinary_mean, fallback_mean)\n        m2 = np.sum((x - mean) ** 2, axis=0, dtype=np.float64)\n    if not np.isfinite(mean).all() or not np.isfinite(m2).all():\n        raise ValueError(\"local central moments overflowed float64\")\n    return LocalCentralMomentsV2(\n        client_id=client_id,\n        gas_id=int(gas_id),\n        role=role,\n        n=int(x.shape[0]),\n        mean=_readonly_copy(mean),\n        m2=_readonly_copy(m2),\n        minimum=_readonly_copy(np.min(x, axis=0)),\n        maximum=_readonly_copy(np.max(x, axis=0)),\n        provenance_sha256=_array_sha256(x),\n    )"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_source_numerics.py",
+    "function": "merge_central_moments",
+    "line": 313,
+    "text": "def merge_central_moments(\n    records: Sequence[LocalCentralMomentsV2],\n    *,\n    expected_client_order: Sequence[str] = CLIENT_ORDER,\n) -> StableGlobalScalerV2:\n    \"\"\"Merge local moments deterministically with the Chan equations.\"\"\"\n    items, order = _validated_records(records, expected_client_order)\n    first = items[0]\n    n = int(first.n)\n    mean = np.array(first.mean, dtype=np.float64, copy=True)\n    m2 = np.array(first.m2, dtype=np.float64, copy=True)\n    minimum = np.array(first.minimum, dtype=np.float64, copy=True)\n    maximum = np.array(first.maximum, dtype=np.float64, copy=True)\n\n    with np.errstate(over=\"ignore\", invalid=\"ignore\"):\n        for record in items[1:]:\n            total_n = n + int(record.n)\n            delta = record.mean - mean\n            m2 = m2 + record.m2 + delta * delta * (n * record.n / total_n)\n            mean = mean + delta * (record.n / total_n)\n            minimum = np.minimum(minimum, record.minimum)\n            maximum = np.maximum(maximum, record.maximum)\n            n = total_n\n\n        variance = np.maximum(m2 / np.float64(n), np.float64(0.0))\n        raw_scale = np.sqrt(variance)\n    if not all(\n        np.isfinite(values).all()\n        for values in (mean, m2, variance, raw_scale, minimum, maximum)\n    ):\n        raise ValueError(\"merged central moments overflowed float64\")\n    safe_scale_mask = raw_scale < SCALE_FLOOR\n    scale = np.where(safe_scale_mask, np.float64(1.0), raw_scale)\n    return StableGlobalScalerV2(\n        gas_id=first.gas_id,\n        role=first.role,\n        n=n,\n        mean=_readonly_copy(mean),\n        variance=_readonly_copy(variance),\n        raw_scale=_readonly_copy(raw_scale),\n        scale=_readonly_copy(scale),\n        safe_scale_mask=_readonly_copy(safe_scale_mask, dtype=np.bool_),\n        minimum=_readonly_copy(minimum),\n        maximum=_readonly_copy(maximum),\n        aggregation_order=order,\n    )"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_source_numerics.py",
+    "function": "local_normal_equations_v2",
+    "line": 481,
+    "text": "def local_normal_equations_v2(\n    client_id: str,\n    gas_id: int,\n    role: str,\n    values: np.ndarray,\n    targets: np.ndarray,\n    scaler: StableGlobalScalerV2,\n) -> LocalNormalEquationsV2:\n    \"\"\"Build one client's float64 normal equations on the global scaling.\"\"\"\n    _validate_metadata(client_id, gas_id, role)\n    _validate_scaler(scaler)\n    x = _finite_matrix(values)\n    y = _finite_vector(targets, len(x), \"normal-equation targets\")\n    if scaler.gas_id != int(gas_id) or scaler.role != role:\n        raise ValueError(\"normal-equation scaler gas/role mismatch\")\n    if x.shape[1] != len(scaler.mean):\n        raise ValueError(\"normal-equation feature dimension mismatch\")\n    with np.errstate(over=\"ignore\", invalid=\"ignore\", divide=\"ignore\"):\n        standardized = (x - scaler.mean) / scaler.scale\n        design = np.column_stack(\n            [np.ones(len(x), dtype=np.float64), standardized]\n        )\n        a = design.T @ design\n        b = design.T @ y\n        y_y = float(y @ y)\n    if (\n        not np.isfinite(design).all()\n        or not np.isfinite(a).all()\n        or not np.isfinite(b).all()\n        or not np.isfinite(y_y)\n    ):\n        raise ValueError(\"local normal equations overflowed float64\")\n    return LocalNormalEquationsV2(\n        client_id=client_id,\n        gas_id=int(gas_id),\n        role=role,\n        n=int(len(x)),\n        a=a,\n        b=b,\n        y_y=y_y,\n        y_min=float(np.min(y)),\n        y_max=float(np.max(y)),\n        provenance_sha256=_array_sha256(x, y),\n    )"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_source_numerics.py",
+    "function": "aggregate_normal_equations_v2",
+    "line": 599,
+    "text": "def aggregate_normal_equations_v2(\n    records: Sequence[LocalNormalEquationsV2],\n    *,\n    expected_client_order: Sequence[str] = CLIENT_ORDER,\n) -> AggregatedNormalEquationsV2:\n    \"\"\"Aggregate local A/b records sequentially in the registered order.\"\"\"\n    items, order = _validated_equation_records(records, expected_client_order)\n    first = items[0]\n    a = np.zeros_like(first.a, dtype=np.float64)\n    b = np.zeros_like(first.b, dtype=np.float64)\n    y_y = np.float64(0.0)\n    n = 0\n    with np.errstate(over=\"ignore\", invalid=\"ignore\"):\n        for record in items:\n            a = a + record.a\n            b = b + record.b\n            y_y = y_y + np.float64(record.y_y)\n            n += int(record.n)\n    if not np.isfinite(a).all() or not np.isfinite(b).all() or not np.isfinite(y_y):\n        raise ValueError(\"aggregated normal equations overflowed float64\")\n    return AggregatedNormalEquationsV2(\n        gas_id=first.gas_id,\n        role=first.role,\n        n=n,\n        a=a,\n        b=b,\n        y_y=float(y_y),\n        y_min=min(record.y_min for record in items),\n        y_max=max(record.y_max for record in items),\n        aggregation_order=order,\n    )"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_source_numerics.py",
+    "function": "reconstruct_ridge_v2",
+    "line": 715,
+    "text": "def reconstruct_ridge_v2(\n    equations: AggregatedNormalEquationsV2,\n    scaler: StableGlobalScalerV2,\n    feature_names: Sequence[str],\n    alpha: float,\n) -> CanonicalRidgeModelV2:\n    \"\"\"Reconstruct Ridge with an explicitly unregularized intercept.\"\"\"\n    _validate_aggregated_equations(equations)\n    _validate_scaler(scaler)\n    names = tuple(feature_names)\n    if len(names) != len(scaler.mean) or any(\n        not isinstance(name, str) or not name for name in names\n    ):\n        raise ValueError(\"model feature-name dimension mismatch\")\n    if (\n        equations.gas_id != scaler.gas_id\n        or equations.role != scaler.role\n        or equations.n != scaler.n\n        or equations.aggregation_order != scaler.aggregation_order\n    ):\n        raise ValueError(\"normal-equation/scaler state mismatch\")\n    if equations.a.shape != (len(names) + 1, len(names) + 1):\n        raise ValueError(\"normal-equation feature dimension mismatch\")\n    if (\n        isinstance(alpha, (bool, np.bool_))\n        or not isinstance(alpha, (int, float, np.integer, np.floating))\n        or not np.isfinite(float(alpha))\n        or float(alpha) < 0.0\n    ):\n        raise ValueError(\"Ridge alpha must be finite and nonnegative\")\n    regularizer = np.eye(equations.a.shape[0], dtype=np.float64)\n    regularizer[0, 0] = 0.0\n    with np.errstate(over=\"ignore\", invalid=\"ignore\"):\n        system = equations.a + np.float64(alpha) * regularizer\n    if not np.isfinite(system).all():\n        raise ValueError(\"regularized normal equations overflowed float64\")\n    try:\n        with np.errstate(over=\"ignore\", invalid=\"ignore\", divide=\"ignore\"):\n            coef = np.linalg.pinv(system) @ equations.b\n    except np.linalg.LinAlgError as error:\n        raise ValueError(\"Ridge pseudoinverse failed\") from error\n    if not np.isfinite(coef).all():\n        raise ValueError(\"Ridge reconstruction produced non-finite coefficients\")\n    return CanonicalRidgeModelV2(\n        gas_id=equations.gas_id,\n        role=equations.role,\n        alpha=float(alpha),\n        feature_names=names,\n        mean=scaler.mean,\n        scale=scaler.scale,\n        coef=coef,\n        clip_min=float(equations.y_min),\n        clip_max=float(equations.y_max),\n        intercept_regularized=False,\n    )"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_source_numerics.py",
+    "function": "select_source_alpha_v2",
+    "line": 942,
+    "text": "def select_source_alpha_v2(\n    source_train: Mapping[str, tuple[np.ndarray, np.ndarray]],\n    source_calibration: Mapping[str, tuple[np.ndarray, np.ndarray]],\n    *,\n    gas_id: int,\n    feature_names: Sequence[str],\n    alphas: Sequence[float] = RIDGE_ALPHAS,\n    train_role: str = \"source_train\",\n    validation_role: str = \"source_calibration\",\n) -> tuple[float, list[dict[str, Any]]]:\n    \"\"\"Select alpha from distributed source calibration SSE/count only.\"\"\"\n    train, calibration, alpha_grid = _validate_alpha_selection_contract(\n        source_train,\n        source_calibration,\n        train_role=train_role,\n        validation_role=validation_role,\n        alphas=alphas,\n    )\n    _validate_metadata(\"selection\", gas_id, train_role)\n    scaler, equations = _federated_training_components_v2(\n        train, gas_id=gas_id, role=train_role\n    )\n    audit: list[dict[str, Any]] = []\n    best_alpha = alpha_grid[0]\n    best_rmse = float(\"inf\")\n    for alpha in alpha_grid:\n        model = reconstruct_ridge_v2(\n            equations, scaler, feature_names, alpha\n        )\n        total_sse = np.float64(0.0)\n        total_n = 0\n        with np.errstate(over=\"ignore\", invalid=\"ignore\"):\n            for client in CLIENT_ORDER:\n                x, y = calibration[client]\n                total_sse = total_sse + np.float64(_clipped_sse(model, x, y))\n                total_n += len(y)\n        if not np.isfinite(total_sse):\n            raise ValueError(\"distributed source-calibration SSE overflowed float64\")\n        row = _audit_alpha(gas_id, alpha, float(total_sse), total_n)\n        audit.append(row)\n        if row[\"source_calibration_RMSE\"] < best_rmse:\n            best_rmse = row[\"source_calibration_RMSE\"]\n            best_alpha = alpha\n    return float(best_alpha), audit"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_target_numerics.py",
+    "function": "fit_ridge_model",
+    "line": 58,
+    "text": "def fit_ridge_model(x, y, alpha, clip_min, clip_max):\n    mean, scale, beta = _ridge_fit(np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64), float(alpha))\n    return {\"alpha\": float(alpha), \"mean\": mean.tolist(), \"scale\": scale.tolist(), \"coef\": beta.tolist(),\n            \"clip_min\": float(clip_min), \"clip_max\": float(clip_max), \"solver\": \"numpy.linalg.pinv\",\n            \"intercept_regularized\": False}"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/svr_core.py",
+    "function": "fit_head",
+    "line": 7,
+    "text": "def fit_head(x,y,gas,params):\n    x=np.asarray(x,dtype=np.float64);y=np.asarray(y,dtype=np.float64);gas=int(gas)\n    if x.ndim!=2 or y.shape!=(len(x),) or len(y)<2 or x.shape[1]<1 or not np.isfinite(x).all() or not np.isfinite(y).all() or gas not in range(4):raise ValueError('Finite aligned calibration data required')\n    mean=x.mean(0);scale=x.std(0,ddof=0);scale[scale<1e-9]=1.\n    learner=SVR(kernel='rbf',C=float(params['C']),gamma=float(params['gamma_factor'])/x.shape[1],epsilon=EPSILON,\n        tol=.001,shrinking=True,cache_size=200,max_iter=-1)\n    learner.fit((x-mean)/scale,(y-LOW[gas])/RANGE[gas])\n    if learner.fit_status_!=0:raise ValueError('SVR failed convergence')\n    return dict(mean=mean,scale=scale,learner=learner,gas=gas,low=float(LOW[gas]),range=float(RANGE[gas]),\n        clip_min=float(y.min()),clip_max=float(y.max()),params=dict(params),epsilon=EPSILON)"
+  },
+  {
+    "asset": "FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/svr_core.py",
+    "function": "predict_head",
+    "line": 18,
+    "text": "def predict_head(head,x,clip=True):\n    x=np.asarray(x,dtype=np.float64)\n    if x.ndim!=2 or x.shape[1]!=len(head['mean']) or not np.isfinite(x).all():raise ValueError('Predictor input schema/finite mismatch')\n    prediction=head['low']+head['range']*head['learner'].predict((x-head['mean'])/head['scale'])\n    if not np.isfinite(prediction).all():raise ValueError('Nonfinite SVR prediction')\n    return np.clip(prediction,head['clip_min'],head['clip_max']) if clip else prediction"
+  },
+  {
+    "asset": "FedOnGas_ResidualSVR低预算最小验证_20261021/source_code/residual_core.py",
+    "function": "predict_source_head",
+    "line": 86,
+    "text": "def predict_source_head(model, h1, *, clip=True):\n    z = (np.asarray(h1, dtype=np.float64) - np.asarray(model['mean'])) / np.asarray(model['scale'])\n    value = np.column_stack([np.ones(len(z)), z]) @ np.asarray(model['coef'])\n    return np.clip(value, model['clip_min'], model['clip_max']) if clip else value"
+  },
+  {
+    "asset": "FedOnGas_ResidualSVR低预算最小验证_20261021/source_code/residual_core.py",
+    "function": "fit_pair",
+    "line": 123,
+    "text": "def fit_pair(sensor83, truth, gas, source):\n    sensor83, truth, gas, source = (np.asarray(sensor83, dtype=np.float64), np.asarray(truth, dtype=np.float64),\n                                   np.asarray(gas, dtype=int), np.asarray(source, dtype=np.float64))\n    if sensor83.shape != (len(truth), 83) or source.shape != (len(truth), 4):\n        raise ValueError('Training shapes differ')\n    direct = (truth - LOW[gas]) / RANGE[gas]\n    residual = (truth - source[np.arange(len(truth)), gas]) / RANGE[gas]\n    banks = [ModelBank('M0', [], dict(PARAMS)), ModelBank('M1', [], dict(PARAMS))]\n    for g in range(4):\n        mask = gas == g\n        if mask.sum() < 2:\n            raise ValueError('At least two calibration windows per gas required')\n        mean, scale = sensor83[mask].mean(0), sensor83[mask].std(0)\n        scale[scale < 1e-9] = 1.\n        z = (sensor83[mask] - mean) / scale\n        for bank, target in zip(banks, [direct, residual]):\n            learner = SVR(**PARAMS).fit(z, target[mask])\n            bank.heads.append(GasHead(mean.copy(), scale.copy(), learner))\n    return banks[0], banks[1], dict(M0_normalized=direct, M1_normalized=residual)"
+  },
+  {
+    "asset": "FedOnGas_ResidualSVR低预算最小验证_20261021/source_code/legacy_numerics.py",
+    "function": "fit_ridge_model",
+    "line": 58,
+    "text": "def fit_ridge_model(x, y, alpha, clip_min, clip_max):\n    mean, scale, beta = _ridge_fit(np.asarray(x, dtype=np.float64), np.asarray(y, dtype=np.float64), float(alpha))\n    return {\"alpha\": float(alpha), \"mean\": mean.tolist(), \"scale\": scale.tolist(), \"coef\": beta.tolist(),\n            \"clip_min\": float(clip_min), \"clip_max\": float(clip_max), \"solver\": \"numpy.linalg.pinv\",\n            \"intercept_regularized\": False}"
+  },
+  {
+    "asset": "FedOnGas_源贡献可调ResidualSVR验证_20261021/source_code/alpha_core.py",
+    "function": "base",
+    "line": 17,
+    "text": "def base(source, gas, alpha):\n    # Endpoint branches preserve the exact arithmetic of the frozen controls.\n    if alpha == 0:\n        return np.full(len(source), c.LOW[gas])\n    if alpha == 1:\n        return np.asarray(source, dtype=float)\n    return c.LOW[gas] + alpha * (np.asarray(source, dtype=float) - c.LOW[gas])"
+  },
+  {
+    "asset": "FedOnGas_源贡献可调ResidualSVR验证_20261021/source_code/alpha_core.py",
+    "function": "fit_head",
+    "line": 26,
+    "text": "def fit_head(x, truth, source, gas, alpha):\n    x, truth, source = np.asarray(x, float), np.asarray(truth, float), np.asarray(source, float)\n    if x.shape != (len(truth), 83) or source.shape != truth.shape or len(truth) < 2:\n        raise ValueError('At least two finite83D training windows and matching source/truth required')\n    if not 0 <= alpha <= 1 or not np.isfinite(x).all() or not np.isfinite(truth).all() or not np.isfinite(source).all():\n        raise ValueError('Invalid alpha or nonfinite training input')\n    mean, scale = x.mean(0), x.std(0)\n    scale[scale < 1e-9] = 1.\n    residual = (truth - base(source, gas, alpha)) / c.RANGE[gas]\n    learner = SVR(**c.PARAMS).fit((x - mean) / scale, residual)\n    if learner.fit_status_:\n        raise ValueError('SVR failed to converge')\n    return AlphaHead(mean, scale, learner, int(gas), float(alpha))"
+  },
+  {
+    "asset": "FedOnGas_源贡献可调ResidualSVR验证_20261021/source_code/alpha_core.py",
+    "function": "predict_head",
+    "line": 41,
+    "text": "def predict_head(head, x, source, *, clip=True):\n    x, source = np.asarray(x, float), np.asarray(source, float)\n    value = base(source, head.gas, head.alpha) + c.RANGE[head.gas] * head.learner.predict((x - head.mean) / head.scale)\n    return np.clip(value, c.LOW[head.gas], c.LOW[head.gas] + c.RANGE[head.gas]) if clip else value"
+  },
+  {
+    "asset": "FedOnGas_源贡献可调ResidualSVR验证_20261021/source_code/alpha_core.py",
+    "function": "folds",
+    "line": 47,
+    "text": "def folds(groups):\n    groups = np.asarray(groups)\n    if len(np.unique(groups)) < 3:\n        raise ValueError('Leave-one-exposure-out needs at least three groups')\n    for name in sorted(set(groups)):\n        train, valid = np.flatnonzero(groups != name), np.flatnonzero(groups == name)\n        if len(train) < 2:\n            raise ValueError('Insufficient training rows after exposure holdout')\n        yield train, valid"
+  },
+  {
+    "asset": "FedOnGas_源贡献可调ResidualSVR验证_20261021/source_code/alpha_core.py",
+    "function": "choose_alphas",
+    "line": 58,
+    "text": "def choose_alphas(oof):\n    def best(part):\n        scores = part.groupby('alpha').nse.mean()\n        return float(min(scores[scores <= scores.min() + 1e-12].index))\n    return best(oof), {int(gas): best(part) for gas, part in oof.groupby('gas')}"
+  },
+  {
+    "asset": "FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered/source_code/prior_core.py",
+    "function": "assign_folds",
+    "line": 8,
+    "text": "def assign_folds(gas, groups, seed=42):\n    gas, groups = np.asarray(gas, int), np.asarray(groups, str)\n    if gas.shape != groups.shape or set(gas) != {0,1,2,3}:\n        raise ValueError('four gas classes with matching exposure IDs required')\n    for name in set(groups):\n        if len(set(gas[groups==name])) != 1:\n            raise ValueError('One exposure ID cannot belong to different gases')\n    result = np.full(len(gas), -1, int)\n    rng = np.random.default_rng(seed)\n    for g in range(4):\n        names = sorted(set(groups[gas==g]))\n        if len(names) < 4:\n            raise ValueError(f'At least four independent exposures required for gas{g}')\n        for j,name in enumerate(rng.permutation(names)):\n            result[groups==name] = j % 4\n    for k in range(4):\n        if any(np.sum((result==k)&(gas==g))<1 or np.sum((result!=k)&(gas==g))<2 for g in range(4)):\n            raise ValueError('Invalid four-fold calibration training/validation counts')\n        if set(groups[result==k]) & set(groups[result!=k]):\n            raise ValueError('Exposure group leakage')\n    return result"
+  },
+  {
+    "asset": "FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered/source_code/prior_core.py",
+    "function": "fit_head",
+    "line": 41,
+    "text": "def fit_head(x, truth, source, gas, rho):\n    x, truth, source = np.asarray(x,float), np.asarray(truth,float), np.asarray(source,float)\n    if x.shape != (len(truth),83) or source.shape != truth.shape or len(truth)<2:\n        raise ValueError('Matching83D calibration arrays with at least two windows required')\n    if not 0<=rho<=1 or not all(np.isfinite(z).all() for z in [x,truth,source]):\n        raise ValueError('Nonfinite input or invalid rho')\n    mean,scale=x.mean(0),x.std(0); scale[scale<1e-9]=1.\n    # Fixed translation of the physical residual, restored in the intercept.\n    # rho0/rho1 retain exactly the old M0/M1 numerical centering, respectively.\n    offset=(1.-rho)*c.LOW[gas]\n    residual=(truth-rho*source-offset)/c.RANGE[gas]\n    learner=SVR(**c.PARAMS).fit((x-mean)/scale,residual)\n    if learner.fit_status_:\n        raise ValueError('SVR convergence failed')\n    return PriorHead(mean,scale,learner,int(gas),float(rho),float(offset))"
+  },
+  {
+    "asset": "FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered/source_code/prior_core.py",
+    "function": "predict_head",
+    "line": 58,
+    "text": "def predict_head(head,x,source,*,clip=True):\n    x,source=np.asarray(x,float),np.asarray(source,float)\n    residual_prediction=head.offset+c.RANGE[head.gas]*head.learner.predict((x-head.mean)/head.scale)\n    value=head.rho*source+residual_prediction\n    return np.clip(value,c.LOW[head.gas],c.LOW[head.gas]+c.RANGE[head.gas]) if clip else value"
+  },
+  {
+    "asset": "FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered/source_code/prior_core.py",
+    "function": "choose_rho",
+    "line": 65,
+    "text": "def choose_rho(scores):\n    if scores.rho.duplicated().any() or not np.isfinite(scores.NRMSE.to_numpy()).all():\n        raise ValueError('One finite pooled NRMSE per candidate required')\n    return float(scores.sort_values(['NRMSE','rho'],kind='stable').iloc[0].rho)"
+  },
+  {
+    "asset": "FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered/source_code/residual_core.py",
+    "function": "predict_source_head",
+    "line": 86,
+    "text": "def predict_source_head(model, h1, *, clip=True):\n    z = (np.asarray(h1, dtype=np.float64) - np.asarray(model['mean'])) / np.asarray(model['scale'])\n    value = np.column_stack([np.ones(len(z)), z]) @ np.asarray(model['coef'])\n    return np.clip(value, model['clip_min'], model['clip_max']) if clip else value"
+  },
+  {
+    "asset": "FedOnGas_AdaptiveSourcePriorSVR_4Fold_20261021_Centered/source_code/residual_core.py",
+    "function": "fit_pair",
+    "line": 123,
+    "text": "def fit_pair(sensor83, truth, gas, source):\n    sensor83, truth, gas, source = (np.asarray(sensor83, dtype=np.float64), np.asarray(truth, dtype=np.float64),\n                                   np.asarray(gas, dtype=int), np.asarray(source, dtype=np.float64))\n    if sensor83.shape != (len(truth), 83) or source.shape != (len(truth), 4):\n        raise ValueError('Training shapes differ')\n    direct = (truth - LOW[gas]) / RANGE[gas]\n    residual = (truth - source[np.arange(len(truth)), gas]) / RANGE[gas]\n    banks = [ModelBank('M0', [], dict(PARAMS)), ModelBank('M1', [], dict(PARAMS))]\n    for g in range(4):\n        mask = gas == g\n        if mask.sum() < 2:\n            raise ValueError('At least two calibration windows per gas required')\n        mean, scale = sensor83[mask].mean(0), sensor83[mask].std(0)\n        scale[scale < 1e-9] = 1.\n        z = (sensor83[mask] - mean) / scale\n        for bank, target in zip(banks, [direct, residual]):\n            learner = SVR(**PARAMS).fit(z, target[mask])\n            bank.heads.append(GasHead(mean.copy(), scale.copy(), learner))\n    return banks[0], banks[1], dict(M0_normalized=direct, M1_normalized=residual)"
+  }
+]

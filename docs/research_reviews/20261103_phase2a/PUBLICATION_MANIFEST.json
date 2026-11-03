@@ -1,0 +1,360 @@
+{
+  "stage": "Phase2A",
+  "parent_fixed_commit": "4988abb3160c0b0b9230a48a817f2d7baed137d2",
+  "source_manifest_sha256": "32440237d4b920ffe5dd606f6f599678d9c0d9456a30888ff96e785cd97b058d",
+  "published_serialization": "UTF8-LF",
+  "files": [
+    {
+      "path": "ABLATION_PLAN.md",
+      "bytes": 922,
+      "sha256": "8b6fa6d27d876aa475b20acfcfd75d24c07505adacede34ba31d19dc5d982304",
+      "source": "research/fedongas_phase2a_20261103/ABLATION_PLAN.md",
+      "source_sha256": "8b6fa6d27d876aa475b20acfcfd75d24c07505adacede34ba31d19dc5d982304",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "ARTIFACT_SHA256.csv",
+      "bytes": 4244,
+      "sha256": "243b51631852af037d73c48c009c64613f0de8696ca2cd4b04d4f7cebc61f975",
+      "source": "research/fedongas_phase2a_20261103/ARTIFACT_SHA256.csv",
+      "source_sha256": "32440237d4b920ffe5dd606f6f599678d9c0d9456a30888ff96e785cd97b058d",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/audit_common.py.txt",
+      "bytes": 2327,
+      "sha256": "d9679f967e81d8d48a5340a71eb9a330418c51a78f00df7fcb892bd42f2d3091",
+      "source": "research/fedongas_phase2a_20261103/audit_common.py",
+      "source_sha256": "d9679f967e81d8d48a5340a71eb9a330418c51a78f00df7fcb892bd42f2d3091",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "AUDIT_FINDINGS.csv",
+      "bytes": 2375,
+      "sha256": "1de152b172835330815f2bd23a6d0546308d615f1bd1aa1e5fd47c8abc4c1840",
+      "source": "research/fedongas_phase2a_20261103/AUDIT_FINDINGS.csv",
+      "source_sha256": "6f76996b57576ccf4a38cf3b3ea611c87c73e732485d7d66c7bc0cdd93229982",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "checks/INITIAL_AUDIT_DIAGNOSTIC.json",
+      "bytes": 419,
+      "sha256": "14a16ce6f3ee5e1f680a9f0a69d5f2944f8ad566683e096a92a537391964675f",
+      "source": "research/fedongas_phase2a_20261103/checks/INITIAL_AUDIT_DIAGNOSTIC.json",
+      "source_sha256": "8655544b5a7787e32b14e6f47f5960d5ca7d7568b8806b3946c41468da5d02c5",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "checks/INTERFACE_CHECKS.json",
+      "bytes": 4696,
+      "sha256": "4162d5780025152401447415d96dd3adacf06fd90816ac23e3c4314e1941f963",
+      "source": "research/fedongas_phase2a_20261103/checks/INTERFACE_CHECKS.json",
+      "source_sha256": "76a23748cc7d61e3b85e62cdc50ce1d61f6dd4f90a37fd7728cc300efb19f06b",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "checks/SYNTHETIC_FIT_LEDGER.json",
+      "bytes": 2248,
+      "sha256": "4311149d8e98eaec0fd233b7478fc843177f19235cacce4bb5cc99de8b91081a",
+      "source": "research/fedongas_phase2a_20261103/checks/SYNTHETIC_FIT_LEDGER.json",
+      "source_sha256": "d5218fe32fe5d83e4c344330fd1b11e1305c61fb233044114b3f9441b3209c28",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "checks/UNIT_TEST_OUTPUT.txt",
+      "bytes": 1123,
+      "sha256": "4b7318b608e80b43f9857989cd1e16be8766040b4afedff716d46e194b0d7849",
+      "source": "research/fedongas_phase2a_20261103/checks/UNIT_TEST_OUTPUT.txt",
+      "source_sha256": "4b7318b608e80b43f9857989cd1e16be8766040b4afedff716d46e194b0d7849",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "CLAIMS_EVIDENCE.csv",
+      "bytes": 2330,
+      "sha256": "716f0722c9570dc2aba681ad072fb75d858c3aa25a472fc6e57154a2493e5fd8",
+      "source": "research/fedongas_phase2a_20261103/CLAIMS_EVIDENCE.csv",
+      "source_sha256": "306e1a4ad3bc196dcfd1053886b60eb2620b50abd974243fe996a83a0fbcb953",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/collect_audit.py.txt",
+      "bytes": 12599,
+      "sha256": "7235af47f5e53ee11cde2823dcfe17e003e409393e3283a3d910d286f6975fdf",
+      "source": "research/fedongas_phase2a_20261103/collect_audit.py",
+      "source_sha256": "7235af47f5e53ee11cde2823dcfe17e003e409393e3283a3d910d286f6975fdf",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "CONFIRMATORY_DATA_AUDIT.md",
+      "bytes": 1820,
+      "sha256": "8ac0697ca1fc1c759e96de8c6cb7fc57c7e48929f6233e178ab4965e352203d4",
+      "source": "research/fedongas_phase2a_20261103/CONFIRMATORY_DATA_AUDIT.md",
+      "source_sha256": "8ac0697ca1fc1c759e96de8c6cb7fc57c7e48929f6233e178ab4965e352203d4",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/CONFIRMATORY_AVAILABILITY.json",
+      "bytes": 672,
+      "sha256": "07e6d4ac4e80729509732b4aa3b0d8c75f28bbb3f12b4fa13db2e50a3065c3d4",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/CONFIRMATORY_AVAILABILITY.json",
+      "source_sha256": "611bb4c0d97dbb4253c4935b7a6b3040145046c3450406e1fb5725240196feec",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/HISTORICAL_EXPOSURE_COVERAGE.csv",
+      "bytes": 49582,
+      "sha256": "3ed53b5e12a5541579bb10f105a6e798d49bc8f6b77b1693f62940d5d943821f",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/HISTORICAL_EXPOSURE_COVERAGE.csv",
+      "source_sha256": "357a141794f7af6e93e45c2af3b096102c41bcf84debcf220f2c1f9e5a3fd541",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/HISTORICAL_METADATA_PROVENANCE.json",
+      "bytes": 3462,
+      "sha256": "d7f55168849c52a22fdd5f7e333fdd08956fa4d513bbb2cbf0c41e4493c5b49b",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/HISTORICAL_METADATA_PROVENANCE.json",
+      "source_sha256": "168fab9ae45d762ede741ffacef699089f58b3e9a21eafb8bdcaf5b4dc707623",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/HISTORICAL_METHOD_SPECS.json",
+      "bytes": 8499,
+      "sha256": "d3557c901b020f6a0bb94f1e4229b0bb2d1a5eda7c1f35e8bbf3caaaccd01c0a",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/HISTORICAL_METHOD_SPECS.json",
+      "source_sha256": "b4473ec8f2f21ac036db0cfeccfbdde3ce9e34875a3892204f30eae68216bb38",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/HISTORICAL_SOURCE104_PROVENANCE.json",
+      "bytes": 1940,
+      "sha256": "0500e5c3ffe42bd27cf5034c9a24422ffdf28bb1c4e5ce3c094af8b9be9256cf",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/HISTORICAL_SOURCE104_PROVENANCE.json",
+      "source_sha256": "651f158da6c17c1a2e1271ce8cce2f120e5855787cb137d02501a1df030ec366",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/LEGAL_SOURCE_EXPOSURES.csv",
+      "bytes": 20345,
+      "sha256": "3303705a760222c8d78f5e8db77ab5abd1d66c191b2bbfffe839cbf2f9229242",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/LEGAL_SOURCE_EXPOSURES.csv",
+      "source_sha256": "5b6e0a2f37ef40c724e0e0aef1cfc493a9b772d127095a315814dc282756a0f0",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/NUMERICAL_FUNCTION_EXCERPTS.json",
+      "bytes": 25049,
+      "sha256": "65349b4b1d549dc935e5d86d47a7e2c6444eb4429665a90282f373924e9826c9",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/NUMERICAL_FUNCTION_EXCERPTS.json",
+      "source_sha256": "ec99195a3814ca7778e8a1d9aaeb80fc803c7f4c3f34c965e019ecd2896051cf",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/PROTECTION_AND_ACCESS_QA.json",
+      "bytes": 1515,
+      "sha256": "a1d7f04e2bc85ac5e1ce085ae20de154e050b9c007ffa01901dec8b3d8c31229",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/PROTECTION_AND_ACCESS_QA.json",
+      "source_sha256": "a5306dd39b44543988744f22992aa4efec8f324de97d544c8d6739e2dd20b169",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/SOURCE71_INPUT_AUDIT.json",
+      "bytes": 5817,
+      "sha256": "190809e8c708f68267fe6feda25afbbb955e02dfceffd490e7031d2c6adbff92",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/SOURCE71_INPUT_AUDIT.json",
+      "source_sha256": "5cdd8d5729b27747998de9a6c5b265723f60fc5ed65ea84973a36b70c5f9d5a1",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/STATIC_CODE_REFERENCES.csv",
+      "bytes": 43942,
+      "sha256": "3e05c98a0f3afeeb7f141661cb0086a90becb361a73618b6e3ec13fe940a646f",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/STATIC_CODE_REFERENCES.csv",
+      "source_sha256": "143089f13cfdafa114426d9f17f403ab7971f8e13762eb194e8042103f696eef",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "evidence_v2/V5_REUSE_PROVENANCE.csv",
+      "bytes": 11815,
+      "sha256": "9c5bdfc35445d8ea6044cf1052e02455f17581da9145ecfa153d4a6205f9ed4e",
+      "source": "research/fedongas_phase2a_20261103/evidence_v2/V5_REUSE_PROVENANCE.csv",
+      "source_sha256": "e3f104f84347c6f5f35ca56a829719b518140b5a95e31a42dd0fe9cf87fe63d5",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "EXPERIMENT_AUDIT.md",
+      "bytes": 2018,
+      "sha256": "e63755b40ee27e140564e0f2c2a085a14bdbdae895614df66637fca7669cdfe5",
+      "source": "research/fedongas_phase2a_20261103/EXPERIMENT_AUDIT.md",
+      "source_sha256": "e63755b40ee27e140564e0f2c2a085a14bdbdae895614df66637fca7669cdfe5",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "EXPERIMENT_MATRIX.csv",
+      "bytes": 25644,
+      "sha256": "1bbebd9102b87546f8bd49be22376c632dee0133727b86a6731955659dd8fd00",
+      "source": "research/fedongas_phase2a_20261103/EXPERIMENT_MATRIX.csv",
+      "source_sha256": "4f4c8a733284e1bcb2ba1a317b54105a335641b92b54e1b8e092a185126c38b7",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "EXPERIMENT_PLAN.md",
+      "bytes": 5412,
+      "sha256": "aecac9a17bc0db31a3cbcf289b4e87117eb124a74d27dd4fdb9d9ecbf4991997",
+      "source": "research/fedongas_phase2a_20261103/EXPERIMENT_PLAN.md",
+      "source_sha256": "aecac9a17bc0db31a3cbcf289b4e87117eb124a74d27dd4fdb9d9ecbf4991997",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "HANDOFF.json",
+      "bytes": 999,
+      "sha256": "296b194cdf679652002e989f4254f0d7c5399742a4ce0e470907bc3d1ae19209",
+      "source": "research/fedongas_phase2a_20261103/HANDOFF.json",
+      "source_sha256": "f256d92c920ca4984affad33e747dd0c4f48cfc3ea52ca758e50cffab4b5fc9b",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "INNOVATION_AND_NEGATIVE_TRANSFER.md",
+      "bytes": 4870,
+      "sha256": "a7f8bc83aeb289d743b854e04352971723a32c312df41d05a58e6013c86a3977",
+      "source": "research/fedongas_phase2a_20261103/INNOVATION_AND_NEGATIVE_TRANSFER.md",
+      "source_sha256": "a7f8bc83aeb289d743b854e04352971723a32c312df41d05a58e6013c86a3977",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "LITERATURE_NOVELTY_MATRIX.csv",
+      "bytes": 2589,
+      "sha256": "3cf44d88e44426743a1ff5e5d39ec1b345e8dc5400c3ed233754425247a4ec0a",
+      "source": "research/fedongas_phase2a_20261103/LITERATURE_NOVELTY_MATRIX.csv",
+      "source_sha256": "5558163a6361d80fe4df9721dc60f182b70b181ee4af4f3c7c9fb7f0c09c0a0c",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "PHASE2B_DECISION.md",
+      "bytes": 1556,
+      "sha256": "e026dd0778f88820326064e0de8e6c604030cd70965aaf1be9cdabcda925fdcc",
+      "source": "research/fedongas_phase2a_20261103/PHASE2B_DECISION.md",
+      "source_sha256": "e026dd0778f88820326064e0de8e6c604030cd70965aaf1be9cdabcda925fdcc",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "PLAN.md",
+      "bytes": 2603,
+      "sha256": "73f8d16e9d7a8bfb3fdf0a69533d1bccd383c8747eeba076df23ed92bfdd92a8",
+      "source": "research/fedongas_phase2a_20261103/PLAN.md",
+      "source_sha256": "73f8d16e9d7a8bfb3fdf0a69533d1bccd383c8747eeba076df23ed92bfdd92a8",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4773,
+      "sha256": "d2681cf29b3e00e5ba36b65f6e69376da8f01de4037747b3825b5ff1a638a3b8",
+      "source": "research/fedongas_phase2a_20261103/README.md",
+      "source_sha256": "d2681cf29b3e00e5ba36b65f6e69376da8f01de4037747b3825b5ff1a638a3b8",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "REUSE_AUDIT.md",
+      "bytes": 3951,
+      "sha256": "acd43a89da2985e9c3e3b294b3e2fccb72cbce1acf5d138ca826565ba8c66087",
+      "source": "research/fedongas_phase2a_20261103/REUSE_AUDIT.md",
+      "source_sha256": "acd43a89da2985e9c3e3b294b3e2fccb72cbce1acf5d138ca826565ba8c66087",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "REUSE_INVENTORY.csv",
+      "bytes": 3602,
+      "sha256": "d7fe87f3b3f743b2a42ce1d812929d5f53b67b2eafc7a25f688cac286a1bc04f",
+      "source": "research/fedongas_phase2a_20261103/REUSE_INVENTORY.csv",
+      "source_sha256": "9026b2d645b3c5935bb859e28d26478d0a1b8462998040aae0c6f4a221c09a60",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/run_interface_checks.py.txt",
+      "bytes": 1267,
+      "sha256": "99484f63e8bfe1ac48010d032a09e8c7a7dc94da6a5ebceb72045f1c62b41e12",
+      "source": "research/fedongas_phase2a_20261103/run_interface_checks.py",
+      "source_sha256": "99484f63e8bfe1ac48010d032a09e8c7a7dc94da6a5ebceb72045f1c62b41e12",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "SOURCE71_INPUT_AND_TIME_CONTRACT.md",
+      "bytes": 4431,
+      "sha256": "13c49e687ca0cffa9debf12b41831e16aab91d9d55bc02f639394ab20e252d94",
+      "source": "research/fedongas_phase2a_20261103/SOURCE71_INPUT_AND_TIME_CONTRACT.md",
+      "source_sha256": "13c49e687ca0cffa9debf12b41831e16aab91d9d55bc02f639394ab20e252d94",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "SOURCE71_MODEL_CONTRACT_PLAN.json",
+      "bytes": 7681,
+      "sha256": "2f99fc870eca851f8603229066790dbdf1fd25cf07935d0cf4f0bcccfbff2a04",
+      "source": "research/fedongas_phase2a_20261103/SOURCE71_MODEL_CONTRACT_PLAN.json",
+      "source_sha256": "f8dfd301402f02ecc1aff1d66b48ae8878be9aa59c9a21579a5e2f4f93c17e10",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "SOURCE_PSEUDO_EPISODE_PLAN.json",
+      "bytes": 12294,
+      "sha256": "529833aebf61fe0d80674d60e02b829eee8751fe00df9df4bfc8dbd824dee21b",
+      "source": "research/fedongas_phase2a_20261103/SOURCE_PSEUDO_EPISODE_PLAN.json",
+      "source_sha256": "1f528838befb07fd5a6fd39ce16ea0572de5dbcb3aaa5d889fc121049b3c1b64",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "STAGE_STATUS.json",
+      "bytes": 863,
+      "sha256": "ac16040c137c214075fa61f96e3edad1a46eaf71487f1f246ad0559fdef2d2da",
+      "source": "research/fedongas_phase2a_20261103/STAGE_STATUS.json",
+      "source_sha256": "ae16a1fc0a229df2e4f5e7365f9ce0f5e1c16ec1694bd92793d0ff09df11e779",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/test_interfaces.py.txt",
+      "bytes": 7661,
+      "sha256": "5e656eef435937a68a4346cef5fdcf804b19fdabefbbba126920b59947461306",
+      "source": "research/fedongas_phase2a_20261103/test_interfaces.py",
+      "source_sha256": "5e656eef435937a68a4346cef5fdcf804b19fdabefbbba126920b59947461306",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "VERIFICATION_FINAL.json",
+      "bytes": 1731,
+      "sha256": "ee489f6f97cb742b026553c1b1cbce467a1c1d5a81bec29c6eb2f52b5f3f59ea",
+      "source": "research/fedongas_phase2a_20261103/VERIFICATION_FINAL.json",
+      "source_sha256": "3baca5f0b595fb6c5f8e78515ba4cb65ac67a41f007a8d69318aea1e9d609e69",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/verify_delivery.py.txt",
+      "bytes": 6506,
+      "sha256": "268b436b47385a82be45fc525394239505a32f4ca44783e4c880dbcc43339ff8",
+      "source": "research/fedongas_phase2a_20261103/verify_delivery.py",
+      "source_sha256": "268b436b47385a82be45fc525394239505a32f4ca44783e4c880dbcc43339ff8",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/write_deliverables.py.txt",
+      "bytes": 27092,
+      "sha256": "10f62e3e2bc98614e406aad48cce4f2dede53d3fb21175aa26e65c6ed2df611e",
+      "source": "research/fedongas_phase2a_20261103/write_deliverables.py",
+      "source_sha256": "10f62e3e2bc98614e406aad48cce4f2dede53d3fb21175aa26e65c6ed2df611e",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "code_review/write_review.py.txt",
+      "bytes": 27150,
+      "sha256": "3e346f421e05e33cb4dd0c6b1d5791ed7ed8543807de945dac54fcc8fe52ded0",
+      "source": "research/fedongas_phase2a_20261103/write_review.py",
+      "source_sha256": "3e346f421e05e33cb4dd0c6b1d5791ed7ed8543807de945dac54fcc8fe52ded0",
+      "transformation": "local-path aliases;UTF8-LF copy"
+    },
+    {
+      "path": "REVIEW_SCOPE.md",
+      "bytes": 1889,
+      "sha256": "eaf0e86a57471e6a65bcc4800b6449143abf0c488a6ebd0bfc95ec65a7fc8272",
+      "source": "generated",
+      "source_sha256": null,
+      "transformation": "local-path aliases;UTF8-LF copy"
+    }
+  ]
+}
