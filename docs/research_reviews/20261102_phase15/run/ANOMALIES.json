@@ -1,0 +1,17 @@
+{
+  "experimental_failures": [],
+  "negative_results_preserved": [
+    "N_SVR_C4_A4_worse",
+    "N_SVR_C5_A4_worse",
+    "F_source_episode_selection_can_worsen_P1",
+    "KRR_2_of_6_worse_than_F_SVR",
+    "more_calibration_not_uniformly_better",
+    "C3_Ethylene_high_endpoint_clipping_masks_raw_error"
+  ],
+  "parameter_boundaries": "F_Ridge_A4_Ethanol_alpha0;KRR_alpha.01;some_SVR_C_boundaries;no_grid_expansion",
+  "inspection_only_error": "initial ad-hoc old-CV lookup requested nonexistent ridge key;correct ridge_candidates field used;no fit or result changed",
+  "irreversible_assets_modified": false,
+  "extra_fit_calls": 0,
+  "source_episode_limits": "E1_same_day;E2_one_cross_date_pair;not_independent_repeated_tasks",
+  "future_confirmatory_evidence": "not_established"
+}

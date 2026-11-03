@@ -1,0 +1,9 @@
+# 外部agent审阅范围
+
+按README→FAIRNESS_AUDIT→FEATURE_ERROR_DIAGNOSIS→RESEARCH_DECISIONS读取。优先核对：1)原Ridge劣势中可归于alpha尺度的受控份额；2)F两源episode代表性限制；3)KRR负结果及停止扩网格；4)高核相似仍失准、端点裁剪掩盖raw误差；5)下一步跨设备复用需71D合法合同和负迁移证据；6)历史test不是新盲测。
+
+本包完整包含30新配置raw/clip主指标、42旧新配置clipped主/气体指标和1680暴露误差、所有224源候选评分及448episode评分、已锁参数/模型文件SHA、全部关键诊断（核覆盖420行、端点分解168行、通道贡献1512行、时间窗504行）、模型恢复/公式核对证据和实际脚本文本。逐窗提供240行确定性样本；完整25200行、2400raw/clip暴露、3120slice、71维输入和120新模型均留本地，来源SHA在ARTIFACT_SHA256.csv。已进行完整25200恢复回放，不是仅验证样本。
+
+不发布原始信号、特征输入数值、模型权重或scaler、v5和ZIP。特征偏移只发通道级摘要，贡献为模型解释而非原始特征值。code_review仅路径别名和换行转换，不是独立训练包；RESEARCH_WORKTREE、ORIGINAL_WORKSPACE、FROZEN_BASELINE_V5、PYTHON_EXECUTABLE为明确本地别名。公开输入合同中的原始SHA仍指向本地完整字节；PUBLICATION_MANIFEST分别记录来源及发布后SHA，不可混同。
+
+Source/Frozen/P1资产复用身份由文件内容SHA证明，不从目录名称推定合法。新脚本导入旧数值函数，公开包没有携带所有旧依赖；因此外部agent可以完整审阅结论与新流程，无法仅凭此包在无数据/权重情况下重训。独立确认性目标证据尚未建立，下一轮候选仅建议、未运行。

@@ -1,0 +1,5546 @@
+[
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.04013697934625971,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03677300511087191,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04350095358164751,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.040127606642233304,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.036766083593845984,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04348912969062062,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.040044266216029856,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.036705053490315505,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.043383478941744213,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.0392958064732849,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03619405385173954,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04239755909483027,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.035294548668456986,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03392949899157199,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.036659598345341986,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.03466485382142999,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03396738019324074,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03536232744961923,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.07006151198996237,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06185243752991737,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07827058645000737,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.026574597372704983,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.028219727178447965,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024929467566962,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.025886953860711902,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0200269681170587,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03174693960436511,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08544359927505069,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07134150146294399,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09954569708715737,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.029160615066636697,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.030663137734982155,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.027658092398291236,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.025886953860711902,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0200269681170587,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03174693960436511,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08544359927505069,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07134150146294399,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09954569708715737,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.029160615066636697,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.030663137734982155,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.027658092398291236,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.025886953860711902,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0200269681170587,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03174693960436511,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08544359927505069,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07134150146294399,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09954569708715737,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.021094186917910485,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.016002391414042683,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.026185982421778282,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.021070021185824853,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.01599453692397644,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.026145505447673266,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.020859643185526,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.015924142985534098,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02579514338551791,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019258160867091666,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.015247577800113753,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.023268743934069577,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.013808714879770334,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.010338017844851388,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01727941191468928,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.01725990777678394,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012551401570455603,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.021968413983112278,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.06756236946988115,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.060128139963928164,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07499659897583412,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.014027166147184182,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.011294695714213489,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.016759636580154877,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019287648103545045,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012885483732351122,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.025689812474738966,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06881521240457145,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.062382519898651095,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07524790491049178,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.014525654655817871,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012148542477591522,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.016902766834044222,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019287648103545045,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012885483732351122,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.025689812474738966,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06881521240457145,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.062382519898651095,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07524790491049178,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.014525654655817871,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012148542477591522,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.016902766834044222,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019287648103545045,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012885483732351122,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.025689812474738966,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06881521240457145,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.062382519898651095,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07524790491049178,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.004268293003344262,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.002568440099761513,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.005968145906927011,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.004211237148182347,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0025557754981549306,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.005866698798209764,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.003947484826280867,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0024578468412877583,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.005437122811273976,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.007766869156559847,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0025589814717912715,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.012974756841328422,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.022926406025984957,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012671161239415673,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03318165081255424,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.03274983863585121,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02478011453346272,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04071956273823969,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.06792136769857872,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05774201767678281,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07810071772037464,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.030505253933706282,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02075639286761041,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04025411499980215,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018277386420434985,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012201105544551373,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024353667296318594,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.053704957089883675,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0529928124770034,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05441710170276395,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.017686234641236104,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.008228710803853317,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02714375847861889,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018277386420434985,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012201105544551373,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024353667296318594,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.053704957089883675,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0529928124770034,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05441710170276395,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.017345398712837322,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.008228710803853317,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.026462086621821323,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018277386420434985,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012201105544551373,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024353667296318594,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.053704957089883675,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0529928124770034,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05441710170276395,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.07346517917497764,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.006951907830550978,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.1399784505194043,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.07299030008269243,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.006952190679038607,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.13902840948634626,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.06920533482778654,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.006954810597965645,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.13145585905760743,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.052577759255285364,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.006986428608954602,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09816908990161613,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.03890865082758052,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.007554204446748848,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0702630972084122,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.03888104867240674,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.019092208100502234,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05866988924431125,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.07076402100400368,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05936722950478499,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08216081250322238,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.040774921266031286,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02271609955259164,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05883374297947093,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018545798249251507,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.005206123841926459,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.031885472656576555,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.04887484815019869,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04492755394098813,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.052822142359409255,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.042383663877936566,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0048674432334197704,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07989988452245336,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018545798249251507,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.005206123841926459,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.031885472656576555,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.04887484815019869,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04492755394098813,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.052822142359409255,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.042383663877936566,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0048674432334197704,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07989988452245336,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018545798249251507,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.005206123841926459,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.031885472656576555,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.04887484815019869,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04492755394098813,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.052822142359409255,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.019536963768760594,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.020311652501222882,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.018762275036298307,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.019592496078587956,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.020413791494647015,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.018771200662528895,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.020094460390206598,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.021313343512069927,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01887557726834327,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.02439897923065842,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02817316394118691,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02062479452012993,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.03193346049227375,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03973214607632746,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024134774908220046,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.031187871001125377,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03675356192139072,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.025622180080860035,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.06167883649327946,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.055420103236755426,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0679375697498035,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.02610976121067101,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.038844766816903686,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.013374755604438338,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.025707669470625225,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.024268405409662325,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.027146933531588126,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.0863368281785141,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07224473500846536,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10042892134856282,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.027869084378313494,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03411075197196004,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.021627416784666946,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.025707669470625225,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.024268405409662325,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.027146933531588126,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.0863368281785141,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07224473500846536,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10042892134856282,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.027869084378313494,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03411075197196004,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.021627416784666946,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.025707669470625225,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.024268405409662325,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.027146933531588126,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.0863368281785141,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07224473500846536,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10042892134856282,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.03276898866495843,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.038013569517967416,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.027524407811949436,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.032522687100107465,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03783556637460794,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02720980782560699,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.030608240363210654,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.036386916175281586,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024829564551139723,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.022481158049726307,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.027627015478396213,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.017335300621056402,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.01323543220532983,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.011773889481008208,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.014696974929651451,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.011925883798809043,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.006788233324311388,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0170635342733067,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.05722101989067127,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.053005125624101306,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06143691415724123,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.00826785846784162,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0025955718837414113,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01394014505194183,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01811851713190852,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.007648844700908819,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.028588189562908217,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.07104715712345273,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0584825666947601,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08361174755214536,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.016424370891788595,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02136666264720875,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.011482079136368438,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018993204182994418,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009398218803080621,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.028588189562908217,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.07104715712345273,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0584825666947601,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08361174755214536,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.02342934056251878,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.035376601988669126,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.011482079136368438,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018993204182994418,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009398218803080621,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.028588189562908217,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.07104715712345273,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0584825666947601,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08361174755214536,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.00886223025985292,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.010777455533842031,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.006947004985863805,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.008650509361566062,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.010675325485426308,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.006625693237705815,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.007545539934346324,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009944076493535965,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0051470033751566825,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.006588427130056675,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.007089818371949632,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.006087035888163716,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.008965953548077013,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.005428751130700497,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01250315596545353,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.018527719776263944,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.014016747423827886,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0230386921287,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.05968725507298346,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05035497931962727,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06901953082633966,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.013903729636683558,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009953729388785686,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01785372988458143,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.020064691853626415,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02077292776883084,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01935645593842199,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05647501155040492,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.055715541586246954,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.057234481514562896,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.008483338930445398,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.007813362172154207,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.009153315688736587,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.020064691853626415,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02077292776883084,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01935645593842199,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05647501155040492,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.055715541586246954,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.057234481514562896,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.008483338930445398,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.007813362172154207,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.009153315688736587,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.020064691853626415,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02077292776883084,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01935645593842199,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05647501155040492,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.055715541586246954,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.057234481514562896,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.0
+    },
+    "episode_equal_normalized_MSE": 0.019733377528822642,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.019467212115244527,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.019999542942400757,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01
+    },
+    "episode_equal_normalized_MSE": 0.019320712023587767,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.018445110455785552,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02019631359138998,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.017594956425382998,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.01341521400479717,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02177469884596883,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01825756984149836,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.00678332750273699,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02973181218025973,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.02480965384496032,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.00405437187863069,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04556493581128995,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 100.0
+    },
+    "episode_equal_normalized_MSE": 0.0329425578883765,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.01233507013415471,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0535500456425983,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "Ridge",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1000.0
+    },
+    "episode_equal_normalized_MSE": 0.0625598980533411,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05191524418924586,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07320455191743633,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 0,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.02520195953583167,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009326537171366186,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04107738190029715,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 1,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01969093634366086,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009470913883485659,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02991095880383606,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 2,
+    "params": {
+      "C": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05727463618269968,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05018693247368603,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06436233989171332,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 3,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.021867278496476544,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.003909168267720716,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03982538872523237,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 4,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01969093634366086,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009470913883485659,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02991095880383606,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 5,
+    "params": {
+      "C": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05727463618269968,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05018693247368603,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06436233989171332,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 6,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.021867278496476544,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.003909168267720716,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03982538872523237,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 7,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01969093634366086,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009470913883485659,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02991095880383606,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "SVR",
+    "candidate_index": 8,
+    "params": {
+      "C": 100.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05727463618269968,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05018693247368603,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06436233989171332,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.0285510334598958,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.029698392744369233,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02740367417542236,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.02557913289337134,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.019788994361309833,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.031369271425432846,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.0854099319802694,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07129743697541441,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0995224269851244,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.029070762178009683,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.029220027717140912,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02892149663887846,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.027246269665818945,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02099816326424912,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03349437606738877,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08566605293245289,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0716238684768799,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09970823738802588,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.05615377808578846,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.049860038225847704,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.062447517945729225,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.04294342912645566,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.033868622705421424,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0520182355474899,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08715936478475723,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07365917664173634,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10065955292777813,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08414176473393423,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07272039203412253,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09556313743374592,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07774495214092852,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06579706000393831,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08969284427791872,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08903166361927053,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07643068863281909,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10163263860572198,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.01363483283769763,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.011111229037214966,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01615843663818029,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019291826783762483,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.013061943682138052,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.025521709885386917,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06864983050268841,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06225623521412634,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07504342579125048,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.010694162359301644,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.00563994962668262,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.015748375091920667,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01924915152767452,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.01207848162831814,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.026419821427030903,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06990992633809054,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06327356746739615,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07654628520878494,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.049030993478984757,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04310523854269501,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0549567484152745,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.03166456672086951,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.021744384180919802,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04158474926081921,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.07743059121752777,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06895828154741869,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08590290088763683,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08337864689705136,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07237584987952948,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09438144391457325,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07418779362028687,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06265072865177214,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08572485858880159,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08705556317806232,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07556563093018216,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09854549542594246,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.021295269979005535,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.010298736475027563,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03229180348298351,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018202771250331876,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012215570560157362,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024189971940506393,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05346352261012202,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05281715820354758,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05410988701669646,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.02779306421923143,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.019282139783096248,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03630398865536662,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018367428316251298,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012495223361497039,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.024239633271005555,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05509057972447513,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.054200705245395144,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.055980454203555116,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.0522101880126478,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04304003516900881,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06138034085628678,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.030288996925516856,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.023508761577262925,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03706923227377079,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06641295305401702,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06281757758957912,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07000832851845493,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08314416872445053,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07144224167755378,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09484609577134728,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07296808207172073,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06247795151038563,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08345821263305583,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08435874219210536,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07423286376238841,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09448462062182231,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.037243555691492645,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.005047495330409702,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06943961605257559,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.018589636651451632,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0052544379078907,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03192483539501256,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.04861074586643968,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04472376450164272,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.052497727231236635,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.03364674216490063,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009144319913985037,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.058149164415816225,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01844706305319306,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.005282512944745298,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03161161316164082,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.050040742978075856,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0458035869169325,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0542778990392192,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.05606381733823869,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.043652338563715136,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06847529611276225,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.02906735948498374,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.016651821399487992,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.041482897570479495,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.061345369701983885,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05454154170453723,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06814919769943054,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08391670548119706,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07200240578086677,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09583100518152735,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.0722005209258254,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.060152311450641704,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08424873040100911,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 2,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08273884878297826,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0716431186233571,
+        "n_train": 4,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09383457894259942,
+        "n_train": 4,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.029170157297400197,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03792478473905466,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02041552985574573,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.02595886876113786,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.02521579199699452,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0267019455252812,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08629998391031873,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07218892150990124,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10041104631073623,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.027905708915522257,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03549499531167174,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.020316422519372775,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.027315322426682193,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.025791832707742424,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02883881214562196,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.0865152780471633,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07250379312587896,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10052676296844765,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.046806665742816445,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.043707784764422115,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04990554672121077,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.04082220198030982,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03424724173971467,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.047397162220904974,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08771736048525722,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0743177129222054,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10111700804830903,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08118622499693307,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07023324973099601,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09213920026287013,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07591673360710013,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0640201534774175,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08781331373678278,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 0,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08915006751656915,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07658299782024353,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.10171713721289477,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.01212129195692318,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.012688821028928071,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01155376288491829,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019035026158161314,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009449445669705172,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.028620606646617454,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.0708327307685754,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05823111458503849,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0834343469521123,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.008960848903593555,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0033958707831541345,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.014525827024032975,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.01729843874127789,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.004509643801040998,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03008723368151478,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.07207166195145077,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05955460418028493,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08458871972261663,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.038408607892661546,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03376309644878023,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.043054119336542865,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.030584227774794033,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.015905725406211626,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04526273014337644,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.07915035400445639,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06696204044487217,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0913386675640406,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08028015643826177,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07026571965901747,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09029459321750606,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07295531190989817,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06025246421497865,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08565815960481768,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 1,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08747941109743419,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07521631962538355,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09974250256948483,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.009785065233701996,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.008165322206472191,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.011404808260931801,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.02129577114473687,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.022175327173124496,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.020416215116349244,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05612419363607343,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.055451275850061155,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05679711142208571,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.013779602479499081,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009841339313798372,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.01771786564519979,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019863635838379776,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.018925828596369064,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.02080144308039049,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.05775928798822724,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05677922177866362,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.05873935419779086,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.04154829454117581,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.033839642680292464,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04925694640205915,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.027831240417143552,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.022903907480639515,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03275857335364759,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06851874077990278,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06466270509185389,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07237477646795165,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08046288075921794,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.06896261964374918,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0919631418746867,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07027499287314166,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05988975078287634,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08066023496340699,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 2,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08485357437059993,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07464021478587031,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09506693395532953,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 0,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.020608613317102932,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.004065162747864137,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03715206388634173,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 1,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.019981488909950402,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.009421993271780659,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.030540984548120143,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 2,
+    "params": {
+      "alpha": 0.01,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.056927233981005354,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.04983845759769531,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0640160103643154,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 3,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.026720076128319906,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.00643249777188151,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.0470076544847583,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 4,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.020592510983366258,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.010693420327085895,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.03049160163964662,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 5,
+    "params": {
+      "alpha": 0.1,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.058436426109023124,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.05121217930796098,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.06566067291008526,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 6,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.047205167240864335,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.03454123337169279,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.059869101110035884,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 7,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.029498478901991053,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.018683034625838032,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.04031392317814407,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 8,
+    "params": {
+      "alpha": 1.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.06850522756513625,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.059959079553402884,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.07705137557686961,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 9,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 0.1
+    },
+    "episode_equal_normalized_MSE": 0.08092833071768092,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.0694606363649013,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09239602507046055,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 10,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 1.0
+    },
+    "episode_equal_normalized_MSE": 0.07004690370075958,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.057936235735465615,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.08215757166605354,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  },
+  {
+    "budget": 4,
+    "gas_id": 3,
+    "family": "KRR",
+    "candidate_index": 11,
+    "params": {
+      "alpha": 10.0,
+      "gamma_factor": 10.0
+    },
+    "episode_equal_normalized_MSE": 0.08466961825004261,
+    "folds": [
+      {
+        "episode": "E1",
+        "normalized_MSE": 0.07325417721660188,
+        "n_train": 8,
+        "n_validation": 126
+      },
+      {
+        "episode": "E2",
+        "normalized_MSE": 0.09608505928348335,
+        "n_train": 8,
+        "n_validation": 210
+      }
+    ]
+  }
+]

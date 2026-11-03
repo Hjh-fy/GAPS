@@ -1,0 +1,466 @@
+[
+  {
+    "episode": "E1",
+    "budget": 2,
+    "gas_id": 0,
+    "n_train": 4,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GEa_F010_R1.txt",
+      "B1_GEa_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GEa_F020_R1.txt",
+      "B1_GEa_F030_R1.txt",
+      "B1_GEa_F050_R1.txt",
+      "B1_GEa_F060_R1.txt",
+      "B1_GEa_F080_R1.txt",
+      "B1_GEa_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 2,
+    "gas_id": 0,
+    "n_train": 4,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GEa_F010_R1.txt",
+      "B2_GEa_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GEa_F010_R2.txt",
+      "B2_GEa_F020_R2.txt",
+      "B2_GEa_F030_R2.txt",
+      "B2_GEa_F040_R2.txt",
+      "B2_GEa_F050_R2.txt",
+      "B2_GEa_F060_R2.txt",
+      "B2_GEa_F070_R2.txt",
+      "B2_GEa_F080_R2.txt",
+      "B2_GEa_F090_R2.txt",
+      "B2_GEa_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 2,
+    "gas_id": 1,
+    "n_train": 4,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GCO_F010_R1.txt",
+      "B1_GCO_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GCO_F020_R1.txt",
+      "B1_GCO_F030_R1.txt",
+      "B1_GCO_F050_R1.txt",
+      "B1_GCO_F060_R1.txt",
+      "B1_GCO_F080_R1.txt",
+      "B1_GCO_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 2,
+    "gas_id": 1,
+    "n_train": 4,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GCO_F010_R1.txt",
+      "B2_GCO_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GCO_F010_R2.txt",
+      "B2_GCO_F020_R2.txt",
+      "B2_GCO_F030_R2.txt",
+      "B2_GCO_F040_R2.txt",
+      "B2_GCO_F050_R2.txt",
+      "B2_GCO_F060_R2.txt",
+      "B2_GCO_F070_R2.txt",
+      "B2_GCO_F080_R2.txt",
+      "B2_GCO_F090_R2.txt",
+      "B2_GCO_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 2,
+    "gas_id": 2,
+    "n_train": 4,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GEy_F010_R1.txt",
+      "B1_GEy_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GEy_F020_R1.txt",
+      "B1_GEy_F030_R1.txt",
+      "B1_GEy_F050_R1.txt",
+      "B1_GEy_F060_R1.txt",
+      "B1_GEy_F080_R1.txt",
+      "B1_GEy_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 2,
+    "gas_id": 2,
+    "n_train": 4,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GEy_F010_R1.txt",
+      "B2_GEy_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GEy_F010_R2.txt",
+      "B2_GEy_F020_R2.txt",
+      "B2_GEy_F030_R2.txt",
+      "B2_GEy_F040_R2.txt",
+      "B2_GEy_F050_R2.txt",
+      "B2_GEy_F060_R2.txt",
+      "B2_GEy_F070_R2.txt",
+      "B2_GEy_F080_R2.txt",
+      "B2_GEy_F090_R2.txt",
+      "B2_GEy_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 2,
+    "gas_id": 3,
+    "n_train": 4,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GMe_F010_R1.txt",
+      "B1_GMe_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GMe_F020_R1.txt",
+      "B1_GMe_F030_R1.txt",
+      "B1_GMe_F050_R1.txt",
+      "B1_GMe_F060_R1.txt",
+      "B1_GMe_F080_R1.txt",
+      "B1_GMe_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 2,
+    "gas_id": 3,
+    "n_train": 4,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GMe_F010_R1.txt",
+      "B2_GMe_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GMe_F010_R2.txt",
+      "B2_GMe_F020_R2.txt",
+      "B2_GMe_F030_R2.txt",
+      "B2_GMe_F040_R2.txt",
+      "B2_GMe_F050_R2.txt",
+      "B2_GMe_F060_R2.txt",
+      "B2_GMe_F070_R2.txt",
+      "B2_GMe_F080_R2.txt",
+      "B2_GMe_F090_R2.txt",
+      "B2_GMe_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 4,
+    "gas_id": 0,
+    "n_train": 8,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GEa_F010_R1.txt",
+      "B1_GEa_F040_R1.txt",
+      "B1_GEa_F070_R1.txt",
+      "B1_GEa_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GEa_F020_R1.txt",
+      "B1_GEa_F030_R1.txt",
+      "B1_GEa_F050_R1.txt",
+      "B1_GEa_F060_R1.txt",
+      "B1_GEa_F080_R1.txt",
+      "B1_GEa_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 4,
+    "gas_id": 0,
+    "n_train": 8,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GEa_F010_R1.txt",
+      "B2_GEa_F040_R1.txt",
+      "B2_GEa_F070_R1.txt",
+      "B2_GEa_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GEa_F010_R2.txt",
+      "B2_GEa_F020_R2.txt",
+      "B2_GEa_F030_R2.txt",
+      "B2_GEa_F040_R2.txt",
+      "B2_GEa_F050_R2.txt",
+      "B2_GEa_F060_R2.txt",
+      "B2_GEa_F070_R2.txt",
+      "B2_GEa_F080_R2.txt",
+      "B2_GEa_F090_R2.txt",
+      "B2_GEa_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 4,
+    "gas_id": 1,
+    "n_train": 8,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GCO_F010_R1.txt",
+      "B1_GCO_F040_R1.txt",
+      "B1_GCO_F070_R1.txt",
+      "B1_GCO_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GCO_F020_R1.txt",
+      "B1_GCO_F030_R1.txt",
+      "B1_GCO_F050_R1.txt",
+      "B1_GCO_F060_R1.txt",
+      "B1_GCO_F080_R1.txt",
+      "B1_GCO_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 4,
+    "gas_id": 1,
+    "n_train": 8,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GCO_F010_R1.txt",
+      "B2_GCO_F040_R1.txt",
+      "B2_GCO_F070_R1.txt",
+      "B2_GCO_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GCO_F010_R2.txt",
+      "B2_GCO_F020_R2.txt",
+      "B2_GCO_F030_R2.txt",
+      "B2_GCO_F040_R2.txt",
+      "B2_GCO_F050_R2.txt",
+      "B2_GCO_F060_R2.txt",
+      "B2_GCO_F070_R2.txt",
+      "B2_GCO_F080_R2.txt",
+      "B2_GCO_F090_R2.txt",
+      "B2_GCO_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 4,
+    "gas_id": 2,
+    "n_train": 8,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GEy_F010_R1.txt",
+      "B1_GEy_F040_R1.txt",
+      "B1_GEy_F070_R1.txt",
+      "B1_GEy_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GEy_F020_R1.txt",
+      "B1_GEy_F030_R1.txt",
+      "B1_GEy_F050_R1.txt",
+      "B1_GEy_F060_R1.txt",
+      "B1_GEy_F080_R1.txt",
+      "B1_GEy_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 4,
+    "gas_id": 2,
+    "n_train": 8,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GEy_F010_R1.txt",
+      "B2_GEy_F040_R1.txt",
+      "B2_GEy_F070_R1.txt",
+      "B2_GEy_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GEy_F010_R2.txt",
+      "B2_GEy_F020_R2.txt",
+      "B2_GEy_F030_R2.txt",
+      "B2_GEy_F040_R2.txt",
+      "B2_GEy_F050_R2.txt",
+      "B2_GEy_F060_R2.txt",
+      "B2_GEy_F070_R2.txt",
+      "B2_GEy_F080_R2.txt",
+      "B2_GEy_F090_R2.txt",
+      "B2_GEy_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  },
+  {
+    "episode": "E1",
+    "budget": 4,
+    "gas_id": 3,
+    "n_train": 8,
+    "n_valid": 126,
+    "train_files": [
+      "B1_GMe_F010_R1.txt",
+      "B1_GMe_F040_R1.txt",
+      "B1_GMe_F070_R1.txt",
+      "B1_GMe_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B1_GMe_F020_R1.txt",
+      "B1_GMe_F030_R1.txt",
+      "B1_GMe_F050_R1.txt",
+      "B1_GMe_F060_R1.txt",
+      "B1_GMe_F080_R1.txt",
+      "B1_GMe_F090_R1.txt"
+    ],
+    "train_days": [
+      4
+    ],
+    "validation_days": [
+      4
+    ],
+    "cross_date": false
+  },
+  {
+    "episode": "E2",
+    "budget": 4,
+    "gas_id": 3,
+    "n_train": 8,
+    "n_valid": 210,
+    "train_files": [
+      "B2_GMe_F010_R1.txt",
+      "B2_GMe_F040_R1.txt",
+      "B2_GMe_F070_R1.txt",
+      "B2_GMe_F100_R1.txt"
+    ],
+    "validation_files": [
+      "B2_GMe_F010_R2.txt",
+      "B2_GMe_F020_R2.txt",
+      "B2_GMe_F030_R2.txt",
+      "B2_GMe_F040_R2.txt",
+      "B2_GMe_F050_R2.txt",
+      "B2_GMe_F060_R2.txt",
+      "B2_GMe_F070_R2.txt",
+      "B2_GMe_F080_R2.txt",
+      "B2_GMe_F090_R2.txt",
+      "B2_GMe_F100_R2.txt"
+    ],
+    "train_days": [
+      1
+    ],
+    "validation_days": [
+      7
+    ],
+    "cross_date": true
+  }
+]

@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "source": "Phase1_SOURCE_CV_RECORDS.fold_scalers",
+  "checks": [
+    {
+      "gas_id": 0,
+      "actual_source_fold_train_windows": [
+        210,
+        420
+      ],
+      "n_reference": 315
+    },
+    {
+      "gas_id": 1,
+      "actual_source_fold_train_windows": [
+        210,
+        420
+      ],
+      "n_reference": 315
+    },
+    {
+      "gas_id": 2,
+      "actual_source_fold_train_windows": [
+        210,
+        420
+      ],
+      "n_reference": 315
+    },
+    {
+      "gas_id": 3,
+      "actual_source_fold_train_windows": [
+        210,
+        420
+      ],
+      "n_reference": 315
+    }
+  ],
+  "uses_target_outcomes": false
+}

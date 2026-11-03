@@ -1,0 +1,108 @@
+"""Predefined retrospective diagnostics; consumes locked predictions, never changes fits."""
+import joblib
+from scipy.integrate import quad_vec
+from threadpoolctl import threadpool_limits
+from phase15_common import *
+
+def all_predictions():
+    rr=rows(RUN/'evaluation/WINDOW_PREDICTIONS.csv')
+    old=rows(OLD/'evaluation/WINDOW_PREDICTIONS.csv')
+    for r in old:r.update(rule='P1',family=r['kind'].removeprefix('Target').removesuffix('71'))
+    return rr+old
+
+def comparison():
+    out=RUN/'analysis';out.mkdir(exist_ok=False);allp=all_predictions();metrics=[];ers=[];slices=[];timebins=[]
+    for eid in sorted({r['experiment_id'] for r in allp}):
+        rr=[r for r in allp if r['experiment_id']==eid];r=rr[0];base=dict(experiment_id=eid,target=r['target'],budget=int(r['budget']),rule=r['rule'],family=r['family'])
+        pp=[dict(x,gas_id=int(x['gas_id']),prediction_ppm=float(x['prediction_clipped_ppm'])) for x in rr]
+        metrics.append(dict(**base,**p1.exposure_metrics(pp)))
+        ers.extend(dict(**base,**e) for e in p1.exposure_rows(pp))
+        for g in range(4):
+            gg=[x for x in pp if x['gas_id']==g];slices.append(dict(**base,gas_id=g,**p1.exposure_metrics(gg)))
+            for label,starts in [('early',[60.,65.]),('middle',[100.,105.]),('late',[150.,155.])]:
+                ss=[x for x in gg if float(x['start_s']) in starts]
+                timebins.append(dict(**base,gas_id=g,time_bin=label,**p1.exposure_metrics(ss)))
+    table(out/'COMPARISON_PRIMARY.csv',metrics);table(out/'COMPARISON_GAS.csv',slices);table(out/'TIME_BIN_ERRORS.csv',timebins)
+    table(out/'COMPARISON_EXPOSURE_ERRORS.csv',ers)
+    contrasts=[];rng=np.random.default_rng(42)
+    for c in ('C3','C4','C5'):
+        for b in (2,4):
+            ee=[e for e in ers if e['target']==c and e['budget']==b]
+            for ra,fa,rb,fb,label in [('P1','Ridge','N','Ridge','normalization_Ridge'),('P1','SVR','N','SVR','normalization_SVR'),('F','Ridge','F','SVR','fair_SVR_vs_Ridge'),('F','SVR','F','KRR','fair_KRR_vs_SVR')]:
+                a=sorted([e for e in ee if (e['rule'],e['family'])==(ra,fa)],key=lambda e:e['filename']);bb=sorted([e for e in ee if (e['rule'],e['family'])==(rb,fb)],key=lambda e:e['filename'])
+                assert [e['filename'] for e in a]==[e['filename'] for e in bb]
+                aa=np.array([e['mean_window_normalized_squared_error'] for e in a]);zz=np.array([e['mean_window_normalized_squared_error'] for e in bb]);gas=np.array([e['gas_id'] for e in a]);boot=[]
+                for _ in range(2000):
+                    ids=np.concatenate([rng.choice(np.flatnonzero(gas==g),10,replace=True) for g in range(4)])
+                    boot.append(100*(np.sqrt(zz[ids].mean())-np.sqrt(aa[ids].mean())))
+                contrasts.append(dict(target=c,budget=b,contrast=label,reference=ra+'_'+fa,new=rb+'_'+fb,delta_NRMSE_points=float(100*(np.sqrt(zz.mean())-np.sqrt(aa.mean()))),
+                    paired_exposure_bootstrap_low=float(np.percentile(boot,2.5)),paired_exposure_bootstrap_high=float(np.percentile(boot,97.5)),bootstrap_replicates=2000,seed=42,
+                    limitation='conditional_single_test_day;windows_not_resampled;not_cross_day_confirmation'))
+    table(out/'PAIRED_CONTRASTS.csv',contrasts)
+    primary=[]
+    for c in ('C3','C4','C5'):
+        for b in (2,4):
+            row=dict(target=c,budget=b)
+            for m in metrics:
+                if m['target']==c and m['budget']==b:row[m['rule']+'_'+m['family']]=m['single_window_equal_exposure_NRMSE_percent']
+            primary.append(row)
+    table(out/'PRIMARY_MATRIX.csv',primary)
+
+def diagnose():
+    v=p1.frozen();names=v.names;new=read(RUN/'MODEL_INDEX.json');old=[]
+    for r in read(OLD/'MODEL_INDEX.json'):
+        old.append(dict(r,rule='P1',family=r['kind'].removeprefix('Target').removesuffix('71'),root=str(OLD)))
+    feature=[];matched=[];endpoint=[];attributions=[];integrals=[];coverage=[]
+    for c,g in [('C3',2),('C4',0),('C5',1)]:
+        cal,cm=cache(c,'cal');test,tm=cache(c,'test');tg=test['gas']==g;tx=test['x71'][tg]
+        for b in (2,4):
+            cg=cal_mask(cm,b,g);cx=cal['x71'][cg];mean=cx.mean(0);scale=cx.std(0);scale[scale<1e-9]=1.
+            for j,n in enumerate(names):
+                feature.append(dict(target=c,budget=b,gas_id=g,feature=n,cal_mean=float(mean[j]),cal_std=float(cx[:,j].std()),test_mean=float(tx[:,j].mean()),test_std=float(tx[:,j].std()),
+                    standardized_marginal_mean_shift=float((tx[:,j].mean()-mean[j])/scale[j]),interpretation='descriptive;cal/test_concentration_mixture_differs;correlated_windows'))
+            for i,m in enumerate(tm):
+                if m['gas_id']!=g or m['concentration_code'] not in ([10,100] if b==2 else [10,40,70,100]) or m['start_s'] not in (60.,150.):continue
+                j=next(j for j,z in enumerate(cm) if z['gas_id']==g and z['concentration_code']==m['concentration_code'] and z['start_s']==m['start_s'])
+                for k,n in enumerate(names):matched.append(dict(target=c,budget=b,gas_id=g,concentration_code=m['concentration_code'],start_s=m['start_s'],feature=n,
+                    cal_filename=cm[j]['filename'],test_filename=m['filename'],cal_value=float(cal['x71'][j,k]),test_value=float(test['x71'][i,k]),standardized_matched_shift=float((test['x71'][i,k]-cal['x71'][j,k])/scale[k])))
+            for r in [r for r in new+old if r['target']==c and r['budget']==b and r['gas_id']==g]:
+                h=joblib.load(Path(r.get('root',RUN))/r['path']);mean,scale=scaler(h);z=(tx-mean)/scale;tr=(cx-mean)/scale
+                dd=((z[:,None]-tr[None,:])**2).sum(2);gamma=r['params'].get('gamma_factor',0.)/71
+                raw=predict(v,h,tx);clip=np.clip(raw,h['clip_min'],h['clip_max']);tmm=[m for m in tm if m['gas_id']==g]
+                for code in range(10,101,10):
+                    ix=np.array([m['concentration_code']==code for m in tmm]);er=clip[ix]-test['y'][tg][ix]
+                    coverage.append(dict(target=c,budget=b,rule=r['rule'],family=r['family'],gas_id=g,concentration_code=code,rmse_ppm=float(np.sqrt(np.mean(er**2))),bias_ppm=float(er.mean()),
+                        median_min_standardized_distance=float(np.median(np.sqrt(dd[ix].min(1)))),median_max_rbf_similarity=float(np.median(np.exp(-gamma*dd[ix].min(1)))) if r['family']!='Ridge' else '',
+                        clipped_windows=int(np.sum(raw[ix]!=clip[ix])),n_windows=int(ix.sum()),independent_exposures=1))
+                for i,m in enumerate(tm):
+                    if m['gas_id']!=g or m['concentration_code'] not in (10,100) or m['start_s'] not in (60.,150.):continue
+                    j=next(j for j,z in enumerate(cm) if z['gas_id']==g and z['concentration_code']==m['concentration_code'] and z['start_s']==m['start_s'])
+                    a=cal['x71'][j:j+1];t=test['x71'][i:i+1];pc=float(predict(v,h,a)[0]);pt=float(predict(v,h,t)[0]);truth=float(m['truth_ppm'])
+                    base=dict(target=c,budget=b,rule=r['rule'],family=r['family'],gas_id=g,concentration_code=m['concentration_code'],start_s=m['start_s'])
+                    endpoint.append(dict(**base,truth_ppm=truth,calibration_error_raw_ppm=pc-truth,test_error_raw_ppm=pt-truth,prediction_change_ppm=pt-pc,
+                        calibration_error_clipped_ppm=float(np.clip(pc,h['clip_min'],h['clip_max'])-truth),test_error_clipped_ppm=float(np.clip(pt,h['clip_min'],h['clip_max'])-truth),
+                        decomposition_residual_ppm=(pt-truth)-(pc-truth)-(pt-pc),cal_filename=cm[j]['filename'],test_filename=m['filename']))
+                    za=(a[0]-mean)/scale;zt=(t[0]-mean)/scale;delta=zt-za
+                    if r['family']=='Ridge':
+                        contrib=h['span']*np.array(h['numerical']['coef'])[1:]*delta;err=0.
+                    else:
+                        if r['family']=='KRR':train=h['train_z'];coef=h['coef']-np.mean(h['coef']);gam=h['gamma']
+                        else:
+                            learner=h['numerical']['learner'];train=learner.support_vectors_;coef=learner.dual_coef_[0];gam=learner._gamma
+                        grad,err=quad_vec(lambda u:rbf_gradient(za+u*delta,train,coef,gam,h['span']),0.,1.,epsabs=1e-8,epsrel=1e-6,limit=200)
+                        contrib=grad*delta
+                    residual=float(contrib.sum()-(pt-pc));integrals.append(dict(**base,contribution_sum_ppm=float(contrib.sum()),prediction_change_ppm=pt-pc,additivity_residual_ppm=residual,integration_error_estimate=float(err),warning=abs(residual)>1e-3))
+                    for k,n in enumerate(names):attributions.append(dict(**base,feature=n,channel=n.split('_')[0],contribution_ppm=float(contrib[k]),method='exact_linear' if r['family']=='Ridge' else 'straight_path_integrated_gradients',interpretation='noncausal;collinear;reference_and_path_dependent;raw_predictions'))
+    out=RUN/'diagnostics';out.mkdir();table(out/'MARGINAL_71D_SHIFT.csv',feature);table(out/'MATCHED_CONCENTRATION_TIME_SHIFT.csv',matched)
+    table(out/'ENDPOINT_ERROR_DECOMPOSITION.csv',endpoint);table(out/'FEATURE_CONTRIBUTIONS.csv',attributions);table(out/'ATTRIBUTION_ADDITIVITY_QA.csv',integrals);table(out/'KERNEL_RESIDUAL_BY_CONCENTRATION.csv',coverage)
+    grouped=collections.defaultdict(list)
+    for r in attributions:
+        key=tuple(r[k] for k in ('target','budget','rule','family','gas_id','concentration_code','start_s','channel'));grouped[key].append(r['contribution_ppm'])
+    table(out/'CHANNEL_CONTRIBUTIONS.csv',[dict(zip(('target','budget','rule','family','gas_id','concentration_code','start_s','channel'),k),contribution_ppm=float(sum(vals))) for k,vals in grouped.items()])
+    js(out/'DIAGNOSTIC_QA.json',dict(attribution_pairs=len(integrals),max_absolute_additivity_residual_ppm=max(abs(r['additivity_residual_ppm']) for r in integrals),warnings=sum(r['warning'] for r in integrals),
+        endpoint_decomposition_pairs=len(endpoint),matched_concentration_time_rows=len(matched),physical_aging_causal_claim=False,refits=0))
+
+if __name__=='__main__':
+    ensure_contract()
+    with threadpool_limits(limits=1):comparison();diagnose()
+    event('analysis_complete',refits=0);print(json.dumps(dict(stage='analysis',status='COMPLETE')),flush=True)

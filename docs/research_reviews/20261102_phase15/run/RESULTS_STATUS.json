@@ -1,0 +1,25 @@
+{
+  "status": "COMPLETED_AND_VERIFIED_RETROSPECTIVE",
+  "new_configurations": 30,
+  "new_regression_heads": 120,
+  "old_configs_reused_without_fit": 12,
+  "new_route": "Oracle_ALL",
+  "predicted_class_route": "NOT_RUN",
+  "mean_fusion": "AUXILIARY_ONLY",
+  "source_side_validation": "E1_same_day;E2_C2_D1_to_D7",
+  "C3": "three_dates",
+  "C4": "two_dates_retrospective_source_before_test_only",
+  "C5": "two_dates",
+  "KRR": "one_prespecified_grid_no_expansion",
+  "independent_confirmatory_target_evidence": "NOT_ESTABLISHED",
+  "extra_training_rounds": 0,
+  "forbidden_neural_Flower_deployment_residual_runs": 0,
+  "dependencies": {
+    "numpy": "1.26.4",
+    "scikit-learn": "1.8.0",
+    "scipy": "1.13.1",
+    "joblib": "1.4.2",
+    "threadpoolctl": "3.6.0"
+  },
+  "independent_metric_equation_maxdiff": 7.105427357601002e-15
+}

@@ -1,0 +1,25 @@
+"""Seal final reviewable local deliverables after all verification; refuses overwrite."""
+import subprocess,importlib.metadata
+from phase15_common import *
+def main():
+    ensure_contract();assert read(RUN/'INDEPENDENT_METRIC_EQUATIONS_QA.json')['status']=='PASS'
+    r=subprocess.run([sys.executable,'-m','unittest','test_phase15','-v'],cwd=HERE,capture_output=True,text=True,encoding='utf-8');assert r.returncode==0,r.stderr
+    with (RUN/'UNIT_TEST_OUTPUT.txt').open('x',encoding='utf-8',newline='\n') as f:f.write(r.stdout+r.stderr)
+    qa=[]
+    for g in read(OLD/'SOURCE_CV_RECORDS.json'):
+        folds=g['fold_scalers'];ns=sorted(int(f['train_n']) for f in folds);assert ns==[210,420] and np.mean(ns)==315
+        qa.append(dict(gas_id=g['gas_id'],actual_source_fold_train_windows=ns,n_reference=315))
+    js(RUN/'LOSS_REFERENCE_QA.json',dict(status='PASS',source='Phase1_SOURCE_CV_RECORDS.fold_scalers',checks=qa,uses_target_outcomes=False))
+    js(RUN/'RESULTS_STATUS.json',dict(status='COMPLETED_AND_VERIFIED_RETROSPECTIVE',new_configurations=30,new_regression_heads=120,old_configs_reused_without_fit=12,
+        new_route='Oracle_ALL',predicted_class_route='NOT_RUN',mean_fusion='AUXILIARY_ONLY',source_side_validation='E1_same_day;E2_C2_D1_to_D7',
+        C3='three_dates',C4='two_dates_retrospective_source_before_test_only',C5='two_dates',KRR='one_prespecified_grid_no_expansion',
+        independent_confirmatory_target_evidence='NOT_ESTABLISHED',extra_training_rounds=0,forbidden_neural_Flower_deployment_residual_runs=0,
+        dependencies={k:importlib.metadata.version(k) for k in ['numpy','scikit-learn','scipy','joblib','threadpoolctl']},
+        independent_metric_equation_maxdiff=read(RUN/'INDEPENDENT_METRIC_EQUATIONS_QA.json')['max_difference']))
+    records=[]
+    for p in sorted(HERE.rglob('*')):
+        if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv':records.append(dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)))
+    table(HERE/'ARTIFACT_SHA256.csv',records)
+    for r in records:p1.verify_sha(HERE/r['path'],r['sha256'])
+    print(json.dumps(dict(status='SEALED',payload_files=len(records),payload_bytes=sum(r['bytes'] for r in records),manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'))))
+if __name__=='__main__':main()

@@ -1,0 +1,188 @@
+"""Generate read-only evidence reports after independent replay audit; no fitting."""
+from phase15_common import *
+def write(name,text):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(text)
+def mdtable(rr,keys):
+    return '| '+' | '.join(keys)+' |\n| '+' | '.join(['---']*len(keys))+' |\n'+''.join('| '+' | '.join(str(r[k]) for k in keys)+' |\n' for r in rr)
+def main():
+    qa=read(RUN/'FINAL_VERIFICATION.json');assert qa['source_selection_only'] and qa['new_target_heads']==120
+    matrix=rows(RUN/'analysis/PRIMARY_MATRIX.csv');mean={k:float(np.mean([float(r[k]) for r in matrix])) for k in list(matrix[0])[2:]}
+    pretty=[{k:(f'{float(v):.3f}' if k not in ('target','budget') else v) for k,v in r.items()} for r in matrix]
+    reduction=mean['P1_Ridge']-mean['N_Ridge'];oldgap=mean['P1_Ridge']-mean['P1_SVR']
+    write('README.md',f'''# FedOnGas Phase1.5：公平性修正与性能瓶颈审阅
+
+2026-11-02。依据不可变v5、Phase0.5协议和Phase1固定提交772c0e9087435b9deb8ea4ac50b7c24814f6b345。研究属性：**回顾性探索，目标test此前已观察，不是新盲测**。全部新文件在独立worktree的本阶段目录；旧结果保留。
+
+## 主要判断
+
+1. Ridge原结论受到显著正则化迁移影响。只改alpha尺度的N控制，使六配置NRMSE均下降，六配置宏平均从{mean['P1_Ridge']:.3f}%到{mean['N_Ridge']:.3f}%，下降{reduction:.3f}个百分点，约相当于原Ridge–SVR宏平均差距的{100*reduction/oldgap:.1f}%。这是控制实验中的大部分差距缩减，不等于证明全部误差或全部跨域困难均由正则造成。
+2. 主公平F流程下SVR六组均低于Ridge；差距缩到0.280–6.756个百分点，四组条件性bootstrap区间包含0，只能称方向性优势。F-Ridge均值{mean['F_Ridge']:.3f}%，F-SVR {mean['F_SVR']:.3f}%。F与N不是按target挑赢家的菜单，二者分别回答任务匹配和系数尺度问题。
+3. KRR较F-SVR改善4/6，退步2/6，宏平均{mean['F_KRR']:.3f}% vs {mean['F_SVR']:.3f}%，改善{mean['F_SVR']-mean['F_KRR']:.3f}个百分点。**停止扩大KRR网格及单纯换核模型方向**，保留已锁定KRR为低成本对照，不据这些test重新选参数。
+4. 困难气体并非统一“少几个浓度点”。C4 Ethanol已见125ppm明显偏低且核相似度低；C5 CO已见250ppm仍失败且相似度较高；C3 Ethylene中档即使A4已标定仍大偏差。跨日输入关系、校准拟合偏差和时间变化共同出现，尚不能证明71D在所有方法下不可辨识，更不能归因为物理老化。
+
+## 完整主矩阵
+
+单位为%，单窗口误差先在每暴露内平均、再暴露等权NRMSE；Oracle_ALL，裁剪至标定支持。P1为只读历史参照，F为few-shot源选参，N为固定损失归一化。所有raw预测与暴露均值融合辅助指标另存，融合不当单窗部署性能。
+
+{mdtable(pretty,list(matrix[0]))}
+
+C3为三日期cal/dev/test协议；C4/C5为两日期替代协议，分别解读。C4校准Day3早于部分源Day7，只能称source-before-test的回顾性比较，不声称即时双源Day3部署。六配置均值仅是固定任务的描述性宏平均。
+
+## 阅读顺序与制品
+
+- [公平性审计](FAIRNESS_AUDIT.md)：原alpha上界、两种规则、源episode限制和参数表。
+- [特征误差诊断](FEATURE_ERROR_DIAGNOSIS.md)：三个气体、同浓度同起点配对、时间窗、核覆盖、原始/裁剪误差与非因果贡献。
+- [研究决策与下一轮最小矩阵](RESEARCH_DECISIONS.md)：继续/停止条件及真正值得验证的问题。
+- [预注册计划](EXPERIMENT_PLAN.md)、run/EXPERIMENT_REGISTRY_PREREGISTERED.csv、run/A_FROZEN_PARAMETERS.json、run/C_FROZEN_PARAMETERS.json。
+- run/evaluation/：30配置、120头、25200逐窗预测、2400条raw/clip暴露误差和3120条气体/浓度/seen切片。
+- run/analysis/：完整42配置（旧12+新30）对照、24个配对bootstrap、时间窗误差。
+- run/diagnostics/：71维分布、2556条同浓度同起点特征对照、168组端点误差与贡献分解。
+- [运行与恢复说明](REPRODUCIBILITY.md)、run/FINAL_VERIFICATION.json、ARTIFACT_SHA256.csv。
+
+## 实际验证
+
+源F选择256fit、KRR选择192fit、新目标120fit、合成smoke4fit，共572次计划内小模型拟合。无额外选参轮次。120个新模型完整序列化回放25200预测；60套raw/clip指标重新计算；448个源候选训练scaler、24个选参结果逐一核对。168组贡献加和最大误差{qa['diag_qa']['max_absolute_additivity_residual_ppm']:.3g}ppm。
+
+Phase1清单125文件及清单本身、640原始信号、v5选用代码及独立ZIP、原仓库已有tracked状态均未改变。无Development选参、无旧分类checkpoint、无新联合网络/残差/Flower/Pi。只将精简审阅制品发布至GitHub研究审阅分支；原始数据、特征数值、模型权重和v5/ZIP保留本地。
+''')
+    oldcv=read(OLD/'SOURCE_CV_RECORDS.json');source_rows=[]
+    for r in oldcv:
+        for c in r['ridge_candidates']:source_rows.append(dict(gas_id=r['gas_id'],gas=GASES[r['gas_id']],alpha=c['alpha'],source_validation_RMSE_ppm=c['validation_RMSE_ppm']))
+    table(RUN/'analysis/ORIGINAL_SOURCE_RIDGE_PATH.csv',source_rows)
+    ap=read(RUN/'A_FROZEN_PARAMETERS.json')['choices'];cp=read(RUN/'C_FROZEN_PARAMETERS.json')['choices'];paramrows=[]
+    for b in (2,4):
+        for g in range(4):
+            paramrows.append(dict(budget=b,gas=GASES[g],F_Ridge_alpha=ap['F'][str(b)][str(g)]['Ridge']['alpha'],F_SVR_C=ap['F'][str(b)][str(g)]['SVR']['C'],F_SVR_gamma_factor=ap['F'][str(b)][str(g)]['SVR']['gamma_factor'],N_Ridge_alpha=ap['N'][str(b)][str(g)]['Ridge']['alpha'],N_SVR_C=ap['N'][str(b)][str(g)]['SVR']['C'],KRR_alpha=cp[str(b)][str(g)]['KRR']['alpha'],KRR_gamma_factor=cp[str(b)][str(g)]['KRR']['gamma_factor']))
+    table(RUN/'analysis/PARAMETER_SUMMARY.csv',paramrows)
+    contrasts=rows(RUN/'analysis/PAIRED_CONTRASTS.csv');fair=[r for r in contrasts if r['contrast']=='fair_SVR_vs_Ridge']
+    contains=sum(float(r['paired_exposure_bootstrap_low'])<=0<=float(r['paired_exposure_bootstrap_high']) for r in fair)
+    # The statement above is computed, never hard-coded from an expected outcome.
+    assert contains==4
+    write('FAIRNESS_AUDIT.md',f'''# 少样本公平性审计
+
+## 原比较的局限
+
+Phase1源CV按设备组留出，每gas训练210或420窗、验证暴露等长。四gas alpha均在1000上界；100→1000源验证RMSE仍改善（Ethanol12.549→11.302，CO29.795→25.797，Ethylene18.089→13.629，Methane29.185→20.099ppm），可确认“边界最优”，不能确认1000是全局最优。原CV对跨设备偏移、71维共线性、源任务训练量共同反应；没有单因素证据把上界唯一归因于某一种机制。原分数完整导出analysis/ORIGINAL_SOURCE_RIDGE_PATH.csv。
+
+Ridge实现为sum平方损失+alpha·||beta||²，截距不惩罚，训练scaler ddof0。等价平均损失lambda=alpha/n；源lambda为4.762或2.381，目标A2/A4为250/125，目标相对源26.25–105倍。窗口相关，n仅是数值目标函数中的名义样本量，不是独立暴露有效样本量。依据见[Ridge官方数学定义](https://scikit-learn.org/stable/modules/linear_model.html#ridge-regression-and-classification)，实际执行实现仍是v5冻结函数。
+
+SVR目标为0.5||w||²+C·sum epsilon损失；除以Cn后相对正则系数为1/(2Cn)，所以固定C直接迁移到4/8窗同样改变有效惩罚；不能把C与alpha同方向缩放。依据见[SVR官方数学定义](https://scikit-learn.org/stable/modules/svm.html#svr)。这只规定名义目标系数关系，不能同时保证训练scaler、核几何、独立样本量和最优泛化不变。
+
+## 本轮两条预先固定规则
+
+F以2/4个独立原始暴露、每暴露60/150两窗匹配目标，共4/8训练窗。E1=C1 Day4训练端点或四点，验证同日其余固定六档；E2=C2 Day1训练→Day7全十档验证。E1只有暴露互斥，不是跨日；E2跨日但只有同一设备一对日期。两episode等权，episode内未裁剪归一化MSE暴露等权，训练scaler只拟合4/8行。记录包括文件身份、日期、候选全部得分和scaler；无随机窗口混合。
+
+N固定n_ref=(210+420)/2=315，直接复用Phase1参数并设置alpha_new=alpha_old*n/315，C_new=C_old*315/n，核宽/epsilon不变。n_ref只是透明、未依目标分数设定的均值参考，不是原两折CV唯一可推导的最优选择，也不是“统计公平性已经全部解决”。N没有额外CV。
+
+F原7个alpha/9个SVR候选不扩网格；KRR12候选只在A96头合同通过后执行并锁定。KRR中心化核和标签、截距不惩罚，线性核与冻结Ridge合成等价最大误差4.832e-13ppm。训练标准化、标签LOW/SPAN、输入71D、目标标定身份/窗数、支持范围和test完全相同。三族候选数和损失不同，不宣称等复杂度或普遍最优。F-Ridge A4 Ethanol选alpha0、KRR若干alpha.01、SVR若干C边界均如实保留，不因目标表现改网格。
+
+{mdtable(paramrows,list(paramrows[0]))}
+
+## 结论的强度
+
+N-Ridge六组提升5.627–8.271个百分点，宏平均减少{reduction:.3f}个百分点。原绝对alpha迁移是本组比较中**重要且量化可见的原因**。仍有明显残差；不能写成Ridge差全部来自不公平，也不能写成源alpha上界已经被彻底解释。
+
+F-SVR六组方向性更好，四组条件性95%bootstrap包含0；没有稳定显著大优势。F少样本源选参甚至可差于P1（例如C3 A4 SVR18.012→19.934），说明源episode代表性也是问题，不能把F称充分调优的上限。N-SVR在C4 A4、C5 A4退步，增加C不保证改善。所有负结果在固定矩阵保留。
+
+只在固定目标集上的描述性比较。两个源episode不足以确定跨设备/日期总体风险；四gas×十浓度test也不是40个重复采集日期。bootstrap按gas分层抽暴露，条件于单一test日，未对窗口作独立重采样，未用于调参。未使用Development或已知test误差选任何候选；研究设计本身受已观察Phase1问题启发，所以全阶段为回顾性。
+''')
+    write('FEATURE_ERROR_DIAGNOSIS.md','''# 三个困难气体：描述性证据与可排除解释
+
+本节默认F-SVR作预先指定诊断锚点，同时保留P1/F/N Ridge/SVR及F-KRR全部结果。目标原始暴露日期不同、窗口彼此相关；每气体每浓度每日期通常仅1次暴露，不能靠21窗口获得21次独立暴露。
+
+## C3 Ethylene 中间浓度
+
+A2 F040–070逐暴露单窗RMSE=47.309、45.979、42.909、36.419ppm，均明显正偏；A4对应40.515、44.162、48.280、37.500ppm。F040/F070在A4已标定，仍不能迁移该日期的浓度关系，故“只缺中间浓度”不足以解释。
+
+这四档最大RBF相似度的逐窗中位数约.9455–.9699，核邻近并未保证浓度正确。A4 F100所有21窗raw预测均超上支持，裁剪后RMSE恰为0；同150秒窗cal raw误差-1.159ppm，test raw误差+84.363ppm，模型输出改变+85.522ppm。必须同时读raw结果，不能将端点裁剪的完美结果称学到了真实端点响应。C3 A4 F-SVR全gas主NRMSE为19.934%，raw为29.619%。
+
+Ethylene全十档早/中/晚（60/65、100/105、150/155起点）RMSE：A2=49.642/28.489/45.600ppm，A4=48.614/26.721/33.914ppm；不存在“越晚必然越好”。起点是实验协议时间，不是已经验证的物理响应阶段，也未证明部署时能获知气体暴露开始时刻。
+
+## C4 Ethanol 高浓度
+
+已见F100=125ppm，A2/A4单窗RMSE48.603/45.205ppm，bias -48.516/-45.057ppm。相似度中位数.0502/.1820，标定scaler下最近距离14.573/10.998，提示现用核几何中的低覆盖。
+
+A4同150秒窗cal raw误差-1.108ppm、test -39.146ppm，输出变化-38.038ppm，校准可近似拟合但跨日期同浓度同起点仍变化。贡献在该样例ch5=-9.808、ch4=-7.347、ch0=-5.844ppm等；8通道+global精确合计预测差。不能据此声称某个物理传感器已经老化。A4全档早/中/晚RMSE25.230/30.335/20.754ppm，时间相关性与浓度组成、单条轨迹均混杂。
+
+## C5 CO 高浓度
+
+已见F100=250ppm，A2/A4单窗RMSE110.231/95.104ppm，bias -109.541/-93.803ppm；相似度中位数.8564/.8454，说明“相似度高就可迁移/可信”的单阈值门控不成立。
+
+A4同60秒cal raw误差-47.830ppm、test -112.671ppm，输出变化-64.840ppm；同150秒cal -2.278ppm、test -84.568ppm，输出变化-82.290ppm。校准阶段自身拟合不足与跨日输入关系变化同时可见。A4全档早/中/晚RMSE58.326/48.489/41.449ppm，后期较好，但不能在看过test后选择只报晚窗。该150秒样例ch1/ch5贡献为正，ch7/global/ch3等为负，通道差异存在抵消；不能直接按单个原始幅值变化推浓度。
+
+## 证据文件与可推断范围
+
+- diagnostics/MARGINAL_71D_SHIFT.csv：426行，cal/test均值、标准差、cal标准化均值位移；浓度组成不同，不能单凭边际位移宣称漂移。
+- MATCHED_CONCENTRATION_TIME_SHIFT.csv：2556行，同浓度且同60/150起点，标定/测试原始值及标准化差；每配对只有一次独立采集。
+- KERNEL_RESIDUAL_BY_CONCENTRATION.csv：420行，含三气体×2预算×7组模型×10档的残差、核覆盖和裁剪计数。
+- ENDPOINT_ERROR_DECOMPOSITION.csv：168行，e_test=e_cal+(p_test-p_cal)，保留raw及clip。
+- FEATURE_CONTRIBUTIONS.csv：11928行；Ridge精确线性贡献，SVR/KRR使用直线路径Integrated Gradients，按71维及8通道+global记录；加和残差最大3.50e-13ppm，0警告。方法依据：[Sundararajan, Taly & Yan, ICML2017](https://proceedings.mlr.press/v70/sundararajan17a.html)。此处将其用于可微核预测函数的描述分解，不主张新归因算法。
+- analysis/TIME_BIN_ERRORS.csv：完整42组×4gas×3时间段，三个困难气体以外的结果同样保留。
+
+匹配浓度/起点可减少组成混杂，仍未消除环境、采样批次、仪器状态和重复暴露差异。归因依赖训练scaler、参考点、积分路径与强共线性，不是因果特征重要性。现有结果支持“当前71D/scaler/少样本映射的跨日可靠性不足”作为研究假设，未证明71D内在信息不可恢复，也未将差异归因物理老化。
+''')
+    decisions=[
+      dict(priority=1,question='跨设备浓度知识何时可信、何时回退目标模型',reuse='现有71D、严格源队列、已归档ResidualSVR接口；先核对71D合同',minimal_next='不改变目标cal；固定源episode选参；一个无门控残差复用+一个源侧定义的保守回退，与F/N强参照同时报告',continue_if='新增合法独立证据上保持低/高浓度及各设备风险、不依赖test选rho/阈值，且增益超出条件不确定性',stop_if='仅已见test获益、rho/阈值需test选择、困难端点恶化、旧源模型训练身份或71D合同不闭合',status='NEXT_STAGE_PROPOSAL_NOT_RUN'),
+      dict(priority=2,question='窗口内响应形状能否改善浓度关系迁移',reuse='71D斜率/幅度/差分等现有定义、原始质量掩码',minimal_next='先源侧固定同浓度跨日期时间交叉诊断，再预注册一个轻量归一化；禁止test挑窗或新增标签',continue_if='同浓度误差下降且全21窗主指标获益；部署可观测信息足够',stop_if='依赖不可知真实浓度/测试类别/气体起始时刻，或只在挑出的晚窗有效',status='SECONDARY_HYPOTHESIS_NOT_RUN'),
+      dict(priority=3,question='继续扩大KRR/C/alpha搜索是否必要',reuse='本轮固定KRR与全部负结果',minimal_next='0次新增搜索；保留KRR参考',continue_if='仅有新的独立证据或明确实现错误才重启',stop_if='本轮仅4/6方向改善、宏平均仅0.210个百分点，缺乏稳定优势',status='STOP_GRID_EXPANSION')]
+    table(HERE/'NEXT_STAGE_CANDIDATE_MATRIX.csv',decisions)
+    write('RESEARCH_DECISIONS.md','''# 研究决策
+
+1. **Ridge是否主要受正则迁移影响？** 六配置宏平均原差距9.228个百分点，N控制缩减7.074个百分点（76.7%）；在本组控制比较中是大部分差距的重要解释。剩余误差和少样本源episode代表性未解决，不声称物理机制或普遍因果定论。
+2. **SVR是否仍明显更强？** F下6/6方向较好，但4/6条件区间包含0，C4 A4的大差距主导部分均值；支持保留SVR作强参照，不支持“Ridge本质不适合此任务”。N下两族也完整保留，不能按test选择F或N来制造方法赢家。
+3. **71D是否表达不足？** 同浓度同起点仍存在大输出变化，C3中档高相似而正偏、C5高档高相似但失准，时间窗表现异质；支持研究跨日浓度条件关系，但仅凭三类模型不能证明71D信息论意义不足。先研究表示/缩放与可迁移条件，不能把换深网当作结论。
+4. **是否研究跨设备知识？** 有必要做一个严格受控的下一阶段，但本轮没有证明迁移增益。优先核对现有ResidualSVR与源模型输入：历史83D/104D或旧窗口协议资产不能直接当成严格71D合法源模型。核对合同失败即阻塞迁移，复用已有实现而不重开发。RBF相似度高仍可能浓度关系错，不能只用“离源近”作为安全门控。
+5. **最可能形成算法问题的方向？** “少量目标监督下、按气体和可观测响应条件判断源浓度关系是否可迁移，并保留强目标回退的适配方法”。创新应来自可检验的失配检测/保守复用机制及独立风险证据，不能把alpha换算、KRR或现成ResidualSVR包装为原创。动态维护只在静态适配有可靠增益后再连接；当前不开发闭环网络。
+
+## 下一轮最小计划（本轮未执行）
+
+完整继续/停止条件见NEXT_STAGE_CANDIDATE_MATRIX.csv。先做只读71D源模型与ResidualSVR合同审计；随后在合法源episode上固定1个残差复用与1个保守回退规则，不扩大候选，不增加目标cal。目标矩阵仍C3/C4/C5×A2/A4，已有F-Ridge/F-SVR/N对照只读复用，新增至多2方法×6配置=12配置、48头；KRR固定作参考。复用预处理与主指标，全gas/全档/全部时间窗报告，不能按已观察test删任务。
+
+这只是下一阶段候选方案，不是已经确定的门控算法或已执行实验。源侧新规则须先注册具体公式、阈值选择与资源上限后执行。进入复杂联合/动态训练的闸门是独立证据和稳定增益；只有当前test上改善，不进入复杂训练。
+
+## 确认性证据阻塞
+
+本批目标test历史已被反复观察。本轮源选参未读目标dev/test分数，但设计基于Phase1失败，仍是回顾性。不能将把同批窗口重切、重命名Test或用未采新数据的随机窗混合作新盲测。
+
+若只能用现有数据，先审计是否确有未参与方法构思/性能查看、且暴露/日期/设备独立的历史资产；若有才能预先封存独立验证。当前没有确认这样一套新目标证据，确认性算法结论仍受阻。替代为明确标注的源设备跨日外层留出或外部公开独立设备数据；若无法取得，只报告探索性改善和失败条件，不宣称普遍跨设备或长期动态维护有效。
+
+KRR无稳定大幅收益，停止该方向的额外网格和模块堆叠。本轮所有负结果、端点裁剪掩盖、F选参退化、N-SVR退化及A4并非总优均保留。
+''')
+    write('REPRODUCIBILITY.md','''# 实际运行、恢复与来源
+
+实际入口：本阶段run_phase15.py；公共71D、Ridge/SVR由phase15_common.py只读导入Phase1 phase1_common.py及v5原函数，未复制改造算法。新增仅源episode、调度、中心化KRR及审计/诊断。输入为Phase1 run_v2/data的NPZ和metadata、Phase0.5角色/质量掩码和特征合同；原始640文件只读校验。
+
+环境Python3.12.4/numpy1.26.4/scikit-learn1.8.0/scipy1.13.1/joblib1.4.2/threadpoolctl，Windows CPU，threadpool_limits(1)，不需要GPU/Flower。确切环境和所有执行前脚本SHA见run/PRE_RUN_CONTRACT.json。数学参考文档可能跟随stable版本更新，实际可复现数值依据是冻结代码和本地包版本。
+
+本次依次实际执行以下命令（仓库根目录，设置PYTHONDONTWRITEBYTECODE=1及PYTHONIOENCODING=utf-8）：
+
+```powershell
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/run_phase15.py prepare
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/run_phase15.py smoke
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/run_phase15.py task_a
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/run_phase15.py task_c
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/run_phase15.py evaluate
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/analyze_phase15.py
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/verify_phase15.py
+PYTHON_EXECUTABLE research/fedongas_phase15_20261102/write_reports.py
+```
+
+四个unittest在本阶段目录运行`python -m unittest test_phase15 -v`，覆盖独立暴露预算/角色、归一化规则、中心化KRR单窗/批量一致性及RBF解析梯度。首次实现前因缺少模块而红，完成后四项通过；smoke另做4次合成fit及保存往返、线性核等价，未增加数据拟合。
+
+上述制品拒绝覆盖；不能直接在已有run/重复执行整套命令。若需要独立重现，应将本阶段脚本和EXPERIMENT_PLAN.md原样复制到新的research同级独立目录，以保持P1路径关系，在新的run/运行；先核验SHA和依赖，不复制/覆盖旧run。该完整训练重现本轮未额外执行，以遵守拟合资源上限。
+
+已执行的恢复证据：joblib.load全部120新头，使用原71D缓存完整回放25200逐窗原始预测，与保存值逐条一致（容差1e-10ppm）；每头首末窗单独预测与批量一致，最大8.53e-14ppm。60套主/辅助公式独立重算。原始640文件、Phase1清单125文件、v5使用代码和独立ZIP逐一比对。没有重训恢复、ZIP写入或原资产移动。
+
+run/ACCESS_EVENTS.jsonl记录prepare→smoke→A参数锁→A模型锁→KRR参数锁→全部模型锁→本轮test特征释放→评价→分析；锁JSON关联SHA。历史test早已观察过，锁序列仅证明本轮流程，不构成全历史的盲测证据。代码原封不动的入口/特征/角色/模型/参数/结果哈希见PRE_RUN_CONTRACT、MODEL_INDEX、EVALUATION_COMPLETE及总ARTIFACT_SHA256.csv。
+
+公开审阅副本剔除信号、71D数值、模型权重/训练scaler/ZIP，仅发布来源SHA、紧凑指标、锁定记录、参数、诊断汇总和脚本文本；路径别名与UTF8-LF转换后的SHA由PUBLICATION_MANIFEST另记录，不能混同原文件SHA。完整本地模型和输入依赖不随GitHub报告分发；外部agent可审阅，若没有原始本地资产不能仅凭报告重新训练。
+''')
+    anomalies=dict(experimental_failures=[],negative_results_preserved=['N_SVR_C4_A4_worse','N_SVR_C5_A4_worse','F_source_episode_selection_can_worsen_P1','KRR_2_of_6_worse_than_F_SVR','more_calibration_not_uniformly_better','C3_Ethylene_high_endpoint_clipping_masks_raw_error'],
+        parameter_boundaries='F_Ridge_A4_Ethanol_alpha0;KRR_alpha.01;some_SVR_C_boundaries;no_grid_expansion',inspection_only_error='initial ad-hoc old-CV lookup requested nonexistent ridge key;correct ridge_candidates field used;no fit or result changed',
+        irreversible_assets_modified=False,extra_fit_calls=0,source_episode_limits='E1_same_day;E2_one_cross_date_pair;not_independent_repeated_tasks',future_confirmatory_evidence='not_established')
+    js(RUN/'ANOMALIES.json',anomalies)
+    js(HERE/'DELIVERY_SUMMARY.json',dict(status='VERIFIED_LOCAL_REPORT_READY_FOR_PUBLICATION',new_configs=30,target_heads=120,window_rows=25200,mean_primary_NRMSE_percent=mean,
+        source_fits=448,total_fit_calls=572,source_only_HP=True,retrospective=True,next='audit_71D_transfer_contract_then_at_most_two_fixed_lowcost_candidates',KRR_grid_expansion='STOP',
+        final_verification_sha256=sha(RUN/'FINAL_VERIFICATION.json')))
+    print(json.dumps(dict(status='REPORTS_WRITTEN',macro_means=mean),ensure_ascii=False))
+if __name__=='__main__':main()

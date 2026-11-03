@@ -1,0 +1,60 @@
+"""Phase1.5 new orchestration; frozen 71D/Ridge/SVR implementation reused verbatim."""
+import sys,os,json,csv,time,hashlib,collections
+from pathlib import Path
+import numpy as np
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent
+P1=HERE.parent/'fedongas_phase1_20261102'; OLD=P1/'run_v2'; RUN=HERE/'run'
+sys.path.insert(0,str(P1));import phase1_common as p1
+from phase1_common import read,rows,sha,ext,arrays,js,table,LOW,SPAN
+GASES=['Ethanol','CO','Ethylene','Methane']
+def event(stage,**kw):
+    with (RUN/'ACCESS_EVENTS.jsonl').open('a',encoding='utf-8',newline='\n') as f:f.write(json.dumps(dict(sequence_time_ns=time.time_ns(),stage=stage,**kw),ensure_ascii=False)+'\n')
+def normalized_params(base,n):
+    return dict(Ridge=dict(alpha=base['ridge_alpha']*n/315),SVR=dict(C=base['svr']['C']*315/n,gamma_factor=base['svr']['gamma_factor']))
+def episode_masks(meta,episode,budget,gas):
+    codes=[10,100] if budget==2 else [10,40,70,100]
+    tr=[];va=[]
+    for m in meta:
+        c=int(m['client_id']);d=int(m['day']);g=int(m['gas_id']);k=int(m['concentration_code']);s=float(m['start_s'])
+        train=(c,d)==((1,4) if episode=='E1' else (2,1))
+        valid=((c,d)==(1,4) and k in (20,30,50,60,80,90)) if episode=='E1' else (c,d)==(2,7)
+        tr.append(g==gas and train and k in codes and s in (60.,150.));va.append(g==gas and valid)
+    return np.array(tr),np.array(va)
+def fit_krr(x,y,g,params,kernel='rbf'):
+    from sklearn.kernel_ridge import KernelRidge
+    mean=x.mean(0);scale=x.std(0);scale[scale<1e-9]=1.;z=(x-mean)/scale;gamma=params['gamma_factor']/x.shape[1]
+    k=np.exp(-gamma*((z[:,None]-z[None,:])**2).sum(2)) if kernel=='rbf' else z@z.T
+    col=k.mean(0);grand=float(k.mean());kc=k-col[None,:]-k.mean(1)[:,None]+grand
+    yn=(y-LOW[g])/SPAN[g];ym=float(yn.mean());m=KernelRidge(alpha=params['alpha'],kernel='precomputed').fit(kc,yn-ym)
+    return dict(kind='TargetKRR71',mean=mean,scale=scale,train_z=z,gamma=gamma,k_colmean=col,k_grand=grand,coef=m.dual_coef_,ymean=ym,
+        low=float(LOW[g]),span=float(SPAN[g]),gas=g,clip_min=float(min(y)),clip_max=float(max(y)),kernel=kernel)
+def krr_predict(h,x):
+    z=(x-h['mean'])/h['scale'];t=h['train_z']
+    k=np.exp(-h['gamma']*((z[:,None]-t[None,:])**2).sum(2)) if h.get('kernel','rbf')=='rbf' else z@t.T
+    kc=k-h['k_colmean'][None,:]-k.mean(1)[:,None]+h['k_grand']
+    return (kc@h['coef']+h['ymean'])*h['span']+h['low']
+def fit(v,family,x,y,g,params):
+    return fit_krr(x,y,g,params) if family=='KRR' else p1.fit(v,'Target'+family+'71',x,y,g,params)
+def predict(v,h,x,clip=False):
+    p=krr_predict(h,x) if h['kind']=='TargetKRR71' else p1.predict(v,h,x,False)
+    return np.clip(p,h['clip_min'],h['clip_max']) if clip else p
+def scaler(h):
+    if h['kind']=='TargetKRR71':return np.array(h['mean']),np.array(h['scale'])
+    return np.array(h['numerical']['mean']),np.array(h['numerical']['scale'])
+def rbf_gradient(z,train,coef,gamma,span):
+    d=z[None,:]-train;k=np.exp(-gamma*np.sum(d*d,axis=1));return -2*gamma*span*np.sum((coef*k)[:,None]*d,axis=0)
+def experiment_id(target,budget,rule,family):return f'FONG-P15-{target}-A{budget}-{rule}-{family}-20261102'
+def cache(target,role):
+    name='source' if target=='source' else f'{target}_{"cal_A4" if role=="cal" else "test"}'
+    return arrays(OLD/'data'/f'{name}.npz'),read(OLD/'data'/f'{name}_metadata.json')
+def cal_mask(meta,budget,g=None):
+    codes=[10,100] if budget==2 else [10,40,70,100]
+    return np.array([int(m['concentration_code']) in codes and (g is None or int(m['gas_id'])==g) for m in meta])
+def score(meta,p):
+    er=p1.exposure_rows([dict(m,prediction_ppm=float(pp)) for m,pp in zip(meta,p)])
+    return float(np.mean([r['mean_window_normalized_squared_error'] for r in er]))
+def ensure_contract():
+    c=read(RUN/'PRE_RUN_CONTRACT.json')
+    for p,h in c['input_and_code_sha256'].items():p1.verify_sha(p,h)
+    return c

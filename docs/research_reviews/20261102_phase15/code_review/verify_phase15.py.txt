@@ -1,0 +1,75 @@
+"""Independent replay/identity/formula verification. No fitting."""
+import subprocess,joblib
+from threadpoolctl import threadpool_limits
+from phase15_common import *
+def main():
+    contract=ensure_contract();v=p1.frozen();old_manifest=rows(P1/'ARTIFACT_SHA256.csv')
+    for r in old_manifest:p1.verify_sha(P1/r['path'],r['sha256'])
+    oldcontract=read(OLD/'PRE_RUN_CONTRACT.json')
+    for path,h in oldcontract['input_and_code_sha256'].items():p1.verify_sha(path,h)
+    lock=read(RUN/'ALL_MODELS_LOCKED.json')
+    for path,h in lock['files'].items():p1.verify_sha(path,h)
+    done=read(RUN/'EVALUATION_COMPLETE.json')
+    for name,h in done['files'].items():p1.verify_sha(RUN/'evaluation'/name,h)
+    assert read(RUN/'SMOKE_QA.json')['status']=='PASS'
+    seq=[json.loads(s)['stage'] for s in (RUN/'ACCESS_EVENTS.jsonl').read_text(encoding='utf-8').splitlines()]
+    assert seq==['prepare','smoke','a_parameters_locked','a_models_locked','c_parameters_locked','all_models_locked','target_test_features_released','evaluation_complete','analysis_complete']
+    assert read(RUN/'TEST_RELEASE_RECEIPT.json')['all_models_lock_sha256']==sha(RUN/'ALL_MODELS_LOCKED.json')
+    source,sm=cache('source','source');a=read(RUN/'A_FROZEN_PARAMETERS.json');cc=read(RUN/'C_FROZEN_PARAMETERS.json')
+    selected=0;scalers=0
+    for part,file in [('A','A_SOURCE_CV_RECORDS.json'),('C','C_SOURCE_CV_RECORDS.json')]:
+        cv=read(RUN/file)
+        for b in (2,4):
+            for g in range(4):
+                for family in (['Ridge','SVR'] if part=='A' else ['KRR']):
+                    candidates=[r for r in cv if r['budget']==b and r['gas_id']==g and r['family']==family]
+                    assert len(candidates)=={'Ridge':7,'SVR':9,'KRR':12}[family]
+                    for r in candidates:
+                        assert abs(r['episode_equal_normalized_MSE']-np.mean([f['normalized_MSE'] for f in r['folds']]))<1e-15
+                        for f in r['folds']:
+                            tr,va=episode_masks(sm,f['episode'],b,g);mean=source['x71'][tr].mean(0);scale=source['x71'][tr].std(0);scale[scale<1e-9]=1.
+                            assert np.array_equal(mean,f['train_mean']) and np.array_equal(scale,f['train_scale']);scalers+=1
+                    best=min(candidates,key=lambda r:r['episode_equal_normalized_MSE'])['params']
+                    actual=a['choices']['F'][str(b)][str(g)][family] if part=='A' else cc['choices'][str(b)][str(g)][family]
+                    assert best==actual;selected+=1
+                norm=normalized_params(read(OLD/'FROZEN_PARAMETERS.json')['choices'][str(g)],b*2)
+                assert norm==a['choices']['N'][str(b)][str(g)]
+    index=read(RUN/'MODEL_INDEX.json');registry=rows(RUN/'EXPERIMENT_REGISTRY_COMPLETED.csv');pred=rows(RUN/'evaluation/WINDOW_PREDICTIONS.csv');metrics=rows(RUN/'evaluation/OVERALL_METRICS.csv')
+    assert len(index)==120 and len(registry)==30 and len({r['experiment_id'] for r in registry})==30 and len(pred)==25200
+    replays=0;maxrowdiff=0.
+    for c in ('C3','C4','C5'):
+        cal,cm=cache(c,'cal');test,tm=cache(c,'test')
+        for r in [r for r in index if r['target']==c]:
+            p1.verify_sha(RUN/r['path'],r['sha256']);h=joblib.load(RUN/r['path']);g=r['gas_id'];mask=cal_mask(cm,r['budget'],g);x=cal['x71'][mask]
+            mean=x.mean(0);scale=x.std(0);scale[scale<1e-9]=1.;hm,hs=scaler(h)
+            assert np.array_equal(hm,mean) and np.array_equal(hs,scale)
+            assert len(x)==r['budget']*2 and sorted(set(cal['filenames'][mask]))==r['calibration_files']
+            assert not set(r['calibration_files'])&set(test['filenames'])
+            ids=np.flatnonzero(test['gas']==g);out=predict(v,h,test['x71'][ids]);expected={p['physical_identity']:p for p in pred if p['experiment_id']==r['experiment_id']}
+            for i,pp in zip(ids,out):
+                assert abs(float(expected[tm[i]['physical_identity']]['prediction_raw_ppm'])-pp)<1e-10;replays+=1
+            for i in (ids[0],ids[-1]):
+                single=float(predict(v,h,test['x71'][i:i+1])[0]);d=abs(single-float(expected[tm[i]['physical_identity']]['prediction_raw_ppm']));maxrowdiff=max(maxrowdiff,d);assert d<1e-9
+    for reg in registry:
+        rr=[dict(r,gas_id=int(r['gas_id'])) for r in pred if r['experiment_id']==reg['experiment_id']];assert len(rr)==840
+        assert len({r['filename'] for r in rr})==40 and set(collections.Counter(r['filename'] for r in rr).values())=={21}
+        for mode in ('raw','clipped'):
+            result=p1.exposure_metrics([dict(r,prediction_ppm=float(r[f'prediction_{mode}_ppm'])) for r in rr]);saved=next(r for r in metrics if r['experiment_id']==reg['experiment_id'] and r['prediction_mode']==mode)
+            for k,val in result.items():assert abs(float(saved[k])-val)<1e-10
+    raw=rows(p1.P05/'results_v2/RAW_ACQUISITION_AUDIT.csv')
+    for n,r in enumerate(raw,1):
+        p1.verify_sha(r['absolute_path'],r['sha256'])
+        if n%160==0:print(json.dumps(dict(stage='raw_hash_verification',count=n)),flush=True)
+    zip_path=p1.ORIGINAL/'backups/fedongas_frozen_baseline_20261102_v5.zip';p1.verify_sha(zip_path,'a018a4bf26fb0d76620905a87498ecc256f6f9d31f6fb5b7caeef96df159aeca')
+    status=subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no'],cwd=p1.ORIGINAL).decode();assert status==contract['original_tracked_status']
+    diag=read(RUN/'diagnostics/DIAGNOSTIC_QA.json');assert diag['warnings']==0
+    qa=dict(status='PASS_WITH_RETROSPECTIVE_AND_PROTOCOL_LIMITS',new_configurations=30,new_target_heads=120,source_fits_A=256,source_fits_KRR=192,synthetic_smoke_fits=4,total_fit_calls=572,
+        window_predictions=25200,saved_model_prediction_replays=replays,single_vs_batch_maxdiff_ppm=maxrowdiff,metric_recomputations=60,source_candidate_scaler_checks=scalers,
+        source_parameter_choice_checks=selected,all_640_raw_hashes_unchanged=True,phase1_125_payload_files_unchanged=True,phase1_manifest_unchanged=True,
+        frozen_v5_selected_code_and_zip_unchanged=True,original_tracked_status_unchanged=True,source_selection_only=True,development_used=False,test_used_for_selection=False,
+        task_A_locked_before_KRR=True,all_models_locked_before_new_target_evaluation=True,old_regression_heads_loaded_for_diagnosis=12,old_classification_heads_used=0,
+        diag_qa=diag,extra_tuning_rounds=0,new_neural_Flower_residual_deployment_runs=0,study_type='retrospective_not_fresh_blind_test',verification_refits=0)
+    js(RUN/'FINAL_VERIFICATION.json',qa)
+    print(json.dumps(qa,ensure_ascii=False),flush=True)
+if __name__=='__main__':
+    with threadpool_limits(limits=1):main()

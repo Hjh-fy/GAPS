@@ -1,0 +1,39 @@
+import unittest,numpy as np
+from phase15_common import normalized_params,episode_masks,krr_predict,rbf_gradient
+
+class Phase15Tests(unittest.TestCase):
+    def test_loss_normalization_preserves_effective_strength(self):
+        base={'ridge_alpha':1000.,'svr':{'C':10.,'gamma_factor':1.}}
+        for n in (4,8):
+            p=normalized_params(base,n)
+            self.assertAlmostEqual(p['Ridge']['alpha']/n,1000/315)
+            self.assertAlmostEqual(p['SVR']['C']*n,10*315)
+            self.assertEqual(p['SVR']['gamma_factor'],1.)
+
+    def test_episode_roles_independent_and_budget_matched(self):
+        m=[]
+        for c,days in [(1,[4]),(2,[1,7])]:
+            for day in days:
+                for code in range(10,101,10):
+                    for start in range(60,161,5):m.append(dict(client_id=c,day=day,gas_id=0,concentration_code=code,start_s=start,filename=f'{c}-{day}-{code}'))
+        for b in (2,4):
+            for e in ('E1','E2'):
+                tr,va=episode_masks(m,e,b,0)
+                self.assertEqual(int(tr.sum()),b*2)
+                self.assertFalse(set(x['filename'] for x,z in zip(m,tr) if z)&set(x['filename'] for x,z in zip(m,va) if z))
+                self.assertEqual(int(va.sum()),126 if e=='E1' else 210)
+
+    def test_centered_kernel_predictions_batch_independent(self):
+        h=dict(mean=np.zeros(2),scale=np.ones(2),train_z=np.array([[0.,1.],[1.,0.]]),gamma=.5,k_colmean=np.array([.7,.7]),k_grand=.7,coef=np.array([.5,-.5]),ymean=.5,low=0.,span=1.)
+        x=np.array([[.1,.2],[2.,3.]])
+        self.assertTrue(np.allclose(krr_predict(h,x),np.array([krr_predict(h,x[i:i+1])[0] for i in range(2)]),atol=1e-15))
+
+    def test_rbf_gradient_matches_finite_difference(self):
+        train=np.array([[0.,1.],[1.,0.]]);coef=np.array([.5,-.5]);z=np.array([.1,.2]);g=rbf_gradient(z,train,coef,.5,2.)
+        def f(zz):return 2*np.dot(np.exp(-.5*np.sum((train-zz)**2,axis=1)),coef)
+        fd=[]
+        for j in range(2):
+            d=np.zeros(2);d[j]=1e-5;fd.append((f(z+d)-f(z-d))/(2e-5))
+        self.assertTrue(np.allclose(g,fd,atol=1e-8))
+
+if __name__=='__main__':unittest.main()

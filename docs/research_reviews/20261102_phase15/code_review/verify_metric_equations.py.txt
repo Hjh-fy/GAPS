@@ -1,0 +1,20 @@
+"""Independent direct-equation evaluator, deliberately not using p1 metric helpers."""
+from phase15_common import *
+def main():
+    rr=rows(RUN/'evaluation/WINDOW_PREDICTIONS.csv');mm=rows(RUN/'evaluation/OVERALL_METRICS.csv');checks=[]
+    for row in mm:
+        pp=[r for r in rr if r['experiment_id']==row['experiment_id']];groups=collections.defaultdict(list)
+        for r in pp:groups[r['filename']].append(r)
+        squared=[];abse=[];norm=[];bias=[];fusion=[];fusionnorm=[]
+        for name,rs in groups.items():
+            g=int(rs[0]['gas_id']);truth=np.array([float(r['truth_ppm']) for r in rs]);p=np.array([float(r['prediction_'+row['prediction_mode']+'_ppm']) for r in rs]);e=p-truth
+            assert len(rs)==21 and np.all(truth==truth[0])
+            squared.append(float(np.dot(e,e)/len(e)));abse.append(float(np.sum(np.abs(e))/len(e)));norm.append(squared[-1]/SPAN[g]**2);bias.append(float(e.sum()/len(e)))
+            fusion.append((p.mean()-truth[0])**2);fusionnorm.append(fusion[-1]/SPAN[g]**2)
+        direct=dict(single_window_equal_exposure_NRMSE_percent=100*np.sqrt(np.mean(norm)),single_window_equal_exposure_RMSE_ppm=np.sqrt(np.mean(squared)),
+            single_window_equal_exposure_MAE_ppm=np.mean(abse),bias_ppm=np.mean(bias),aux_mean_fusion_RMSE_ppm=np.sqrt(np.mean(fusion)),aux_mean_fusion_NRMSE_percent=100*np.sqrt(np.mean(fusionnorm)))
+        diff=max(abs(float(row[k])-value) for k,value in direct.items());assert len(groups)==40 and diff<1e-10
+        checks.append(dict(experiment_id=row['experiment_id'],prediction_mode=row['prediction_mode'],max_absolute_metric_difference=diff))
+    js(RUN/'INDEPENDENT_METRIC_EQUATIONS_QA.json',dict(status='PASS',formula_sets=len(checks),reused_metric_function=False,max_difference=max(r['max_absolute_metric_difference'] for r in checks),checks=checks,refits=0))
+    print(json.dumps(dict(status='PASS',independent_equation_sets=len(checks),max_difference=max(r['max_absolute_metric_difference'] for r in checks))))
+if __name__=='__main__':main()

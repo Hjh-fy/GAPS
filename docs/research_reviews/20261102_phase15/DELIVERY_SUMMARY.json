@@ -1,0 +1,22 @@
+{
+  "status": "VERIFIED_LOCAL_REPORT_READY_FOR_PUBLICATION",
+  "new_configs": 30,
+  "target_heads": 120,
+  "window_rows": 25200,
+  "mean_primary_NRMSE_percent": {
+    "P1_Ridge": 27.994889110035533,
+    "P1_SVR": 18.767332845278872,
+    "F_KRR": 18.883267648122672,
+    "F_Ridge": 21.005051044628885,
+    "F_SVR": 19.093505737754743,
+    "N_Ridge": 20.92133021001959,
+    "N_SVR": 18.7276163674368
+  },
+  "source_fits": 448,
+  "total_fit_calls": 572,
+  "source_only_HP": true,
+  "retrospective": true,
+  "next": "audit_71D_transfer_contract_then_at_most_two_fixed_lowcost_candidates",
+  "KRR_grid_expansion": "STOP",
+  "final_verification_sha256": "2f03f6ff1452a5020ae5a350a2a10314073372be29a21deea0b0b3bf94c8ab33"
+}

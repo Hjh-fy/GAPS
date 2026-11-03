@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "saved_models": 3,
+  "total_fit_calls": 4,
+  "linear_centered_KRR_vs_Ridge_maxdiff_ppm": 4.831690603168681e-13,
+  "checks": [
+    {
+      "family": "Ridge",
+      "roundtrip_maxdiff": 0.0,
+      "row_batch_maxdiff": 1.4210854715202004e-14
+    },
+    {
+      "family": "SVR",
+      "roundtrip_maxdiff": 0.0,
+      "row_batch_maxdiff": 0.0
+    },
+    {
+      "family": "KRR",
+      "roundtrip_maxdiff": 0.0,
+      "row_batch_maxdiff": 7.105427357601002e-15
+    }
+  ]
+}

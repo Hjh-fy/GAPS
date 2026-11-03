@@ -1,0 +1,61 @@
+{
+  "choices": {
+    "2": {
+      "0": {
+        "KRR": {
+          "alpha": 0.01,
+          "gamma_factor": 1.0
+        }
+      },
+      "1": {
+        "KRR": {
+          "alpha": 0.1,
+          "gamma_factor": 0.1
+        }
+      },
+      "2": {
+        "KRR": {
+          "alpha": 0.01,
+          "gamma_factor": 1.0
+        }
+      },
+      "3": {
+        "KRR": {
+          "alpha": 0.1,
+          "gamma_factor": 1.0
+        }
+      }
+    },
+    "4": {
+      "0": {
+        "KRR": {
+          "alpha": 0.01,
+          "gamma_factor": 1.0
+        }
+      },
+      "1": {
+        "KRR": {
+          "alpha": 0.1,
+          "gamma_factor": 0.1
+        }
+      },
+      "2": {
+        "KRR": {
+          "alpha": 0.01,
+          "gamma_factor": 0.1
+        }
+      },
+      "3": {
+        "KRR": {
+          "alpha": 0.01,
+          "gamma_factor": 1.0
+        }
+      }
+    }
+  },
+  "source_fits": 192,
+  "wall_seconds": 0.7313801000127569,
+  "A_lock_sha256": "ad8c854b39fb131dbb99304865296cc72c5738fbd3aa5621d445ab6514dd846a",
+  "target_development_used": false,
+  "target_test_used": false
+}
