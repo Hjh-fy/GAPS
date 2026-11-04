@@ -2,6 +2,8 @@
 
 审阅分支codex/research-reviews。
 
-最新：[2026-11-04 Phase2B](docs/research_reviews/20261104_phase2b/README.md) · [运行回退补充](docs/research_reviews/20261104_phase2b/RUNTIME_SUPPLEMENT.md)。三Gate执行通过，128次真实数据fit，336故障场景。共享rho A2=.75/A4=1；残差5/6总体改善，但C4A4负迁移，Source-only在C3/C5优于残差，停止扩展固定共享rho方向。所有结论回顾性。
+最新：[Phase3研究成果收敛](docs/research_reviews/20261104_phase3/README.md) · [贡献证据](docs/research_reviews/20261104_phase3/CONTRIBUTION_EVIDENCE.md) · [联邦公平计划](docs/research_reviews/20261104_phase3/FEDERATED_EXPERIMENT_PLAN.md) · [端到端兼容性](docs/research_reviews/20261104_phase3/END_TO_END_COMPATIBILITY.md) · [Pi验收合同](docs/research_reviews/20261104_phase3/PI_ACCEPTANCE_CONTRACT.md)。
 
-历史：[Phase2A固定4955a32](https://github.com/Hjh-fy/GAPS/blob/4955a3243ffe05a5f39087c4c8189c59ee13d53c/docs/research_reviews/20261103_phase2a/README.md) · [Phase1.5](docs/research_reviews/20261102_phase15/README.md) · [Phase1](docs/research_reviews/20261102_phase1/README.md) · [Phase0.5](docs/research_reviews/20261102_phase05/README.md)。
+浓度结果144条raw/clip统一，停止共享rho扩展；分类/回归数据及版本身份、TAC和反馈公平性是下一步重点。六组C5A4 pilot仅计划，合法分类S*和有效参数未闭合前不训练；预测类别路由BLOCKED，Pi验收NOT_RUN。本轮0训练0推理0部署。
+
+历史：[Phase2B固定675124a](https://github.com/Hjh-fy/GAPS/blob/675124ab6985cf32199e0b270e24b62d0e6f1621/docs/research_reviews/20261104_phase2b/README.md) · [Phase2A](docs/research_reviews/20261103_phase2a/README.md) · [Phase1.5](docs/research_reviews/20261102_phase15/README.md) · [Phase1](docs/research_reviews/20261102_phase1/README.md) · [Phase0.5](docs/research_reviews/20261102_phase05/README.md)。

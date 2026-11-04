@@ -1,0 +1,203 @@
+"""Research convergence and draft contracts, no executable training."""
+from audit import *
+def write(name,t):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(t)
+def main():
+    matrix=[]
+    for b in range(6):
+        target_steps=0 if b==0 else 2500
+        matrix.append(dict(experiment_id=f'P3-PILOT-C5-A4-B{b}-S42-PLAN',status='draft_blocked_preflight',method=['source_FedAvg','target_only_finetune','Target_as_Client','server_CE_no_feedback','server_CE_feedback','prototype_selective_feedback'][b],source_clients='none_after_common_Sstar' if b==1 else 'C1;C2',target_clients='C5',target_budget='A4_16exposures_32windows',split_protocol='Phase05_C5_D18cal_D22test;common_source_Day7',model='existing_TCN_Attention50x8_64D_4classes;state_schema_pending',checkpoint='new_legal_Sstar_SHA_PENDING',DA='SourceCE+TargetCE' if b>=3 else 'none',server_target_CE=1 if b>=3 else 0,server_source_CE=1 if b>=3 else 0,Class_MMD=0,prototype_parameter_weighting=(b==5),prototype_losses=0,model_feedback=(b>=4),source_local_epochs=0 if b==1 else 1,target_local_epochs_per_round=50 if b==2 else 0,rounds=0 if b==1 else 25,batch_size=16,lr=.0005,target_optimizer_steps=target_steps,server_steps_per_round=100 if b>=3 else 0,source_local_steps_per_round=0 if b==1 else 158,unique_target_labels=0 if b==0 else 32,target_label_presentations=target_steps*16,optimizer='Adam;fresh identical optimizer state per branch',prototype_EMA='same .8 inB3/B4/B5;no proto objective',routing='classification_only',QC='fixed mask;no targettest selection',seed=42,result_path='future_phase3_pilot_not_run',metrics='target/source/nextnode MacroF1_acc_confusion_cost',evidence_status='draft',only_factor_pair='B3_vs_B4_feedback_only;B4_vs_B5_parameter_weights_only',remaining_confounds='TAC_vs_server have different aggregation/objective/source_compute;not a onefactor causal comparison'))
+    table(HERE/'FEDERATED_MINIMUM_MATRIX.csv',matrix)
+    write('FEDERATED_FAIRNESS_AUDIT.md','''# 联邦分类已有证据与同名冲突
+
+本轮静态审计不启动Flower。evidence/V5_ASSET_PROVENANCE记录79项v5文件字节SHA，FLOWER_CODE_EVIDENCE记录实际路径/行号；STRICT_CLASSIFICATION_RUNS逐项抄录7端点有效配置，MATCHED_MECHANISM_MATRIX保留3组已有匹配消融。历史记录中的缺项不补猜。
+
+## B0–B5必须带实验命名空间
+
+|命名空间|真实语义|预算/更新/来源|复用范围|
+|---|---|---|---|
+|202607 v3 B0|已检查handoff未给出独立B0运行合同，unknown|不能把A0或别处B0自动补到该行|停止跨表自动映射|
+|202607 v3 B1|修正CORAL|旧C5窗口cal320/test1360；25轮、local5epochs、batch32、Adam5e-4；server100steps/round|历史监督适配；非Target-as-Client|
+|202607 v3 B2|global/class MMD2|同旧窗口；源起点SHA/实际开关须回到run-spec核对|已知test排名后筛出的探索性候选|
+|202607 v3 B3|B2+stage|同旧窗口与目标cal标签|不是“仅反馈”的对照|
+|202607 v3 B4|B2+adversarial|同旧窗口与目标cal标签|不是“仅原型”的对照|
+|202607 v3 B5|B2+CORAL+stage+adversarial|同旧窗口；模块叠加收益方向相关|不能等同新主方法|
+|202610 strict A0|source-only FedAvg|源R1–R3、固定round25、server0、target labels0|非共同Day7源；C5严格日期条件内参考|
+|202610 strict B0|目标独立微调|同架构22765参数；L8/L16=16/32窗；2500updates、25blocks、batch32、lr5e-4|不是目标作为客户端参与联邦|
+|202610 strict B1|server SourceCE+TargetCE|25轮×100server步=2500、local1epoch、选择性聚合+EMA.8|接纳两个源客户端，不是普通第三目标客户端|
+|202610 strict A5|server SourceCE+ClassMMD.5|TargetCE=False；预算L8/L16提供target输入|不能因有target_y目录就说用了TargetCE|
+
+202607分类 B1–B5在handoff声明使用目标cal标签，属于calibration-assisted DA；单组最终effective CLI与初始源checkpoint SHA并未在本轮逐run闭合，因此该处保留unknown，不以描述名证明逐步训练合同。已完成的严格7端点在evidence中列出target_x_n、target_y_n、loss开关、步数、模型/权重SHA；初始化SHA在该registry缺失，同样不能宣称全部组共享起点已被本轮证实。
+
+## 已有最有价值的匹配消融
+
+20261025 C5 M0/J0与M1仅关闭模型反馈：每轮仍100步适配，仍评价adapted模型；下一轮客户端M1接收aggregated、M0接收adapted。原报告记录M0=97.353%、M1=93.897%，固定25轮差3.456pp；训练链验收225个状态指纹、150条客户端接收链。**这是旧单seed/窗口协议的限定证据**，不是新Day7独立暴露或跨seed结论。
+
+M2仅去Class-MMD，终点98.529%高于M0；M3仅去模型参数原型加权而保留EMA，终点97.868%亦高于M0，但源节点保持及后期平均存在不同权衡。不能预设Class-MMD或原型加权都带来目标增益，不能把后5轮当5个独立重复。以上数值直接引用原RESULT_INTERPRETATION，未重算替代指标。
+
+## 当前代码的实际门控
+
+server默认strategy=fedavg、use-domain-adapt=False、da-lambda-target-ce=0、use-adapted-as-global=False；client默认eval-split=test。fixed_da_strong预置不自动开启全部DA/正TargetCE，CLI覆盖必须记录effective_config。domain_adaptation.py的TargetCE需正权重、target logits/labels齐全并加入总loss。strategy.py反馈须实际返回adapted参数给下一轮，不是仅保存文件；任务模块USE_REG_LOSS=False，profile再设置align等，不得把gaps_cls当纯CE。
+
+选择性参数聚合利用客户端原型与EMA语义参考；维护原型、加入原型损失、参数加权是三种不同开关。其原型主要来自参与客户端上传，不能未审计就称直接按新目标原型加权。目标感知可能通过适配参数回传改变下一轮encoder及原型间接产生，需逐轮版本证据检验。下一轮B4/B5保留同EMA、同原型上传、关闭原型损失，仅改参数权重，否则不是单因素。
+
+服务器Target CE意味着服务器可访问指定标定输入/标签；不是标签天然仅留端侧。Target-as-Client用target train loader与普通FedAvg接纳，需第三客户端ID、标签角色、调度/权重、步数全部闭合。旧TimedStrategy固定两源客户端，不能把它的B1改名TAC。所有新目标test在锁定最终轮前禁止进入客户端/服务器evaluate回调。
+''')
+    write('FEDERATED_EXPERIMENT_PLAN.md','''# 下一轮最小联邦合同（本轮0训练）
+
+先做C5 A4 seed42六组pilot，具体字段见FEDERATED_MINIMUM_MATRIX.csv。本轮所有行draft_blocked_preflight，不冒充已可直接执行CLI。P3-B编号是新命名空间，不覆盖历史B编号。主要假设H-FB：同监督/适配步数下，仅回传适配模型是否改善目标且不增加源保持损失；H-SEL：仅加入既有原型参数加权是否有额外价值。
+
+## 公共起点与合法数据
+
+必须先新建/找到来源闭合的TCN-Attention50×8、64D特征、4类共同S*，仅C1Day4/C2Day1/7的120暴露/2520窗；旧source R1–R3或R1–R4权重不能替代。S*具体state/schema/代码SHA、模型参数数、初始化来源、训练身份和优化器状态缺一停止；若需新source预训练，在下一轮单独登记一次固定25轮，所有组从相同S*和重置优化器状态分叉。本轮不预训练。
+
+目标仅C5 Day18 A4四档×4gas、每暴露60/150两窗，共16暴露32窗；A2若扩展为8暴露16窗，档位仍Phase05固定。Development不参与更新/选轮，C5 Day22全部40暴露840窗test到全部端点锁定才释放。分类类别0/1/2/3=Ethanol/CO/Ethylene/Methane，不能拼入air或unknown训练类。source测试固定C1R4/C2R4，绝不用于source训练；它们也是已观察的历史集，仅所有模型锁定后的离线保持评估，不声称物理时间当时可见的在线曲线。
+
+## 公平的步数、标签量和差异
+
+全组batch16、Adam5e-4、固定25轮端点。源每轮1epoch：C1 840窗ceil(840/16)=53步，C2 1680窗105步，共158步/round。B0只源FedAvg；B1只目标2500步；B2第三目标客户端每轮100步（A4=50epochs×2batch；A2=100epochs×1batch），两个源仍各1epoch；B3/B4/B5每轮100个服务器SourceCE+TargetCE步。标签承载组均2500目标优化步、40000次目标样本呈现，但独立标签仍32/16，不是40000个新标签。需冻结同一目标采样序列并验证实际消费，不能只比较名义local_epochs。
+
+B3/B4服务器source_CE=target_CE=1，Class-MMD/CORAL/对抗/原型损失均0，返回模型开关是唯一区别；两组都每轮生成并评价adapted端点，不得让无反馈组少做更新。B5在B4上只开已有参数选择性加权，EMA.8、原型上传、warmup3/min_scale.3及其它状态维持一致，原型版本与encoder绑定。此组是机制研究，未预设比B4好。客户端profile必须ce-only/ce-stats且显式禁用align/contrastive等隐式损失。
+
+TAC与服务器CE的源更新位置、聚合权重/目标函数不同；本方案只匹配目标监督预算与公共起点，不声称两者是单因素完全等算力对照。TAC权重按训练样本数（A4目标32/(2520+32)，A2为16/(2520+16)），不得为提高结果改为1/3。服务器CE组额外源CE批次必须计入源标签呈现和梯度成本。B1不再更新源，也不与联邦路径宣称相同source计算。每组同时报告独立暴露数、窗数、实际label presentations、梯度步数和墙钟。
+
+## 不可略过的运行前绑定
+
+1) 生成严格分类tensor导出与角色SHA；2) S*训练/祖先身份闭合；3) 将语义合同绑定到实际server/client有效参数并验证普通第三客户端接纳与目标train=calibration（当前未闭合）；4) 禁止默认test回调和隐式server-val读取目标Development/test，目标test目录运行时不挂载；5) 实际校验各loss和batch消费数；6) B3/B4 per-round received/aggregate/adapted/returned SHA链，反馈之外参数相同；7) B4/B5 EMA独立开关可匹配；8) 最终轮固定25，绝不best-test-round。
+
+因此现在不能直接启动六组训练。CLI未知字段保持pending，不能假造--eval-split none等不存在参数。若现有接口无法在不访问test时训练，则修正最小数据/日志边界并先审阅，不增加新模型。
+
+## 评价、后续接入与成本
+
+报告目标、源C1/C2、后续节点各自的窗口准确率/Macro-F1/逐类召回/混淆矩阵，以及按暴露等权的分类错误率；窗口bootstrap不能声称独立暴露重复。目标主指标预定暴露等权错误率及Macro-F1，全部端点锁定后评价；source-only、target-only、TAC与server组完整保留。固定模型版本/时间点的源保持下降必须报告。
+
+pilot确认执行公平后，先C3 Day8接入，再C5 Day18后续接入，比较B3/B4/B5三个更新机制，保持此前C3与源节点评价；普通新增客户端资格在无反馈组也相同。C3→C4的旧S1是逻辑加入顺序，因C4calDay3早于共同源Day7和C3calDay8，不能称按时间前瞻接入；C4只作单独回顾性支线。下一节点尚未接入时不得用其cal/dev/test优化此前轮次，后续节点无更新预测只能作为离线transfer审计。
+
+首批六组共5×25=125个联邦续训轮（B1独立2500步），源本地19750步；服务器CE三组7500步，目标TAC2500步+B1 2500步，共12500目标承载优化步。若新建S*另加25轮3950源本地步。正式确认用42/43/44三个种子、A2/A4、C3/C5、六组最多72分支（本轮0），须pilot通过后另行授权/冻结，不自动启动。pilot后顺序接入三组2阶段=6个25轮分支先登记，禁止与单节点组混表。
+
+历史22765参数FP32仅作估计：每权重载荷91060B，两个源25轮双向约9.106MB、TAC三客户端约13.659MB/分支，未含buffers/prototypes/指标/TLS/重试；若实际model state字节不同以实测为准。记录up/down实际payload/wire bytes、原型和标签传输、重传次数、客户端Pi/PC耗时及服务器DA耗时。当前没有新训练耗时或实际通信量。
+
+## 证伪和停止
+
+若B3/B4在目标标签/步数/版本回传外存在差异，停止比较而非解释成反馈收益。若配对反馈在未参与选择的独立证据上不能改善目标或明显损害源/旧节点，停止普遍反馈有效性主张。若B5不能在目标及保持-成本权衡上提供重复收益，停止原型加权作为主创新；既有负消融仍须保留。即便pilot点估计很好，也只作回顾性筛查，不以test选主方法或追加损失。
+''')
+    write('END_TO_END_COMPATIBILITY.md','''# 分类—71D回归兼容性审计
+
+当前结论：共同Day7主协议的预测类别路由未释放；本轮0分类推理、0端到端指标。evidence/CHECKPOINT_COMPATIBILITY是7个历史严格C5权重的SHA核对，并非推理验收。不能把来源未闭合统称目标test已泄漏，也不能把shape匹配当作来源闭合。
+
+|检查项|新回归合同|分类候选与门禁|
+|---|---|---|
+|采样与形状|5Hz、50×8、10s、stride5s|旧严格C5同称TCN50×8/64D；ONNX实际轴N×50×8或N×8×50和dtype未解析，需逐包schema|
+|预处理|strict_data：按时间排序、重复时间合并，20–50s原始电导基线g0；5Hz分箱，单空bin线性补；(1/R−g0)/g0；crop60–170，float32有效窗|旧canonical与strict不能凭5Hz推等价；须固定相同baseline/单位/缺失掩码并以行身份/数值核对|
+|特征|同预处理窗生成71D=64通道统计+7global，固定名字/顺序和scaler|分类encoder64D不是这71D；原分类checkpoint/分类ONNX不接收71D回归向量|
+|标签|0Ethanol、1CO、2Ethylene、3Methane；气体专用ppm支持|逐权重class_map/输出头4类及temperature等完整SHA，不默认FLConfig或ONNX索引一致|
+|训练时间/身份|SourceDay7；C3cal8/test17，C4cal3/test9，C5cal18/test22|旧严格C5源R1–R3，targetcal18/test22，可能满足原C5目标互斥，但不满足共同Day7主比较|
+|模型祖先|新源与回归头索引有训练SHA|分类预训练/每轮targetCE/原型/DA输入/祖先checkpoint都不能含目标test暴露，不能只检查最后一轮train目录|
+|当前模型|F/N-SVR/KRR及合法Source/残差均固定|旧窗口分类可能cal/test共享暴露；旧严格C5是条件候选，尚需初始祖先、导出manifest和原始窗等价；C3/C4未确认合法主协议分类器|
+
+57个历史ONNX字节SHA和大小已核对，含诊断/优化图及classifier候选；当前onnx/onnxruntime均未安装，本轮不安装、不执行图，不猜其input shape/dtype/opset。具体graph结构和PC/Pi输出一致性仍pending；这是部署解析的明确前置，不代表模型不可运行。历史真实Pi案例、串口与UI可复用，不代表新组合已上Pi。
+
+旧严格C5 checkpoint若完整证明祖先/输入互斥和预处理一致，可预注册**原C5源R1–R3的补充路由试验**，必须单列该source合同，不改名共同Day7主结果。当前未通过这些前置，不生成预测路由数值；不得用历史J0准确率与本阶段回归NRMSE拼表冒充系统指标。
+
+未来路由必须先由分类器输出预测gas j，选择第j气体头、支持与单位；不能按真实gas挑头。错分气体的ppm单位/气体含义可能不同，主报告应同时给类别准确率、gas-concentration联合成功率（阈值事先源侧定）、错分类成本矩阵；Oracle_ALL仅作浓度诊断。若计算端到端归一化浓度误差，必须明确跨气体含义及真实gas仅用于离线评分，不用于运行路由。按true-correct-only子集得到的回归不代表全流量效果。
+
+失败语义：source失败可用已批准的同预测gas F-SVR独立头回退，意味着整套回退系统仍依赖目标cal；分类器缺失/NaN/非法类别不能借Oracle补类别，应输出不可用状态，不给伪浓度。原始预测非有限值要在clip前拒绝，不让clip把Inf变成有限“正常”输出。不得根据test设备效果选择Source-only还是残差；模型策略必须固定或仅由源/合法cal规则决定并另注册。
+''')
+    write('PI_ACCEPTANCE_CONTRACT.md','''# PC/Pi和云边端验收准备（均待执行）
+
+复用gaps_deploy/package_contract.py、inference.py等已有manifest/schema/权重匹配与旧UI/串口日志实现；本轮未安装运行库、未连接Pi、未部署新模型。57个ONNX含诊断图，不能每个文件都算部署分类器。PC/Pi版本、CPU/温度/调度/线程/ORT provider/库版本尚未测量，应写入验收记录。
+
+## 包合同
+
+一个不可分割manifest绑定：classifier graph与祖先checkpoint SHA、class-map、axis/dtype/opset、preprocessing代码/参数/采样/电阻单位、baseline版本、71D名字顺序/计算dtype、每gas回归头与scaler/支持、独立F回退、更新策略版本、训练身份与禁止暴露清单。分类encoder与原型的版本也必须配对；源失败不能换用相同文件名但不同特征版本的模型。
+
+上位机输出每帧frame_id/time、gas_pred/置信度、raw/clipped浓度与ppm、clip支持、classification/regression/baseline/schema版本、fallback原因/头ID、status及分段延迟。原始电阻50×8不是已归一化窗，预处理依赖20–50s基线，不能二次归一化或把首次基线准备时间藏入神经推理时间。
+
+## 拟定验收闸门（不是已达指标）
+
+|项|执行方法|预定接受条件/阻塞|
+|---|---|---|
+|输入与数值|固定合成/源侧合法原始fixture，PC/Pi各自全预处理；逐窗identity/71D/scaler比较|身份及mask严格一致；float32特征rtol1e-5/atol1e-6；阈值执行前锁定，边界不合即停止|
+|FP32分类|同fixture比logits/prob/argmax，先PC源checkpoint→ONNX再PC→Pi|proposed atol/rtol1e-4；argmax全一致，near-tie单列；失败不通过放宽容差修复|
+|回归|相同预测gas和71D，比较F/N/KRR/Source/固定残差及F回退|FP64路径raw/clip<=1e-6ppm；若运行dtype变化须另注册容差而非混称通过|
+|INT8|只使用合法source/cal做量化；FP32/INT8独立模型版本|数值/分类质量门槛执行前另定；不能沿用FP32等价结论，不能用Test定量化策略|
+|延迟|采集/传输/分箱基线/71D/分类/路由/回归/clip/UI分段；warmup100、正式1000单窗，p50/p95/p99/max和冷启动另报|每5秒一窗时compute p95<5s为拟定可持续闸门；不是精度/整机既成性能|
+|版本切换|staging验证全部SHA和schema，再原子切manifest指针；在途窗绑定旧完整版本|不得混用新classifier和旧regressor；失败保留last-good，日志可追溯|
+|异常恢复|None/NaN/Inf、源头缺失/身份错、类输出非法、串口断连、时间倒退、进程重启、切包中断注入|非零残差用独立F头；rho0零源访问；分类失败拒给浓度；重连不复用错误baseline|
+|长时运行|24h、5Hz输入/stride5s，约17280输出窗；掉线/重启脚本固定|0静默版本混用/非有限浓度；计数可解释；warmup后末2h与首稳态2h RSS中位数增幅<=10%为拟定门槛；日志有界轮转|
+
+“0.413ms”本轮未追溯到足以核验的新SVR或完整链路测量合同，保留为历史范围待核的旧指标，不引用为新SVR、特征+分类+回归或整机端到端延迟。10秒采集窗本身与计算时间不同；全系统时延须说明从首样本还是末样本开始，是否包含初次baseline、网络和UI。训练/更新通信另计，不能用模型MAC或文件大小替代实际测量。
+
+下一步先做PC包元数据/schema/故障预检，通过后才单Pi一致性与分段benchmark，最后24h稳定性；均不自动部署。要输出的是实际版本和实测证据，不能把本表拟定阈值当验收PASS。
+''')
+    write('REGRESSION_FREEZE.md','''# 浓度研究收敛
+
+REGRESSION_CONSOLIDATED.csv包含Phase1/1.5/2B的72个结果视图、144条raw/clip主指标，统一71D、Oracle_ALL、A2/A4独立暴露和单窗口暴露等权评价。reused_alias指出Phase2B复用的F/N-SVR/KRR，不能把72视图说成72套独立训练。Source-only4个全源头跨目标/预算复用；源alpha1000、F/N参数、KRR与rho选择均取各阶段原锁。
+
+Phase1 TargetRidge/TargetSVR是原源侧大样本选参；Phase1.5 F以4/8窗源任务选参，N以n_ref315换算。原Ridge平均27.995%到N-Ridge20.921%的修正是正则迁移局限的证据，不等于Ridge理论上不适用。KRR无稳定大增益已停止扩网格。统一表保留raw、clipped和辅助均值融合，不能把融合当部署单窗性能。
+
+Phase2B源侧固定rho A2=.75/A4=1，两伪任务同日cal/validation、元参数复用整个Day7池，不独立确认。固定残差5/6总体改善，C4 A4 F-SVR17.6055→17.8624%负结果保留；各gas/浓度负迁移文件及困难高浓度切片SHA见evidence/REGRESSION_EVIDENCE_LINKS.json。C3/C5 Source-only分别12.2137/14.7792%，优于残差，但不得据此事后给每设备挑最优部署策略。当前共享rho方向停止扩展，H-CONSISTENCY/复杂门控均不实现。
+
+## Source-only的标签和裁剪依赖
+
+实际Phase2B study.py中SourceOnly调用FULL源头clip=False，随后所有输出统一np.clip(p,LOW[g],LOW[g]+SPAN[g])；这些常量是源侧已定义的gas-specific物理浓度范围，不是从目标test估计。因A2/A4预定两端点相同，它也恰等于原cal支持；Source-only运行代码本身没有读取目标cal数值拟合或决定clip，不能错误宣称它偷偷用了目标标定拟合。
+
+但当前实验是**Oracle真实类别g路由、已知气体集合/量程/ppm语义下的Source-only浓度诊断**。实际系统仍需合法分类器、可用baseline/采样/传感单位、预测类别和验证过的输出支持；若加入目标F-SVR故障回退，整个系统就依赖该目标cal训练。A2/A4相同支持下的Source-only两行并不证明无标定新量程泛化。raw/clip都保留，不能以裁剪掩盖超界。故不把这些点估计写成无需标定系统已完成或跨设备最优策略。
+
+336故障场景/672raw-clip断言包含rho0不访问source、非零源失败改走同一独立F头，以及源身份/索引成员异常；旧240场景及额外96场景都保存。本轮仅引用和哈希核对，不重新推理或改旧结果。均为回顾性；C4cal3晚用source7早于test9，不称即时Day3共同源部署。历史640暴露的确认性缺口继续保留。
+''')
+    write('CONTRIBUTION_EVIDENCE.md','''# 毕业论文贡献—证据矩阵
+
+|候选贡献|已完成证据/工程|能支持的表述|缺口与证伪|当前决定|
+|---|---|---|---|---|
+|目标感知跨轮模型更新|Flower DA/TargetCE/反馈代码；旧C5匹配反馈消融M0-M1有3.456pp限定差|当前单seed窗口协议下有反馈正向证据；代码可复用|新合法S*、同cal/步数/标签及版本链公平对照；源/后接节点保持若恶化则限制主张|优先最小确认，非新增网络|
+|原型引导选择性参数聚合|EMA原型/参数权重/客户端原型上传均存在；旧M3去权重仍终点更高|已实现机制及目标-保持权衡|原型上传/损失/参数权重不能混作单开关；去MMD/权重并非总差；不通过重复公平权衡则不作独立正贡献|候选机制，未证实普遍优势|
+|新节点cal信息跨轮反馈|模型返回和接收哈希已有旧链条验收；S1/A1A2接入工程已存在|可说明工程闭环与特定场景更新|A1/A2参与者不同有混杂；C4日期不支持所述前瞻顺序；需C3→C5合规分支和前后节点同集评价|待严格新协议证据|
+|历史浓度知识及负迁移边界|合法71D源银行/真实pooled一致性；固定残差5/6总体改善及C4A4失败；故障独立F回退|严格回顾性下源知识局部有用、统一rho不稳；透明负结果和可恢复工程|不是全域无标定、可靠最优或算法首创；真实路由未闭合|本章成果收敛，停止扩展|
+|任务选择性维护|分类/回归版本、联合模型/动态维护旧实现和账本；分类with_reg_head=False|工程上可独立换分类/回归|无受控因子证据证明选择性维护比全更新更优；需固定类别路由/量程与刷新/回退契约|系统贡献候选，未证算法有效|
+|云边端部署|旧Pi/ONNX/串口/UI、包校验与异常保护模块|已有系统基础与历史案例|新71D组合PC/Pi parity、成本、原子切换和24h稳定性未测；0.413ms不能冒充新链路|先验收合同，后实测|
+
+成熟先行机制边界：[McMahan等AISTATS2017](https://proceedings.mlr.press/v54/mcmahan17a.html)提出联邦模型平均；[FedProto AAAI2022](https://ojs.aaai.org/index.php/AAAI/article/view/20819)研究原型通信与异构联邦。项目既有参数原型加权/服务器监督适配不等同FedProto，但“FedAvg+原型+反馈”组合概念本身不能直接宣称原创。新贡献必须是明确机制、相同预算下可证伪改善及完整版本/成本证据，不靠多模块名称。
+
+毕业论文可形成三段证据链：严格少标定浓度与负迁移边界；目标感知更新公平机制验证；云边端一致性/可靠性验证。当前第一段最完整，后二段已有工程和历史证据但新合同尚未闭合。是否满足学校毕业要求需对照学校/导师正式标准，本报告不作已达到学位条件的断言。
+''')
+    write('NEXT_DECISION.md','''# 继续/停止及实施门禁
+
+停止：共享rho搜索、H-CONSISTENCY、复杂新网络/门控、按test设备挑Source-only或残差策略。浓度结果/故障记录作为固定研究成果。
+
+继续：先落实合法分类S*和tensor/角色导出、服务器/目标客户端label访问与有效参数绑定；做不训练的参数/版本链预检，再批准C5 A4 seed42六组pilot；未通过前不重训整个矩阵。Target-as-Client未闭合则该行BLOCKED，不补造结果，其它机制对照也不能静默删掉强基线宣布优越。
+
+端到端：共同Day7分类checkpoint合同未闭合，预测路由BLOCKED；旧严格C5仅可在单独sourceR1-R3补充协议完成祖先与预处理审计后候选复用。禁止Oracle替实际类别或跨协议拼准确率/NRMSE。
+
+Pi：57个ONNX仅字节/元数据候选清单，图形状/运行库/版本证据缺失；PC解析与包一致性预检先行，Pi parity/时延/版本切换/24h均NOT_RUN。0.413ms出处范围在当前审阅中未闭合，不拿来兑现性能。
+
+独立确认：当前历史数据全已进入既有流程，后续pilot仍回顾性。来源/配置缺失先补证据，独立确认集缺失就限制科学主张；不以换split名称修复，不自动扩大样本、种子或模型。
+''')
+    write('README.md','''# FedOnGas Phase3：研究成果收敛与联邦公平验证准备
+
+2026-11-04，依据冻结v5及Phase0/0.5/1/1.5/2A，Phase2B固定675124ab6985cf32199e0b270e24b62d0e6f1621。本轮新模型训练0、模型推理0、Flower运行0、Pi部署/测量0。继续使用独立managed worktree。
+
+## 研究进度与本轮发现
+
+浓度研究已收敛：统一144条raw/clip主指标（72个结果视图，含明确重复引用）、模型/协议/标签预算与评价口径，保留负迁移和336场景故障回退。共享rho方向停止扩展，Source-only不被提升成无标定系统。Source-only运行clip使用已定义的gas物理量程而非目标test，但Oracle类别/量程条件及F回退cal依赖不能省略。
+
+分类模块工程已存在，最有希望的论文机制是目标监督适配后的模型跨轮反馈。旧C5匹配消融有单seed窗口条件正向证据；Class-MMD和原型权重并非一致正贡献。B编号存在多套含义，不能将旧strictB0/B1或JulyB1-B5与新P3矩阵混同。
+
+当前最大阻塞：共同Day7合法分类起点S*、原始输入/祖先身份及目标标签/实际步数/有效开关闭合。仅有接口实现不能说明TAC已经做过公平比较。旧严格C5权重是不同源协议的条件候选，未生成新预测路由结果。
+
+## 阅读顺序
+
+- [浓度成果固定与Source-only裁剪审计](REGRESSION_FREEZE.md)、REGRESSION_CONSOLIDATED.csv。
+- [联邦已有证据审计](FEDERATED_FAIRNESS_AUDIT.md)、[最小参数与成本计划](FEDERATED_EXPERIMENT_PLAN.md)、FEDERATED_MINIMUM_MATRIX.csv（六行draft计划）。
+- [端到端模型兼容性](END_TO_END_COMPATIBILITY.md)、[PC/Pi验收合同](PI_ACCEPTANCE_CONTRACT.md)。
+- [毕业论文贡献证据矩阵](CONTRIBUTION_EVIDENCE.md)、[继续/停止结论](NEXT_DECISION.md)。
+
+evidence包含79项v5来源SHA/生成版本（缺失保持unknown）、Flower源码门控行、7个旧严格分类端点配置、3个匹配消融、57个ONNX候选字节清单、7checkpoint来源/时序判断、各阶段指标和负结果来源。onnx/onnxruntime当前未安装，本轮不安装、不猜图形状。0.413ms仍不能作为新SVR或完整链路性能。
+
+下一步是合法分类资产/参数合同预检，通过后才六组C5 A4 pilot，不立即重训整个矩阵。C3→C5后续接入才符合新cal时间顺序；C4保留回顾性支线。所有未来端点固定，不用test逐轮调参/选best round。本文阈值和资源数字属于计划/估计，不是实测验收结果。
+
+所有历史结果保持原字节，统一表只做带出处的合并引用，不替换原指标。audit.py与reports.py为本轮入口；verification.json和ARTIFACT_SHA256.csv提供校验。公开审阅副本仅报告、参数、摘要和脚本文本，原始信号、模型权重/ONNX和特征矩阵保留本地。
+''')
+    js(HERE/'STAGE_STATUS.json',dict(status='AUDIT_AND_PLAN_COMPLETE',training_runs=0,inference_runs=0,flower_runs=0,Pi_runs=0,regression='FROZEN_NO_FURTHER_OPTIMIZATION',classification_pilot='BLOCKED_PENDING_LEGAL_SSTAR_AND_EFFECTIVE_CONFIG',predicted_route='BLOCKED',PC_Pi_parity='NOT_RUN',planned_pilot_configurations=6,h_consistency='NOT_IMPLEMENTED',test_based_selection=False))
+    print('REPORTS_WRITTEN;no training')
+if __name__=='__main__':main()

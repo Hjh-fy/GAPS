@@ -1,0 +1,32 @@
+"""Independent readonly verification of consolidation, scope and preservation."""
+from audit import *
+import subprocess,datetime
+def main():
+    a.verify_previous()
+    for folder in [p1.P05,a.HERE,P2B]:
+        manifest=folder/('MANIFEST_SHA256.csv' if folder==p1.P05 else 'ARTIFACT_SHA256.csv')
+        for r in rows(manifest):p1.verify_sha(folder/r['path'],r['sha256'])
+    prov=rows(HERE/'evidence/V5_ASSET_PROVENANCE.csv')
+    for r in prov:p1.verify_sha(BASE/r['path'],r['sha256'])
+    rr=rows(HERE/'REGRESSION_CONSOLIDATED.csv');assert len(rr)==144 and set(r['routing'] for r in rr)=={'Oracle_ALL'}
+    assert collections.Counter(r['phase'] for r in rr)=={'Phase1':24,'Phase1.5':60,'Phase2B':60}
+    assert sum(bool(r['reused_alias']) for r in rr)==36
+    for r in rr:
+        assert int(r['feature_dimension'])==71 and int(r['training_windows_per_gas'])==int(r['budget_exposures_per_gas'])*2
+        p1.verify_sha(ROOT/r['source_file'],r['source_sha256'])
+        if r['reused_alias']:
+            phase,method=r['reused_alias'].split(':');q=next(x for x in rr if x['phase']==phase and x['method']==method and x['target']==r['target'] and x['budget_exposures_per_gas']==r['budget_exposures_per_gas'] and x['mode']==r['mode']);assert float(q['NRMSE_percent'])==float(r['NRMSE_percent'])
+    m=rows(HERE/'FEDERATED_MINIMUM_MATRIX.csv');assert len(m)==6 and all(r['status']=='draft_blocked_preflight' for r in m)
+    b3,b4=m[3],m[4];diff=[k for k in b3 if b3[k]!=b4[k]];assert set(diff)=={'experiment_id','method','model_feedback'}
+    b4,b5=m[4],m[5];assert set(k for k in b4 if b4[k]!=b5[k])=={'experiment_id','method','prototype_parameter_weighting'}
+    assert all(int(r['target_label_presentations'])==40000 for r in m[1:]) and all(int(r['Class_MMD'])==0 for r in m)
+    assert len(rows(HERE/'evidence/ONNX_ASSET_INVENTORY.csv'))==57
+    for p in HERE.glob('*.py'):compile(p.read_text(encoding='utf-8'),str(p),'exec')
+    oldstatus=read(a.HERE/'evidence_v2/PROTECTION_AND_ACCESS_QA.json')['original_git_tracked_status'];newstatus=subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no'],cwd=p1.ORIGINAL).decode();assert oldstatus==newstatus
+    assert subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no']).decode()==''
+    p1.verify_sha(p1.ORIGINAL/'backups/fedongas_frozen_baseline_20261102_v5.zip','a018a4bf26fb0d76620905a87498ecc256f6f9d31f6fb5b7caeef96df159aeca')
+    q=dict(status='PASS_AUDIT_AND_PLAN_ONLY',verified_at_UTC=datetime.datetime.now(datetime.timezone.utc).isoformat(),regression_rows=144,result_views=72,reused_alias_raw_clip_rows=36,prototype_pair_only_difference='parameter_weighting',feedback_pair_only_difference='model_feedback',historical_artifacts_unchanged=True,v5_assets_hash_verified=len(prov),v5_zip_unchanged=True,original_tracked_changes_preserved=True,model_training=0,model_inference=0,Flower_runs=0,Pi_runs=0,predicted_route='BLOCKED_MODEL_CONTRACT',planned_configurations=6,classification_training='BLOCKED_PRECHECK',onnx_metadata_runtime_parsing='NOT_RUN_DEPENDENCY_ABSENT')
+    js(HERE/'VERIFICATION_FINAL.json',q)
+    files=[dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)) for p in sorted(HERE.rglob('*')) if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv'];table(HERE/'ARTIFACT_SHA256.csv',files)
+    print(json.dumps(dict(status=q['status'],payload_files=len(files),bytes=sum(r['bytes'] for r in files),manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'))),flush=True)
+if __name__=='__main__':main()

@@ -1,0 +1,83 @@
+path,line,text
+source/workspace/gaps_flower/server_app.py,42,"""use_adapted_as_global"": True,"
+source/workspace/gaps_flower/server_app.py,110,"parser.add_argument(""--use-selective-agg"", type=lambda v: v.lower() in (""true"", ""1"", ""yes""), default=True,"
+source/workspace/gaps_flower/server_app.py,112,"parser.add_argument(""--selective-warmup"", type=int, default=3,"
+source/workspace/gaps_flower/server_app.py,114,"parser.add_argument(""--selective-min-scale"", type=float, default=0.3,"
+source/workspace/gaps_flower/server_app.py,191,"num_classes=args.num_classes,"
+source/workspace/gaps_flower/server_app.py,206,"""num_classes"": config.NUM_CLASSES,"
+source/workspace/gaps_flower/server_app.py,226,"proto_ema_alpha=args.proto_ema_alpha,"
+source/workspace/gaps_flower/server_app.py,227,"use_selective_agg=args.use_selective_agg,"
+source/workspace/gaps_flower/server_app.py,228,"selective_warmup=args.selective_warmup,"
+source/workspace/gaps_flower/server_app.py,229,"selective_min_scale=args.selective_min_scale,"
+source/workspace/gaps_flower/server_app.py,252,"da_lambda_target_ce=args.da_lambda_target_ce,"
+source/workspace/gaps_flower/server_app.py,261,"use_adapted_as_global=args.use_adapted_as_global,"
+source/workspace/gaps_flower/client_app.py,47,"num_classes: int = 4,"
+source/workspace/gaps_flower/client_app.py,63,"num_classes=num_classes,"
+source/workspace/gaps_flower/client_app.py,228,"""--eval-split"","
+source/workspace/gaps_flower/client_app.py,265,"num_classes=args.num_classes,"
+source/workspace/gaps_flower/strategy.py,329,"proto_ema_alpha: float = 0.8,"
+source/workspace/gaps_flower/strategy.py,330,"use_selective_agg: bool = True,"
+source/workspace/gaps_flower/strategy.py,331,"selective_warmup: int = 3,"
+source/workspace/gaps_flower/strategy.py,332,"selective_min_scale: float = 0.3,"
+source/workspace/gaps_flower/strategy.py,355,"da_lambda_target_ce: float = 0.0,"
+source/workspace/gaps_flower/strategy.py,364,"use_adapted_as_global: bool = False,"
+source/workspace/gaps_flower/strategy.py,368,self.proto_ema_alpha = proto_ema_alpha
+source/workspace/gaps_flower/strategy.py,371,self.use_selective_agg = use_selective_agg
+source/workspace/gaps_flower/strategy.py,372,self.selective_warmup = selective_warmup
+source/workspace/gaps_flower/strategy.py,373,self.selective_min_scale = selective_min_scale
+source/workspace/gaps_flower/strategy.py,397,self.da_lambda_target_ce = da_lambda_target_ce
+source/workspace/gaps_flower/strategy.py,406,self.use_adapted_as_global = use_adapted_as_global
+source/workspace/gaps_flower/strategy.py,430,"num_classes=int(self.model_config.get(""num_classes"", 4)),"
+source/workspace/gaps_flower/strategy.py,440,"num_classes=int(self.model_config.get(""num_classes"", 4)),"
+source/workspace/gaps_flower/strategy.py,501,"selective_info: dict = {""selective_active"": False}"
+source/workspace/gaps_flower/strategy.py,502,if self.use_selective_agg and self.semantic_protos and server_round > self.selective_warmup:
+source/workspace/gaps_flower/strategy.py,503,"selective_weights, selective_info = self._compute_selective_weights("
+source/workspace/gaps_flower/strategy.py,506,weights = selective_weights
+source/workspace/gaps_flower/strategy.py,509,if self.use_selective_agg:
+source/workspace/gaps_flower/strategy.py,510,selective_info = {
+source/workspace/gaps_flower/strategy.py,511,"""selective_active"": False,"
+source/workspace/gaps_flower/strategy.py,512,"""reason"": f""warmup (round {server_round} ≤ {self.selective_warmup})"" if self.semantic_protos else ""no semantic_protos yet"","
+source/workspace/gaps_flower/strategy.py,540,"event[""selective_agg""] = selective_info"
+source/workspace/gaps_flower/strategy.py,578,"event[""use_adapted_as_global""] = bool(self.use_adapted_as_global)"
+source/workspace/gaps_flower/strategy.py,579,if self.use_adapted_as_global:
+source/workspace/gaps_flower/strategy.py,591,def _compute_selective_weights(
+source/workspace/gaps_flower/strategy.py,638,"scaled = max(avg_sim, self.selective_min_scale)"
+source/workspace/gaps_flower/strategy.py,653,"""selective_active"": True,"
+source/workspace/gaps_flower/strategy.py,655,"""warmup"": self.selective_warmup,"
+source/workspace/gaps_flower/strategy.py,656,"""min_scale"": self.selective_min_scale,"
+source/workspace/gaps_flower/strategy.py,788,- 选择性聚合 (selective_weights)
+source/workspace/gaps_flower/strategy.py,818,其中 α = proto_ema_alpha，首轮直接初始化为 μ^{weighted}_1
+source/workspace/gaps_flower/strategy.py,830,alpha = self.proto_ema_alpha
+source/workspace/gaps_flower/strategy.py,874,"""proto_ema_alpha"": self.proto_ema_alpha,"
+source/workspace/gaps_flower/strategy.py,890,"print(f""[GAPS] Saved semantic protos (EMA α={self.proto_ema_alpha}): {path}"")"
+source/workspace/gaps_flower/strategy.py,987,"""LAMBDA_TARGET_CE"": self.da_lambda_target_ce,"
+source/workspace/gaps_flower/strategy.py,1005,"""NUM_CLASSES"": int(self.model_config.get(""num_classes"", 4)),"
+source/workspace/gaps_flower/strategy.py,1127,"num_classes=self.model_config.get(""num_classes""),"
+source/workspace/gaps_flower/task.py,93,"num_classes: int | None = None,"
+source/workspace/gaps_flower/task.py,115,"""NUM_CLASSES"": num_classes,"
+source/workspace/gaps_flower/task.py,130,config.USE_REG_LOSS = False
+source/workspace/gaps_flower/task.py,138,config.USE_SELECTIVE_AGG = False
+source/workspace/gaps_flower/task.py,213,"model = create_model_by_config(config, with_reg_head=False)"
+source/workspace/gaps_flower/task.py,264,"prev_model = create_model_by_config(gaps_client.config, with_reg_head=False).to(gaps_client.device)"
+source/workspace/gaps_flower/task.py,384,correct += int((logits.argmax(dim=1) == y_cls).sum().item())
+source/workspace/gaps_flower/domain_adaptation.py,45,"num_classes: int,"
+source/workspace/gaps_flower/domain_adaptation.py,53,for class_id in range(int(num_classes)):
+source/workspace/gaps_flower/domain_adaptation.py,479,"num_classes=int(self.hp.get('NUM_CLASSES', 4)),"
+source/workspace/gaps_flower/domain_adaptation.py,484,"num_classes = int(self.hp.get('NUM_CLASSES', 4))"
+source/workspace/gaps_flower/domain_adaptation.py,490,for c in range(num_classes):
+source/workspace/gaps_flower/domain_adaptation.py,616,"num_classes=self.hp.get('NUM_CLASSES', 4),"
+source/workspace/gaps_flower/domain_adaptation.py,634,"if (self.hp.get('LAMBDA_TARGET_CE', 0.0) > 0.0 and"
+source/workspace/gaps_flower/domain_adaptation.py,643,target_ce_acc = (logits_t.argmax(dim=1) == y_t_ids).float().mean()
+source/workspace/gaps_flower/domain_adaptation.py,659,"lambda_target_ce = self.hp.get('LAMBDA_TARGET_CE', 0.0)"
+source/workspace/gaps_flower/domain_adaptation.py,671,weighted_target_ce = lambda_target_ce * target_ce_loss
+source/workspace/gaps_flower/domain_adaptation.py,742,"summary[""lambda_target_ce""] = float(self.hp.get('LAMBDA_TARGET_CE', 0.0))"
+source/workspace/gaps_flower/domain_adaptation.py,825,"num_classes = int(self.hp.get('NUM_CLASSES', 4))"
+source/workspace/gaps_flower/domain_adaptation.py,826,"counts = torch.zeros(num_classes, dtype=torch.float32)"
+source/workspace/gaps_flower/domain_adaptation.py,832,"counts += torch.bincount(labels, minlength=num_classes).float()"
+source/workspace/gaps_flower/domain_adaptation.py,865,"return torch.argmax(labels, dim=1).long()"
+source/workspace/gaps_flower/domain_adaptation.py,932,"num_classes = self.hp.get('NUM_CLASSES', 4)"
+source/workspace/gaps_flower/domain_adaptation.py,940,for c in range(num_classes):
+source/workspace/gaps_flower/domain_adaptation.py,990,"num_cls = int(self.hp.get('NUM_CLASSES', 4))"
+source/workspace/gaps_flower/domain_adaptation.py,1008,"num_cls = self.hp.get('NUM_CLASSES', 4)"
+source/workspace/gaps_flower/domain_adaptation.py,1045,"for c in range(int(self.hp.get('NUM_CLASSES', 4))):"
+source/workspace/gaps_flower/domain_adaptation.py,1071,"num_cls = self.hp.get('NUM_CLASSES', 4)"

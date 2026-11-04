@@ -1,0 +1,54 @@
+"""Phase3 readonly consolidation and static artifact audit; no training/inference."""
+import sys,re,ast,json,collections,importlib.util
+from pathlib import Path
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];sys.path.insert(0,str(HERE.parent/'fedongas_phase2a_20261103'))
+import audit_common as a
+from audit_common import p1,read,rows,sha,ext,js,table,BASE,INDEX
+P1=a.P1;P15=a.P15;P2B=HERE.parent/'fedongas_phase2b_20261104'
+def main():
+    E=HERE/'evidence';E.mkdir(exist_ok=False);a.verify_previous()
+    for folder,anchor in [(a.HERE,'32440237d4b920ffe5dd606f6f599678d9c0d9456a30888ff96e785cd97b058d'),(P2B,'ad8ff3b010343f0b8ce13365150003576c874bae473de1dc7035dbb0a0c2fb27')]:
+        p1.verify_sha(folder/'ARTIFACT_SHA256.csv',anchor)
+        for r in rows(folder/'ARTIFACT_SHA256.csv'):p1.verify_sha(folder/r['path'],r['sha256'])
+    prov=[];lines=[];selected=[]
+    def get(k):
+        p=BASE/k;p1.verify_sha(p,INDEX[k]['sha256']);prov.append(dict(path=k,sha256=sha(p),bytes=p.stat().st_size,producing_commit=INDEX[k]['producing_commit']));return p
+    modules=['server_app.py','client_app.py','strategy.py','task.py','domain_adaptation.py']
+    pattern=r'lambda_target_ce|LAMBDA_TARGET_CE|use_adapted_as_global|selective|proto_ema|eval-split|USE_REG_LOSS|NUM_CLASSES|with_reg_head|sampling|class_names|argmax'
+    for name in modules:
+        k='source/workspace/gaps_flower/'+name;p=get(k);t=Path(ext(p)).read_text(encoding='utf-8-sig');ast.parse(t)
+        lines.extend(dict(path=k,line=i,text=x.strip()) for i,x in enumerate(t.splitlines(),1) if re.search(pattern,x,re.I))
+    paths=['source/workspace/docs/experiments/iotj_latest_handoff_20260715.zh.md','source/workspace/configs/iotj_b2_b5_cross_direction_20260713.json','source/workspace/outputs/FedOnGas_最终机制消融_C5_5pct_20261025/EXPERIMENT_MATRIX.csv','source/workspace/outputs/FedOnGas_最终机制消融_C5_5pct_20261025/RESULT_INTERPRETATION.md','source/workspace/outputs/FedOnGas_同平台无原型对照_20261021/EXPERIMENT_MATRIX.csv','source/workspace/outputs/FedOnGas_S1_5pct_A1A2_25x3_20261024/EXPERIMENT_MATRIX.csv','source/workspace/outputs/FedOnGas_严格少标定与系统成本_20261020/report_final/EXPERIMENT_REGISTRY.json','source/workspace/gaps_deploy/package_contract.py','source/workspace/gaps_deploy/inference.py','source/workspace/gaps_deploy/deploy_config.py']
+    for k in paths:get(k)
+    reg=read(BASE/paths[6]);strict=[]
+    for r in reg:
+        cfg=r['config'];strict.append(dict(experiment_id=r['experiment_id'],model=r['model'],protocol=r['split_protocol'],checkpoint_sha256=r['checkpoint_sha256'],source_clients=str(r['source_clients']),target_x_n=cfg['target_x_n'],target_y_n=cfg['target_y_n'],rounds=cfg['rounds'],local_epochs=cfg['local_epochs'],batch=cfg['batch_size'],server_steps=cfg['server_steps'],updates=cfg['updates'],source_CE=cfg['source_ce'],target_CE=cfg['target_ce'],MMD=cfg['mmd'],selective=cfg['selective'],ema=cfg['ema_alpha'],init_checkpoint_sha='unknown_in_registry',target_file_identity_manifest='requires_raw_role_comparison',status='historical_only_not_Day7'))
+    table(E/'STRICT_CLASSIFICATION_RUNS.csv',strict)
+    table(E/'MATCHED_MECHANISM_MATRIX.csv',rows(BASE/paths[2]))
+    # Hash/metadata inventory only. No graph runtime library installed; do not infer ONNX shapes.
+    onnx=[]
+    for k in INDEX:
+        if k.endswith('.onnx'):
+            p=get(k);onnx.append(dict(path=k,sha256=sha(p),bytes=p.stat().st_size,scope='diagnostic_graph' if any(x in k for x in ['optimized','probe','diagnostic']) else 'classifier_candidate',shape='unknown_not_parsed',dtype='unknown_not_parsed',legal_Day7_training_identity='not_established',runtime_validation='NOT_RUN'))
+    table(E/'ONNX_ASSET_INVENTORY.csv',onnx)
+    checkpoints=[]
+    for r in rows(p1.P05/'CHECKPOINT_REUSE_CANDIDATES.csv'):
+        p=get(r['archived_checkpoint']);assert sha(p)==r['sha256'];checkpoints.append(dict(r,common_Day7_compatibility='BLOCKED_SOURCE_FUTURE_COHORT',original_C5_exposure_disjoint='metadata_candidate',current_predicted_route='NOT_RELEASED'))
+    table(E/'CHECKPOINT_COMPATIBILITY.csv',checkpoints)
+    table(E/'V5_ASSET_PROVENANCE.csv',prov);table(E/'FLOWER_CODE_EVIDENCE.csv',lines)
+    for name in ['FLOWER_AUDIT.md','FLOWER_ARG_DEFAULTS.json']:
+        js(E/(name.replace('.md','')+'.source.json'),dict(source=str(p1.P05/name),sha256=sha(p1.P05/name)))
+    # Preserve all result views; aliases explicitly point to the same earlier evidence.
+    combined=[]
+    for phase,p in [('Phase1',P1/'run_v2/evaluation/OVERALL_METRICS.csv'),('Phase1.5',P15/'run/evaluation/OVERALL_METRICS.csv'),('Phase2B',P2B/'run/OVERALL_METRICS.csv')]:
+        for r in rows(p):
+            target=r['target'];b=int(r['budget']);method=r.get('kind') or (r['rule']+'_'+r['family'] if 'rule' in r else r['method']);mode=r.get('prediction_mode',r.get('mode'))
+            alias=''
+            if phase=='Phase2B' and method in ['F_SVR_rho0','N_SVR_reference','KRR_reference']:alias='Phase1.5:'+{'F_SVR_rho0':'F_SVR','N_SVR_reference':'N_SVR','KRR_reference':'F_KRR'}[method]
+            combined.append(dict(phase=phase,target=target,budget_exposures_per_gas=b,training_windows_per_gas=2*b,method=method,feature_dimension=71,protocol='C3_three_dates' if target=='C3' else target+'_two_date_alternative',routing='Oracle_ALL',mode=mode,NRMSE_percent=r['single_window_equal_exposure_NRMSE_percent'],MAE_ppm=r['single_window_equal_exposure_MAE_ppm'],evaluation='single_window_equal_exposure',aux_fusion_NRMSE=r['aux_mean_fusion_NRMSE_percent'],source_file=p.relative_to(ROOT).as_posix(),source_sha256=sha(p),reused_alias=alias,model_origin='Phase2B_source_bank_4heads_shared' if method=='SourceOnly71' else phase,clip_support='fixed_gas_LOW_SPAN' if method=='SourceOnly71' else 'original_calibration_support_endpoints'))
+    assert len(combined)==144;table(HERE/'REGRESSION_CONSOLIDATED.csv',combined)
+    js(E/'REGRESSION_EVIDENCE_LINKS.json',{name:dict(path=str(P2B/'run'/name),sha256=sha(P2B/'run'/name),rows=len(rows(P2B/'run'/name))) for name in ['NEGATIVE_TRANSFER_SLICES.csv','DIFFICULT_CONCENTRATIONS.csv','EXPOSURE_ERRORS.csv','FALLBACK_INTERFACE_CHECKS.csv','ADDITIONAL_RUNTIME_FAULT_CHECKS.csv']})
+    js(E/'AUDIT_SCOPE.json',dict(model_fits=0,checkpoint_inference=0,ONNX_graphs_inventory=len(onnx),ONNX_shapes_parsed=False,onnx_dependency_installed=bool(importlib.util.find_spec('onnx')),ort_dependency_installed=bool(importlib.util.find_spec('onnxruntime')),regression_views=72,regression_raw_clip_rows=144,not_independent_model_count=True,source_only_selection_after_test_forbidden=True,old_B_names_not_unique=True,zero_new_Pi_measurements=True))
+    print(json.dumps(dict(status='AUDIT_COLLECTED',assets=len(prov),onnx=len(onnx),regression_rows=len(combined),new_fits=0)))
+if __name__=='__main__':main()
