@@ -1,0 +1,28 @@
+"""No-fit runtime failure hardening, preservation, final sealing."""
+from study import *
+import subprocess
+def main():
+    v,s,c,alpha,prior=deps();checks=[]
+    for r in read(RUN/'TARGET_MODELS_LOCKED.json')['models']:
+        fb,fr=baseline(v,r['target'],r['budget'],r['gas_id']);res=joblib.load(RUN/r['path']);z,mm=p15.cache(r['target'],'cal');x=z['x71'][p15.cal_mask(mm,r['budget'],r['gas_id'])]
+        def badmodel():raise AttributeError('malformed source object')
+        for rho in [0.,r['rho']]:
+            for label,provider in [('missing_locked_member',lambda:load_source(s,'MISSING_BANK',r['gas_id'])),('malformed_model_object',badmodel)]:
+                calls=[0]
+                def wrapped():calls[0]+=1;return provider()
+                for clip in [False,True]:
+                    out,_=safe_predict(v,prior,res,fb,x,rho,wrapped,clip);np.testing.assert_array_equal(out,p1.predict(v,fb,x,clip));assert np.isfinite(out).all()
+                assert calls[0]==(0 if rho==0 else 2);checks.append(dict(target=r['target'],budget=r['budget'],gas_id=r['gas_id'],rho=rho,fault=label,source_calls=calls[0],raw_clip_exact=True))
+    table(RUN/'ADDITIONAL_RUNTIME_FAULT_CHECKS.csv',checks);assert len(checks)==96
+    a.verify_previous()
+    for r in rows(A/'ARTIFACT_SHA256.csv'):p1.verify_sha(A/r['path'],r['sha256'])
+    for r in rows(p1.P05/'MANIFEST_SHA256.csv'):p1.verify_sha(p1.P05/r['path'],r['sha256'])
+    p1.verify_sha(p1.ORIGINAL/'backups/fedongas_frozen_baseline_20261102_v5.zip','a018a4bf26fb0d76620905a87498ecc256f6f9d31f6fb5b7caeef96df159aeca')
+    for path,h in read(RUN/'SOURCE_MODELS_LOCKED.json')['files'].items():p1.verify_sha(RUN/path,h)
+    before=read(A/'evidence_v2/PROTECTION_AND_ACCESS_QA.json')['original_git_tracked_status'];now=subprocess.check_output(['git','status','--porcelain=v1','-z','--untracked-files=no'],cwd=p1.ORIGINAL).decode();assert before==now
+    js(HERE/'VERIFICATION_SUPPLEMENT.json',dict(status='PASS',runtime_code_sha256=sha(HERE/'study.py'),reason='reject missing source-index member and malformed model object;verify source-index lock before load',new_fits=0,extra_fault_cases=96,total_fault_cases=336,total_raw_clip_assertions=672,old_phase05_1_15_2a_payloads_unchanged=True,v5_zip_unchanged=True,original_tracked_state_unchanged=True,scientific_parameters_and_predictions_unchanged=True))
+    with (HERE/'RUNTIME_SUPPLEMENT.md').open('x',encoding='utf-8') as f:f.write('# 运行回退补充核验\n\n不新增拟合，补强缺失源索引成员与错误模型对象的异常路径，并在读取源索引时核对锁SHA。仅运行异常边界改变，rho、数值求解、模型与预测保持不变。原240场景检查和报告保留，新增96个raw/clip一致场景，总336场景、672断言；rho0仍零次源调用。VERIFICATION_SUPPLEMENT记录当前运行代码SHA；PRE_RUN_CONTRACT/GATE1_RECOVERY保留拟合时版本SHA。历史冻结资产与v5 ZIP再次核对通过。\n')
+    records=[dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)) for p in sorted(HERE.rglob('*')) if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv']
+    table(HERE/'ARTIFACT_SHA256.csv',records);print(__import__('json').dumps(dict(status='SEALED',payload_files=len(records),bytes=sum(r['bytes'] for r in records),manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'),total_fits=128,fault_cases=336)))
+if __name__=='__main__':
+    with threadpool_limits(limits=1):main()

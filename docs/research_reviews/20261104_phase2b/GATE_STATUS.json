@@ -1,0 +1,36 @@
+{
+  "Gate1": {
+    "status": "PASS",
+    "source_heads": 12,
+    "pooled_fits": 12
+  },
+  "Gate2": {
+    "status": "PASS",
+    "interface_cases": 240,
+    "rho_budgets": [
+      {
+        "budget": 2,
+        "rho": 0.75,
+        "target_nonzero_allowed": true,
+        "negative_source_episodes": [],
+        "reason": "PASS_SOURCE_RULE"
+      },
+      {
+        "budget": 4,
+        "rho": 1.0,
+        "target_nonzero_allowed": true,
+        "negative_source_episodes": [],
+        "reason": "PASS_SOURCE_RULE"
+      }
+    ],
+    "source_cv_fits": 80
+  },
+  "Gate3": {
+    "status": "PASS",
+    "target_heads": 24,
+    "configs": 30,
+    "retrospective": true
+  },
+  "research_decision": "STOP_EXPANDING_FIXED_SHARED_RHO_DIRECTION;RELIABLE_UNIFORM_BENEFIT_NOT_ESTABLISHED",
+  "rationale": "5/6overall improvements but C4A4 negative;pergas/highconcentration failures retained;SourceOnly often stronger;no extra gates or tuning"
+}

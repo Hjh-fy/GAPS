@@ -1,0 +1,22 @@
+{
+  "status": "PASS_WITH_NEGATIVE_RESULTS",
+  "source_fit_calls": 24,
+  "source_rho_fit_calls": 80,
+  "target_fit_calls": 24,
+  "total_real_fits": 128,
+  "repeated_fits_after_metadata_recovery": 0,
+  "model_replay_predictions": 5040,
+  "reference_predictions_exactly_reproduced": 15120,
+  "independent_metric_sets": 60,
+  "independent_metric_maxdiff": 7.105427357601002e-15,
+  "fault_injection_cases": 240,
+  "raw_clip_assertions": 480,
+  "positive_clip_checks": 24,
+  "target_test_selection": false,
+  "development_selection": false,
+  "h_consistency_implemented": false,
+  "logical_clients_not_network_isolation": true,
+  "source_models_lock_sha256": "01b58ce2b3c91bbaac7ca7dff47f6a14336f3ee8d1a6f236f67ed4f886f17cd6",
+  "rho_lock_sha256": "e164f8438fa46942e7aaa5d3a1b68f62cd0c694b1fd2c626adcff3e9ff2d153d",
+  "target_lock_sha256": "87a0bc086e236cdbbb00609f07dda0c0f3ad8676876bd1cfee9f0286b8bab980"
+}

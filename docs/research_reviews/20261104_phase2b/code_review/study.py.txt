@@ -1,0 +1,156 @@
+"""Phase2B gated execution, frozen numerical implementations imported unchanged."""
+import sys,time,datetime,argparse,collections
+from pathlib import Path
+import numpy as np,pandas as pd,joblib
+from threadpoolctl import threadpool_limits
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent;A=HERE.parent/'fedongas_phase2a_20261103';sys.path.insert(0,str(A))
+import audit_common as a
+from audit_common import p1,read,rows,sha,js,table,arrays,LOW,SPAN
+sys.path.insert(0,str(HERE.parent/'fedongas_phase15_20261102'));import phase15_common as p15
+RUN=HERE/'run';P15=a.P15;OLD=a.P1/'run_v2'
+def event(stage,**kw):
+    with (RUN/'EVENTS.jsonl').open('a',encoding='utf-8') as f:f.write(__import__('json').dumps(dict(stage=stage,time_ns=time.time_ns(),**kw))+'\n')
+def deps():return a.import_old()
+def source_model(s,d):return s.CanonicalRidgeModelV2(**{k:d[k] for k in ['gas_id','role','alpha','feature_names','mean','scale','coef','clip_min','clip_max','intercept_regularized']})
+def load_source(s,key,g):
+    idxpath=RUN/'SOURCE_INDEX.json';p1.verify_sha(idxpath,read(RUN/'SOURCE_MODELS_LOCKED.json')['index_sha256']);idx=read(idxpath);r=next((r for r in idx if r['bank']==key and r['gas_id']==g),None)
+    if r is None:raise ValueError('missing source member')
+    p=RUN/r['path'];p1.verify_sha(p,r['sha256']);d=read(p)
+    if d['feature_names']!=read(A/'SOURCE71_MODEL_CONTRACT_PLAN.json')['feature_names'] or d['gas_id']!=g:raise ValueError('source identity/schema')
+    return source_model(s,d)
+def fit_residual(v,alpha,prior,x,y,source,g,rho,params):
+    b=alpha.base(source,g,rho);inner=v.svr.fit_head(x,y-(b-LOW[g]),g,params)
+    return dict(inner=inner,rho=float(rho),gas=g,clip_min=float(min(y)),clip_max=float(max(y)))
+def safe_predict(v,prior,residual,fallback,x,rho,provider,clip=False):
+    # Fallback is always the independent original target head, never the residual learner.
+    if rho==0:return p1.predict(v,fallback,x,clip), 'rho0_original_F'
+    try:
+        value=provider()
+        source=np.asarray(value,dtype=float)
+        if value is None or source.shape!=(len(x),) or not np.isfinite(source).all():raise ValueError('invalid source output')
+    except (ValueError,TypeError,KeyError,OSError,RuntimeError,AttributeError,StopIteration):return p1.predict(v,fallback,x,clip),'source_failure_original_F'
+    h=residual['inner'];g=residual['gas'];head=prior.PriorHead(h['mean'],h['scale'],h['learner'],g,float(rho),float((1-rho)*LOW[g]))
+    out=prior.predict_head(head,x,source,clip=False)
+    if not np.isfinite(out).all():raise ValueError('residual numerical failure')
+    return (np.clip(out,residual['clip_min'],residual['clip_max']) if clip else out),'residual'
+def baseline(v,c,b,g):
+    r=next(r for r in read(P15/'run/MODEL_INDEX.json') if r['target']==c and r['budget']==b and r['rule']=='F' and r['family']=='SVR' and r['gas_id']==g)
+    p=P15/'run'/r['path'];p1.verify_sha(p,r['sha256']);return joblib.load(p),r
+def gate1():
+    RUN.mkdir(exist_ok=True);a.verify_previous();p1.verify_sha(A/'ARTIFACT_SHA256.csv','32440237d4b920ffe5dd606f6f599678d9c0d9456a30888ff96e785cd97b058d')
+    for r in rows(A/'ARTIFACT_SHA256.csv'):p1.verify_sha(A/r['path'],r['sha256'])
+    contract=read(A/'SOURCE71_MODEL_CONTRACT_PLAN.json');p1.verify_sha(OLD/'data/source.npz',contract['source_cache_sha256']);p1.verify_sha(OLD/'data/source_metadata.json',contract['source_metadata_sha256'])
+    if not (RUN/'PRE_RUN_CONTRACT.json').exists():js(RUN/'PRE_RUN_CONTRACT.json',dict(parent_commit='4955a3243ffe05a5f39087c4c8189c59ee13d53c',plan_sha256=sha(A/'EXPERIMENT_PLAN.md'),code_sha256=sha(Path(__file__)),raw_prior=True,retrospective=True,max_real_fits=128,source_hash=contract['source_cache_sha256'],target_development_selection=False,target_test_selection=False,logical_clients_only=True))
+    v,s,c,alpha,prior=deps();z,meta=p15.cache('source','source');assert z['x71'].shape==(2520,71)
+    assert {(m['client_id'],m['day']) for m in meta}=={(1,4),(2,1),(2,7)}
+    (RUN/'source').mkdir(exist_ok=True);index=[];qa=[];preds=[];identities=[]
+    for bank,keep in [('FULL',lambda m:True),('P1',lambda m:(m['client_id'],m['day'])==(2,1)),('P2',lambda m:(m['client_id'],m['day'])==(1,4))]:
+        for g in range(4):
+            mask=np.array([keep(m) and m['gas_id']==g for m in meta]);x=z['x71'][mask];y=z['y'][mask];mm=[m for m,k in zip(meta,mask) if k];clients=tuple(sorted(set('C'+str(m['client_id']) for m in mm)))
+            role='source_train';mom=[]
+            for client in clients:mom.append(s.local_central_moments(client,g,role,x[np.array(['C'+str(m['client_id'])==client for m in mm])]))
+            sc=s.merge_central_moments(mom,expected_client_order=clients);eqs=[]
+            for client in clients:
+                k=np.array(['C'+str(m['client_id'])==client for m in mm]);eqs.append(s.local_normal_equations_v2(client,g,role,x[k],y[k],sc))
+            eq=s.aggregate_normal_equations_v2(eqs,expected_client_order=clients);path=RUN/'source'/f'{bank}_g{g}.json'
+            if path.exists():
+                from types import SimpleNamespace
+                model=source_model(s,read(path));pooled=source_model(s,read(RUN/'source'/f'{bank}_g{g}_pooled.json'));old=arrays(RUN/'source'/f'{bank}_g{g}_moments.npz');peq=SimpleNamespace(a=old['pooled_A'],b=old['pooled_b'])
+                assert np.array_equal(eq.a,old['A']) and np.array_equal(eq.b,old['b'])
+            else:
+                model=s.reconstruct_ridge_v2(eq,sc,v.names,1000.);pooled,peq=s.pooled_reference_fit_v2(x,y,gas_id=g,role=role,feature_names=v.names,alpha=1000.)
+            query=z['x71'][z['gas']==g];raw=model.predict_matrix(query,clip=False);ref=pooled.predict_matrix(query,clip=False);clip=model.predict_matrix(query);cref=pooled.predict_matrix(query)
+            coef_rel=float(np.linalg.norm(model.coef-pooled.coef)/max(np.linalg.norm(pooled.coef),1e-30));cond=float(np.linalg.cond(eq.a+1000*np.diag([0]+[1]*71)))
+            scaleok=np.allclose(model.mean,pooled.mean,rtol=1e-10,atol=1e-10) and np.allclose(model.scale,pooled.scale,rtol=1e-10,atol=1e-10)
+            assert scaleok and coef_rel<1e-6 and max(abs(raw-ref))<=1e-6 and max(abs(clip-cref))<=1e-6 and model.feature_names==tuple(v.names)
+            if not path.exists():
+                js(path,model.to_json());js(RUN/'source'/f'{bank}_g{g}_pooled.json',pooled.to_json())
+                with (RUN/'source'/f'{bank}_g{g}_moments.npz').open('xb') as f:np.savez_compressed(f,mean=sc.mean,scale=sc.scale,A=eq.a,b=eq.b,pooled_A=peq.a,pooled_b=peq.b,**{f'local_{j}_A':e.a for j,e in enumerate(eqs)})
+            for m in mm:identities.append(dict(m,bank=bank))
+            for m,p,r,cp,cr in zip([m for m in meta if m['gas_id']==g],raw,ref,clip,cref):preds.append(dict(bank=bank,gas_id=g,identity=m['physical_identity'],raw_ppm=float(p),pooled_raw_ppm=float(r),clipped_ppm=float(cp),pooled_clipped_ppm=float(cr)))
+            index.append(dict(bank=bank,gas_id=g,training_windows=len(x),files=sorted(set(m['filename'] for m in mm)),path=path.relative_to(RUN).as_posix(),sha256=sha(path),units='ppm',feature_sha256=contract['feature_contract_sha256']))
+            qa.append(dict(bank=bank,gas_id=g,n=len(x),mean_maxdiff=float(max(abs(model.mean-pooled.mean))),scale_maxdiff=float(max(abs(model.scale-pooled.scale))),coef_relative_difference=coef_rel,coef_maxdiff=float(max(abs(model.coef-pooled.coef))),condition_number=cond,raw_maxdiff_ppm=float(max(abs(raw-ref))),clip_maxdiff_ppm=float(max(abs(clip-cref))),status='PASS'))
+    js(RUN/'SOURCE_INDEX.json',index);table(RUN/'SOURCE_PARITY.csv',qa);table(RUN/'SOURCE_TRAINING_IDENTITIES.csv',identities);table(RUN/'SOURCE_PARITY_WINDOW_PREDICTIONS.csv',preds)
+    js(RUN/'SOURCE_MODELS_LOCKED.json',dict(status='PASS',heads=12,pooled_reference_fits=12,files={str(p.relative_to(RUN)):sha(p) for p in (RUN/'source').iterdir()},index_sha256=sha(RUN/'SOURCE_INDEX.json')))
+    event('gate1_pass',fits=24);print('GATE1 PASS:12 heads +12 pooled references',flush=True)
+def gate2():
+    assert read(RUN/'SOURCE_MODELS_LOCKED.json')['status']=='PASS';v,s,c,alpha,prior=deps();checks=[]
+    def fail(exc):raise exc
+    for target in ['C3','C4','C5']:
+        z,meta=p15.cache(target,'cal')
+        for b in (2,4):
+            for g in range(4):
+                fb,r=baseline(v,target,b,g);x=z['x71'][p15.cal_mask(meta,b,g)];h=fb['numerical'];res=dict(inner=h,rho=.5,gas=g,clip_min=fb['clip_min'],clip_max=fb['clip_max'])
+                variants={'None':lambda:None,'NaN':lambda:np.full(len(x),np.nan),'Inf':lambda:np.full(len(x),np.inf),'missing':lambda:fail(FileNotFoundError()),'identity_mismatch':lambda:fail(ValueError('identity'))}
+                for rho in (0.,.5):
+                    for name,provider in variants.items():
+                        calls=[0]
+                        def wrapped():calls[0]+=1;return provider()
+                        for clip in (False,True):
+                            actual,reason=safe_predict(v,prior,res,fb,x,rho,wrapped,clip);expected=p1.predict(v,fb,x,clip);assert np.isfinite(actual).all() and np.array_equal(actual,expected)
+                        assert calls[0]==(0 if rho==0 else 2)
+                        checks.append(dict(target=target,budget=b,gas_id=g,rho=rho,fault=name,raw_clip_exact=True,source_calls=calls[0],fallback_checkpoint_sha256=r['sha256']))
+    table(RUN/'FALLBACK_INTERFACE_CHECKS.csv',checks)
+    z,meta=p15.cache('source','source');choices=read(P15/'run/A_FROZEN_PARAMETERS.json')['choices']['F'];episodes=read(A/'SOURCE_PSEUDO_EPISODE_PLAN.json')['episodes'];scores=[];details=[];selected=[]
+    for b in (2,4):
+        for rho in [0.,.25,.5,.75,1.]:
+            es=[]
+            for ep in [e for e in episodes if e['budget']==b]:
+                rr=[]
+                for g in range(4):
+                    tr=np.array([m['filename'] in ep['calibration_files'] and m['gas_id']==g and m['start_s'] in (60.,150.) for m in meta]);va=np.array([m['filename'] in ep['validation_files'] and m['gas_id']==g for m in meta]);assert tr.sum()==2*b and va.sum()==126
+                    sm=load_source(s,ep['episode'],g);assert not set(ep['source_files'])&set(ep['calibration_files']+ep['validation_files'])
+                    sy=sm.predict_matrix(z['x71'][tr],clip=False);res=fit_residual(v,alpha,prior,z['x71'][tr],z['y'][tr],sy,g,rho,choices[str(b)][str(g)]['SVR'])
+                    inner=res['inner'];ph=prior.PriorHead(inner['mean'],inner['scale'],inner['learner'],g,rho,(1-rho)*LOW[g]);p=prior.predict_head(ph,z['x71'][va],sm.predict_matrix(z['x71'][va],clip=False),clip=False)
+                    for m,pp in zip([m for m,k in zip(meta,va) if k],p):rr.append(dict(m,prediction_ppm=float(pp)))
+                mse=p15.score(rr,np.array([r['prediction_ppm'] for r in rr]));es.append(mse)
+                details.extend(dict(budget=b,rho=rho,episode=ep['episode'],**r) for r in rr);scores.append(dict(budget=b,rho=rho,episode=ep['episode'],normalized_MSE=mse))
+            scores.append(dict(budget=b,rho=rho,episode='MEAN',normalized_MSE=float(np.mean(es))))
+        frame=pd.DataFrame([dict(rho=r['rho'],NRMSE=np.sqrt(r['normalized_MSE'])) for r in scores if r['budget']==b and r['episode']=='MEAN']);rho=prior.choose_rho(frame)
+        harmed=[ep for ep in ['P1','P2'] if next(r['normalized_MSE'] for r in scores if r['budget']==b and r['episode']==ep and r['rho']==rho)>next(r['normalized_MSE'] for r in scores if r['budget']==b and r['episode']==ep and r['rho']==0.)]
+        allowed=rho!=0 and not harmed;selected.append(dict(budget=b,rho=rho,target_nonzero_allowed=allowed,negative_source_episodes=harmed,reason='PASS_SOURCE_RULE' if allowed else 'SELECTED_RHO0' if rho==0 else 'SOURCE_NEGATIVE_TRANSFER'))
+    table(RUN/'SOURCE_RHO_SCORES.csv',scores);table(RUN/'SOURCE_RHO_WINDOW_PREDICTIONS.csv',details)
+    js(RUN/'RHO_PARAMETERS_LOCKED.json',dict(status='PASS_INTERFACE_AND_SELECTION',budgets=selected,source_fits=80,interface_checks=len(checks),target_test_used=False,shared_per_budget=True,source_tasks_not_independent_confirmation=True,files={f:sha(RUN/f) for f in ['SOURCE_RHO_SCORES.csv','SOURCE_RHO_WINDOW_PREDICTIONS.csv','FALLBACK_INTERFACE_CHECKS.csv']}))
+    event('gate2_complete',fits=80,budgets=selected);print(__import__('json').dumps(selected),flush=True)
+def gate3():
+    sel=read(RUN/'RHO_PARAMETERS_LOCKED.json')['budgets'];allowed={r['budget']:r['rho'] for r in sel if r['target_nonzero_allowed']};v,s,c,alpha,prior=deps();index=[];(RUN/'target').mkdir()
+    for target in ['C3','C4','C5']:
+        z,meta=p15.cache(target,'cal')
+        for b,rho in allowed.items():
+            for g in range(4):
+                mask=p15.cal_mask(meta,b,g);sm=load_source(s,'FULL',g);fb,fr=baseline(v,target,b,g);res=fit_residual(v,alpha,prior,z['x71'][mask],z['y'][mask],sm.predict_matrix(z['x71'][mask],clip=False),g,rho,fr['params'])
+                path=RUN/'target'/f'{target}_A{b}_g{g}.joblib';joblib.dump(res,path,compress=3);index.append(dict(target=target,budget=b,gas_id=g,rho=rho,path=path.relative_to(RUN).as_posix(),sha256=sha(path),fallback_sha256=fr['sha256'],training_files=sorted(set(z['filenames'][mask])),params=fr['params']))
+    js(RUN/'TARGET_MODELS_LOCKED.json',dict(status='PASS' if allowed else 'BLOCKED',reason='NO_BUDGET_PASSED_SOURCE_RULE' if not allowed else 'ELIGIBLE_BUDGETS_ONLY',heads=len(index),models=index,budgets=sel))
+    event('gate3_models_locked',fits=len(index));predictions=[]
+    # Source-only and already-frozen reference views are evaluated even if nonzero training is stopped.
+    event('target_test_released',retrospective=True)
+    for target in ['C3','C4','C5']:
+        z,meta=p15.cache(target,'test')
+        for b in (2,4):
+            methods=['SourceOnly71','F_SVR_rho0','N_SVR_reference','KRR_reference']+(['FixedRhoResidual71'] if b in allowed else [])
+            for method in methods:
+                for g in range(4):
+                    ids=np.flatnonzero(z['gas']==g);x=z['x71'][ids]
+                    if method=='SourceOnly71':pp=load_source(s,'FULL',g).predict_matrix(x,clip=False)
+                    elif method=='FixedRhoResidual71':
+                        r=next(r for r in index if r['target']==target and r['budget']==b and r['gas_id']==g);res=joblib.load(RUN/r['path']);fb,_=baseline(v,target,b,g);pp,_=safe_predict(v,prior,res,fb,x,r['rho'],lambda:load_source(s,'FULL',g).predict_matrix(x,clip=False),False)
+                    else:
+                        rule='N' if method.startswith('N_') else 'F';family='KRR' if method.startswith('KRR') else 'SVR';r=next(r for r in read(P15/'run/MODEL_INDEX.json') if r['target']==target and r['budget']==b and r['rule']==rule and r['family']==family and r['gas_id']==g);p1.verify_sha(P15/'run'/r['path'],r['sha256']);pp=p15.predict(v,joblib.load(P15/'run'/r['path']),x,False)
+                    for i,p in zip(ids,pp):
+                        m=meta[i];predictions.append(dict(target=target,budget=b,method=method,protocol='C3_three_dates' if target=='C3' else target+'_two_date_alternative',scope='Oracle_ALL',**m,prediction_raw_ppm=float(p),prediction_clipped_ppm=float(np.clip(p,LOW[g],LOW[g]+SPAN[g])),seen_concentration=m['concentration_code'] in ([10,100] if b==2 else [10,40,70,100])))
+    table(RUN/'WINDOW_PREDICTIONS.csv',predictions);metrics=[];exposures=[];slices=[]
+    for key in sorted(set((r['target'],r['budget'],r['method']) for r in predictions)):
+        rr=[r for r in predictions if (r['target'],r['budget'],r['method'])==key];base=dict(zip(['target','budget','method'],key))
+        for mode in ['raw','clipped']:
+            pp=[dict(r,prediction_ppm=r[f'prediction_{mode}_ppm']) for r in rr];metrics.append(dict(**base,mode=mode,**p1.exposure_metrics(pp)));exposures.extend(dict(**base,mode=mode,**e) for e in p1.exposure_rows(pp))
+            for g in range(4):
+                for label in ['all','seen','unseen']+list(range(10,101,10)):
+                    ss=[r for r in pp if r['gas_id']==g and (label=='all' or label=='seen' and r['seen_concentration'] or label=='unseen' and not r['seen_concentration'] or r['concentration_code']==label)]
+                    slices.append(dict(**base,mode=mode,gas_id=g,slice=str(label),**p1.exposure_metrics(ss)))
+    table(RUN/'OVERALL_METRICS.csv',metrics);table(RUN/'EXPOSURE_ERRORS.csv',exposures);table(RUN/'GAS_CONCENTRATION_ERRORS.csv',slices)
+    js(RUN/'EVALUATION_DONE.json',dict(configurations=len(metrics)//2,prediction_rows=len(predictions),new_target_fits=len(index),source_and_reference_only_if_budget_blocked=True))
+    event('evaluation_done');print('Evaluation complete',flush=True)
+if __name__=='__main__':
+    parser=argparse.ArgumentParser();parser.add_argument('stage',choices=['gate1','gate2','gate3']);args=parser.parse_args()
+    with threadpool_limits(limits=1):globals()[args.stage]()

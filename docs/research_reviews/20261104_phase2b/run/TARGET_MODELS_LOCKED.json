@@ -1,0 +1,455 @@
+{
+  "status": "PASS",
+  "reason": "ELIGIBLE_BUDGETS_ONLY",
+  "heads": 24,
+  "models": [
+    {
+      "target": "C3",
+      "budget": 2,
+      "gas_id": 0,
+      "rho": 0.75,
+      "path": "target/C3_A2_g0.joblib",
+      "sha256": "9d2eff598f59d4eae77c9bc64bfb58a104e5007834410f7916b5eb266d3617dc",
+      "fallback_sha256": "c7add75eb317ff0d43599735e0ecb8c39ab5e3ede140ffdf8b068a7440ed628e",
+      "training_files": [
+        "B3_GEa_F010_R2.txt",
+        "B3_GEa_F100_R2.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 2,
+      "gas_id": 1,
+      "rho": 0.75,
+      "path": "target/C3_A2_g1.joblib",
+      "sha256": "3ee16f14d2d845881eceb66e68340d772e69ef16cffa365504a4ad29e750d734",
+      "fallback_sha256": "c52020216d3c0925d40e1b7be2c6daef4a98f3ca2bccb74493f41364f2dacb9f",
+      "training_files": [
+        "B3_GCO_F010_R2.txt",
+        "B3_GCO_F100_R2.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 2,
+      "gas_id": 2,
+      "rho": 0.75,
+      "path": "target/C3_A2_g2.joblib",
+      "sha256": "a8717d15506a61ddb251a4b8bf55bc84d745ac103edfc5e704b68f1a34f78fbc",
+      "fallback_sha256": "dfa3fc9e71258689abe73e2a44c38c7a4b5b2c4abe1ed501521a7d4d5ce78a35",
+      "training_files": [
+        "B3_GEy_F010_R2.txt",
+        "B3_GEy_F100_R2.txt"
+      ],
+      "params": {
+        "C": 100.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 2,
+      "gas_id": 3,
+      "rho": 0.75,
+      "path": "target/C3_A2_g3.joblib",
+      "sha256": "678207ae7c24fb85054cfa633eea3a3d90c295bea7e6633a504dcf0c3799bfce",
+      "fallback_sha256": "546f0f8273bd55ad08f457f2e90998d2123353232586d33589497b957539beb9",
+      "training_files": [
+        "B3_GMe_F010_R2.txt",
+        "B3_GMe_F100_R2.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 4,
+      "gas_id": 0,
+      "rho": 1.0,
+      "path": "target/C3_A4_g0.joblib",
+      "sha256": "1e9427952500176d6afe1c5011fa9a2a4ddb2ef5be6872307811bd518c617416",
+      "fallback_sha256": "1691804a352d1c181f543eecd275b0673f38dff66187b35eea9d163977b32b01",
+      "training_files": [
+        "B3_GEa_F010_R2.txt",
+        "B3_GEa_F040_R2.txt",
+        "B3_GEa_F070_R2.txt",
+        "B3_GEa_F100_R2.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 4,
+      "gas_id": 1,
+      "rho": 1.0,
+      "path": "target/C3_A4_g1.joblib",
+      "sha256": "7900d24aee612adbef89b9aefe8f7a19545e40b53989c8129a1d38076b3c5e54",
+      "fallback_sha256": "c33bd810bc433dabd5c3bdbd6cc5add7b9cf86a8c66a3c04a5ad445ff70ceb14",
+      "training_files": [
+        "B3_GCO_F010_R2.txt",
+        "B3_GCO_F040_R2.txt",
+        "B3_GCO_F070_R2.txt",
+        "B3_GCO_F100_R2.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 4,
+      "gas_id": 2,
+      "rho": 1.0,
+      "path": "target/C3_A4_g2.joblib",
+      "sha256": "0bb0f4caa562cc9c72886eb7149a05aaddae0440a856d7114969fbb4835aa9b7",
+      "fallback_sha256": "82fa2e5612512d37d0f0a9c0f1c08229621cd0b71bfc70e6bbb8777a10da93f7",
+      "training_files": [
+        "B3_GEy_F010_R2.txt",
+        "B3_GEy_F040_R2.txt",
+        "B3_GEy_F070_R2.txt",
+        "B3_GEy_F100_R2.txt"
+      ],
+      "params": {
+        "C": 10.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C3",
+      "budget": 4,
+      "gas_id": 3,
+      "rho": 1.0,
+      "path": "target/C3_A4_g3.joblib",
+      "sha256": "42e2da1bc89bd0ca22d6d60636d10635eeab96336465c2c832de6e1fe39c24f4",
+      "fallback_sha256": "032efe9b310a9d2b415e6be02d629b88cf3be7d46f3e9f9632a2eb9b5574ddf5",
+      "training_files": [
+        "B3_GMe_F010_R2.txt",
+        "B3_GMe_F040_R2.txt",
+        "B3_GMe_F070_R2.txt",
+        "B3_GMe_F100_R2.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 2,
+      "gas_id": 0,
+      "rho": 0.75,
+      "path": "target/C4_A2_g0.joblib",
+      "sha256": "3d75a8c3d06802c91d49355c86ffb5df36c04430da76306ad0db612a2b05fd3d",
+      "fallback_sha256": "66d028269b3156c65950e5d512ec80f6f2442c38e35c7a1b10f2d94c40cf0da3",
+      "training_files": [
+        "B4_GEa_F010_R1.txt",
+        "B4_GEa_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 2,
+      "gas_id": 1,
+      "rho": 0.75,
+      "path": "target/C4_A2_g1.joblib",
+      "sha256": "04b024f6406963e90ebd10159a950aca082d64df990491916ae15c41d2dca1cc",
+      "fallback_sha256": "5b3952f0596dec41df967f51d56853a44aba5f188c13e5411d2b76cb9a0b7743",
+      "training_files": [
+        "B4_GCO_F010_R1.txt",
+        "B4_GCO_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 2,
+      "gas_id": 2,
+      "rho": 0.75,
+      "path": "target/C4_A2_g2.joblib",
+      "sha256": "1631d265b1dd1b29e9862dbe37ac50fda7dca66e813debb330729ed102cedb3c",
+      "fallback_sha256": "98994303d00d8ade292c2222a1058decf7018107f09c008a7ac52483829bd74f",
+      "training_files": [
+        "B4_GEy_F010_R1.txt",
+        "B4_GEy_F100_R1.txt"
+      ],
+      "params": {
+        "C": 100.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 2,
+      "gas_id": 3,
+      "rho": 0.75,
+      "path": "target/C4_A2_g3.joblib",
+      "sha256": "0729d1d6b9573a99e3518731ff8445cbd76e476dac725ad07307084c95547c1d",
+      "fallback_sha256": "610cdfd9ee005b4e1577ecd958f9291c5cde76f089ba51a92702fc996ab031c2",
+      "training_files": [
+        "B4_GMe_F010_R1.txt",
+        "B4_GMe_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 4,
+      "gas_id": 0,
+      "rho": 1.0,
+      "path": "target/C4_A4_g0.joblib",
+      "sha256": "f23aa707cdf5b547dbbc22be378203d5305f679d91fdf5760ac62a68e7ea025e",
+      "fallback_sha256": "073733086688f9c54947a0ce2b5fbebc4bedfc45445305f45fdcf0e820d7d787",
+      "training_files": [
+        "B4_GEa_F010_R1.txt",
+        "B4_GEa_F040_R1.txt",
+        "B4_GEa_F070_R1.txt",
+        "B4_GEa_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 4,
+      "gas_id": 1,
+      "rho": 1.0,
+      "path": "target/C4_A4_g1.joblib",
+      "sha256": "c4108e21d5863966627d717355291e4ca62c3a5d146d855be237f1dc7f6a2fb9",
+      "fallback_sha256": "67bb6be22f85fec17bb26d0de252c9105c147032d2ed74b7417c0cfa4201224d",
+      "training_files": [
+        "B4_GCO_F010_R1.txt",
+        "B4_GCO_F040_R1.txt",
+        "B4_GCO_F070_R1.txt",
+        "B4_GCO_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 4,
+      "gas_id": 2,
+      "rho": 1.0,
+      "path": "target/C4_A4_g2.joblib",
+      "sha256": "44bd05fce4ca498501b98df147775168c62935a66084c7616a7ea3bf0d700f74",
+      "fallback_sha256": "dfbd08d4ef152ac006accc306fde0d6116dc09f9298dbab42dc22c13c711ddaf",
+      "training_files": [
+        "B4_GEy_F010_R1.txt",
+        "B4_GEy_F040_R1.txt",
+        "B4_GEy_F070_R1.txt",
+        "B4_GEy_F100_R1.txt"
+      ],
+      "params": {
+        "C": 10.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C4",
+      "budget": 4,
+      "gas_id": 3,
+      "rho": 1.0,
+      "path": "target/C4_A4_g3.joblib",
+      "sha256": "471a240733e8fd1acdf84c3b01ee04bb01f9960c8629837d442c089bd4a6439b",
+      "fallback_sha256": "fe390390cc7ed579ebaf66768bd7b2258da617abf58419035a03eafd5d75c55e",
+      "training_files": [
+        "B4_GMe_F010_R1.txt",
+        "B4_GMe_F040_R1.txt",
+        "B4_GMe_F070_R1.txt",
+        "B4_GMe_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 2,
+      "gas_id": 0,
+      "rho": 0.75,
+      "path": "target/C5_A2_g0.joblib",
+      "sha256": "4fda6571f4ce245352af72892a9d4c14c3f1f401dede5f64eab8eb22efeaf811",
+      "fallback_sha256": "f56a32566dcef7127e5b8ac13f1b138e2743c603b3c3de1bb669e08e43f04b8c",
+      "training_files": [
+        "B5_GEa_F010_R1.txt",
+        "B5_GEa_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 2,
+      "gas_id": 1,
+      "rho": 0.75,
+      "path": "target/C5_A2_g1.joblib",
+      "sha256": "cb33af7aab3500bd09e226545d48044e2ef0158b0777415d0470c1334165fff3",
+      "fallback_sha256": "ea59b655e103faa6ffd364644cc303e07d26bfa109a457685f7d59dd38a29ed0",
+      "training_files": [
+        "B5_GCO_F010_R1.txt",
+        "B5_GCO_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 2,
+      "gas_id": 2,
+      "rho": 0.75,
+      "path": "target/C5_A2_g2.joblib",
+      "sha256": "5da1b7f5c66d2360426c0de54aa76a6a3436caefba677ee4d6f278f3ca430575",
+      "fallback_sha256": "a8351616987d1f18bbb6e1328753a57e09c15cfe786141384da195c5107fbab3",
+      "training_files": [
+        "B5_GEy_F010_R1.txt",
+        "B5_GEy_F100_R1.txt"
+      ],
+      "params": {
+        "C": 100.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 2,
+      "gas_id": 3,
+      "rho": 0.75,
+      "path": "target/C5_A2_g3.joblib",
+      "sha256": "09d09e76ab3ac8db9d286bc43c2296748dc55bfa58306b2a20eaa583726bd5b7",
+      "fallback_sha256": "3881cf5f1eb48d7185d4f10db7a2194991eb6db1e2acbbc59649a610afbf5600",
+      "training_files": [
+        "B5_GMe_F010_R1.txt",
+        "B5_GMe_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 4,
+      "gas_id": 0,
+      "rho": 1.0,
+      "path": "target/C5_A4_g0.joblib",
+      "sha256": "593314dbe33d7afc81ccf97d6e4f4c3b07fefe6c198d01a7a7b4ca14297f9986",
+      "fallback_sha256": "defe7875017ca115a2f487717dd30b5ecaf53b11525c4a7cf4ba5fdd25d390e5",
+      "training_files": [
+        "B5_GEa_F010_R1.txt",
+        "B5_GEa_F040_R1.txt",
+        "B5_GEa_F070_R1.txt",
+        "B5_GEa_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 4,
+      "gas_id": 1,
+      "rho": 1.0,
+      "path": "target/C5_A4_g1.joblib",
+      "sha256": "0f4333138993802738c44e60b0d82f72b9784f88bd671f88d8b703c130e52cd4",
+      "fallback_sha256": "026f10778722ed314397260738635cc1b275e800ebfeb3f70e075260db6c15dd",
+      "training_files": [
+        "B5_GCO_F010_R1.txt",
+        "B5_GCO_F040_R1.txt",
+        "B5_GCO_F070_R1.txt",
+        "B5_GCO_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 4,
+      "gas_id": 2,
+      "rho": 1.0,
+      "path": "target/C5_A4_g2.joblib",
+      "sha256": "0e3d58d5a42a31f7941eef34e8d47155e737f8e33a9325a09fd36330a5e1c2ee",
+      "fallback_sha256": "9052c2611b649e13928e477052b531a17b5a3164ed13547042313b9837ec674a",
+      "training_files": [
+        "B5_GEy_F010_R1.txt",
+        "B5_GEy_F040_R1.txt",
+        "B5_GEy_F070_R1.txt",
+        "B5_GEy_F100_R1.txt"
+      ],
+      "params": {
+        "C": 10.0,
+        "gamma_factor": 0.1
+      }
+    },
+    {
+      "target": "C5",
+      "budget": 4,
+      "gas_id": 3,
+      "rho": 1.0,
+      "path": "target/C5_A4_g3.joblib",
+      "sha256": "c65d1266b20a3c5d4b7209d5bea229dbf7282550c930f051e41ab61e17e37627",
+      "fallback_sha256": "0da681770b778187f17ce45d7eb14dcb92ffb3bc5981a5a39daf5bb6ae121ed7",
+      "training_files": [
+        "B5_GMe_F010_R1.txt",
+        "B5_GMe_F040_R1.txt",
+        "B5_GMe_F070_R1.txt",
+        "B5_GMe_F100_R1.txt"
+      ],
+      "params": {
+        "C": 1.0,
+        "gamma_factor": 1.0
+      }
+    }
+  ],
+  "budgets": [
+    {
+      "budget": 2,
+      "rho": 0.75,
+      "target_nonzero_allowed": true,
+      "negative_source_episodes": [],
+      "reason": "PASS_SOURCE_RULE"
+    },
+    {
+      "budget": 4,
+      "rho": 1.0,
+      "target_nonzero_allowed": true,
+      "negative_source_episodes": [],
+      "reason": "PASS_SOURCE_RULE"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+"""No-fit independent equation/replay checks and retrospective reporting."""
+from study import *
+import json,subprocess
+def main():
+    v,s,c,alpha,prior=deps();a.verify_previous()
+    for r in rows(A/'ARTIFACT_SHA256.csv'):p1.verify_sha(A/r['path'],r['sha256'])
+    p1.verify_sha(Path(__file__).with_name('study.py'),read(RUN/'GATE1_RECOVERY.json')['code_sha256'])
+    lock=read(RUN/'SOURCE_MODELS_LOCKED.json')
+    for path,h in lock['files'].items():p1.verify_sha(RUN/path,h)
+    assert sha(RUN/'SOURCE_INDEX.json')==lock['index_sha256']
+    rho=read(RUN/'RHO_PARAMETERS_LOCKED.json');assert rho['source_fits']==80
+    for path,h in rho['files'].items():p1.verify_sha(RUN/path,h)
+    for old,h in read(RUN/'GATE1_RECOVERY.json')['preserved'].items():p1.verify_sha(RUN/'source'/old,h)
+    preds=rows(RUN/'WINDOW_PREDICTIONS.csv');metrics=rows(RUN/'OVERALL_METRICS.csv');assert len(preds)==25200 and len(metrics)==60
+    # Independent equations, not the p1 metric helper.
+    checks=[]
+    for r in metrics:
+        rr=[x for x in preds if (x['target'],x['budget'],x['method'])==(r['target'],r['budget'],r['method'])];groups=collections.defaultdict(list)
+        for x in rr:groups[x['filename']].append(x)
+        nse=[];mae=[]
+        for name,gg in groups.items():
+            assert len(gg)==21;g=int(gg[0]['gas_id']);e=np.array([float(x['prediction_'+r['mode']+'_ppm'])-float(x['truth_ppm']) for x in gg]);nse.append(float(np.mean(e*e)/SPAN[g]**2));mae.append(float(np.mean(abs(e))))
+        diff=abs(100*np.sqrt(np.mean(nse))-float(r['single_window_equal_exposure_NRMSE_percent']));assert len(groups)==40 and diff<1e-10 and abs(np.mean(mae)-float(r['single_window_equal_exposure_MAE_ppm']))<1e-10;checks.append(diff)
+    # Saved target-model replay and same frozen training scalers/parameters.
+    replay=0
+    for r in read(RUN/'TARGET_MODELS_LOCKED.json')['models']:
+        p1.verify_sha(RUN/r['path'],r['sha256']);res=joblib.load(RUN/r['path']);fb,fr=baseline(v,r['target'],r['budget'],r['gas_id']);assert r['params']==fr['params']
+        for key in ['mean','scale']:np.testing.assert_array_equal(res['inner'][key],fb['numerical'][key])
+        z,mm=p15.cache(r['target'],'test');ix=np.flatnonzero(z['gas']==r['gas_id']);x=z['x71'][ix]
+        pp,_=safe_predict(v,prior,res,fb,x,r['rho'],lambda:load_source(s,'FULL',r['gas_id']).predict_matrix(x,clip=False),False)
+        expected={p['physical_identity']:float(p['prediction_raw_ppm']) for p in preds if p['target']==r['target'] and int(p['budget'])==r['budget'] and p['method']=='FixedRhoResidual71'}
+        for i,p in zip(ix,pp):assert abs(p-expected[mm[i]['physical_identity']])<1e-10;replay+=1
+    previous=rows(P15/'run/evaluation/WINDOW_PREDICTIONS.csv');pmap={(p['target'],int(p['budget']),p['rule'],p['family'],p['physical_identity']):p for p in previous};refchecks=0
+    for p in preds:
+        if p['method'] not in ['F_SVR_rho0','N_SVR_reference','KRR_reference']:continue
+        rule='N' if p['method'].startswith('N_') else 'F';family='KRR' if p['method'].startswith('KRR') else 'SVR';q=pmap[p['target'],int(p['budget']),rule,family,p['physical_identity']]
+        assert float(p['prediction_raw_ppm'])==float(q['prediction_raw_ppm']) and float(p['prediction_clipped_ppm'])==float(q['prediction_clipped_ppm']);refchecks+=1
+    events=[json.loads(x)['stage'] for x in (RUN/'EVENTS.jsonl').read_text().splitlines()];assert events==['gate1_pass','gate2_complete','gate3_models_locked','target_test_released','evaluation_done']
+    interface=rows(RUN/'FALLBACK_INTERFACE_CHECKS.csv');assert len(interface)==240 and all(x['raw_clip_exact']=='True' for x in interface)
+    # Additional no-fit positive-path checks and independent fallback after source identity rejection.
+    positive=[]
+    for r in read(RUN/'TARGET_MODELS_LOCKED.json')['models']:
+        res=joblib.load(RUN/r['path']);z,mm=p15.cache(r['target'],'cal');x=z['x71'][p15.cal_mask(mm,r['budget'],r['gas_id'])];fb,_=baseline(v,r['target'],r['budget'],r['gas_id']);source=load_source(s,'FULL',r['gas_id']).predict_matrix(x,clip=False)
+        out,_=safe_predict(v,prior,res,fb,x,r['rho'],lambda:source,True);raw,_=safe_predict(v,prior,res,fb,x,r['rho'],lambda:source,False);np.testing.assert_array_equal(out,np.clip(raw,res['clip_min'],res['clip_max']))
+        positive.append(dict(target=r['target'],budget=r['budget'],gas_id=r['gas_id'],single_final_clip=True,component_clip_bounds_ignored=True))
+    table(RUN/'POSITIVE_PATH_CHECKS.csv',positive)
+    # No new source/target selection: all following comparisons are retrospective analysis only.
+    primary=[r for r in metrics if r['mode']=='clipped'];matrix=[];contrasts=[];rng=np.random.default_rng(42)
+    for target in ['C3','C4','C5']:
+        for b in (2,4):
+            part=[r for r in primary if r['target']==target and int(r['budget'])==b];m=dict(target=target,budget=b)
+            for r in part:m[r['method']]=float(r['single_window_equal_exposure_NRMSE_percent'])
+            m['residual_minus_F_points']=m['FixedRhoResidual71']-m['F_SVR_rho0'];matrix.append(m)
+            err=[]
+            for method in ['F_SVR_rho0','FixedRhoResidual71']:
+                rr=[p for p in preds if p['target']==target and int(p['budget'])==b and p['method']==method];ers=p1.exposure_rows([dict(p,gas_id=int(p['gas_id']),prediction_ppm=float(p['prediction_clipped_ppm'])) for p in rr]);err.append(ers)
+            assert [r['filename'] for r in err[0]]==[r['filename'] for r in err[1]]
+            aa=np.array([r['mean_window_normalized_squared_error'] for r in err[0]]);bb=np.array([r['mean_window_normalized_squared_error'] for r in err[1]]);gas=np.array([r['gas_id'] for r in err[0]]);boot=[]
+            for _ in range(2000):
+                ids=np.concatenate([rng.choice(np.flatnonzero(gas==g),10,replace=True) for g in range(4)]);boot.append(100*(np.sqrt(bb[ids].mean())-np.sqrt(aa[ids].mean())))
+            contrasts.append(dict(target=target,budget=b,delta_NRMSE_points=m['residual_minus_F_points'],conditional_bootstrap_low=float(np.percentile(boot,2.5)),conditional_bootstrap_high=float(np.percentile(boot,97.5)),replicates=2000,seed=42,scope='conditional_on_one_test_day_not_generalization_significance'))
+    table(RUN/'PRIMARY_MATRIX.csv',matrix);table(RUN/'PAIRED_UNCERTAINTY.csv',contrasts)
+    slices=rows(RUN/'GAS_CONCENTRATION_ERRORS.csv');negative=[];focus=[]
+    for r in slices:
+        if r['method']!='FixedRhoResidual71':continue
+        ref=next(q for q in slices if q['target']==r['target'] and q['budget']==r['budget'] and q['gas_id']==r['gas_id'] and q['slice']==r['slice'] and q['mode']==r['mode'] and q['method']=='F_SVR_rho0')
+        delta=float(r['single_window_equal_exposure_NRMSE_percent'])-float(ref['single_window_equal_exposure_NRMSE_percent'])
+        row=dict(target=r['target'],budget=r['budget'],gas_id=r['gas_id'],slice=r['slice'],mode=r['mode'],F_NRMSE=float(ref['single_window_equal_exposure_NRMSE_percent']),residual_NRMSE=float(r['single_window_equal_exposure_NRMSE_percent']),delta_points=delta)
+        if delta>0:negative.append(row)
+        if (r['target'],int(r['gas_id'])) in [('C3',2),('C4',0),('C5',1)] and r['slice'].isdigit() and (int(r['slice']) in [40,50,60,70] if r['target']=='C3' else int(r['slice'])>=80):focus.append(row)
+    table(RUN/'NEGATIVE_TRANSFER_SLICES.csv',negative);table(RUN/'DIFFICULT_CONCENTRATIONS.csv',focus)
+    gates=dict(Gate1=dict(status='PASS',source_heads=12,pooled_fits=12),Gate2=dict(status='PASS',interface_cases=240,rho_budgets=rho['budgets'],source_cv_fits=80),Gate3=dict(status='PASS',target_heads=24,configs=30,retrospective=True),
+        research_decision='STOP_EXPANDING_FIXED_SHARED_RHO_DIRECTION;RELIABLE_UNIFORM_BENEFIT_NOT_ESTABLISHED',rationale='5/6overall improvements but C4A4 negative;pergas/highconcentration failures retained;SourceOnly often stronger;no extra gates or tuning')
+    js(HERE/'GATE_STATUS.json',gates)
+    final=dict(status='PASS_WITH_NEGATIVE_RESULTS',source_fit_calls=24,source_rho_fit_calls=80,target_fit_calls=24,total_real_fits=128,repeated_fits_after_metadata_recovery=0,model_replay_predictions=replay,reference_predictions_exactly_reproduced=refchecks,independent_metric_sets=60,independent_metric_maxdiff=max(checks),fault_injection_cases=240,raw_clip_assertions=480,positive_clip_checks=24,target_test_selection=False,development_selection=False,h_consistency_implemented=False,logical_clients_not_network_isolation=True,source_models_lock_sha256=sha(RUN/'SOURCE_MODELS_LOCKED.json'),rho_lock_sha256=sha(RUN/'RHO_PARAMETERS_LOCKED.json'),target_lock_sha256=sha(RUN/'TARGET_MODELS_LOCKED.json'))
+    js(HERE/'VERIFICATION_FINAL.json',final)
+    text='# FedOnGas Phase2B：合法源模型与固定残差迁移最小验证\n\n2026-11-04，依据Phase2A固定4955a3243ffe05a5f39087c4c8189c59ee13d53c。全部结果回顾性，不是首次盲测；C3三日期，C4/C5两日期替代，C4源Day7晚于calDay3、早于testDay9。逻辑客户端统计量实验，不代表网络隔离或隐私保护。\n\n'
+    text+='## 门禁与结果\n\nGate1 PASS：12个71D源头及12个pooled参考，alpha1000；训练身份、矩、scaler、系数、raw/clip逐窗对照和模型均保存。最大raw差'+str(max(float(r['raw_maxdiff_ppm']) for r in rows(RUN/'SOURCE_PARITY.csv')))+'ppm。来源合法C1Day4/C2Day1/7，共120暴露2520窗。\n\nGate2 PASS：原SVR71/base/Centered薄适配，240个故障场景、480次raw/clip检查与同一独立F-SVR头逐元素一致。rho0不访问源；非零残差源失效调用独立F头，不改变残差rho。原始cal支持最终仅clip一次，调整标签clip字段不用于浓度支持。源侧固定5值选择A2 rho=.75、A4 rho=1，两个任务均不劣于rho0。全部源候选评分和逐窗预测保留。\n\nGate3 PASS：24个新目标残差头锁定后评价30配置，共25200逐窗预测。F/N-SVR/KRR只读复用；SourceOnly4个全源头共享目标/预算，A2/A4是重复视图而不是独立训练。\n\n'
+    keys=list(matrix[0]);text+='主指标为Oracle_ALL、单窗口误差暴露等权NRMSE%，裁剪结果如下；raw、MAE、暴露/气体/浓度/seen/unseen完整保存。\n\n| '+' | '.join(keys)+' |\n| '+' | '.join(['---']*len(keys))+' |\n'
+    for r in matrix:text+='| '+' | '.join(str(r[k]) if k in ['target','budget'] else f'{r[k]:.4f}' for k in keys)+' |\n'
+    text+='\n## 研究判断\n\n固定残差较F-SVR总体改善5/6，但C4 A4退步，逐气体/浓度仍有负迁移；不能宣布可靠、跨目标预算一致的迁移保证。Source-only在C3/C5明显强于标定后的残差，说明少量校准可能破坏已有浓度关系，不能只看残差赢F-SVR就断言适配必要。按预注册要求停止扩展当前固定共享rho方向，保留源知识有用的探索性证据，不调rho/阈值、不追加复杂门控。H-CONSISTENCY未实现。\n\n源伪任务与Phase1/1.5选参复用同Day7源队列，cal/validation同日、文件互斥；继承元参数由整个Day7池选择，不能当作当Day1/4已有参数或独立确认。目标test历史已观察，当前640暴露中无已确认的新独立盲测集，不能据条件bootstrap推广跨日显著性。\n\n## 制品与复现\n\nrun/SOURCE_INDEX及source/保存12源头、12pooled头、矩与SHA；SOURCE_MODELS_LOCKED、RHO_PARAMETERS_LOCKED、TARGET_MODELS_LOCKED给出三阶段锁定。SOURCE_TRAINING_IDENTITIES与SOURCE_PARITY_WINDOW_PREDICTIONS保留全部身份和7560个源对照。SOURCE_RHO_SCORES及SOURCE_RHO_WINDOW_PREDICTIONS保留80次选参拟合的所有候选。WINDOW_PREDICTIONS、OVERALL_METRICS、EXPOSURE_ERRORS、GAS_CONCENTRATION_ERRORS、DIFFICULT_CONCENTRATIONS、NEGATIVE_TRANSFER_SLICES与PAIRED_UNCERTAINTY是完整结果。暴露均值融合仅辅助，不能当单窗部署性能。\n\n实际入口study.py，依次gate1→gate2→gate3，verify_report.py不拟合复核。使用现有Python3.12/numpy1.26/sklearn1.8/joblib1.4/scipy1.13/threadpoolctl，单线程CPU。输出拒绝覆盖；完整重现需复制到新research同级目录，保持依赖路径并新建run，不在本目录重跑。\n\n首次Gate1在首个源/pooled头已保存后因审计dict重复gas_id停止；只修正元数据构造，原3文件SHA保留，直接加载继续，无重拟合。初始代码SHA及修正版SHA在PRE_RUN_CONTRACT/GATE1_RECOVERY，实际合计128fit，不隐瞒中断。\n\n验证：60组指标独立公式核对；5040条新残差逐窗保存模型回放；15120条旧F/N/KRR预测逐元素复现；历史资产SHA不变。完整源/目标权重、特征与矩留本地，GitHub只发布精简报告、锁/索引摘要和数值证据。\n'
+    with (HERE/'README.md').open('x',encoding='utf-8') as f:f.write(text)
+    print(json.dumps(final),flush=True)
+if __name__=='__main__':
+    with threadpool_limits(limits=1):main()

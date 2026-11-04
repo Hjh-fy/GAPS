@@ -1,0 +1,29 @@
+{
+  "status": "PASS_INTERFACE_AND_SELECTION",
+  "budgets": [
+    {
+      "budget": 2,
+      "rho": 0.75,
+      "target_nonzero_allowed": true,
+      "negative_source_episodes": [],
+      "reason": "PASS_SOURCE_RULE"
+    },
+    {
+      "budget": 4,
+      "rho": 1.0,
+      "target_nonzero_allowed": true,
+      "negative_source_episodes": [],
+      "reason": "PASS_SOURCE_RULE"
+    }
+  ],
+  "source_fits": 80,
+  "interface_checks": 240,
+  "target_test_used": false,
+  "shared_per_budget": true,
+  "source_tasks_not_independent_confirmation": true,
+  "files": {
+    "SOURCE_RHO_SCORES.csv": "61403cd093c07dbd4139b1b1c54ab3b8f9b2f70f9f0c942d9da62b1f31d5ca59",
+    "SOURCE_RHO_WINDOW_PREDICTIONS.csv": "766b2bfe0fc4408a37a063b520dcd597dfa1cbb2c5e070a6ee421edba5fd7a85",
+    "FALLBACK_INTERFACE_CHECKS.csv": "6cffa87f4413bacefecb990842ff9867bd84888ae04979b642c73c68c57b7299"
+  }
+}
