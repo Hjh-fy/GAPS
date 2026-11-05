@@ -1,0 +1,92 @@
+"""Phase3-only immutable spec, canonical identities and fixed-index loaders."""
+import sys,json,hashlib,copy
+from pathlib import Path
+import numpy as np
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];P31=HERE.parent/'fedongas_phase31_20261105'
+sys.dont_write_bytecode=True
+sys.path.insert(0,str(P31));import common as prior
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def read(p):return json.loads(Path(p).read_text(encoding='utf-8-sig'))
+def write(p,x):
+    p=Path(p);p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('x',encoding='utf-8',newline='\n') as f:json.dump(x,f,ensure_ascii=False,indent=2,allow_nan=False)
+def digest(arrays):return prior.digest_arrays(arrays)
+def spec(group):
+    if group not in ['SOURCE','B0','B1','B2','B3','B4','B5']:raise ValueError('unknown group')
+    return dict(schema='P32-v1',group=group,seed=42,shape=[50,8],labels=['Ethanol','CO','Ethylene','Methane'],rounds=25,batch=16,target_batch=16,lr=.0005,target_steps_per_round=100,target_presentations=0 if group in ['SOURCE','B0'] else 40000,initialization='random_source' if group=='SOURCE' else 'sstar',source_clients=[] if group=='B1' else [1,2],target_client=5 if group=='B2' else None,server_DA=group in ['B3','B4','B5'],feedback=group in ['B4','B5'],selective=group=='B5',stats_upload=group in ['B3','B4','B5'],ema=.8,selective_warmup=3,min_scale=.3,initial_prototypes='empty',class_mmd=False,coral=False,adversarial=False,prototype_loss=False,replay=False,align=False,phase='neutral_class_key0',source_pool='full2520',source_CE_batches=10,extra_source_forward_batches=1,evaluation='disabled',optimizer='Adam fresh each round/block',checkpoint_selection='fixed25')
+def validate_spec(s):
+    if not isinstance(s,dict) or s!=spec(s.get('group')):raise ValueError('unregistered spec or changed field')
+    return s
+def verify_prior():
+    if sha(P31/'ARTIFACT_SHA256.csv')!='2562c5053478c36c7244f617321041a1cd5cff360b916259acd39bb68f99757b':raise ValueError('Phase31 anchor')
+    for r in prior.rows(P31/'ARTIFACT_SHA256.csv'):
+        if r['path'] in ['evidence/DATA_EXPORT_MANIFEST.json','evidence/TRAINING_WINDOW_IDENTITIES.csv','binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv']:
+            if sha(P31/r['path'])!=r['sha256']:raise ValueError('canonical identity changed')
+def validate_arrays(x,y,p,n):
+    if x.shape!=(n,50,8) or x.dtype!=np.float32 or not np.isfinite(x).all():raise ValueError('feature contract')
+    if y.shape!=(n,) or y.dtype!=np.int64 or not np.isin(y,[0,1,2,3]).all():raise ValueError('label contract')
+    if p.shape!=(n,) or p.dtype!=np.int64 or not (p==0).all():raise ValueError('neutral phase contract')
+def validate_package(root,lock):
+    verify_prior();root=Path(root);cid=lock.get('client_id');n={1:840,2:1680,5:32}.get(cid)
+    if n is None:raise ValueError('unknown client')
+    canonical={Path(r['path']).name:r for r in prior.read(P31/'evidence/DATA_EXPORT_MANIFEST.json') if r['path'].startswith(f'data/client_{cid}/train_')}
+    paths=list(root.iterdir())
+    if {p.name for p in paths}!=set(canonical) or any(p.is_symlink() or not p.is_file() for p in paths):raise ValueError('noncanonical package or forbidden Test/Dev mount')
+    for p in paths:
+        if sha(p)!=canonical[p.name]['sha256']:raise ValueError('input SHA mismatch')
+    x=np.load(root/'train_features.npy',allow_pickle=False);y=np.load(root/'train_classification_labels.npy',allow_pickle=False);p=np.load(root/'train_phase_labels.npy',allow_pickle=False)
+    validate_arrays(x,y,p,n)
+    ids=[r for r in prior.rows(P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv') if int(r['client_id'])==cid]
+    if not np.array_equal(y,[int(r['gas_id']) for r in ids]):raise ValueError('label identity mismatch')
+    return x,y,p
+def source_identity_sha():
+    verify_prior();expected=[r for r in prior.rows(P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv') if r['client_id'] in ['1','2']]
+    p=HERE/'contracts/SOURCE_WINDOW_IDENTITIES.csv'
+    if prior.rows(p)!=expected:raise ValueError('source identity ledger changed')
+    return sha(p)
+def checkpoint_manifest(path,lock,kind):
+    path=Path(path)
+    if set(lock)!={'kind','sha256','source_identity_sha256','seed','shape','labels','initial_sha256','round_receipts'}:raise ValueError('unknown checkpoint contract')
+    if lock['kind']!=kind or lock['seed']!=42 or lock['shape']!=[50,8] or lock['labels']!=spec('SOURCE')['labels']:raise ValueError('model identity')
+    if lock['source_identity_sha256']!=source_identity_sha() or sha(path)!=lock['sha256']:raise ValueError('checkpoint provenance SHA')
+    registered=HERE/'contracts/SOURCE_RANDOM_INITIAL_LOCK.json'
+    if sha(registered)!='49bd47670e77b1c934940198183fdc1f0779b75e6ad9c00d3dc74d9cb896ba83':raise ValueError('registered random lock altered')
+    anchor=read(registered)
+    if sha(HERE/'contracts/SOURCE_RANDOM_INITIAL.pth')!=anchor['sha256'] or lock['initial_sha256']!=anchor['initial_sha256']:raise ValueError('initial ancestor mismatch')
+    if kind=='sstar':
+        rows=lock['round_receipts']
+        if len(rows)!=25 or [r['round'] for r in rows]!=list(range(1,26)):raise ValueError('source round ancestry')
+        previous=lock['initial_sha256']
+        for r in rows:
+            if r['received']!=previous or sorted(r['clients'])!=[1,2] or r['samples']!=[840,1680]:raise ValueError('source ancestry chain')
+            receipt=path.parent/f"phase32_receipt_{r['round']:03}.json";checkpoint=path.parent/f"server_round_{r['round']:03}.pth"
+            if not receipt.is_file() or read(receipt)!=r or not checkpoint.is_file() or sha(checkpoint)!=r.get('checkpoint_sha256'):raise ValueError('missing source round artifacts')
+            if r.get('entry_sha256')!=sha(HERE/'runtime.py') or r.get('contract_sha256')!=sha(HERE/'contract.py'):raise ValueError('source code ancestry mismatch')
+            import torch
+            ck=torch.load(checkpoint,map_location='cpu',weights_only=True)
+            if digest([ck['model_state'][k].numpy() for k in ck['parameter_keys']])!=r['returned']:raise ValueError('source endpoint mismatch')
+            previous=r['returned']
+        if read(path.parent/'effective_config.json')['spec']!=spec('SOURCE'):raise ValueError('not source-only training')
+    elif kind!='random_source' or lock!=anchor:raise ValueError('unregistered random initialization')
+    return lock
+class FixedBatches:
+    def __init__(self,block):
+        verify_prior()
+        if block not in range(1,26):raise ValueError('round outside fixed endpoint')
+        schedule=prior.rows(P31/'binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv')
+        self.rows=[[int(i) for i in r['indices'].split(';')] for r in schedule if int(r['block'])==block]
+        if len(self.rows)!=100 or any(len(r)!=16 for r in self.rows):raise ValueError('sampler contract')
+    def __iter__(self):return iter(self.rows)
+    def __len__(self):return 100
+class RecordedLoader:
+    def __init__(self,loader,audit,block,indices=None):self.loader=loader;self.dataset=loader.dataset;self.audit=audit;self.block=block;self.indices=indices;self.batch_size=loader.batch_size;self.drop_last=loader.drop_last
+    def __len__(self):return len(self.loader)
+    def __iter__(self):
+        for i,batch in enumerate(self.loader):
+            r=dict(block=self.block,batch=i,rows=len(batch[0]))
+            if self.indices is not None:r['indices']=list(self.indices.rows[i])
+            self.audit.append(r);yield batch
+def target_loader(dataset,block,audit):
+    import torch
+    sampler=FixedBatches(block);loader=torch.utils.data.DataLoader(dataset,batch_sampler=sampler,num_workers=0)
+    return RecordedLoader(loader,audit,block,sampler)

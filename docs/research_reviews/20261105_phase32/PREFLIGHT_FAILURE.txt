@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\preflight.py", line 90, in <module>
+    try:main()
+        ^^^^^^
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\preflight.py", line 59, in main
+    returned,_=st.aggregate_fit(rnd,rr,[]);arr=parameters_to_ndarrays(returned);assert all(np.isfinite(x).all() for x in arr)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\runtime.py", line 88, in aggregate_fit
+    if set(protos)!={f'({g},0)' for g in range(4)} or set(counts)!=set(protos) or sum(counts.values())!=r.num_examples:raise ValueError('class stats identity/counts')
+                                                                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: class stats identity/counts

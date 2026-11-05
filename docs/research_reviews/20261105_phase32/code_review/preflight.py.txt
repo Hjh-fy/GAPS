@@ -1,0 +1,100 @@
+"""Actual native optimizer loops on synthetic fixtures;no real data gradients."""
+import copy,collections,sys,time,traceback
+import runtime as r
+c=r.c;torch=r.torch;np=r.np
+from flwr.common import FitRes,Status,Code,ndarrays_to_parameters,parameters_to_ndarrays
+
+class Tiny64(torch.nn.Module):
+    def __init__(self):
+        super().__init__();self.encoder=torch.nn.Linear(8,64);self.classifier=torch.nn.Linear(64,4)
+    def forward(self,x):
+        z=torch.tanh(self.encoder(x[:,0,:]));return self.classifier(z),torch.nn.functional.normalize(z,dim=1),z
+def ds(n,tag):
+    x=np.zeros((n,50,8),np.float32);x[:,:,0]=tag
+    return r.dataset((x,np.arange(n,dtype=np.int64)%4,np.zeros(n,np.int64)))
+class Manager:
+    def __init__(self,p):self.p=p
+    def num_available(self):return len(self.p)
+    def sample(self,num_clients,min_num_clients=None,**_):return self.p[:num_clients]
+def main():
+    out=c.HERE/'preflight_v2';out.mkdir(exist_ok=False);torch.set_num_threads(1);torch.manual_seed(42)
+    pools={1:ds(840,1),2:ds(1680,-1),5:ds(32,.5)};initial=Tiny64();base=c.digest(r.arrays(initial));summary=[]
+    Adam=torch.optim.Adam;counter=collections.Counter();tag=['none']
+    class CountAdam(Adam):
+        def step(self,*args,**kw):counter[tag[0]]+=1;return super().step(*args,**kw)
+    torch.optim.Adam=CountAdam
+    try:
+        for group in ['B1','B2']:
+            previous=c.HERE/'preflight'/group
+            if previous.exists():
+                assert group+' 2500/40000 PASS' in (c.HERE/'PREFLIGHT_RUN.log').read_text(encoding='utf-8-sig')
+                audit=[x for rnd in range(1,26) for x in c.read(previous/f'target_indices_{rnd:03}.json')]
+                receipts=[c.read(previous/f'receipt_{rnd:03}.json') for rnd in range(1,26)]
+                assert len(audit)==2500 and sum(x['rows'] for x in audit)==40000 and receipts[0]['received']==base
+                summary.append(dict(group=group,status='PASS_ACTUAL_NATIVE_CLIENT_LOOP_SYNTHETIC',steps=2500,presentations=40000,index_sha=c.digest([np.array(x['indices'],np.int64) for x in audit]),initial_state=base,num_examples=32,recovered_from='first completed native loop receipts and PASS assertions in immutable first log'))
+                print(group,'REUSED completed2500/40000',flush=True);continue
+            s=c.spec(group);client=r.PhaseClient(5,s,copy.deepcopy(initial),pools[5],out/group);aa=[a.copy() for a in r.arrays(initial)];tag[0]=group
+            for rnd in range(1,26):aa,n,metrics=client.fit(aa,dict(server_round=rnd,expected_received_sha=c.digest(aa)))
+            assert n==32 and counter[group]==2500 and sum(x['rows'] for x in client.audit)==40000 and all(np.isfinite(a).all() for a in aa)
+            assert client.receipts[0]['received']==base
+            summary.append(dict(group=group,status='PASS_ACTUAL_NATIVE_CLIENT_LOOP_SYNTHETIC',steps=counter[group],presentations=40000,index_sha=c.digest([np.array(x['indices'],np.int64) for x in client.audit]),initial_state=base,num_examples=n))
+            print(group,'2500/40000 PASS',flush=True)
+        # Real source Client statistics after pureCE; preserve one common pair of
+        # genuine uploads as a controlled interface fixture for all DA branches.
+        source_clients=[];metrics_fixture=[];aa_fixture=[]
+        for cid in [1,2]:
+            cl=r.PhaseClient(cid,c.spec('B4'),copy.deepcopy(initial),pools[cid],out/f'SOURCE_STATS_{cid}');tag[0]='source_stats'
+            aa,n,metrics=cl.fit([a.copy() for a in r.arrays(initial)],dict(server_round=1,expected_received_sha=base));source_clients.append(cl)
+            assert not cl.config.USE_ALIGN and not cl.config.USE_REPLAY_DISTILL and not cl.config.USE_REG_LOSS
+            assert metrics['prototype_count']==4 and metrics['proto_examples']==n
+            aa_fixture.append([x.copy() for x in aa]);metrics_fixture.append(metrics)
+        # All native DA numerical classes are real. The fixed local-upload
+        # fixture isolates distribution/aggregation; local CE was exercised above.
+        branch_receipts={};nondegenerate={}
+        for group in ['B3','B4','B5']:
+            st=r.strategy(c.spec(group),copy.deepcopy(initial),pools,out/group);params=ndarrays_to_parameters([a.copy() for a in r.arrays(initial)]);tag[0]=group
+            seen=[];sel=[]
+            for rnd in range(1,26):
+                proxies=[type('Proxy',(),{'cid':str(cid)})() for cid in [1,2]]
+                fits=st.configure_fit(rnd,params,Manager(proxies));rr=[]
+                receive=c.digest(parameters_to_ndarrays(params))
+                for i,(proxy,ins) in enumerate(fits):
+                    assert c.digest(parameters_to_ndarrays(ins.parameters))==receive==ins.config['expected_received_sha']
+                    # These are actual previously computed prototype/encoder
+                    # uploads, reused as labelled synthetic RPC fixtures.
+                    met=dict(metrics_fixture[i]);met['received_sha']=receive
+                    rr.append((proxy,FitRes(Status(Code.OK,''),ndarrays_to_parameters(aa_fixture[i]),[840,1680][i],met)))
+                returned,_=st.aggregate_fit(rnd,rr,[]);arr=parameters_to_ndarrays(returned);assert all(np.isfinite(x).all() for x in arr)
+                agg=torch.load(out/group/f'server_round_{rnd:03}.pth',weights_only=True)['model_state'];ada=torch.load(out/group/f'server_round_{rnd:03}_adapted.pth',weights_only=True)['model_state']
+                ah=c.digest([agg[k].numpy() for k in st.parameter_keys]);dh=c.digest([ada[k].numpy() for k in st.parameter_keys]);rh=c.digest(arr)
+                assert rh==(dh if group!='B3' else ah) and ah!=dh
+                seen.append(dict(round=rnd,received=receive,aggregated=ah,adapted=dh,returned=rh,proto={k:v.tolist() for k,v in st.semantic_protos.items()}));sel.append(st._round_events[rnd]['selective_agg'])
+                params=returned
+            assert counter[group]==2500 and len(st.target_audit)==2500 and sum(x['rows'] for x in st.target_audit)==40000
+            assert len(st.source_audit)==27500 and sum(x['rows'] for x in st.source_audit)==438800
+            assert all(seen[i]['received']==seen[i-1]['returned'] for i in range(1,25))
+            if group=='B5':assert all(x['selective_active'] for x in sel[3:]) and any(len(set(x['client_similarities'].values()))>1 for x in sel[3:])
+            else:assert not any(x['selective_active'] for x in sel)
+            branch_receipts[group]=seen;nondegenerate[group]=sel
+            summary.append(dict(group=group,status='PASS_ACTUAL_NATIVE_DA_SYNTHETIC',steps=counter[group],presentations=40000,index_sha=c.digest([np.array(x['indices'],np.int64) for x in st.target_audit]),source_pool=2520,source_batches=27500,source_forward_rows=438800,source_CE_rows=398800,source_extra_forward_rows=40000,initial_state=base))
+            print(group,'2500/40000 REAL_DA PASS',flush=True)
+        assert len({x['index_sha'] for x in summary})==1
+        for a,b in zip(branch_receipts['B4'],branch_receipts['B5']):assert a['proto']==b['proto']
+        c.write(out/'TARGET_BUDGETS.json',summary);c.write(out/'VERSION_CHAINS.json',branch_receipts);c.write(out/'SELECTIVE.json',nondegenerate)
+        # Native three-client FedAvg with correct role/version receipts.
+        st=r.strategy(c.spec('B2'),copy.deepcopy(initial),pools,out/'TAC');proxies=[type('Proxy',(),{'cid':str(x)})() for x in [1,2,5]];pp=ndarrays_to_parameters(r.arrays(initial));st.configure_fit(1,pp,Manager(proxies));rr=[]
+        for cid,n,value in [(1,840,0.),(2,1680,0.),(5,32,1.)]:
+            aa=[np.full_like(x,value) for x in r.arrays(initial)];rr.append((proxies[len(rr)],FitRes(Status(Code.OK,''),ndarrays_to_parameters(aa),n,dict(client_id=cid,received_sha=base,uploaded_sha=c.digest(aa)))))
+        pp,_=st.aggregate_fit(1,rr,[])
+        assert all(np.allclose(x,32/2552,atol=1e-8) for x in parameters_to_ndarrays(pp))
+        # Reject stale/wrong version before aggregation.
+        rr[0][1].metrics['received_sha']='wrong'
+        try:st.aggregate_fit(2,rr,[])
+        except ValueError:pass
+        else:raise AssertionError('accepted stale broadcast')
+        c.write(out/'SUMMARY.json',dict(status='PASS_SYNTHETIC_NATIVE_LOOPS',budgets=summary,optimizer_steps=dict(counter),TAC_weight=32/2552,B5_active_after_warmup=True,B4_selective_inactive=True,shared_proto_fixture_encoder_bound=True,shared_target_index_sequence=True,numerical_training_doubles=False,local_rpc_uploads_for_DA='fixed genuine prior synthetic uploads;not newly recomputed each round',source_real_training=0,target_real_training=0,target_test_reads=0,network_training=False))
+    finally:torch.optim.Adam=Adam
+if __name__=='__main__':
+    try:main()
+    except Exception:
+        (c.HERE/'PREFLIGHT_FAILURE_V2.txt').write_text(traceback.format_exc(),encoding='utf-8');raise

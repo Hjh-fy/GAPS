@@ -1,0 +1,48 @@
+"""Behavior regressions for protocol boundaries; all fixtures synthetic."""
+import unittest,importlib.util,tempfile,copy,json
+from pathlib import Path
+import numpy as np
+
+class ContractTests(unittest.TestCase):
+    def setUp(self):
+        self.assertIsNotNone(importlib.util.find_spec('contract'),'Phase32 contract entry must exist')
+        import contract
+        self.c=contract
+    def fixture(self):
+        root=Path(__file__).resolve().parent/'fixtures';root.mkdir(exist_ok=True)
+        return Path(tempfile.mkdtemp(dir=root))
+    def test_changed_budget_and_unknown_switch_fail_closed(self):
+        s=self.c.spec('B4');self.c.validate_spec(s)
+        for key,value in [('target_batch',32),('rounds',24),('class_mmd',True),('feedback',False),('unknown',1)]:
+            b=copy.deepcopy(s);b[key]=value
+            with self.assertRaises(ValueError):self.c.validate_spec(b)
+    def test_shape_label_phase_and_nonfinite_rejected(self):
+        x=np.zeros((32,50,8),np.float32);y=np.arange(32,dtype=np.int64)%4;p=np.zeros(32,np.int64)
+        self.c.validate_arrays(x,y,p,32)
+        for bad in [(x[:,:49],y,p),(x,np.ones(32,dtype=np.int64)*4,p),(x,y,np.ones(32,np.int64)),(x+np.nan,y,p)]:
+            with self.assertRaises(ValueError):self.c.validate_arrays(*bad,32)
+    def test_target_batches_are_consumed_not_just_logged(self):
+        import torch
+        ds=torch.utils.data.TensorDataset(torch.arange(32))
+        audit=[];loader=self.c.target_loader(ds,1,audit)
+        seen=[b[0].tolist() for b in loader]
+        self.assertEqual(len(seen),100);self.assertEqual(sum(map(len,seen)),1600)
+        self.assertEqual([r['indices'] for r in audit],seen)
+        self.assertEqual(sorted(i for b in seen[:2] for i in b),list(range(32)))
+    def test_unknown_checkpoint_is_rejected_before_torch_load(self):
+        p=self.fixture()/'unknown.pth';p.write_bytes(b'not-a-checkpoint')
+        with self.assertRaises(ValueError):self.c.checkpoint_manifest(p,{},'sstar')
+    def test_noncanonical_data_root_and_test_file_rejected(self):
+        p=self.fixture();(p/'test_features.npy').write_bytes(b'forbidden')
+        with self.assertRaises(ValueError):self.c.validate_package(p,{'files':[],'client_id':5})
+    def test_self_declared_random_checkpoint_cannot_replace_registered_initial(self):
+        p=self.fixture()/'forged.pth';p.write_bytes(b'self-declared')
+        lock=self.c.read(self.c.HERE/'contracts/SOURCE_RANDOM_INITIAL_LOCK.json');lock['sha256']=self.c.sha(p)
+        with self.assertRaises(ValueError):self.c.checkpoint_manifest(p,lock,'random_source')
+    def test_fabricated_digest_chain_without_round_artifacts_rejected(self):
+        p=self.fixture()/'forged.pth';p.write_bytes(b'self-declared')
+        lock=self.c.read(self.c.HERE/'contracts/SOURCE_RANDOM_INITIAL_LOCK.json');lock.update(kind='sstar',sha256=self.c.sha(p))
+        lock['round_receipts']=[dict(round=i,received=lock['initial_sha256'],returned=lock['initial_sha256'],clients=[1,2],samples=[840,1680]) for i in range(1,26)]
+        with self.assertRaises(ValueError):self.c.checkpoint_manifest(p,lock,'sstar')
+
+if __name__=='__main__':unittest.main(verbosity=2)

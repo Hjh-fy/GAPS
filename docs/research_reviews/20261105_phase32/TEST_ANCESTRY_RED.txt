@@ -1,0 +1,28 @@
+test_changed_budget_and_unknown_switch_fail_closed (__main__.ContractTests.test_changed_budget_and_unknown_switch_fail_closed) ... ok
+test_fabricated_digest_chain_without_round_artifacts_rejected (__main__.ContractTests.test_fabricated_digest_chain_without_round_artifacts_rejected) ... FAIL
+test_noncanonical_data_root_and_test_file_rejected (__main__.ContractTests.test_noncanonical_data_root_and_test_file_rejected) ... ok
+test_self_declared_random_checkpoint_cannot_replace_registered_initial (__main__.ContractTests.test_self_declared_random_checkpoint_cannot_replace_registered_initial) ... FAIL
+test_shape_label_phase_and_nonfinite_rejected (__main__.ContractTests.test_shape_label_phase_and_nonfinite_rejected) ... ok
+test_target_batches_are_consumed_not_just_logged (__main__.ContractTests.test_target_batches_are_consumed_not_just_logged) ... ok
+test_unknown_checkpoint_is_rejected_before_torch_load (__main__.ContractTests.test_unknown_checkpoint_is_rejected_before_torch_load) ... ok
+
+======================================================================
+FAIL: test_fabricated_digest_chain_without_round_artifacts_rejected (__main__.ContractTests.test_fabricated_digest_chain_without_round_artifacts_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\test_contract.py", line 46, in test_fabricated_digest_chain_without_round_artifacts_rejected
+    with self.assertRaises(ValueError):self.c.checkpoint_manifest(p,lock,'sstar')
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_self_declared_random_checkpoint_cannot_replace_registered_initial (__main__.ContractTests.test_self_declared_random_checkpoint_cannot_replace_registered_initial)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\test_contract.py", line 41, in test_self_declared_random_checkpoint_cannot_replace_registered_initial
+    with self.assertRaises(ValueError):self.c.checkpoint_manifest(p,lock,'random_source')
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 7 tests in 4.513s
+
+FAILED (failures=2)

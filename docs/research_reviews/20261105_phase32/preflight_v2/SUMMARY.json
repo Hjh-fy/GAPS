@@ -1,0 +1,81 @@
+{
+  "status": "PASS_SYNTHETIC_NATIVE_LOOPS",
+  "budgets": [
+    {
+      "group": "B1",
+      "status": "PASS_ACTUAL_NATIVE_CLIENT_LOOP_SYNTHETIC",
+      "steps": 2500,
+      "presentations": 40000,
+      "index_sha": "183ff95ee79712c78a5c9c63ded9748f1dac832a1e7b27b165623fd304d55baf",
+      "initial_state": "fceec4a2873a6b23f85c670afe437eee012a16fb20fc5b7a7bb41973a1de5b5a",
+      "num_examples": 32,
+      "recovered_from": "first completed native loop receipts and PASS assertions in immutable first log"
+    },
+    {
+      "group": "B2",
+      "status": "PASS_ACTUAL_NATIVE_CLIENT_LOOP_SYNTHETIC",
+      "steps": 2500,
+      "presentations": 40000,
+      "index_sha": "183ff95ee79712c78a5c9c63ded9748f1dac832a1e7b27b165623fd304d55baf",
+      "initial_state": "fceec4a2873a6b23f85c670afe437eee012a16fb20fc5b7a7bb41973a1de5b5a",
+      "num_examples": 32,
+      "recovered_from": "first completed native loop receipts and PASS assertions in immutable first log"
+    },
+    {
+      "group": "B3",
+      "status": "PASS_ACTUAL_NATIVE_DA_SYNTHETIC",
+      "steps": 2500,
+      "presentations": 40000,
+      "index_sha": "183ff95ee79712c78a5c9c63ded9748f1dac832a1e7b27b165623fd304d55baf",
+      "source_pool": 2520,
+      "source_batches": 27500,
+      "source_forward_rows": 438800,
+      "source_CE_rows": 398800,
+      "source_extra_forward_rows": 40000,
+      "initial_state": "fceec4a2873a6b23f85c670afe437eee012a16fb20fc5b7a7bb41973a1de5b5a"
+    },
+    {
+      "group": "B4",
+      "status": "PASS_ACTUAL_NATIVE_DA_SYNTHETIC",
+      "steps": 2500,
+      "presentations": 40000,
+      "index_sha": "183ff95ee79712c78a5c9c63ded9748f1dac832a1e7b27b165623fd304d55baf",
+      "source_pool": 2520,
+      "source_batches": 27500,
+      "source_forward_rows": 438800,
+      "source_CE_rows": 398800,
+      "source_extra_forward_rows": 40000,
+      "initial_state": "fceec4a2873a6b23f85c670afe437eee012a16fb20fc5b7a7bb41973a1de5b5a"
+    },
+    {
+      "group": "B5",
+      "status": "PASS_ACTUAL_NATIVE_DA_SYNTHETIC",
+      "steps": 2500,
+      "presentations": 40000,
+      "index_sha": "183ff95ee79712c78a5c9c63ded9748f1dac832a1e7b27b165623fd304d55baf",
+      "source_pool": 2520,
+      "source_batches": 27500,
+      "source_forward_rows": 438800,
+      "source_CE_rows": 398800,
+      "source_extra_forward_rows": 40000,
+      "initial_state": "fceec4a2873a6b23f85c670afe437eee012a16fb20fc5b7a7bb41973a1de5b5a"
+    }
+  ],
+  "optimizer_steps": {
+    "source_stats": 158,
+    "B3": 2500,
+    "B4": 2500,
+    "B5": 2500
+  },
+  "TAC_weight": 0.012539184952978056,
+  "B5_active_after_warmup": true,
+  "B4_selective_inactive": true,
+  "shared_proto_fixture_encoder_bound": true,
+  "shared_target_index_sequence": true,
+  "numerical_training_doubles": false,
+  "local_rpc_uploads_for_DA": "fixed genuine prior synthetic uploads;not newly recomputed each round",
+  "source_real_training": 0,
+  "target_real_training": 0,
+  "target_test_reads": 0,
+  "network_training": false
+}

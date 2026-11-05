@@ -1,0 +1,151 @@
+"""Report/seal completed preflight;never launches training."""
+import sys,copy,json,hashlib,subprocess,collections
+import runtime as r
+c=r.c
+def md(name,s):(c.HERE/name).write_text(s.strip()+'\n',encoding='utf-8')
+def main():
+    q=c.read(c.HERE/'preflight_v2/SUMMARY.json');it=c.read(c.HERE/'integration/SUMMARY.json')
+    assert len(q['budgets'])==5 and all(x['steps']==2500 and x['presentations']==40000 for x in q['budgets'])
+    assert len({x['index_sha'] for x in q['budgets']})==1 and q['TAC_weight']==32/2552 and q['B5_active_after_warmup']
+    assert it['received_SHA_matches_previous_returned'] and c.read(c.HERE/'AUTHORIZATION_GUARD.json')['execution_denied_before_model_or_data_load']
+    assert 'Ran 11 tests' in (c.HERE/'TEST_FINAL_GREEN.txt').read_text(encoding='utf-8-sig') and 'OK' in (c.HERE/'TEST_FINAL_GREEN.txt').read_text(encoding='utf-8-sig')
+    assert '2 passed' in (c.HERE/'PYTEST_COMPATIBILITY.txt').read_text(encoding='utf-8-sig')
+    registry=[]
+    for g in ['SOURCE','B0','B1','B2','B3','B4','B5']:
+        s=c.read(c.HERE/f'contracts/{g}.json');c.validate_spec(s);actual=r.effective(s);assert c.read(c.HERE/f'cli_plans/{g}.json')==actual
+        registry.append(dict(experiment_id='P32-C5-A4-'+g+'-S42' if g!='SOURCE' else 'P32-SOURCE-DAY7-S42',group=g,spec_sha=c.sha(c.HERE/f'contracts/{g}.json'),effective_sha=c.sha(c.HERE/f'cli_plans/{g}.json'),entry_sha=c.sha(c.HERE/'runtime.py'),contract_sha=c.sha(c.HERE/'contract.py'),interface_preflight='PASS',real_execution='BLOCKED_NO_SSTAR' if g!='SOURCE' else 'READY_FOR_SEPARATE_APPROVAL',training_started=False))
+    c.write(c.HERE/'EXECUTION_REGISTRY_LOCK.json',registry)
+    base=c.spec('B3');fb=c.spec('B4');sel=c.spec('B5')
+    diff=lambda a,b:{k:[a[k],b[k]] for k in a if a[k]!=b[k]}
+    assert set(diff(base,fb))=={'group','feedback'} and set(diff(fb,sel))=={'group','selective'}
+    c.write(c.HERE/'SINGLE_FACTOR_CHECK.json',dict(status='PASS',B3_B4=diff(base,fb),B4_B5=diff(fb,sel),identity_field='group',same_EMA=.8,same_initial_prototypes='empty',same_stats_upload=True,only_auxiliary_training_loss='none'))
+    p31=c.prior.rows(c.P31/'ARTIFACT_SHA256.csv')
+    for row in p31:
+        if c.sha(c.P31/row['path'])!=row['sha256']:raise ValueError('Phase31 changed')
+    c.verify_prior();old=c.prior.a.verify_previous()
+    for folder in [c.prior.A,c.prior.P3,c.ROOT/'research/fedongas_phase2b_20261104']:
+        rs=c.prior.rows(folder/'ARTIFACT_SHA256.csv')
+        for x in rs:
+            if c.sha(folder/x['path'])!=x['sha256']:raise ValueError('historical stage changed')
+        old[folder.name]=len(rs)
+    prov=[];prefix=str(r.BASE).replace('\\','/')+'/'
+    for name,m in list(sys.modules.items()):
+        f=getattr(m,'__file__',None)
+        if f:
+            s=str(f).replace('\\\','').replace('\\','/')
+            if s.startswith(prefix) and s.endswith('.py'):
+                rel=s[len(prefix):];p=c.prior.path(rel);prov.append(dict(module=name,path=rel,sha256=c.sha(p)))
+    c.prior.table(c.HERE/'V5_IMPORT_PROVENANCE.csv',prov)
+    if subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).decode():raise ValueError('tracked workspace changed')
+    costs=[]
+    for g in ['B0','B1','B2','B3','B4','B5']:
+        da=g in ['B3','B4','B5'];n=0 if g=='B1' else 3 if g=='B2' else 2
+        costs.append(dict(group=g,source_local_steps=0 if g=='B1' else 3950,target_bearing_steps=0 if g=='B0' else 2500,server_mixed_steps=2500 if da else 0,target_presentations=0 if g=='B0' else 40000,source_local_CE_presentations=0 if g=='B1' else 63000,source_server_CE_presentations=398800 if da else 0,source_server_extra_forward=40000 if da else 0,source_stats_extra_forward=126000 if da else 0,source_pool=2520,estimated_TCN_tensor_payload_bytes=n*50*144692,wire_bytes='NOT_MEASURED',real_TCN_training_seconds='NOT_MEASURED'))
+    c.prior.table(c.HERE/'COST_MATRIX.csv',costs)
+    c.write(c.HERE/'VERIFICATION_FINAL.json',dict(status='PASS_FOR_ONE_SOURCE_PRETRAIN_APPROVAL;SIX_REAL_PILOTS_BLOCKED',prior_phase31_payloads_verified=len(p31),other_prior_payloads_verified=old,verified_native_imports=len(prov),all5_target_paths_steps2500_presentations40000=True,same_target_consumed_index_sha=q['budgets'][0]['index_sha'],source_pool2520=True,DA_source_rows_per_group=438800,source_stats_two_additional_passes_per_round=True,native_numeric_doubles=False,DA_long_run_RPC_fixtures='fixed genuine synthetic uploads',actual_source_and_DA_integration_rounds=6,phase32_unit_tests=11,legacy_compatibility_tests=2,real_training=0,source_pretraining=0,pilots=0,target_Test_numeric_reads=0,training_authorization_exists=False,legal_Sstar_exists=False,full_TCN_strict_state_clone_pass=True,checkpoint_positive_Sstar_with_real_source_training='NOT_RUN;requires authorized source pretraining',prototype_content_receipt_guard=True,next_broadcast_chain_guard=True,workspace_tracked_clean=True,source_initial_state_lock_sha=c.sha(c.HERE/'contracts/SOURCE_RANDOM_INITIAL_LOCK.json'),phase31_fixed_commit='b05c139d757a79994f8fc2fc983f1475052bdd45'))
+    md('README.md','''# FedOnGas Phase3.2：薄入口修复与重新预检
+
+**接口与数据流预检通过，可单独批准一次S*源FedAvg预训练；本轮未训练。六组真实pilot仍全部BLOCKED_NO_SSTAR。** 依据v5、Phase3固定3794b71666358a597d5ed3cea65fadead8ff5719、Phase3.1固定b05c139d757a79994f8fc2fc983f1475052bdd45。
+
+独立managed研究worktree新增contract.py、runtime.py、build.py及测试，不改旧strict/matched白名单或v5数值算法。最薄入口直接import原TCN/Client、Flower客户端fit、CheckpointFedAvg、GapsStrategy、ServerDA；不再用AST或数值训练替身完成最终优化计数。
+
+|检查|结果/边界|
+|---|---|
+|7份spec与真实CLI effective_config|PASS；6pilot+1SOURCE；同50×8/4类/seed42/Adam5e-4|
+|B1/B2目标循环|PASS：每组2500真实合成optimizer.step、40000呈现|
+|B3/B4/B5服务器原DA循环|PASS：每组2500/40000，消费同一目标索引序列|
+|完整源2520窗|PASS无梯度数据流；4.032MB特征，去除旧500截断|
+|纯CE与原型统计|PASS：独立UPLOAD，phase0中性键；B5过warmup实际加权，B4不加权|
+|反馈/encoder/下一轮接收|PASS：另做各分支两轮真实合成本地fit+原DA，无RPC训练替身|
+|TAC权重|PASS：32/2552，不按重复呈现膨胀|
+|真实S*与六组训练|BLOCKED：真实S*未生成；无授权文件、未启动任何真实训练|
+
+阅读：[修复差分](REPAIR_DIFF.md) → [合同/命令](CONTRACT_AND_COMMANDS.md) → [测试与资源](TEST_AND_COST.md) → [一次源预训练](SOURCE_PRETRAIN_PLAN.md) → [恢复](RECOVERY.md) → [继续/停止](NEXT_DECISION.md)。EXECUTION_REGISTRY_LOCK为最终参数入口，cli_plans为真实解析输出；contracts/*_effective为早期构建草稿保留，不作为最终指纹。
+
+本轮没有分类精度、端到端Test结果、网络隔离或Pi测量。旧结果/v5及其ZIP保持只读；470个Phase1–3历史payload与145个Phase3.1payload重新核验。所有合成模型/源码/失败日志和逐批收据留本地，GitHub只发审阅副本。
+''')
+    md('REPAIR_DIFF.md','''# 修复差分与算法边界
+
+|Phase3.1阻塞|Phase3.2最小改动|复用的原实现|
+|---|---|---|
+|SEQ metadata100与输入50冲突|新spec强制50×8，TCN原结构不变；canonical shape/label/原SHA校验|原process_raw输出和TCN|
+|无法加载共同S*|新随机源/继续训练分开；预加载原state原dtype/形状/有限值后strict load；祖先锚与25轮原制品核验|原完整state schema|
+|服务器batch32导致80000|覆盖DA loader为固定16索引批，每轮100；每次实际yield写索引|原run_adaptation和Adam|
+|源500截断|完整ConcatDataset840+1680；不改每步10SourceCE批+1特征forward|原SourceCE目标函数|
+|ce_only无法上传原型|ce_only后仅独立开UPLOAD_PROTO_STATS，关闭原对齐/回放/回归/DP/增强损失|原Client统计均值/方差/计数和global feature函数|
+|TAC/独立微调受旧ID限制|新B1 target action；B2普通第三客户端且num_examples32|原Client循环和FedAvg样本权重|
+|隐藏Test评价|无eval loader，fraction_evaluate0；evaluate直接拒绝；数据包只允许已锁3文件|新入口边界，不改旧默认值|
+|只检查返回但不检查分发链|原fit接收SHA、上传/encoder/原型内容SHA；服务器检查初始/前轮返回、顺序与人数|原Flower fit/aggregate/DA/EMA|
+
+新validator不是关闭旧验证：原通用DA validator面向calibration_*与默认100；本入口使用Phase31锁定Source/Calibration角色的train_*精简包，逐字节canonicalSHA、身份、形状、类序、phase0验证更严格。无train/test fallback，无随机窗口混角色。非预注册ID/字段、额外Test/Dev文件、未知类别、非有限值、未知模型或错误版本均停止。
+
+B3/B4除实验身份仅feedback不同；B4/B5除身份仅selective不同。共同初始原型为空、EMA.8、上传规则、warmup3/minscale.3、所有辅助loss系数0、SourceCE=TargetCE=1；普通初始网络feature noise.01/dropout保留为共同结构。维护原型、原型损失、参数权重分开：无原型损失不等于无统计。真实轨迹后期原型可因encoder反馈不同而自然变化，不强制不同轨迹数值一致。
+
+独立review发现并修复：不能以自报digest链证明S*；绑定已注册随机初始lock及真实25轮receipt/checkpoint/SHA/源码/Source spec；在load_state_dict前检查原dtype；每气体精确210/420计数而非仅总和；检验64D方差/globalfeature及prototype_content_sha。最终审阅无critical/important未解决项。
+''')
+    md('CONTRACT_AND_COMMANDS.md','''# 实际配置、标签访问和执行命令
+
+正式spec为contracts/{SOURCE,B0..B5}.json，validator仅接受完整注册字典；最终effective为cli_plans/*.json（逐个通过真实runtime.py plan命令），指纹见EXECUTION_REGISTRY_LOCK。COMMANDS.json保留真实argv数组，含空格的路径不拼接执行；可用PowerShell `&`配合逐参数引号或Python subprocess.run(argv)。本轮只调用plan和故意验证未授权server拒绝，不调用真实训练。
+
+通用入口：`PYTHON_EXECUTABLE research/fedongas_phase32_20261105/runtime.py plan --spec <contracts/B4.json绝对路径> --output <新effective.json绝对路径>`。真实action为server/client/target，参数只有--spec、--checkpoint、--checkpoint-lock、--client-id、--output、--address，均真实parser实现，没有伪造旧开关。
+
+SOURCE/B0启动server及C1/C2；B1仅target；B2 server+C1/C2/C5；B3/B4/B5 server+C1/C2，服务器读C5校准。SOURCE随机初始权重已保存SOURCE_RANDOM_INITIAL.pth及锁；六组checkpoint参数指向尚不存在的future_SSTAR/SSTAR.pth/LOCK，不使用旧协议权重顶替。未来S*需要将整个源run目录（25轮checkpoint/receipt/effective）作为来源包恢复，不只拷一个pth。
+
+所有实际训练action在读取数据/模型前要求单独批准的TRAINING_AUTHORIZATION.json，值精确为{"approved_spec_sha256":所批准specSHA,"purpose":"SOURCE"}；本轮未创建。获明确授权后才可登记该文件及执行一次源预训练，批准SOURCE不授权B0–B5。命令实际运行已验证因缺授权退出；这不是仅写文档禁止训练。
+
+Source专用目录data/source仅C1Day4、C2Day1/7三文件/客户端；Target目录独立，SOURCE input_pools只枚举1/2，不加载C5。C5仅Day18 A4，16暴露32窗，目标训练索引复用Phase31固定2500×16批表并按实际yield登记。Development/Test未导出、未挂载，任何额外文件都会在np.load之前拒绝。合法真实数据只做no-grad数组与loader检查；prototype统计只在合成模型测试中实际执行。
+
+B1/B2/服务器每轮都是100次目标更新：目标loader在LOCAL_EPOCHS1内显式重复固定100批，而不是把dataset长度膨胀；num_examples仍32，完整25轮都是40000呈现。每轮/块Adam重建、lr5e-4与原循环一致。服务器初始与回传SHA、客户端序号、模型全state/encoder、原型内容和计数、上下行state/protobuf字节都写receipt；真实wire/TLS重试需执行时另测，不宣称隐私隔离。
+''')
+    md('TEST_AND_COST.md','''# 测试证据、差异与计算成本
+
+五条目标路径实际原optimizer循环全部2500/40000，索引digest均183ff95ee79712c78a5c9c63ded9748f1dac832a1e7b27b165623fd304d55baf。B1/B2第一次完成的收据保留并复用；第一次在进入DA前因原序列化使用"0,0"而非"(0,0)"停止。修正新guard后，只运行尚未完成的DA，不重复完整B1/B2。失败日志未删除。
+
+25轮DA数值使用真实原ServerDomainAdaptation/损失/optimizer，Tiny64合成输入，无数值替身。为隔离服务器机制，该长循环复用了第一次真实合成source fit生成的上传fixture，因此不把它单独说成真实逐轮客户端训练。integration又各做B3/B4/B5两轮真实合成source Client.fit+原DA+下一轮fit：校验返回/接收/encoder/prototype版本和stale拒绝，不用RPC训练替身。真实Flower网络未启动。
+
+B5从第4轮实际selective_active且非退化相似度给出不同权重，B4不触发；受控相同upload下三组EMA一致。独立两轮实际fit允许模型反馈后统计自然变化。纯CE客户端统计调用原raw64D均值/方差及normalized global feature，都是训练后无梯度；不新增MMD/对抗/原型损失。
+
+Source完整2520×50×8float32仅4.032MB，实际无梯度loader遍历840/1680/32窗成功。每DA组25轮实测27500源批、438800源forward行；其中SourceCE398800、附加source feature forward40000。源每轮本地CE总2520/158步，25轮63000/3950。另统计上传执行两次source pass，每DA组额外126000无梯度forward，必须单列。成本详COST_MATRIX；B1本地、B2第三客户端、B3–B5服务器混合CE并非完全等算力单因素对照。
+
+模型完整state144692B；两源25轮上下行张量约14.4692MB，三客户端21.7038MB。新增记录FitIns/FitRes实际protobuf序列化字节，integration有合成实测；不是TCP/TLS wire字节、不是实际TCN训练时间。CPU无CUDA，源训练墙钟/峰值内存仍未测，不能用Tiny时间兑现。
+
+测试：11项本阶段unit全部通过，旧Flower split兼容2项通过；红/绿日志均保存。没有运行可能读取历史真实Test/训练的全仓库实验套件，不声称全仓库测试通过。故意错误预算、shape/class/phase/nonfinite、未知模型、自造random/S*链、原dtype隐式转换、错误类计数/原型内容、广播版本均fail closed。临时目录第一次受Windows沙箱拒绝，之后全部fixture放当前worktree，不触碰旧结果。
+''')
+    md('SOURCE_PRETRAIN_PLAN.md','''# 一次性S*源FedAvg执行准备（READY，未执行）
+
+只建议下一轮**单独批准一次SOURCE**。输入C1Day4(40暴露840窗)、C2Day1/7(80暴露1680窗)，源总120独立暴露2520窗；source专用身份表SOURCE_WINDOW_IDENTITIES逐行和canonical来源比对，归档特征三文件SHA校验。不加载任何目标train/Development/Test，不做服务器DA/辅助损失/统计上传/选择性权重。
+
+新随机TCN-Attention初始化seed42已保存contracts/SOURCE_RANDOM_INITIAL.pth；完整state指纹a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7，lockSHA49bd47670e77b1c934940198183fdc1f0779b75e6ad9c00d3dc74d9cb896ba83已在validator钉住，不能随意重生成后仍冒充本注册。4类、50×8、25轮、源各1epoch、batch16、Adam5e-4，每客户端/轮新Adam；源权重840/2520和1680/2520。固定round25，不按源/目标Test选best。
+
+实际commands在contracts/COMMANDS.json的SOURCE项：同一随机checkpoint/lock，启动SOURCE server及两个source clients。未批准时同命令会在data/model读取前PermissionError。未来批准仅登记SOURCE specSHA，不串联pilot；不自动运行。spec及最终effective指纹在EXECUTION_REGISTRY_LOCK，contracts/SOURCE_PRETRAIN_CONTRACT是构建早期草稿，最终约束以本计划/注册表/真实spec为准。
+
+3950源本地optimizer步、63000源窗呈现；每轮接收/上传/返回SHA、参与者/样本数、全state及protobuf通信量写phase32_receipt_NNN；native保存server_round_NNN.pth。固定输出runs/SOURCE/server/SSTAR.pth和SSTAR_LOCKED.json。S* lock必须连同25轮实际checkpoint、receipt和SOURCE effective_config保存，检查每轮文件SHA/参数端点/前轮返回链、随机祖先与入口/contract代码SHA。只有通过后才成为合法共同S*，现在尚无该正向来源证据。
+
+预计模型张量双向14.4692MB（未含protobuf/重试），特征约4MB，实际CPU墙钟与峰值需获准后记录；不从合成优化推算精确训练时间。完成源预训练后先复检SSTAR_LOCKED，再另行决定六组pilot；目标Test继续不挂载。
+''')
+    md('RECOVERY.md','''# 恢复、入口与制品说明
+
+主代码runtime.py，契约contract.py；源码复用清单V5_IMPORT_PROVENANCE。本轮不修改已有root代码。build.py是一次性准备入口，已运行后不可在原目录重跑；现有数据、随机初始state、spec与锁按SHA恢复，不重新生成随机文件替代注册版本。
+
+完整恢复需保留本阶段目录、Phase31及其Phase1/2只读helper、v5来源目录。GitHub只有审阅代码和文档，无原始信号/18npy/权重，所以不能仅拉公开报告就重训。跨机先恢复相同v5位置或明确映射prior helper的本地基路径，重新校验SHA；不能静默跳过。Source预训练只挂data/source；C5包在另一路径，Test/Development没有运行数据包。
+
+已实际安全加载保存的完整TCN随机初始state、严格克隆到另一模型，合成zeros50×8前向为4类/64D，无梯度。非法S*、错误schema/dtype、未知输入均拒绝；真实S*的正向祖先/恢复需未来已授权源训练生成后验证。不能把Tiny合成checkpoint用作S*。
+
+不支持中途round/optimizer精确续跑：所有Adam按原设计每轮新建，不保存其跨轮状态。失败后保留失败目录，用同一初始state/spec/输入在新输出目录从round1重跑；是否重跑仍需登记授权。不能覆盖同名结果或跳至最后一轮补齐假链。研究S*恢复需整个源run25轮来源包；最终weights-only恢复通过不等于训练身份合法。
+
+本地保留preflight与preflight_v2（合成）、integration（合成）、失败日志、所有逐批索引、随机初始化及数据流记录。未生成真实SSTAR_LOCKED、未创建TRAINING_AUTHORIZATION、未部署任何模型。
+''')
+    md('NEXT_DECISION.md','''# 最终PASS/BLOCKED及下一步
+
+接口修复与本轮允许范围的重新预检PASS；可批准一次独立SOURCE预训练。**没有自动批准或执行。六组真实pilot均BLOCKED_NO_SSTAR**，不是算法精度差/强基线缺失，也不删除B1/B2。SOURCE同样必须等明确授权文件；批准SOURCE不批准任何pilot。
+
+下一顺序：单独批准→固定SOURCE25轮→保存/验证完整SSTAR_LOCKED与来源包→所有六组从同一S*重新核对状态和目标索引预算→再决定pilot。源模型未知、真实来源链缺失、Test访问、目标消费不符、B3/B4额外机制差异或B4/B5初始规则不同，继续停止。保持25轮/每组40000呈现/16独立标定暴露，不以目标Test修改计划。
+
+分类指标仍只在最终端点全部锁定后离线评价：Accuracy/Macro-F1/逐类Recall/按暴露等权错误率、源和旧节点保持、通信/版本/更新成本；不选best-test-round。C5Day22未读；C3Day17在C5Day18接入后只能叫历史留出保持，C4只作回顾性。数据已观察，未来pilot也不冒充首次盲测。分类—回归路由和Pi系统不在本轮执行。
+
+此次支持“接口/预算/版本可按合同运行”，不支持“反馈或B5提升精度”，不证明真实网络隔离、完整TCN训练或S*已合法存在。完整训练批准是下一步决策。
+''')
+    c.write(c.HERE/'REVIEW_RECORD.json',dict(reviewer='independent phase32_review agent;read-only',status='no_remaining_critical_or_important',fixed=['initial-anchor and real round artifacts','raw state dtype before load','exact perclass stats and finite variance/global feature','actual two-round source-fit/DA/broadcast integration','prototype content hash guard'],limitations=['real Sstar absent','real training/network/accuracy not tested']))
+    c.write(c.HERE/'ANOMALIES.json',dict(preserved=['TEST_RED missing newentry','TEST_GREEN_1 temp sandbox write denial;new workspace fixtures used','PREFLIGHT first5000 target steps passed then serialization key mismatch;DA notstarted;B1B2 reused','TEST_ANCESTRY_RED and TEST_RUNTIME_RED caught review findings','TEST_PROTOHASH_RED caught content receipt mismatch'],no_formal_training=True,no_Test_reads=True,old_built_effective='contracts/*_effective retained as draft;cli_plans final',long_budget_version='before final validators/protobuf guard;latest light unit/integration/chain tests cover hardening without numeric change',all_negative_results_retained=True))
+    print('REPORTS and VERIFICATION PASS;SOURCE APPROVAL READY;SIXREAL BLOCKED',flush=True)
+if __name__=='__main__':main()

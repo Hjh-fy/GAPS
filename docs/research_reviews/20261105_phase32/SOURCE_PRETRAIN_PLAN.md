@@ -1,0 +1,11 @@
+# 一次性S*源FedAvg执行准备（READY，未执行）
+
+只建议下一轮**单独批准一次SOURCE**。输入C1Day4(40暴露840窗)、C2Day1/7(80暴露1680窗)，源总120独立暴露2520窗；source专用身份表SOURCE_WINDOW_IDENTITIES逐行和canonical来源比对，归档特征三文件SHA校验。不加载任何目标train/Development/Test，不做服务器DA/辅助损失/统计上传/选择性权重。
+
+新随机TCN-Attention初始化seed42已保存contracts/SOURCE_RANDOM_INITIAL.pth；完整state指纹a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7，lockSHA49bd47670e77b1c934940198183fdc1f0779b75e6ad9c00d3dc74d9cb896ba83已在validator钉住，不能随意重生成后仍冒充本注册。4类、50×8、25轮、源各1epoch、batch16、Adam5e-4，每客户端/轮新Adam；源权重840/2520和1680/2520。固定round25，不按源/目标Test选best。
+
+实际commands在contracts/COMMANDS.json的SOURCE项：同一随机checkpoint/lock，启动SOURCE server及两个source clients。未批准时同命令会在data/model读取前PermissionError。未来批准仅登记SOURCE specSHA，不串联pilot；不自动运行。spec及最终effective指纹在EXECUTION_REGISTRY_LOCK，contracts/SOURCE_PRETRAIN_CONTRACT是构建早期草稿，最终约束以本计划/注册表/真实spec为准。
+
+3950源本地optimizer步、63000源窗呈现；每轮接收/上传/返回SHA、参与者/样本数、全state及protobuf通信量写phase32_receipt_NNN；native保存server_round_NNN.pth。固定输出runs/SOURCE/server/SSTAR.pth和SSTAR_LOCKED.json。S* lock必须连同25轮实际checkpoint、receipt和SOURCE effective_config保存，检查每轮文件SHA/参数端点/前轮返回链、随机祖先与入口/contract代码SHA。只有通过后才成为合法共同S*，现在尚无该正向来源证据。
+
+预计模型张量双向14.4692MB（未含protobuf/重试），特征约4MB，实际CPU墙钟与峰值需获准后记录；不从合成优化推算精确训练时间。完成源预训练后先复检SSTAR_LOCKED，再另行决定六组pilot；目标Test继续不挂载。

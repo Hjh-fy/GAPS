@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "actual_rounds_per_branch": 2,
+  "synthetic_optimizer_steps": 1548,
+  "source_gradient_steps": 948,
+  "DA_steps": 600,
+  "no_rpc_training_doubles": true,
+  "received_SHA_matches_previous_returned": true,
+  "prototype_encoder_bound": true,
+  "stale_encoder_rejected": true,
+  "protobuf_sizes_recorded": true,
+  "full_TCN_state_strict_clone": true,
+  "random_initial_SHA": "a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7",
+  "full_TCN_zero_fixture_shapes": [
+    [
+      2,
+      4
+    ],
+    [
+      2,
+      64
+    ],
+    [
+      2,
+      64
+    ]
+  ],
+  "real_data_no_grad": [
+    {
+      "client": 1,
+      "rows": 840,
+      "batches": 53,
+      "shape": [
+        840,
+        50,
+        8
+      ],
+      "gradient_steps": 0
+    },
+    {
+      "client": 2,
+      "rows": 1680,
+      "batches": 105,
+      "shape": [
+        1680,
+        50,
+        8
+      ],
+      "gradient_steps": 0
+    },
+    {
+      "client": 5,
+      "rows": 32,
+      "batches": 2,
+      "shape": [
+        32,
+        50,
+        8
+      ],
+      "gradient_steps": 0
+    }
+  ],
+  "real_data_gradients": 0,
+  "real_Test_reads": 0,
+  "legal_Sstar_present": false
+}

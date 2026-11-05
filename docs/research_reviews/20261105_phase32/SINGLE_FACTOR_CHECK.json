@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "B3_B4": {
+    "group": [
+      "B3",
+      "B4"
+    ],
+    "feedback": [
+      false,
+      true
+    ]
+  },
+  "B4_B5": {
+    "group": [
+      "B4",
+      "B5"
+    ],
+    "selective": [
+      false,
+      true
+    ]
+  },
+  "identity_field": "group",
+  "same_EMA": 0.8,
+  "same_initial_prototypes": "empty",
+  "same_stats_upload": true,
+  "only_auxiliary_training_loss": "none"
+}

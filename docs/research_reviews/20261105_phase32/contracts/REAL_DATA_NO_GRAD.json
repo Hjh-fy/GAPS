@@ -1,0 +1,35 @@
+[
+  {
+    "client": 1,
+    "rows": 840,
+    "shape": [
+      840,
+      50,
+      8
+    ],
+    "role": "Source",
+    "gradient_steps": 0
+  },
+  {
+    "client": 2,
+    "rows": 1680,
+    "shape": [
+      1680,
+      50,
+      8
+    ],
+    "role": "Source",
+    "gradient_steps": 0
+  },
+  {
+    "client": 5,
+    "rows": 32,
+    "shape": [
+      32,
+      50,
+      8
+    ],
+    "role": "Calibration",
+    "gradient_steps": 0
+  }
+]

@@ -1,0 +1,17 @@
+test_actual_pure_CE_client_upload_validates (__main__.RuntimeGuards.test_actual_pure_CE_client_upload_validates) ... ok
+test_per_class_counts_not_just_total (__main__.RuntimeGuards.test_per_class_counts_not_just_total) ... ok
+test_raw_state_dtype_rejected_before_cast (__main__.RuntimeGuards.test_raw_state_dtype_rejected_before_cast) ... ok
+test_stats_content_receipt_mismatch_rejected (__main__.RuntimeGuards.test_stats_content_receipt_mismatch_rejected) ... FAIL
+
+======================================================================
+FAIL: test_stats_content_receipt_mismatch_rejected (__main__.RuntimeGuards.test_stats_content_receipt_mismatch_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\test_runtime.py", line 18, in test_stats_content_receipt_mismatch_rejected
+    with self.assertRaises(ValueError):r.validate_stats(met,840)
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 4 tests in 3.138s
+
+FAILED (failures=1)

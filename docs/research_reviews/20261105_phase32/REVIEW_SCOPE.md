@@ -1,0 +1,7 @@
+# 审阅范围
+
+Phase3.2只修薄入口并合成预检，不是新算法/分类性能结果。读README→REPAIR_DIFF→CONTRACT_AND_COMMANDS→TEST_AND_COST→SOURCE_PRETRAIN_PLAN→NEXT_DECISION。外部agent可读全部新入口/测试源码文本、7真实spec/effective、命令argv、初始化锁、完整5条目标预算摘要、75次服务器链、6轮真实合成本地fit链、负测试和独立审阅结论。
+
+本地931制品保留逐批target/source记录、原25轮合成state、随机TCN初始权重、3个合法输入包、2520源窗口完整身份。公开省略所有npy/pth/原始信号/特征值/v5/ZIP；不上传真实或合成权重。长循环服务器fixture复用不能单独证明新客户端训练，因此另附实际两轮本地CE→原DA→下轮接收的integration记录。无真实Sstar，SOURCE只是准备就绪且尚未获准。
+
+PUBLICATION_MANIFEST记录本地源SHA和脱敏/LF转换后的发布SHA；ARTIFACT_SHA256包含全部本地来源，非全部文件都已上传。code_review为完整代码审阅文本，有RESEARCH_WORKTREE/FROZEN_BASELINE_V5/PYTHON_EXECUTABLE本地别名，需要私有v5/Phase31/输入及初始state才能执行，不是独立训练包。固定目标采样表沿用Phase31公开副本，不重新选择。

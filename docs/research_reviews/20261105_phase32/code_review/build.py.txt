@@ -1,0 +1,33 @@
+"""Prepare source-only and Calibration-only packages and random initial state;no training."""
+import shutil,sys
+import contract as c
+
+def main():
+    c.verify_prior();contracts=c.HERE/'contracts';contracts.mkdir(exist_ok=False)
+    ids=c.prior.rows(c.P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv')
+    c.prior.table(contracts/'SOURCE_WINDOW_IDENTITIES.csv',[r for r in ids if r['client_id'] in ['1','2']])
+    c.prior.table(contracts/'TARGET_WINDOW_IDENTITIES.csv',[r for r in ids if r['client_id']=='5'])
+    access=[]
+    for cid in [1,2,5]:
+        out=c.HERE/'data'/('target' if cid==5 else 'source')/f'client_{cid}';out.mkdir(parents=True)
+        for suffix in ['features','classification_labels','phase_labels']:
+            src=c.P31/'data'/f'client_{cid}'/f'train_{suffix}.npy';dst=out/src.name;shutil.copyfile(src,dst)
+        a=c.validate_package(out,dict(client_id=cid));access.append(dict(client=cid,rows=len(a[0]),shape=list(a[0].shape),role='Calibration' if cid==5 else 'Source',gradient_steps=0))
+    import runtime as r
+    r.torch.set_num_threads(1);m=r.model();ck=contracts/'SOURCE_RANDOM_INITIAL.pth'
+    r.torch.save(dict(model_state=m.state_dict(),kind='random_source',seed=42,source_identity_sha256=c.source_identity_sha()),ck)
+    c.write(contracts/'SOURCE_RANDOM_INITIAL_LOCK.json',dict(kind='random_source',sha256=c.sha(ck),source_identity_sha256=c.source_identity_sha(),seed=42,shape=[50,8],labels=c.spec('SOURCE')['labels'],initial_sha256=c.digest(r.arrays(m)),round_receipts=[]))
+    entries=[]
+    for group in ['SOURCE','B0','B1','B2','B3','B4','B5']:
+        s=c.spec(group);p=contracts/f'{group}.json';c.write(p,s);c.write(contracts/f'{group}_effective.json',r.effective(s))
+        checkpoint=ck if group=='SOURCE' else c.HERE/'future_SSTAR/SSTAR.pth';lock=contracts/'SOURCE_RANDOM_INITIAL_LOCK.json' if group=='SOURCE' else c.HERE/'future_SSTAR/SSTAR_LOCKED.json'
+        def cmd(action,cid=None):
+            a=[sys.executable,str(c.HERE/'runtime.py'),action,'--spec',str(p),'--checkpoint',str(checkpoint),'--checkpoint-lock',str(lock),'--output',str(c.HERE/'runs'/group/(f'client_{cid}' if cid else action))]
+            if cid:a+=['--client-id',str(cid)]
+            return a
+        commands=[cmd('target')] if group=='B1' else [cmd('server')]+[cmd('client',cid) for cid in s['source_clients']+([5] if group=='B2' else [])]
+        entries.append(dict(group=group,spec_sha256=c.sha(p),effective_sha256=c.sha(contracts/f'{group}_effective.json'),commands=commands,authorization='NOT_GRANTED',runtime_status='READY_INTERFACE;NO_SSTAR' if group!='SOURCE' else 'READY_RANDOM_SOURCE_CONTRACT;NOT_EXECUTED'))
+    c.write(contracts/'COMMANDS.json',entries);c.write(contracts/'REAL_DATA_NO_GRAD.json',access)
+    c.write(contracts/'SOURCE_PRETRAIN_CONTRACT.json',dict(spec=c.spec('SOURCE'),initial_checkpoint_sha=c.sha(ck),initial_state_sha=c.digest(r.arrays(m)),inputs='data/source/client_1 and client_2 ONLY;target dir separate and not loaded',optimizer='new Adam5e-4 each client/round;no inherited state',rounds=25,steps3950=True,source_presentations=63000,state_tensor_bytes=sum(a.nbytes for a in r.arrays(m)),estimated_roundtrip_state_bytes=100*sum(a.nbytes for a in r.arrays(m)),output='runs/SOURCE/server/SSTAR.pth and SSTAR_LOCKED.json',restart='no mid-round resume;fixed initial state+spec+inputs permit clean rerun into new directory',authorization='NOT_GRANTED'))
+    print('BUILT7SPEC;source-only random initialization;NO TRAINING',flush=True)
+if __name__=='__main__':main()
