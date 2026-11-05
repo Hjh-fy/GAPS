@@ -1,0 +1,87 @@
+try:
+    """Read-only observational hooks;activated ONLY for the one SOURCE child run."""
+    import os,sys,json,time,threading,atexit,traceback,hashlib
+    from pathlib import Path
+    if os.environ.get('P34_SOURCE_OBSERVER')=='1':
+        ROOT=Path(os.environ['P34_WORKSPACE']);OUT=Path(os.environ['P34_OBSERVER_OUT']);ROLE=os.environ['P34_ROLE']
+        OUT.mkdir(parents=True,exist_ok=True);events=OUT/(ROLE+'_access.jsonl')
+        S32=ROOT/'research/fedongas_phase32_20261105'
+        allowed={str((S32/'data/source'/f'client_{cid}'/f'train_{name}.npy').resolve()).lower() for cid in [1,2] for name in ['features','classification_labels','phase_labels']}
+        access=[];denials=[]
+        def audit(event,args):
+            if event!='open' or not isinstance(args[0],(str,bytes,os.PathLike)):return
+            p=Path(os.fsdecode(args[0]));s=str(p.resolve()).lower()
+            if p.suffix.lower() in ['.npy','.npz']:
+                row=dict(path=str(p),mode=str(args[1]),allowed=s in allowed,time=time.time())
+                access.append(row)
+                if s not in allowed:denials.append(row);raise PermissionError('SOURCE observer rejected non-source numeric data '+str(p))
+            if '/dataset/data1/b' in s.replace('\\','/') and p.name.lower().startswith(('b3_','b4_','b5_')):
+                denials.append(dict(path=str(p)));raise PermissionError('SOURCE rejected target raw data')
+        sys.addaudithook(audit)
+        import psutil
+        process=psutil.Process();peak=[process.memory_info().rss];stop=threading.Event();started=time.perf_counter()
+        def poll():
+            while not stop.wait(.1):
+                try:peak[0]=max(peak[0],process.memory_info().rss)
+                except psutil.Error:return
+        threading.Thread(target=poll,daemon=True).start()
+        def save(name,obj):
+            with (OUT/(ROLE+'_'+name+'.json')).open('x',encoding='utf-8') as f:json.dump(obj,f,ensure_ascii=False,indent=2,allow_nan=False)
+        active=[None];total=[0];rounds=[]
+        def finish():
+            stop.set();save('process',dict(role=ROLE,seconds=time.perf_counter()-started,peak_RSS_bytes=peak[0],total_optimizer_steps=total[0],completed_rounds=len(rounds),numeric_access=access,denied=denials))
+        atexit.register(finish)
+        VERSION=ROOT/'research/fedongas_phase33r_20261105'
+        sys.path.insert(0,str(VERSION));import contract as c
+        if Path(c.__file__).resolve()!=VERSION/'contract.py':raise ValueError('wrong contract module')
+        sys.path.insert(0,str(c.prior.BASE/'source/workspace'))
+        import torch
+        from client import Client
+        from torch.utils.data import DataLoader,RandomSampler
+        raw_step=torch.optim.Adam.step;raw_init=torch.optim.Adam.__init__;raw_train=Client.train_one_round;raw_iter=DataLoader.__iter__;raw_sampler=RandomSampler.__iter__
+        def adam_init(self,*a,**kw):
+            raw_init(self,*a,**kw)
+            if active[0] is not None:
+                active[0]['optimizer_initializations']+=1
+                if self.state or any(g['lr']!=.0005 for g in self.param_groups):raise ValueError('optimizer initialization contract')
+        def step(self,*a,**kw):
+            if active[0] is not None:
+                for g in self.param_groups:
+                    for p in g['params']:
+                        if p.grad is not None and not torch.isfinite(p.grad).all():raise FloatingPointError('nonfinite gradient')
+            v=raw_step(self,*a,**kw)
+            if active[0] is not None:active[0]['optimizer_steps']+=1;total[0]+=1
+            return v
+        def sampler(self):
+            for i in raw_sampler(self):
+                if active[0] is not None:active[0]['indices'].append(int(i))
+                yield i
+        def iterator(self):
+            for batch in raw_iter(self):
+                if active[0] is not None:
+                    if tuple(batch[0].shape[1:])!=(50,8) or not torch.isfinite(batch[0]).all():raise ValueError('runtime input contract')
+                    active[0]['batch_sizes'].append(len(batch[0]))
+                yield batch
+        def train(self,*a,**kw):
+            rnd=int(kw.get('current_round',a[0] if a else 0));before=c.digest([v.detach().cpu().numpy() for v in self.model.state_dict().values()]);t=time.perf_counter()
+            rec=dict(client_id=self.client_id,round=rnd,received_state_sha256=before,optimizer_initializations=0,optimizer_steps=0,batch_sizes=[],indices=[])
+            if self.client_id not in [1,2] or self.config.UPLOAD_PROTO_STATS or self.config.USE_ALIGN or self.config.USE_REG_LOSS or self.config.LOCAL_EPOCHS!=1 or self.config.BATCH_SIZE!=16:raise ValueError('SOURCE execution identity')
+            active[0]=rec
+            try:result=raw_train(self,*a,**kw)
+            except BaseException:
+                rec['error']=traceback.format_exc();save('failure_round_'+str(rnd),rec);raise
+            finally:active[0]=None
+            n={1:840,2:1680}[self.client_id]
+            if rec['optimizer_initializations']!=1 or rec['optimizer_steps']!={1:53,2:105}[self.client_id] or sum(rec['batch_sizes'])!=n or sorted(rec['indices'])!=list(range(n)):raise ValueError('actual SOURCE update/presentation budget')
+            aa=[v.detach().cpu().numpy() for v in self.model.state_dict().values()]
+            if not all(__import__('numpy').isfinite(x).all() for x in aa):raise FloatingPointError('nonfinite trained state')
+            snapshot=OUT/f'{ROLE}_trained_round_{rnd:03}.pth'
+            torch.save({'model_state':{k:v.detach().cpu().clone() for k,v in self.model.state_dict().items()},'client_id':self.client_id,'round':rnd,'observational_only':True},snapshot)
+            rec.update(trained_state_sha256=c.digest(aa),state_snapshot_sha256=hashlib.sha256(snapshot.read_bytes()).hexdigest(),seconds=time.perf_counter()-t,peak_RSS_bytes=peak[0]);rounds.append(rec);save(f'round_{rnd:03}',rec)
+            return result
+        torch.optim.Adam.__init__=adam_init;torch.optim.Adam.step=step;DataLoader.__iter__=iterator;RandomSampler.__iter__=sampler;Client.train_one_round=train
+        save('observer_ready',dict(role=ROLE,pid=os.getpid(),torch_threads=torch.get_num_threads(),observer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),numeric_training_hooks='count/snapshot/read-only,no loss/parameter/seed changes',target_numeric_denied=True,contract_module=str(Path(c.__file__).resolve()),new_bootstrap_only=True))
+except BaseException:
+    import traceback,os,sys
+    sys.stderr.write(traceback.format_exc())
+    os._exit(78)

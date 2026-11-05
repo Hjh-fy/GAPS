@@ -1,0 +1,68 @@
+"""Approved one-shot attempt2 coordinator;exact registered native argv, no retry."""
+import sys,os,time,socket,subprocess,hashlib,datetime,ctypes,json
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];R=HERE.parent/'fedongas_phase33r_20261105';sys.path.insert(0,str(R))
+import contract as c
+from execution_environment import clean_environment,REMOVE
+import psutil
+def environment(role):
+    env=clean_environment();assert all(k not in env for k in REMOVE)
+    # Only this newly hashed observer bootstrap is added after removal of all old
+    # import/observer paths. It asserts that contract is the registered R version.
+    env.update(PYTHONPATH=str(HERE/'observer_bootstrap'),P34_SOURCE_OBSERVER='1',P34_WORKSPACE=str(ROOT),P34_OBSERVER_OUT=str(HERE/'observer'),P34_ROLE=role)
+    return env
+def preflight():
+    reg=c.read(R/'SOURCE_ATTEMPT2_REGISTRATION.json');lock=c.read(R/'ENVIRONMENT_LOCK.json')
+    assert not ctypes.windll.shell32.IsUserAnAdmin()
+    assert hashlib.sha256(psutil.Process().username().encode()).hexdigest()==lock['host_user_hash']
+    s=socket.socket();s.bind(('127.0.0.1',8080));s.listen(1);s.settimeout(3);q=socket.socket();q.settimeout(3)
+    try:
+        q.connect(('127.0.0.1',8080));a,_=s.accept();q.send(b'x');assert a.recv(1)==b'x';q.shutdown(socket.SHUT_RDWR);q.close();assert a.recv(1)==b'';a.close()
+    finally:q.close();s.close()
+    code="import sys,json;from pathlib import Path;import runtime as r;assert Path(r.__file__).resolve()==Path("+repr(str(R/'runtime.py'))+");assert Path(r.c.__file__).resolve()==Path("+repr(str(R/'contract.py'))+");p=Path("+repr(str(c.S32/'data/target/client_5/train_features.npy'))+")\ntry: p.open('rb')\nexcept PermissionError: print('GUARD_DENIED_BEFORE_OPEN')\nelse: raise AssertionError('guard bypass')"
+    p=subprocess.run([sys.executable,'-c',code],env=environment('guard_attempt2'),cwd=R,capture_output=True)
+    assert p.returncode==0 and b'GUARD_DENIED_BEFORE_OPEN' in p.stdout,p.stderr.decode('utf-8',errors='replace')
+    ready=c.read(HERE/'observer/guard_attempt2_observer_ready.json');assert ready['contract_module']==str(R/'contract.py') and ready['torch_threads']==1
+    c.write(HERE/'HOST_AND_OBSERVER_PREFLIGHT.json',dict(status='PASS',bind='127.0.0.1:8080',connect='PASS',normal_host_user=True,admin_token=False,host_user_sha256=lock['host_user_hash'],firewall_changed=False,port_changed=False,old_environment_removed=REMOVE,new_bootstrap=str(HERE/'observer_bootstrap'),new_bootstrap_sha256=c.sha(HERE/'observer_bootstrap/sitecustomize.py'),fresh_modules='registered Phase33R runtime/contract',new_observer_selftest='target open denied before read',source_training_in_preflight=False,observation_only_extension='counts/index/cost/state snapshot;does not alter numeric algorithm/parameters'))
+    print('HOST8080+NEW_OBSERVER+FRESH_MODULES PASS;NO TRAINING YET',flush=True)
+def run():
+    reg=c.read(R/'SOURCE_ATTEMPT2_REGISTRATION.json');pre=c.read(HERE/'PRE_RUN_VERIFICATION.json');host=c.read(HERE/'HOST_AND_OBSERVER_PREFLIGHT.json')
+    assert host['status']=='PASS' and c.sha(HERE/'observer_bootstrap/sitecustomize.py')==host['new_bootstrap_sha256']
+    assert pre['status']=='PASS' and c.sha(R/'SOURCE_ATTEMPT2_REGISTRATION.json')==pre['registration_sha256']
+    assert c.read(R/'TRAINING_AUTHORIZATION.json')==reg['required_future_authorization_payload']
+    assert not Path(reg['output_directory']).exists() and not(HERE/'ONCE_STARTED.json').exists()
+    for p,h in [(R/'runtime.py',reg['runtime_sha256']),(R/'contract.py',reg['contract_sha256']),(R/'ENVIRONMENT_LOCK.json',reg['environment_contract_sha256'])]:assert c.sha(p)==h
+    c.write(HERE/'ONCE_STARTED.json',dict(experiment_id=reg['experiment_id'],attempt=2,utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),commands=reg['commands'],observer_sha256=host['new_bootstrap_sha256'],no_retry=True,registered_runtime_unchanged=True))
+    roles=[];files=[];t=time.perf_counter();peak={};combined=0;samples=0
+    try:
+        for x in reg['commands']:
+            role=x['role'];f=(HERE/(role+'.log')).open('xb');files.append(f)
+            p=subprocess.Popen(x['argv'],cwd=ROOT,env=environment(role),stdout=f,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0));roles.append((role,p))
+        c.write(HERE/'PROCESSES.json',[dict(role=role,pid=p.pid,argv=reg['commands'][i]['argv']) for i,(role,p) in enumerate(roles)])
+        while any(p.poll() is None for _,p in roles):
+            if any(p.poll() is not None and p.returncode!=0 for _,p in roles):raise RuntimeError('attempt2 process failure;no retry')
+            total=0
+            for role,p in roles:
+                try:mem=psutil.Process(p.pid).memory_info().rss;peak[role]=max(peak.get(role,0),mem);total+=mem
+                except psutil.Error:pass
+            combined=max(combined,total);samples+=1
+            if time.perf_counter()-t>7200:raise TimeoutError('2h monitor ceiling;no retry')
+            time.sleep(.2)
+        codes={role:p.wait() for role,p in roles};assert all(v==0 for v in codes.values()),codes
+        sock=socket.socket();sock.bind(('127.0.0.1',8080));sock.close()
+        c.write(HERE/'EXECUTION_COMPLETE.json',dict(status='PROCESS_EXIT0_AWAITING_STRICT_AUDIT',codes=codes,wall_seconds=time.perf_counter()-t,peak_concurrent_RSS_bytes=combined,peak_RSS_by_process=peak,memory_sampling_seconds=.2,memory_samples=samples,port8080_released=True,attempt2_launches=1,pilot_launches=0))
+        print('ATTEMPT2_EXIT0;AWAITING25ROUND+RESTORE_AUDIT',flush=True)
+    except BaseException:
+        import traceback
+        for _,p in roles:
+            if p.poll() is None:p.terminate()
+        for _,p in roles:
+            try:p.wait(timeout=15)
+            except subprocess.TimeoutExpired:p.kill()
+        c.write(HERE/'EXECUTION_FAILED.json',dict(status='STOPPED_NO_RETRY',error=traceback.format_exc(),codes={role:p.poll() for role,p in roles},wall_seconds=time.perf_counter()-t,peak_concurrent_RSS_bytes=combined,peak_RSS_by_process=peak));raise
+    finally:
+        for f in files:f.close()
+if __name__=='__main__':
+    if sys.argv[1:]==['preflight']:preflight()
+    elif sys.argv[1:]==['run']:run()
+    else:raise ValueError('preflight or run action required')

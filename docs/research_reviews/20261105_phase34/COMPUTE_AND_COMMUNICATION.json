@@ -1,0 +1,19 @@
+{
+  "model_tensor_up_bytes": 7234600,
+  "model_tensor_down_bytes": 7234600,
+  "FitIns_protobuf_down_bytes": 7765250,
+  "FitRes_protobuf_up_bytes": 7803750,
+  "wire_bytes": "NOT_MEASURED",
+  "scope": "actual FitIns/FitRes serialized ByteSize;excludesHTTP2/gRPCframing/control/TLS/retry",
+  "wall_seconds": 72.99007829997572,
+  "peak_concurrent_RSS_bytes": 1292713984,
+  "memory_scope": "sum of3processRSS sampled0.2s;sharedpages maycountmultiple times;not unique system physical memory",
+  "per_process_peak_RSS": {
+    "server": 387133440,
+    "client_1": 454676480,
+    "client_2": 453894144
+  },
+  "observer_overhead_included": true,
+  "model_tensor_total_bytes": 14469200,
+  "FitIns_FitRes_protobuf_total_bytes": 15569000
+}

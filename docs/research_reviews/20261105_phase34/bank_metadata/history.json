@@ -1,0 +1,780 @@
+{
+  "run_name": "P32-SOURCE",
+  "rounds": [
+    {
+      "round": 1,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 5.221915766664703,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_001.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_001.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_001.pth"
+    },
+    {
+      "round": 2,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.7223964999914945,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_002.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_002.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_002.pth"
+    },
+    {
+      "round": 3,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.9510813000088092,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_003.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_003.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_003.pth"
+    },
+    {
+      "round": 4,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.774324866652023,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_004.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_004.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_004.pth"
+    },
+    {
+      "round": 5,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 2.09084703331852,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_005.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_005.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_005.pth"
+    },
+    {
+      "round": 6,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.9350266333300776,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_006.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_006.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_006.pth"
+    },
+    {
+      "round": 7,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 2.0146945666735214,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_007.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_007.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_007.pth"
+    },
+    {
+      "round": 8,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.7401778666729417,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_008.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_008.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_008.pth"
+    },
+    {
+      "round": 9,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.6518379333429039,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_009.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_009.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_009.pth"
+    },
+    {
+      "round": 10,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.691541466677639,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_010.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_010.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_010.pth"
+    },
+    {
+      "round": 11,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 2.167366833319344,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_011.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_011.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_011.pth"
+    },
+    {
+      "round": 12,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.8799499666686945,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_012.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_012.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_012.pth"
+    },
+    {
+      "round": 13,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.7915125666671277,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_013.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_013.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_013.pth"
+    },
+    {
+      "round": 14,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 2.1001379333126047,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_014.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_014.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_014.pth"
+    },
+    {
+      "round": 15,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.6714092666710105,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_015.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_015.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_015.pth"
+    },
+    {
+      "round": 16,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.8660841333233595,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_016.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_016.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_016.pth"
+    },
+    {
+      "round": 17,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.773867433318325,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_017.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_017.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_017.pth"
+    },
+    {
+      "round": 18,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.8509259666801274,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_018.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_018.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_018.pth"
+    },
+    {
+      "round": 19,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.6192676666735981,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_019.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_019.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_019.pth"
+    },
+    {
+      "round": 20,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.9599356666731182,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_020.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_020.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_020.pth"
+    },
+    {
+      "round": 21,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.7630312000013266,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_021.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_021.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_021.pth"
+    },
+    {
+      "round": 22,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.6841539333302837,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_022.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_022.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_022.pth"
+    },
+    {
+      "round": 23,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.7510949333275978,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_023.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_023.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_023.pth"
+    },
+    {
+      "round": 24,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.920852966674526,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_024.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_024.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_024.pth"
+    },
+    {
+      "round": 25,
+      "run_name": "P32-SOURCE",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.779139633338976,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\client_stats_round_025.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\prototype_stats_round_025.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server\\server_round_025.pth"
+    }
+  ]
+}

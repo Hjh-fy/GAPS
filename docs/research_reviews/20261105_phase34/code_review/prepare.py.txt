@@ -1,0 +1,28 @@
+"""Verify registered attempt2 and freshly authorize only SOURCE;never train."""
+import sys,json,os,subprocess,importlib.metadata,hashlib
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];R=HERE.parent/'fedongas_phase33r_20261105';sys.path.insert(0,str(R))
+import contract as c
+from execution_environment import clean_environment,REMOVE
+def main():
+    assert c.sha(R/'ARTIFACT_SHA256.csv')=='6b649016466a49b58c558d4b221153247470313a82a43d67a92e79cf55cad200'
+    for x in c.prior.rows(R/'ARTIFACT_SHA256.csv'):assert c.sha(R/x['path'])==x['sha256'],x['path']
+    reg=c.read(R/'SOURCE_ATTEMPT2_REGISTRATION.json');env=c.read(R/'ENVIRONMENT_LOCK.json')
+    assert reg['experiment_id']=='P33R-SOURCE-DAY7-S42-ATTEMPT2' and reg['scientific_spec_sha256']==c.sha(R/'contracts/SOURCE.json')=='730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7'
+    for p,h in [(R/'runtime.py',reg['runtime_sha256']),(R/'contract.py',reg['contract_sha256']),(R/'ENVIRONMENT_LOCK.json',reg['environment_contract_sha256']),(R/'execution_environment.py',env['environment_recipe_sha256']),(c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL.pth',reg['initial_checkpoint_sha256']),(c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL_LOCK.json',reg['initial_lock_sha256'])]:assert c.sha(p)==h,str(p)
+    assert c.sha(sys.executable)==env['python_binary_sha256']
+    for name,version in env['packages'].items():assert importlib.metadata.version(name)==version,(name,version)
+    assert not(R/'TRAINING_AUTHORIZATION.json').exists() and not(R/'source_attempt2').exists() and not(HERE/'ONCE_STARTED.json').exists()
+    code="import sys,json;from pathlib import Path;sys.path.insert(0,"+repr(str(R))+");import runtime as r;h=Path("+repr(str(R))+");assert Path(r.__file__).resolve()==h/'runtime.py';assert Path(r.c.__file__).resolve()==h/'contract.py';assert 'sitecustomize' not in sys.modules;assert not(h/'TRAINING_AUTHORIZATION.json').exists();r.torch.set_num_threads(1);s=r.c.spec('SOURCE');pools=r.input_pools(s);assert sorted(pools)==[1,2];m=r.load_checkpoint(r.model(),r.c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL.pth',r.c.read(r.c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL_LOCK.json'),'random_source');print(json.dumps({'runtime':r.__file__,'contract':r.c.__file__,'initial_state':r.c.digest(r.arrays(m)),'source_rows':[len(pools[k]) for k in [1,2]],'initial_outputs_finite':all(r.np.isfinite(x).all() for x in r.arrays(m))}))"
+    p=subprocess.run([sys.executable,'-c',code],cwd=ROOT,env=clean_environment(),capture_output=True)
+    assert p.returncode==0,p.stderr.decode('utf-8',errors='replace');fresh=json.loads(p.stdout)
+    assert fresh['initial_state']==reg['initial_state_sha256'] and fresh['source_rows']==[840,1680]
+    ids=c.prior.rows(c.CANONICAL_CONTRACTS/'SOURCE_WINDOW_IDENTITIES.csv');assert len(ids)==2520 and len({x['filename'] for x in ids})==120
+    assert {(x['client_id'],x['day']) for x in ids}=={('1','4'),('2','1'),('2','7')}
+    assert c.source_identity_sha()==reg['source_identity_sha256']
+    c.write(HERE/'PRE_RUN_VERIFICATION.json',dict(status='PASS',registration_sha256=c.sha(R/'SOURCE_ATTEMPT2_REGISTRATION.json'),registration=reg,environment_contract_sha256=c.sha(R/'ENVIRONMENT_LOCK.json'),environment_verified=True,removed_inherited_variables=REMOVE,fresh_process=fresh,phase33r_payloads_verified=82,source_exposures=120,source_windows=2520,source_identity_sha256=c.source_identity_sha(),target_numeric_reads=0,initial_regenerated=False,old_attempt1_not_overwritten=True))
+    c.write(R/'TRAINING_AUTHORIZATION.json',reg['required_future_authorization_payload'])
+    receipt=dict(user_explicit_approval=True,experiment_id=reg['experiment_id'],attempt=2,scientific_spec_sha256=reg['scientific_spec_sha256'],runtime_sha256=reg['runtime_sha256'],contract_sha256=reg['contract_sha256'],environment_sha256=reg['environment_contract_sha256'],authorization_path=str(R/'TRAINING_AUTHORIZATION.json'),authorization_sha256=c.sha(R/'TRAINING_AUTHORIZATION.json'),fresh_issuance=True,old_phase33_authorization_reused=False,purpose='SOURCE',max_attempts=1,pilot_authorization=False)
+    c.write(HERE/'AUTHORIZATION_RECEIPT.json',receipt);c.write(R/'SOURCE_ATTEMPT2_AUTHORIZATION_RECEIPT.json',receipt)
+    print('ATTEMPT2 PRE_RUN PASS;FRESH SOURCE AUTHORIZATION CREATED;NO TRAINING YET',flush=True)
+if __name__=='__main__':main()

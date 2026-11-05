@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "bind": "127.0.0.1:8080",
+  "connect": "PASS",
+  "normal_host_user": true,
+  "admin_token": false,
+  "host_user_sha256": "7b43c1af7a68b1e275378c171136a3f11971bb3998653f9690a72a8d91d121a5",
+  "firewall_changed": false,
+  "port_changed": false,
+  "old_environment_removed": [
+    "PYTHONPATH",
+    "FEDONGAS_SOURCE_OBSERVER",
+    "FEDONGAS_ROLE",
+    "FEDONGAS_OBSERVER_OUT",
+    "FEDONGAS_WORKSPACE",
+    "P33R_TEST_MODULE_DIR"
+  ],
+  "new_bootstrap": "RESEARCH_WORKTREE\\research\\fedongas_phase34_20261105\\observer_bootstrap",
+  "new_bootstrap_sha256": "ed978d3e20e5c7549147178408905d59dee11bea40b6ba1d1b0fc1406a4cf618",
+  "fresh_modules": "registered Phase33R runtime/contract",
+  "new_observer_selftest": "target open denied before read",
+  "source_training_in_preflight": false,
+  "observation_only_extension": "counts/index/cost/state snapshot;does not alter numeric algorithm/parameters"
+}

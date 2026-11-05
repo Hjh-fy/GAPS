@@ -1,0 +1,13 @@
+{
+  "issues": [
+    {
+      "stage": "first read-only audit import, before main or trained model reads",
+      "error": "TypeError: pathlib.Path received bytes in Python audit hook from scipy temporary-file creation",
+      "correction": "os.fsdecode path in newPhase34 audit hook;training observer already usedfsdecode",
+      "secondary_message": "scipy MessageStream destructor ignored TypeError after temp creation interrupted",
+      "training_affected": false,
+      "training_restarted": false
+    }
+  ],
+  "source_runtime_modified": false
+}

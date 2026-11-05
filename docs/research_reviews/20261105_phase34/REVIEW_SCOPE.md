@@ -1,0 +1,11 @@
+# 外部agent审阅范围
+
+本包是一次正式真实SOURCE attempt2成功训练与Sstar验收，不是合成训练，也不是C5目标结果。包含逐轮50client/25server账本、全state/文件SHA、来源/批准/环境与新模块核验、实际计算通信成本、25份原生收据、完整SSTAR_LOCKED、恢复摘要及六组初始化合同、完整本轮审计/观察代码。旧失败attempt1未覆盖。
+
+本地173制品保留50训练后client模型快照及完整63000采样索引、12源窗口的私有恢复数值和roundtrip权重。正式server完整25checkpoint与最终Sstar在Phase3.3R/source_attempt2，COMPLETE_SOURCE_RUN_MANIFEST列出其全部来源。公开不传任何权重/原始输入/输入tensor或private恢复输出；restore输入只公开12条身份元数据，50observer逐窗索引压缩为计数、范围和SHA。
+
+history内num_examples=1400之类值是框架对client元数据的加权均值，不能当训练总样本数；真实C1=840/C2=1680及1/3、2/3权重以逐轮收据和索引账本为准，总源窗2520/呈现63000。恢复为native round25与Sstar封装和再次save/load的精确一致，不声称保留了原训练进程保存前logits。只读审计首次import字节路径错误保留说明，未影响训练或触发重训。
+
+六组只strict load相同Sstar和核对参数，没有target loader/optimizer、目标Accuracy或训练授权。可以申请下一轮独立批准；不要以source成功自动启动pilot。Sstar逻辑数据边界为Day7，本次实际构建为回顾性模型，不声称历史当日已部署。
+
+ARTIFACT_SHA256是完整本地Phase34来源；PUBLICATION_MANIFEST区分脱敏前后SHA。CODE_REVIEW为完整新工具文本，RESEARCH_WORKTREE/FROZEN_BASELINE_V5/PYTHON_ENV等是路径别名，私有v5/数据/权重缺失时不能仅凭公开包重训。

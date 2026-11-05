@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "source_windows": 12,
+  "source_device_date_cohorts": [
+    "C1Day4",
+    "C2Day1",
+    "C2Day7"
+  ],
+  "classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "selection": "first canonical export row perdevice/date/gas;fixed before prediction",
+  "source_identity_manifest_sha256": "78032e69829f532065b25c88b8e611bcdf0dec29f08bb457f7e4f5e873285b79",
+  "input_shape": [
+    12,
+    50,
+    8
+  ],
+  "output_shapes": [
+    [
+      12,
+      4
+    ],
+    [
+      12,
+      64
+    ],
+    [
+      12,
+      64
+    ]
+  ],
+  "native_round25_vs_Sstar_vs_resaved_exact": true,
+  "max_abs_difference": 0.0,
+  "roundtrip_file_sha256": "001cc617c696d6dabe0a4bd60d5fe588fcd8e0ff193f6c9fb2cf624b08c02263",
+  "state_sha256": "431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673",
+  "accuracy_computed": false,
+  "no_target_data": true,
+  "qualification": "compares native final-round artifact to packaged model and fresh save/reload;no live training-process logits retained"
+}

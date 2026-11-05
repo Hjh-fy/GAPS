@@ -1,0 +1,108 @@
+"""Report the accepted SOURCE attempt2 without new training/target evaluation."""
+import sys,json,shutil,collections,subprocess
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];R=HERE.parent/'fedongas_phase33r_20261105';sys.path.insert(0,str(R));import contract as c
+def md(name,s):(HERE/name).write_text(s.strip()+'\n',encoding='utf-8')
+def main():
+    a=c.read(HERE/'SSTAR_ACCEPTANCE_LOCK.json');done=c.read(HERE/'EXECUTION_COMPLETE.json');assert a['status']=='PASS_ACCEPTED_LEGAL_SSTAR'
+    bank=R/'source_attempt2/server';lock=c.read(bank/'SSTAR_LOCKED.json');assert c.sha(bank/'SSTAR.pth')==a['Sstar_file_sha256']
+    rr=lock['round_receipts'];cost=[]
+    for row in rr:
+        rnd=row['round'];obs=[c.read(HERE/'observer'/f'client_{cid}_round_{rnd:03}.json') for cid in [1,2]]
+        cost.append(dict(round=rnd,clients='1;2',dataset_rows='840;1680',actual_source_steps=sum(x['optimizer_steps'] for x in obs),source_presentations=sum(sum(x['batch_sizes']) for x in obs),weights='1/3;2/3',client1_fit_seconds=obs[0]['seconds'],client2_fit_seconds=obs[1]['seconds'],parallel_fit_seconds_lower_bound=max(x['seconds'] for x in obs),model_state_up_bytes=row['state_payload_up'],model_state_down_bytes=row['state_payload_down'],FitIns_protobuf_down_bytes=row['protobuf_fit_down'],FitRes_protobuf_up_bytes=row['protobuf_fit_up'],global_received_state=row['received'],global_returned_state=row['returned']))
+    c.prior.table(HERE/'ROUND_COSTS.csv',cost)
+    comm=dict(model_tensor_up_bytes=sum(x['model_state_up_bytes'] for x in cost),model_tensor_down_bytes=sum(x['model_state_down_bytes'] for x in cost),FitIns_protobuf_down_bytes=sum(x['FitIns_protobuf_down_bytes'] for x in cost),FitRes_protobuf_up_bytes=sum(x['FitRes_protobuf_up_bytes'] for x in cost),wire_bytes='NOT_MEASURED',scope='actual FitIns/FitRes serialized ByteSize;excludesHTTP2/gRPCframing/control/TLS/retry',wall_seconds=done['wall_seconds'],peak_concurrent_RSS_bytes=done['peak_concurrent_RSS_bytes'],memory_scope='sum of3processRSS sampled0.2s;sharedpages maycountmultiple times;not unique system physical memory',per_process_peak_RSS=done['peak_RSS_by_process'],observer_overhead_included=True)
+    comm['model_tensor_total_bytes']=comm['model_tensor_up_bytes']+comm['model_tensor_down_bytes'];comm['FitIns_FitRes_protobuf_total_bytes']=comm['FitIns_protobuf_down_bytes']+comm['FitRes_protobuf_up_bytes'];c.write(HERE/'COMPUTE_AND_COMMUNICATION.json',comm)
+    metadata=HERE/'bank_metadata';metadata.mkdir(exist_ok=False)
+    for name in ['SSTAR_LOCKED.json','SSTAR_ACCEPTANCE_AUDIT.json','effective_config.json','history.json']:
+        p=bank/name;dst=metadata/name;shutil.copyfile(p,dst);assert c.sha(p)==c.sha(dst)
+    for rnd in range(1,26):shutil.copyfile(bank/f'phase32_receipt_{rnd:03}.json',metadata/f'phase32_receipt_{rnd:03}.json')
+    modelindex=[]
+    for p in sorted((R/'source_attempt2').rglob('*')):
+        if p.is_file():modelindex.append(dict(path=p.relative_to(ROOT).as_posix(),bytes=p.stat().st_size,sha256=c.sha(p),type='private_weights' if p.suffix=='.pth' else 'run_metadata'))
+    c.prior.table(HERE/'COMPLETE_SOURCE_RUN_MANIFEST.csv',modelindex)
+    # Re-verify immutable preregistration and prior attempt1, not by replacing it.
+    for folder in [R,HERE.parent/'fedongas_phase33_20261105']:
+        for x in c.prior.rows(folder/'ARTIFACT_SHA256.csv'):assert c.sha(folder/x['path'])==x['sha256']
+    for x in c.prior.rows(HERE.parent/'fedongas_phase33_20261105/SOURCE_RUN_FILE_MANIFEST.csv'):assert c.sha(ROOT/x['path'])==x['sha256']
+    pilot=c.prior.rows(HERE/'PILOT_FINAL_GATE.csv');assert len(pilot)==6 and {x['initial_state_sha256'] for x in pilot}=={a['Sstar_state_sha256']} and all(x['training_started']=='False' and x['target_arrays_loaded']=='False' for x in pilot)
+    proc={role:c.read(HERE/'observer'/f'{role}_process.json') for role in ['server','client_1','client_2']}
+    c.write(HERE/'FINAL_VERIFICATION.json',dict(status='PASS_ACCEPTED_SOURCE_ATTEMPT2_AND_LEGAL_SSTAR',experiment_id=a['experiment_id'],source_attempt2_success=True,formal_source_launches_this_stage=1,retries=0,rounds=25,client_rounds=50,actual_optimizer_steps=3950,actual_source_presentations=63000,initial_state_sha256=a['registered_initial_state_sha256'],Sstar_file_sha256=a['Sstar_file_sha256'],Sstar_state_sha256=a['Sstar_state_sha256'],SSTAR_LOCKED_sha256=a['SSTAR_LOCKED_sha256'],source_identity_sha256=a['source_identity_sha256'],runtime_sha256=a['runtime_sha256'],contract_sha256=a['contract_sha256'],environment_sha256=a['environment_sha256'],SOURCE_code_data_config_locks_match=True,server_checkpoints_schema_finite=25,client_snapshots_schema_finite=50,weighted_aggregation_reference_pass=True,restore_exact=True,restore_windows=12,pilot_initializations=6,pilot_init_config_status='ALL6_PASS_AWAITING_SEPARATE_AUTHORIZATION',pilot_training_launches=0,target_training_Development_Test_numeric_reads=0,target_accuracy_computed=False,old_Phase33r_payloads_unchanged=82,old_attempt1_preserved=True,wall_seconds=comm['wall_seconds'],peak_concurrent_RSS_bytes=comm['peak_concurrent_RSS_bytes'],protobuf_payload_bytes=comm['FitIns_FitRes_protobuf_total_bytes'],model_tensor_payload_bytes=comm['model_tensor_total_bytes'],active_SOURCE_authorization_purpose='SOURCE only;issuedthisstage;notpilot',observer_steps={k:v['total_optimizer_steps'] for k,v in proc.items()},observer_native_data_roles='onlycanonicalC1/C2 sourcearrays;no target inputs',observer_startup_new_contract_verified=True,network_port8080_released=True,tracked_worktree_clean=subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).decode()==''))
+    c.write(HERE/'INDEPENDENT_AUDIT.json',dict(status='PASS_NO_MAJOR_FINDINGS',reviewer='phase32_review read-onlyindependentPhase34',checked=['50batch/index/Adamledgers','25servercheckpointSHA+state','50clientstateSHA','received/upload/returnchains','source/spec/runtime/contract/environmentauthorizationidentities','noattempt1overwrite','zero pilot/targetaccess'],inference_in_review=False,training_or_network_in_review=False))
+    c.write(HERE/'AUTHORIZATION_COMPLETED.json',dict(experiment_id=a['experiment_id'],attempt=2,launches=1,status='COMPLETED_ACCEPTED',retry_permitted=False,pilot_authorized=False,old_phase33_authorization_reused=False))
+    md('README.md',f'''# FedOnGas Phase3.4：合法S*源分类预训练完成
+
+**SOURCE attempt2成功，合法S*已生成并验收；25轮训练与恢复证据完整。六组pilot初始化/配置复检通过，可以申请下一轮独立授权，本轮没有启动pilot。** 依据Phase3.3R固定b593c2f4b7498049d928d98981a448489b27bd3d；唯一注册P33R-SOURCE-DAY7-S42-ATTEMPT2，科学spec730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7。
+
+|验收项|结果|
+|---|---|
+|来源|仅C1Day4、C2Day1/7，120暴露/2520窗；原随机初始state未重生成|
+|真实训练|25轮/50client-round；3950更新、63000呈现，逐行索引每轮恰好覆盖各自源集一次|
+|模型版本|25servercheckpoint、50clientstate快照、接收/上传/聚合/返回SHA链及源/代码/环境合同全部通过|
+|恢复|固定12个合法源窗口，原round25→S*封装→再次保存恢复的输出逐元素完全一致|
+|六组门禁|同一合法S* strict load，initialSHA一致；旧目标2500/40000及反馈/原型语义不变；未运行训练|
+|隔离/范围|目标train/Development/Test数值读取0，未计算目标准确率；attempt1现场与旧冻结制品未改|
+
+训练总墙钟{comm['wall_seconds']:.3f}秒，三进程RSS求和采样峰值{comm['peak_concurrent_RSS_bytes']:,}B；FitIns/FitRes protobuf合计{comm['FitIns_FitRes_protobuf_total_bytes']:,}B，模型tensor载荷{comm['model_tensor_total_bytes']:,}B。详[成本与版本链](TRAINING_EVIDENCE.md)，这些是本地多进程与审计开销下的观测，不是Pi/真实跨设备网络性能。
+
+阅读：[训练/成本证据](TRAINING_EVIDENCE.md) → [S*来源及恢复](SSTAR_AND_RESTORE.md) → [六组门禁](PILOT_GATE.md) → [恢复路径](RECOVERY.md) → [继续/停止](NEXT_DECISION.md)。SSTAR_ACCEPTANCE_LOCK是本轮完整验收，bank_metadata/SSTAR_LOCKED保留原生锁；完整权重及输入仅本地。
+''')
+    md('TRAINING_EVIDENCE.md',f'''# 单次真实SOURCE训练与成本
+
+三条已注册原生server/client argv保持不变。新授权在Phase3.3R目录新签发，purpose=SOURCE；未复用Phase3.3旧授权。科学spec/runtime/contract/environment/source身份/初始模型SHA先核验。使用注册clean_environment移除旧PYTHONPATH/FEDONGAS变量；随后只加入Phase3.4新哈希的观察bootstrap路径，逐进程assert contract确为Phase3.3R。这个只读观察扩展记录计数/索引/快照/成本，未改变loss/参数/seed/采样顺序，不适配或修补训练逻辑。
+
+普通用户宿主环境、无管理员token，127.0.0.1:8080预先bind/connect通过，未修改防火墙或端口。目标数值白名单之外npy/npz会被Python审计拒绝；正式三个进程均没有拒绝事件/目标输入。guard自测仅在open前拒绝目标文件，没有读取其内容。训练用C1/C2规范源包，phase0仅中性类别键；Source纯CE、无DA/辅助loss/选择性权重、4类TCN50×8/64D、seed42、25轮各1epoch、batch16、Adam5e-4每轮重建。
+
+逐client/round真实optimizer.step：C1每轮53，总1325；C2每轮105，总2625，共3950。每轮随机采样索引均恰好覆盖0..839或0..1679一次，63k真实训练呈现；classcounts及日期身份见SOURCE_ROUND_LEDGER，不把窗口重复当新增独立暴露。梯度每步检查有限，round后全state有限；每轮权重1/3与2/3以独立float64加权均值核对，最大差{a['independent_weighted_mean_max_abs_error']:.12g}为float32舍入容差内。
+
+SOURCE_ROUND_LEDGER/ROUND_COSTS列50个client-round与25个server-round SHA/时间/载荷。模型完整state144692B、参数22765；上下行模型tensor共{comm['model_tensor_total_bytes']:,}B，FitIns下行{comm['FitIns_protobuf_down_bytes']:,}B、FitRes上行{comm['FitRes_protobuf_up_bytes']:,}B，合计{comm['FitIns_FitRes_protobuf_total_bytes']:,}B。这是实际序列化ByteSize，不包含HTTP2/gRPC framing/控制握手/重试，不冒充wire抓包。
+
+总墙钟{comm['wall_seconds']:.3f}秒含启动/导入/通信/检查与状态快照。三进程RSS相加的0.2s采样峰值{comm['peak_concurrent_RSS_bytes']:,}B；共享页可能被重复计入，非系统唯一物理内存。每进程峰值、client本地fit时间均保存，不能把本地宿主结果外推Pi。本次Flower在localhost真实执行，source逻辑客户端位于同机并可加载两个合法源包，不声称物理数据隔离或隐私保护。
+
+启动前已锁定round25，无Test/Development选轮。Flower初始evaluate返回None，fraction_evaluate0，25轮客户端评估均跳过，不是隐含目标验证。没有目标精度/端到端路由/部署。
+''')
+    md('SSTAR_AND_RESTORE.md',f'''# S*来源闭合及恢复验收
+
+最终模型本地路径research/fedongas_phase33r_20261105/source_attempt2/server/SSTAR.pth。
+
+- 文件SHA256：{a['Sstar_file_sha256']}
+- 全state数值/顺序指纹：{a['Sstar_state_sha256']}
+- 原生SSTAR_LOCKED SHA256：{a['SSTAR_LOCKED_sha256']}
+- 随机祖先state：{a['registered_initial_state_sha256']}
+
+原生锁的严格validator已正向通过：同注册随机文件与lock、120源暴露/2520窗身份、25个邻接round文件与receipt、同新runtime/contract SHA、SOURCE scientific spec、每轮接收等于前轮返回、最终模型等于round25。50个本地trained snapshot SHA与client上传/server记录一致。SSTAR_ACCEPTANCE_LOCK及bank原目录SSTAR_ACCEPTANCE_AUDIT额外封存本轮全部验收，不改原生锁schema。
+
+恢复只使用合法source输入：每个设备/日期/气体取canonical第一个export窗，共C1Day4/C2Day1/C2Day7×4gas=12窗口；选择由元数据先固定，未按误差选择。原round25 checkpoint加载、Sstar封装strict load、独立重保存/恢复三份模型在eval/no_grad下logits4/cls64/reg64输出全有限、逐元素完全一致(maxdiff0)。没有原训练进程内保存前logits，因此准确表述是“原最终轮制品与封装/独立重保存恢复一致”，由stateSHA链连接真实训练终点。
+
+RESTORE_VERIFICATION与restore/SOURCE_INPUT_IDENTITIES保留输入身份；PRIVATE_NUMERIC_OUTPUTS和roundtrip权重仅本地。未计算训练集或测试准确率，不从恢复一致性推断识别性能。逻辑source时间边界截至Day7，实际构建为本次回顾性训练，不声称当时已部署。
+''')
+    md('PILOT_GATE.md','''# 训练后六组最终初始化/配置门禁
+
+B0–B5全部PASS_INIT_CONFIG_AWAITING_SEPARATE_PILOT_APPROVAL：六次调用严格S*来源/状态加载接口，文件及全state SHA相同，完整代码/源/25轮链通过；模型配置与Phase3.3R保存的科学合同逐项相同。
+
+B0目标监督0；B1–B5仍2500目标优化/40000呈现/16独立标定暴露32窗。B3/B4仅feedback，B4/B5仅selective，三组相同纯CE stats上传/EMA/初始原型规则；无增补loss或临时调参。原生回调和localhost运行条件由Phase3.3R已验收，本轮源训练亦完成原生25轮。
+
+本轮只加载S*及检查参数字典，没有创建pilot client、optimizer或target loader，不读C5 Calibration/Development/Day22Test，不输出目标准确率。因此通过的是初始化与配置门禁，不是六组训练已完成或已被授权。下一轮可单独申请C5A4六组固定矩阵；批准后仍须按旧合同检查Calibration输入身份与实际索引消费，Test保持关闭至所有最终模型锁定。
+
+共同合法S*这一阻塞已消除。尚未执行的部分属于下一轮独立授权范围；源保持/后接节点评价、端到端路由及Pi不在本轮。C3Day17仍为C5Day18后历史保持，C4仅回顾性。
+''')
+    md('RECOVERY.md','''# 本地资产与恢复
+
+正式源run：Phase3.3R/source_attempt2/{server,client_1,client_2}。server内有25个server_round_NNN.pth、25个phase32_receipt_NNN.json、最终SSTAR.pth/SSTAR_LOCKED.json、effective_config/history及本轮接受审计。Phase3.4/observer保留50个client trained snapshot、每轮batch/index/optimizer/cost与每进程访问记录；COMPLETE_SOURCE_RUN_MANIFEST和MODEL_AND_CHECKPOINT_INDEX逐文件SHA。
+
+恢复S*时应连同整个server目录的25轮来源文件、注册初始checkpoint/lock、Source身份、固定Phase3.3R runtime/contract/ENV及批准收据保留，不能仅拷一个pth声称来源完整。私有输入仍在只读Phase32源包；v5与Phase1/2/31 helper保持原版本。不要重生成随机初始文件，也不要修改旧Phase33失败现场。
+
+strict load请使用Phase3.3R runtime.load_checkpoint(model(),SSTAR路径,SSTAR_LOCKED字典,'sstar')，它会检查全25轮实际文件及源码/身份SHA。新环境先clean_environment并核验模块路径、Python包与模型schema；不得从旧PYTHONPATH缓存Phase32 contract。本轮恢复验证已将原最终轮与封装及重新保存模型在12合法源窗上比较一致。
+
+原Adam按轮新建，未保存中途精确重跑的optimizer状态；本轮已完整结束，不做额外训练续跑。保存/加载权重一致不替代源身份审计，二者本轮都已通过。完整权重、source tensor和private恢复输出不上传公开GitHub，审阅包只含代码、配置、SHA与摘要。
+''')
+    md('NEXT_DECISION.md','''# 完成结论与下一轮授权边界
+
+SOURCE attempt2成功；合法S*真正生成；25轮、3950更新、63000呈现、75份round/client模型状态及完整来源链、有限性和恢复一致性证据齐全。没有第二次attempt2启动或自动重试，attempt1失败现场保留。六组初始化/配置复检通过，可以申请下一轮独立批准的C5A4固定六组对照。
+
+本次批准仅SOURCE，绝不自动启动B0–B5或72分支。没有目标训练/Development/Test数值读取，没有目标性能、最好轮次选择、新网络loss或部署。下一轮若批准六组，所有方法从本合法S*开始，沿用已锁标定身份/窗口/目标2500步40000呈现、source训练与server成本、反馈/原型单因素合同；任何数据/版本/预算不符即停止，Test仅最终端点锁定后释放。
+
+本轮只读验收脚本首次导入遇bytes路径处理错误，修正审计工具后完成检查；模型训练及冻结代码未受影响，未重训。AUDIT_ISSUES保留该异常。不能将本轮成功倒写到attempt1或早期预检结论中。
+''')
+    print(json.dumps(dict(status='REPORTS_PASS',tensor_bytes=comm['model_tensor_total_bytes'],protobuf_bytes=comm['FitIns_FitRes_protobuf_total_bytes'],Sstar=a['Sstar_file_sha256'])),flush=True)
+if __name__=='__main__':main()

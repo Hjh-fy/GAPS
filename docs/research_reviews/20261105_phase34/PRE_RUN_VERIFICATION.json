@@ -1,0 +1,151 @@
+{
+  "status": "PASS",
+  "registration_sha256": "1ea3b29a2157102d00d94cff5b7b05e7da645c77a9bacf48183556bdf523b2d1",
+  "registration": {
+    "experiment_id": "P33R-SOURCE-DAY7-S42-ATTEMPT2",
+    "status": "PREREGISTERED_AWAITING_SEPARATE_USER_APPROVAL",
+    "attempt": 2,
+    "predecessor_attempt": "Phase33 P32-SOURCE-DAY7-S42 attempt1 failed0updates;preserved",
+    "scientific_spec_sha256": "730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7",
+    "runtime_sha256": "23111427b229c2d6e966e728312168c212ceb99421837cc587ab0a59911a5e5f",
+    "contract_sha256": "04fbdc65e619c299cc5485e23ae369a92181b1ed87f1581853c3692054a3d7ba",
+    "environment_contract_sha256": "4654cf6c900fb204055f4123ef9964b02160acdac297eb0d053ffaacb526aef4",
+    "initial_checkpoint_sha256": "5d1779b78999471d97d1a32b4b86f4caef50dc8355163b5fc90cf0eb5b5e0783",
+    "initial_lock_sha256": "49bd47670e77b1c934940198183fdc1f0779b75e6ad9c00d3dc74d9cb896ba83",
+    "initial_state_sha256": "a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7",
+    "source_identity_sha256": "e4327cd18913e233eb39cd2118be8ada636f8dbc5c3fd2a49c7ef7c7d01b3334",
+    "source_cohorts": [
+      "C1Day4",
+      "C2Day1/7"
+    ],
+    "independent_exposures": 120,
+    "windows": 2520,
+    "clients": [
+      1,
+      2
+    ],
+    "counts": [
+      840,
+      1680
+    ],
+    "weights": [
+      "1/3",
+      "2/3"
+    ],
+    "seed": 42,
+    "rounds": 25,
+    "local_epochs": 1,
+    "batch_size": 16,
+    "Adam_lr": 0.0005,
+    "model": "same frozenTCN-Attention50x8/64D/4class",
+    "DA": false,
+    "aux_losses": false,
+    "prototype_weighting": false,
+    "target_data": false,
+    "selection": "fixedround25;noDev/Test",
+    "authorization_file": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\TRAINING_AUTHORIZATION.json",
+    "authorization_file_exists": false,
+    "old_consumed_authorization_not_read": true,
+    "required_future_authorization_payload": {
+      "approved_spec_sha256": "730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7",
+      "purpose": "SOURCE"
+    },
+    "authorization_policy": "payload schema intentionally unchanged;file must be newly issued here from separateuserapproval and accompanied by newattempt/entry/environment receipt;never copy consumedS32authorization as approval",
+    "output_directory": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2",
+    "output_exists": false,
+    "checkpoint_provenance": "newruntime/contract SHA and all25receipts/checkpoints;canonicalS32 randomancestor unchanged",
+    "legacy_native_run_name": "P32-SOURCE;identity mapped by this registry and independent output,not reused as experimentID",
+    "commands": [
+      {
+        "role": "server",
+        "argv": [
+          "PYTHON_ENV\\python.exe",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+          "server",
+          "--spec",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contracts\\SOURCE.json",
+          "--checkpoint",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+          "--checkpoint-lock",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+          "--output",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\server",
+          "--address",
+          "127.0.0.1:8080"
+        ]
+      },
+      {
+        "role": "client_1",
+        "argv": [
+          "PYTHON_ENV\\python.exe",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+          "client",
+          "--spec",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contracts\\SOURCE.json",
+          "--checkpoint",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+          "--checkpoint-lock",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+          "--output",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\client_1",
+          "--address",
+          "127.0.0.1:8080",
+          "--client-id",
+          "1"
+        ]
+      },
+      {
+        "role": "client_2",
+        "argv": [
+          "PYTHON_ENV\\python.exe",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+          "client",
+          "--spec",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contracts\\SOURCE.json",
+          "--checkpoint",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+          "--checkpoint-lock",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+          "--output",
+          "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\source_attempt2\\client_2",
+          "--address",
+          "127.0.0.1:8080",
+          "--client-id",
+          "2"
+        ]
+      }
+    ],
+    "pilot_authorization": false,
+    "executed": false,
+    "expected_gradient_steps": 3950,
+    "expected_source_presentations": 63000,
+    "environment_recipe": "execution_environment.clean_environment();clearlistedinheritedvars beforeprocessstartup;verifynewmodulepaths beforeauthorization"
+  },
+  "environment_contract_sha256": "4654cf6c900fb204055f4123ef9964b02160acdac297eb0d053ffaacb526aef4",
+  "environment_verified": true,
+  "removed_inherited_variables": [
+    "PYTHONPATH",
+    "FEDONGAS_SOURCE_OBSERVER",
+    "FEDONGAS_ROLE",
+    "FEDONGAS_OBSERVER_OUT",
+    "FEDONGAS_WORKSPACE",
+    "P33R_TEST_MODULE_DIR"
+  ],
+  "fresh_process": {
+    "runtime": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+    "contract": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contract.py",
+    "initial_state": "a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7",
+    "source_rows": [
+      840,
+      1680
+    ],
+    "initial_outputs_finite": true
+  },
+  "phase33r_payloads_verified": 82,
+  "source_exposures": 120,
+  "source_windows": 2520,
+  "source_identity_sha256": "e4327cd18913e233eb39cd2118be8ada636f8dbc5c3fd2a49c7ef7c7d01b3334",
+  "target_numeric_reads": 0,
+  "initial_regenerated": false,
+  "old_attempt1_not_overwritten": true
+}

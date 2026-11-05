@@ -1,0 +1,575 @@
+[93mWARNING [0m:   DEPRECATED FEATURE: flwr.server.start_server() is deprecated.
+	Instead, use the `flower-superlink` CLI command to start a SuperLink as shown below:
+
+		$ flower-superlink --insecure
+
+	To view usage and all available options, run:
+
+		$ flower-superlink --help
+
+	Using `start_server()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+[92mINFO [0m:      Starting Flower server, config: num_rounds=25, no round_timeout
+[92mINFO [0m:      Flower ECE: gRPC server running (25 rounds), SSL is disabled
+[92mINFO [0m:      [INIT]
+[92mINFO [0m:      Using initial global parameters provided by strategy
+[92mINFO [0m:      Starting evaluation of initial global parameters
+[92mINFO [0m:      Evaluation returned no results (`None`)
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 1]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_001.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_001.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_001.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 2]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_002.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_002.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_002.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 3]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_003.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_003.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_003.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 4]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_004.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_004.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_004.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 5]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_005.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_005.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_005.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 6]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_006.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_006.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_006.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 7]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_007.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_007.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_007.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 8]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_008.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_008.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_008.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 9]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_009.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_009.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_009.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 10]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_010.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_010.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_010.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 11]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_011.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_011.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_011.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 12]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_012.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_012.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_012.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 13]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_013.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_013.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_013.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 14]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_014.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_014.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_014.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 15]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_015.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_015.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_015.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 16]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_016.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_016.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_016.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 17]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_017.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_017.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_017.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 18]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_018.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_018.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_018.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 19]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_019.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_019.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_019.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 20]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_020.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_020.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_020.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 21]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_021.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_021.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_021.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 22]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_022.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_022.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_022.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 23]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_023.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_023.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_023.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 24]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_024.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_024.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_024.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 25]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\client_stats_round_025.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\prototype_stats_round_025.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\source_attempt2\server\server_round_025.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [SUMMARY]
+[92mINFO [0m:      Run finished 25 round(s) in 62.11s
+[92mINFO [0m:      	History (metrics, distributed, fit):
+[92mINFO [0m:      	{'align_enabled': [(1, 0.0),
+[92mINFO [0m:      	                   (2, 0.0),
+[92mINFO [0m:      	                   (3, 0.0),
+[92mINFO [0m:      	                   (4, 0.0),
+[92mINFO [0m:      	                   (5, 0.0),
+[92mINFO [0m:      	                   (6, 0.0),
+[92mINFO [0m:      	                   (7, 0.0),
+[92mINFO [0m:      	                   (8, 0.0),
+[92mINFO [0m:      	                   (9, 0.0),
+[92mINFO [0m:      	                   (10, 0.0),
+[92mINFO [0m:      	                   (11, 0.0),
+[92mINFO [0m:      	                   (12, 0.0),
+[92mINFO [0m:      	                   (13, 0.0),
+[92mINFO [0m:      	                   (14, 0.0),
+[92mINFO [0m:      	                   (15, 0.0),
+[92mINFO [0m:      	                   (16, 0.0),
+[92mINFO [0m:      	                   (17, 0.0),
+[92mINFO [0m:      	                   (18, 0.0),
+[92mINFO [0m:      	                   (19, 0.0),
+[92mINFO [0m:      	                   (20, 0.0),
+[92mINFO [0m:      	                   (21, 0.0),
+[92mINFO [0m:      	                   (22, 0.0),
+[92mINFO [0m:      	                   (23, 0.0),
+[92mINFO [0m:      	                   (24, 0.0),
+[92mINFO [0m:      	                   (25, 0.0)],
+[92mINFO [0m:      	 'fit_seconds': [(1, 5.221915766664703),
+[92mINFO [0m:      	                 (2, 1.7223964999914945),
+[92mINFO [0m:      	                 (3, 1.9510813000088092),
+[92mINFO [0m:      	                 (4, 1.774324866652023),
+[92mINFO [0m:      	                 (5, 2.09084703331852),
+[92mINFO [0m:      	                 (6, 1.9350266333300776),
+[92mINFO [0m:      	                 (7, 2.0146945666735214),
+[92mINFO [0m:      	                 (8, 1.7401778666729417),
+[92mINFO [0m:      	                 (9, 1.6518379333429039),
+[92mINFO [0m:      	                 (10, 1.691541466677639),
+[92mINFO [0m:      	                 (11, 2.167366833319344),
+[92mINFO [0m:      	                 (12, 1.8799499666686945),
+[92mINFO [0m:      	                 (13, 1.7915125666671277),
+[92mINFO [0m:      	                 (14, 2.1001379333126047),
+[92mINFO [0m:      	                 (15, 1.6714092666710105),
+[92mINFO [0m:      	                 (16, 1.8660841333233595),
+[92mINFO [0m:      	                 (17, 1.773867433318325),
+[92mINFO [0m:      	                 (18, 1.8509259666801274),
+[92mINFO [0m:      	                 (19, 1.6192676666735981),
+[92mINFO [0m:      	                 (20, 1.9599356666731182),
+[92mINFO [0m:      	                 (21, 1.7630312000013266),
+[92mINFO [0m:      	                 (22, 1.6841539333302837),
+[92mINFO [0m:      	                 (23, 1.7510949333275978),
+[92mINFO [0m:      	                 (24, 1.920852966674526),
+[92mINFO [0m:      	                 (25, 1.779139633338976)],
+[92mINFO [0m:      	 'has_prev_model': [(1, 0.0),
+[92mINFO [0m:      	                    (2, 0.0),
+[92mINFO [0m:      	                    (3, 0.0),
+[92mINFO [0m:      	                    (4, 0.0),
+[92mINFO [0m:      	                    (5, 0.0),
+[92mINFO [0m:      	                    (6, 0.0),
+[92mINFO [0m:      	                    (7, 0.0),
+[92mINFO [0m:      	                    (8, 0.0),
+[92mINFO [0m:      	                    (9, 0.0),
+[92mINFO [0m:      	                    (10, 0.0),
+[92mINFO [0m:      	                    (11, 0.0),
+[92mINFO [0m:      	                    (12, 0.0),
+[92mINFO [0m:      	                    (13, 0.0),
+[92mINFO [0m:      	                    (14, 0.0),
+[92mINFO [0m:      	                    (15, 0.0),
+[92mINFO [0m:      	                    (16, 0.0),
+[92mINFO [0m:      	                    (17, 0.0),
+[92mINFO [0m:      	                    (18, 0.0),
+[92mINFO [0m:      	                    (19, 0.0),
+[92mINFO [0m:      	                    (20, 0.0),
+[92mINFO [0m:      	                    (21, 0.0),
+[92mINFO [0m:      	                    (22, 0.0),
+[92mINFO [0m:      	                    (23, 0.0),
+[92mINFO [0m:      	                    (24, 0.0),
+[92mINFO [0m:      	                    (25, 0.0)],
+[92mINFO [0m:      	 'local_epochs': [(1, 1.0),
+[92mINFO [0m:      	                  (2, 1.0),
+[92mINFO [0m:      	                  (3, 1.0),
+[92mINFO [0m:      	                  (4, 1.0),
+[92mINFO [0m:      	                  (5, 1.0),
+[92mINFO [0m:      	                  (6, 1.0),
+[92mINFO [0m:      	                  (7, 1.0),
+[92mINFO [0m:      	                  (8, 1.0),
+[92mINFO [0m:      	                  (9, 1.0),
+[92mINFO [0m:      	                  (10, 1.0),
+[92mINFO [0m:      	                  (11, 1.0),
+[92mINFO [0m:      	                  (12, 1.0),
+[92mINFO [0m:      	                  (13, 1.0),
+[92mINFO [0m:      	                  (14, 1.0),
+[92mINFO [0m:      	                  (15, 1.0),
+[92mINFO [0m:      	                  (16, 1.0),
+[92mINFO [0m:      	                  (17, 1.0),
+[92mINFO [0m:      	                  (18, 1.0),
+[92mINFO [0m:      	                  (19, 1.0),
+[92mINFO [0m:      	                  (20, 1.0),
+[92mINFO [0m:      	                  (21, 1.0),
+[92mINFO [0m:      	                  (22, 1.0),
+[92mINFO [0m:      	                  (23, 1.0),
+[92mINFO [0m:      	                  (24, 1.0),
+[92mINFO [0m:      	                  (25, 1.0)],
+[92mINFO [0m:      	 'num_examples': [(1, 1400.0),
+[92mINFO [0m:      	                  (2, 1400.0),
+[92mINFO [0m:      	                  (3, 1400.0),
+[92mINFO [0m:      	                  (4, 1400.0),
+[92mINFO [0m:      	                  (5, 1400.0),
+[92mINFO [0m:      	                  (6, 1400.0),
+[92mINFO [0m:      	                  (7, 1400.0),
+[92mINFO [0m:      	                  (8, 1400.0),
+[92mINFO [0m:      	                  (9, 1400.0),
+[92mINFO [0m:      	                  (10, 1400.0),
+[92mINFO [0m:      	                  (11, 1400.0),
+[92mINFO [0m:      	                  (12, 1400.0),
+[92mINFO [0m:      	                  (13, 1400.0),
+[92mINFO [0m:      	                  (14, 1400.0),
+[92mINFO [0m:      	                  (15, 1400.0),
+[92mINFO [0m:      	                  (16, 1400.0),
+[92mINFO [0m:      	                  (17, 1400.0),
+[92mINFO [0m:      	                  (18, 1400.0),
+[92mINFO [0m:      	                  (19, 1400.0),
+[92mINFO [0m:      	                  (20, 1400.0),
+[92mINFO [0m:      	                  (21, 1400.0),
+[92mINFO [0m:      	                  (22, 1400.0),
+[92mINFO [0m:      	                  (23, 1400.0),
+[92mINFO [0m:      	                  (24, 1400.0),
+[92mINFO [0m:      	                  (25, 1400.0)],
+[92mINFO [0m:      	 'proto_decoupling_enabled': [(1, 0.0),
+[92mINFO [0m:      	                              (2, 0.0),
+[92mINFO [0m:      	                              (3, 0.0),
+[92mINFO [0m:      	                              (4, 0.0),
+[92mINFO [0m:      	                              (5, 0.0),
+[92mINFO [0m:      	                              (6, 0.0),
+[92mINFO [0m:      	                              (7, 0.0),
+[92mINFO [0m:      	                              (8, 0.0),
+[92mINFO [0m:      	                              (9, 0.0),
+[92mINFO [0m:      	                              (10, 0.0),
+[92mINFO [0m:      	                              (11, 0.0),
+[92mINFO [0m:      	                              (12, 0.0),
+[92mINFO [0m:      	                              (13, 0.0),
+[92mINFO [0m:      	                              (14, 0.0),
+[92mINFO [0m:      	                              (15, 0.0),
+[92mINFO [0m:      	                              (16, 0.0),
+[92mINFO [0m:      	                              (17, 0.0),
+[92mINFO [0m:      	                              (18, 0.0),
+[92mINFO [0m:      	                              (19, 0.0),
+[92mINFO [0m:      	                              (20, 0.0),
+[92mINFO [0m:      	                              (21, 0.0),
+[92mINFO [0m:      	                              (22, 0.0),
+[92mINFO [0m:      	                              (23, 0.0),
+[92mINFO [0m:      	                              (24, 0.0),
+[92mINFO [0m:      	                              (25, 0.0)],
+[92mINFO [0m:      	 'proto_stats_uploaded': [(1, 0.0),
+[92mINFO [0m:      	                          (2, 0.0),
+[92mINFO [0m:      	                          (3, 0.0),
+[92mINFO [0m:      	                          (4, 0.0),
+[92mINFO [0m:      	                          (5, 0.0),
+[92mINFO [0m:      	                          (6, 0.0),
+[92mINFO [0m:      	                          (7, 0.0),
+[92mINFO [0m:      	                          (8, 0.0),
+[92mINFO [0m:      	                          (9, 0.0),
+[92mINFO [0m:      	                          (10, 0.0),
+[92mINFO [0m:      	                          (11, 0.0),
+[92mINFO [0m:      	                          (12, 0.0),
+[92mINFO [0m:      	                          (13, 0.0),
+[92mINFO [0m:      	                          (14, 0.0),
+[92mINFO [0m:      	                          (15, 0.0),
+[92mINFO [0m:      	                          (16, 0.0),
+[92mINFO [0m:      	                          (17, 0.0),
+[92mINFO [0m:      	                          (18, 0.0),
+[92mINFO [0m:      	                          (19, 0.0),
+[92mINFO [0m:      	                          (20, 0.0),
+[92mINFO [0m:      	                          (21, 0.0),
+[92mINFO [0m:      	                          (22, 0.0),
+[92mINFO [0m:      	                          (23, 0.0),
+[92mINFO [0m:      	                          (24, 0.0),
+[92mINFO [0m:      	                          (25, 0.0)],
+[92mINFO [0m:      	 'received_global_prototypes': [(1, 0.0),
+[92mINFO [0m:      	                                (2, 0.0),
+[92mINFO [0m:      	                                (3, 0.0),
+[92mINFO [0m:      	                                (4, 0.0),
+[92mINFO [0m:      	                                (5, 0.0),
+[92mINFO [0m:      	                                (6, 0.0),
+[92mINFO [0m:      	                                (7, 0.0),
+[92mINFO [0m:      	                                (8, 0.0),
+[92mINFO [0m:      	                                (9, 0.0),
+[92mINFO [0m:      	                                (10, 0.0),
+[92mINFO [0m:      	                                (11, 0.0),
+[92mINFO [0m:      	                                (12, 0.0),
+[92mINFO [0m:      	                                (13, 0.0),
+[92mINFO [0m:      	                                (14, 0.0),
+[92mINFO [0m:      	                                (15, 0.0),
+[92mINFO [0m:      	                                (16, 0.0),
+[92mINFO [0m:      	                                (17, 0.0),
+[92mINFO [0m:      	                                (18, 0.0),
+[92mINFO [0m:      	                                (19, 0.0),
+[92mINFO [0m:      	                                (20, 0.0),
+[92mINFO [0m:      	                                (21, 0.0),
+[92mINFO [0m:      	                                (22, 0.0),
+[92mINFO [0m:      	                                (23, 0.0),
+[92mINFO [0m:      	                                (24, 0.0),
+[92mINFO [0m:      	                                (25, 0.0)],
+[92mINFO [0m:      	 'replay_distill_enabled': [(1, 0.0),
+[92mINFO [0m:      	                            (2, 0.0),
+[92mINFO [0m:      	                            (3, 0.0),
+[92mINFO [0m:      	                            (4, 0.0),
+[92mINFO [0m:      	                            (5, 0.0),
+[92mINFO [0m:      	                            (6, 0.0),
+[92mINFO [0m:      	                            (7, 0.0),
+[92mINFO [0m:      	                            (8, 0.0),
+[92mINFO [0m:      	                            (9, 0.0),
+[92mINFO [0m:      	                            (10, 0.0),
+[92mINFO [0m:      	                            (11, 0.0),
+[92mINFO [0m:      	                            (12, 0.0),
+[92mINFO [0m:      	                            (13, 0.0),
+[92mINFO [0m:      	                            (14, 0.0),
+[92mINFO [0m:      	                            (15, 0.0),
+[92mINFO [0m:      	                            (16, 0.0),
+[92mINFO [0m:      	                            (17, 0.0),
+[92mINFO [0m:      	                            (18, 0.0),
+[92mINFO [0m:      	                            (19, 0.0),
+[92mINFO [0m:      	                            (20, 0.0),
+[92mINFO [0m:      	                            (21, 0.0),
+[92mINFO [0m:      	                            (22, 0.0),
+[92mINFO [0m:      	                            (23, 0.0),
+[92mINFO [0m:      	                            (24, 0.0),
+[92mINFO [0m:      	                            (25, 0.0)],
+[92mINFO [0m:      	 'seed': [(1, 42.0),
+[92mINFO [0m:      	          (2, 42.0),
+[92mINFO [0m:      	          (3, 42.0),
+[92mINFO [0m:      	          (4, 42.0),
+[92mINFO [0m:      	          (5, 42.0),
+[92mINFO [0m:      	          (6, 42.0),
+[92mINFO [0m:      	          (7, 42.0),
+[92mINFO [0m:      	          (8, 42.0),
+[92mINFO [0m:      	          (9, 42.0),
+[92mINFO [0m:      	          (10, 42.0),
+[92mINFO [0m:      	          (11, 42.0),
+[92mINFO [0m:      	          (12, 42.0),
+[92mINFO [0m:      	          (13, 42.0),
+[92mINFO [0m:      	          (14, 42.0),
+[92mINFO [0m:      	          (15, 42.0),
+[92mINFO [0m:      	          (16, 42.0),
+[92mINFO [0m:      	          (17, 42.0),
+[92mINFO [0m:      	          (18, 42.0),
+[92mINFO [0m:      	          (19, 42.0),
+[92mINFO [0m:      	          (20, 42.0),
+[92mINFO [0m:      	          (21, 42.0),
+[92mINFO [0m:      	          (22, 42.0),
+[92mINFO [0m:      	          (23, 42.0),
+[92mINFO [0m:      	          (24, 42.0),
+[92mINFO [0m:      	          (25, 42.0)],
+[92mINFO [0m:      	 'train_samples': [(1, 1400.0),
+[92mINFO [0m:      	                   (2, 1400.0),
+[92mINFO [0m:      	                   (3, 1400.0),
+[92mINFO [0m:      	                   (4, 1400.0),
+[92mINFO [0m:      	                   (5, 1400.0),
+[92mINFO [0m:      	                   (6, 1400.0),
+[92mINFO [0m:      	                   (7, 1400.0),
+[92mINFO [0m:      	                   (8, 1400.0),
+[92mINFO [0m:      	                   (9, 1400.0),
+[92mINFO [0m:      	                   (10, 1400.0),
+[92mINFO [0m:      	                   (11, 1400.0),
+[92mINFO [0m:      	                   (12, 1400.0),
+[92mINFO [0m:      	                   (13, 1400.0),
+[92mINFO [0m:      	                   (14, 1400.0),
+[92mINFO [0m:      	                   (15, 1400.0),
+[92mINFO [0m:      	                   (16, 1400.0),
+[92mINFO [0m:      	                   (17, 1400.0),
+[92mINFO [0m:      	                   (18, 1400.0),
+[92mINFO [0m:      	                   (19, 1400.0),
+[92mINFO [0m:      	                   (20, 1400.0),
+[92mINFO [0m:      	                   (21, 1400.0),
+[92mINFO [0m:      	                   (22, 1400.0),
+[92mINFO [0m:      	                   (23, 1400.0),
+[92mINFO [0m:      	                   (24, 1400.0),
+[92mINFO [0m:      	                   (25, 1400.0)],
+[92mINFO [0m:      	 'use_align': [(1, 0.0),
+[92mINFO [0m:      	               (2, 0.0),
+[92mINFO [0m:      	               (3, 0.0),
+[92mINFO [0m:      	               (4, 0.0),
+[92mINFO [0m:      	               (5, 0.0),
+[92mINFO [0m:      	               (6, 0.0),
+[92mINFO [0m:      	               (7, 0.0),
+[92mINFO [0m:      	               (8, 0.0),
+[92mINFO [0m:      	               (9, 0.0),
+[92mINFO [0m:      	               (10, 0.0),
+[92mINFO [0m:      	               (11, 0.0),
+[92mINFO [0m:      	               (12, 0.0),
+[92mINFO [0m:      	               (13, 0.0),
+[92mINFO [0m:      	               (14, 0.0),
+[92mINFO [0m:      	               (15, 0.0),
+[92mINFO [0m:      	               (16, 0.0),
+[92mINFO [0m:      	               (17, 0.0),
+[92mINFO [0m:      	               (18, 0.0),
+[92mINFO [0m:      	               (19, 0.0),
+[92mINFO [0m:      	               (20, 0.0),
+[92mINFO [0m:      	               (21, 0.0),
+[92mINFO [0m:      	               (22, 0.0),
+[92mINFO [0m:      	               (23, 0.0),
+[92mINFO [0m:      	               (24, 0.0),
+[92mINFO [0m:      	               (25, 0.0)],
+[92mINFO [0m:      	 'use_proto_decoupling': [(1, 0.0),
+[92mINFO [0m:      	                          (2, 0.0),
+[92mINFO [0m:      	                          (3, 0.0),
+[92mINFO [0m:      	                          (4, 0.0),
+[92mINFO [0m:      	                          (5, 0.0),
+[92mINFO [0m:      	                          (6, 0.0),
+[92mINFO [0m:      	                          (7, 0.0),
+[92mINFO [0m:      	                          (8, 0.0),
+[92mINFO [0m:      	                          (9, 0.0),
+[92mINFO [0m:      	                          (10, 0.0),
+[92mINFO [0m:      	                          (11, 0.0),
+[92mINFO [0m:      	                          (12, 0.0),
+[92mINFO [0m:      	                          (13, 0.0),
+[92mINFO [0m:      	                          (14, 0.0),
+[92mINFO [0m:      	                          (15, 0.0),
+[92mINFO [0m:      	                          (16, 0.0),
+[92mINFO [0m:      	                          (17, 0.0),
+[92mINFO [0m:      	                          (18, 0.0),
+[92mINFO [0m:      	                          (19, 0.0),
+[92mINFO [0m:      	                          (20, 0.0),
+[92mINFO [0m:      	                          (21, 0.0),
+[92mINFO [0m:      	                          (22, 0.0),
+[92mINFO [0m:      	                          (23, 0.0),
+[92mINFO [0m:      	                          (24, 0.0),
+[92mINFO [0m:      	                          (25, 0.0)],
+[92mINFO [0m:      	 'use_replay_distill': [(1, 0.0),
+[92mINFO [0m:      	                        (2, 0.0),
+[92mINFO [0m:      	                        (3, 0.0),
+[92mINFO [0m:      	                        (4, 0.0),
+[92mINFO [0m:      	                        (5, 0.0),
+[92mINFO [0m:      	                        (6, 0.0),
+[92mINFO [0m:      	                        (7, 0.0),
+[92mINFO [0m:      	                        (8, 0.0),
+[92mINFO [0m:      	                        (9, 0.0),
+[92mINFO [0m:      	                        (10, 0.0),
+[92mINFO [0m:      	                        (11, 0.0),
+[92mINFO [0m:      	                        (12, 0.0),
+[92mINFO [0m:      	                        (13, 0.0),
+[92mINFO [0m:      	                        (14, 0.0),
+[92mINFO [0m:      	                        (15, 0.0),
+[92mINFO [0m:      	                        (16, 0.0),
+[92mINFO [0m:      	                        (17, 0.0),
+[92mINFO [0m:      	                        (18, 0.0),
+[92mINFO [0m:      	                        (19, 0.0),
+[92mINFO [0m:      	                        (20, 0.0),
+[92mINFO [0m:      	                        (21, 0.0),
+[92mINFO [0m:      	                        (22, 0.0),
+[92mINFO [0m:      	                        (23, 0.0),
+[92mINFO [0m:      	                        (24, 0.0),
+[92mINFO [0m:      	                        (25, 0.0)]}
+[92mINFO [0m:      

@@ -1,0 +1,90 @@
+"""Audit the trained SOURCE bank and restore parity;no additional optimization."""
+import sys,os,json,math,hashlib,collections,traceback
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];R=HERE.parent/'fedongas_phase33r_20261105';sys.path.insert(0,str(R))
+import contract as c
+access=[]
+allowed={str((c.DATA_ROOT/'source'/f'client_{cid}'/f'train_{n}.npy').resolve()).lower() for cid in [1,2] for n in ['features','classification_labels','phase_labels']}
+def guard(event,args):
+    if event!='open' or not isinstance(args[0],(str,bytes)):return
+    p=Path(os.fsdecode(args[0]));s=str(p.resolve()).lower()
+    if p.suffix.lower() in ['.npy','.npz']:
+        access.append(dict(path=str(p),allowed=s in allowed))
+        if s not in allowed:raise PermissionError('restore audit rejected non-source numeric input')
+sys.addaudithook(guard)
+import runtime as r
+torch=r.torch;np=r.np
+def state_arrays(state,keys):return [state[k].detach().cpu().numpy() for k in keys]
+def main():
+    torch.set_num_threads(1);done=c.read(HERE/'EXECUTION_COMPLETE.json');assert all(v==0 for v in done['codes'].values())
+    reg=c.read(R/'SOURCE_ATTEMPT2_REGISTRATION.json');bank=R/'source_attempt2/server';schema=r.model();keys=list(schema.state_dict());lock=c.read(bank/'SSTAR_LOCKED.json')
+    assert len(lock['round_receipts'])==25 and lock['initial_sha256']==reg['initial_state_sha256']
+    identities=c.prior.rows(c.CANONICAL_CONTRACTS/'SOURCE_WINDOW_IDENTITIES.csv');sourceids={cid:[x for x in identities if int(x['client_id'])==cid] for cid in [1,2]}
+    rounds=[];files=[];previous=reg['initial_state_sha256'];max_aggregate_error=0.;all_steps=all_rows=0
+    for rnd in range(1,26):
+        receipt=c.read(bank/f'phase32_receipt_{rnd:03}.json');assert receipt==lock['round_receipts'][rnd-1]
+        assert receipt['round']==rnd and receipt['clients']==[1,2] and receipt['samples']==[840,1680] and receipt['received']==previous
+        assert receipt['entry_sha256']==reg['runtime_sha256'] and receipt['contract_sha256']==reg['contract_sha256']
+        checkpoint=bank/f'server_round_{rnd:03}.pth';assert c.sha(checkpoint)==receipt['checkpoint_sha256'];ck=torch.load(checkpoint,map_location='cpu',weights_only=True);state=ck['model_state'];r.validate_state(schema,state);assert ck['parameter_keys']==keys
+        assert c.digest(state_arrays(state,keys))==receipt['returned']
+        local={};obs_pair=[]
+        for cid,n,expected in [(1,840,53),(2,1680,105)]:
+            obs=c.read(HERE/'observer'/f'client_{cid}_round_{rnd:03}.json');native=c.read(R/f'source_attempt2/client_{cid}/receipt_{rnd:03}.json')
+            assert obs['optimizer_steps']==expected and obs['optimizer_initializations']==1 and sum(obs['batch_sizes'])==n and sorted(obs['indices'])==list(range(n))
+            assert obs['received_state_sha256']==native['received']==receipt['received']
+            assert obs['trained_state_sha256']==native['uploaded']==receipt['uploads'][cid-1]
+            snap=HERE/'observer'/f'client_{cid}_trained_round_{rnd:03}.pth';assert c.sha(snap)==obs['state_snapshot_sha256'];local[cid]=torch.load(snap,map_location='cpu',weights_only=True)['model_state'];r.validate_state(schema,local[cid]);assert c.digest(state_arrays(local[cid],keys))==obs['trained_state_sha256']
+            gases=collections.Counter(int(sourceids[cid][i]['gas_id']) for i in obs['indices']);assert gases=={g:n//4 for g in range(4)}
+            rounds.append(dict(round=rnd,client_id=cid,dataset_rows=n,optimizer_steps=obs['optimizer_steps'],optimizer_initializations=1,label_presentations=n,unique_row_indices=len(set(obs['indices'])),class_counts=json.dumps(gases,sort_keys=True),weight='1/3' if cid==1 else '2/3',received_state_sha256=native['received'],trained_uploaded_sha256=native['uploaded'],aggregated_returned_sha256=receipt['returned'],local_seconds=obs['seconds'],peak_RSS_bytes=obs['peak_RSS_bytes'],state_bytes=sum(a.nbytes for a in state_arrays(local[cid],keys)),checkpoint_sha256=receipt['checkpoint_sha256']))
+            all_steps+=obs['optimizer_steps'];all_rows+=n;obs_pair.append(obs)
+            files.append(dict(role=f'client_{cid}_trained_snapshot',round=rnd,path=snap.relative_to(ROOT).as_posix(),sha256=c.sha(snap),state_sha256=native['uploaded'],bytes=snap.stat().st_size))
+        # Independent high-precision ordinary weighted mean reference. Tolerance
+        # is floating-point roundoff only, fixed4*eps32*max(1,reference magnitude).
+        err=0.
+        for k in keys:
+            ref=(local[1][k].double()+2*local[2][k].double())/3
+            delta=(ref-state[k].double()).abs().max().item();bound=4*np.finfo(np.float32).eps*max(1.,ref.abs().max().item());assert delta<=bound,(rnd,k,delta,bound);err=max(err,delta)
+        max_aggregate_error=max(max_aggregate_error,err);previous=receipt['returned']
+        files.append(dict(role='server_round',round=rnd,path=checkpoint.relative_to(ROOT).as_posix(),sha256=c.sha(checkpoint),state_sha256=previous,bytes=checkpoint.stat().st_size))
+    assert all_steps==3950 and all_rows==63000
+    assert previous!=reg['initial_state_sha256']
+    for role,steps in [('client_1',1325),('client_2',2625),('server',0)]:
+        proc=c.read(HERE/'observer'/f'{role}_process.json');assert proc['total_optimizer_steps']==steps and not proc['denied'] and all(x['allowed'] for x in proc['numeric_access'])
+        if role!='server':assert proc['completed_rounds']==25
+    # Positive closure of the full registered initialization/source/code/25-file
+    # ancestry checker, not just schema compatibility of a weights-only file.
+    sstar=r.load_checkpoint(r.model(),bank/'SSTAR.pth',lock,'sstar');assert c.digest(r.arrays(sstar))==previous and c.sha(bank/'SSTAR.pth')==lock['sha256']
+    # Deterministic finite source-only recovery fixture: first export row of every
+    # source device/date/gas cohort (3date cohorts*4gases=12windows).
+    selection=[];tensors=[]
+    for cid in [1,2]:
+        arr=c.validate_package(c.DATA_ROOT/'source'/f'client_{cid}',dict(client_id=cid))
+        groups={}
+        for index,x in enumerate(sourceids[cid]):groups.setdefault((int(x['day']),int(x['gas_id'])),[]).append((index,x))
+        for cohort,rows_ in sorted(groups.items()):
+            index,meta=rows_[0];selection.append(dict(meta,restore_source_row=index));tensors.append(arr[0][index])
+    x=torch.from_numpy(np.asarray(tensors,dtype=np.float32));assert x.shape==(12,50,8)
+    model25=r.model();model25.load_state_dict(torch.load(bank/'server_round_025.pth',weights_only=True)['model_state'],strict=True)
+    restore=HERE/'restore';restore.mkdir(exist_ok=False);roundtrip=restore/'SSTAR_STATE_ROUNDTRIP.pth';torch.save(sstar.state_dict(),roundtrip)
+    restored=r.model();raw=torch.load(roundtrip,weights_only=True);r.validate_state(restored,raw);restored.load_state_dict(raw,strict=True)
+    for m in [model25,sstar,restored]:m.eval()
+    with torch.no_grad():aa=model25(x);bb=sstar(x);cc=restored(x)
+    assert all(torch.isfinite(t).all() for result in [aa,bb,cc] for t in result)
+    assert all(torch.equal(a,b) and torch.equal(b,d) for a,b,d in zip(aa,bb,cc))
+    assert [list(t.shape) for t in aa]==[[12,4],[12,64],[12,64]]
+    c.prior.table(restore/'SOURCE_INPUT_IDENTITIES.csv',selection)
+    c.write(restore/'PRIVATE_NUMERIC_OUTPUTS.json',dict(round25=[v.tolist() for v in aa],packaged_Sstar=[v.tolist() for v in bb],roundtrip=[v.tolist() for v in cc]))
+    c.write(HERE/'RESTORE_VERIFICATION.json',dict(status='PASS',source_windows=12,source_device_date_cohorts=['C1Day4','C2Day1','C2Day7'],classes=[0,1,2,3],selection='first canonical export row perdevice/date/gas;fixed before prediction',source_identity_manifest_sha256=c.sha(restore/'SOURCE_INPUT_IDENTITIES.csv'),input_shape=[12,50,8],output_shapes=[list(v.shape) for v in aa],native_round25_vs_Sstar_vs_resaved_exact=True,max_abs_difference=0.,roundtrip_file_sha256=c.sha(roundtrip),state_sha256=previous,accuracy_computed=False,no_target_data=True,qualification='compares native final-round artifact to packaged model and fresh save/reload;no live training-process logits retained'))
+    # Six identical legal initializations;no loaders or optimizers are created.
+    pilot=[];oldconfig={x['group']:x for x in c.read(R/'EFFECTIVE_CONTRACTS.json')}
+    for group in ['B0','B1','B2','B3','B4','B5']:
+        m=r.load_checkpoint(r.model(),bank/'SSTAR.pth',lock,'sstar');s=c.spec(group);c.validate_spec(s);assert s==oldconfig[group]['spec'];assert vars(r.config(s['stats_upload']))==oldconfig[group]['model_config'];sha=c.digest(r.arrays(m));assert sha==previous
+        pilot.append(dict(group=group,status='PASS_INIT_CONFIG_AWAITING_SEPARATE_PILOT_APPROVAL',Sstar_path=str(bank/'SSTAR.pth'),Sstar_file_sha256=lock['sha256'],initial_state_sha256=sha,target_steps=0 if group=='B0' else 2500,target_presentations=0 if group=='B0' else 40000,model_feedback=s['feedback'],prototype_parameter_weighting=s['selective'],prototype_stats_upload=s['stats_upload'],training_started=False,target_arrays_loaded=False,authorized=False))
+    c.prior.table(HERE/'SOURCE_ROUND_LEDGER.csv',rounds);c.prior.table(HERE/'MODEL_AND_CHECKPOINT_INDEX.csv',files);c.prior.table(HERE/'PILOT_FINAL_GATE.csv',pilot)
+    acceptance=dict(status='PASS_ACCEPTED_LEGAL_SSTAR',experiment_id=reg['experiment_id'],source_rounds=25,source_client_rounds=50,optimizer_steps=all_steps,window_presentations=all_rows,source_exposures=120,source_windows=2520,source_identity_sha256=reg['source_identity_sha256'],runtime_sha256=reg['runtime_sha256'],contract_sha256=reg['contract_sha256'],environment_sha256=reg['environment_contract_sha256'],registered_initial_state_sha256=reg['initial_state_sha256'],Sstar_file_sha256=lock['sha256'],Sstar_state_sha256=previous,SSTAR_LOCKED_sha256=c.sha(bank/'SSTAR_LOCKED.json'),server_checkpoints_verified=25,client_state_snapshots_verified=50,independent_weighted_mean_max_abs_error=max_aggregate_error,weighted_mean_tolerance='4eps32*max(1,referenceabs);no test tuning',state_schema_finite=True,gradient_finite_checks_every_step=True,restore_exact=True,restore_windows=12,target_numeric_reads=0,attempt2_launches=1,retries=0,pilot_initializations=6,pilot_training_launches=0,pilot_next_authorization_can_be_requested=True)
+    c.write(HERE/'SSTAR_ACCEPTANCE_LOCK.json',acceptance);c.write(bank/'SSTAR_ACCEPTANCE_AUDIT.json',acceptance)
+    c.write(HERE/'AUDIT_NUMERIC_ACCESS.json',dict(successful_source_only_reads=access,non_source_reads=0,additional_optimization=False))
+    print('SSTAR_ACCEPTED;25round/3950steps/63000presentations;restoreexact;6initPASS;NO PILOT',flush=True)
+if __name__=='__main__':
+    try:main()
+    except BaseException:c.write(HERE/'AUDIT_FAILED.json',dict(status='BLOCKED_NO_RETRY',error=traceback.format_exc()));raise

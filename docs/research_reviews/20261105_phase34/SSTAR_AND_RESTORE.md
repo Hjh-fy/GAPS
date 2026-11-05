@@ -1,0 +1,14 @@
+# S*来源闭合及恢复验收
+
+最终模型本地路径research/fedongas_phase33r_20261105/source_attempt2/server/SSTAR.pth。
+
+- 文件SHA256：5a9482dc4e9e7665586828ed8cd03c00f9695d2597c891745270a6761c4fe72b
+- 全state数值/顺序指纹：431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673
+- 原生SSTAR_LOCKED SHA256：a701c739e3734914fbc9803634c4faca6cd3070ccf7cc7c2171ff493317739da
+- 随机祖先state：a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7
+
+原生锁的严格validator已正向通过：同注册随机文件与lock、120源暴露/2520窗身份、25个邻接round文件与receipt、同新runtime/contract SHA、SOURCE scientific spec、每轮接收等于前轮返回、最终模型等于round25。50个本地trained snapshot SHA与client上传/server记录一致。SSTAR_ACCEPTANCE_LOCK及bank原目录SSTAR_ACCEPTANCE_AUDIT额外封存本轮全部验收，不改原生锁schema。
+
+恢复只使用合法source输入：每个设备/日期/气体取canonical第一个export窗，共C1Day4/C2Day1/C2Day7×4gas=12窗口；选择由元数据先固定，未按误差选择。原round25 checkpoint加载、Sstar封装strict load、独立重保存/恢复三份模型在eval/no_grad下logits4/cls64/reg64输出全有限、逐元素完全一致(maxdiff0)。没有原训练进程内保存前logits，因此准确表述是“原最终轮制品与封装/独立重保存恢复一致”，由stateSHA链连接真实训练终点。
+
+RESTORE_VERIFICATION与restore/SOURCE_INPUT_IDENTITIES保留输入身份；PRIVATE_NUMERIC_OUTPUTS和roundtrip权重仅本地。未计算训练集或测试准确率，不从恢复一致性推断识别性能。逻辑source时间边界截至Day7，实际构建为本次回顾性训练，不声称当时已部署。
