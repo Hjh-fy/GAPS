@@ -1,0 +1,27 @@
+"""Safe metadata inspection; no inference, optimizer creation or training."""
+from common import *
+
+def main():
+    import torch
+    out=HERE/'checkpoints';out.mkdir(exist_ok=False);records=[]
+    for r in rows(HERE/'evidence/KNOWN_CLASSIFIER_CANDIDATES.csv'):
+        rel=r['archived_checkpoint'].removeprefix('source/workspace/');p=path(rel)
+        row=dict(experiment_id=r['experiment_id'],path=rel,sha256=sha(p),status='BLOCKED_NOT_DAY7_SOURCE',inference=False)
+        try:
+            ck=torch.load(p,map_location='cpu',weights_only=True)
+            row['container_keys']=list(ck) if isinstance(ck,dict) else []
+            row['model_config']=ck.get('model_config',{})
+            state=ck.get('model_state',ck.get('state_dict',{}))
+            row['round']=ck.get('round');row['run_name']=ck.get('run_name');row['parameter_keys']=list(state)
+            row['tensor_shapes']={k:list(v.shape) for k,v in state.items() if torch.is_tensor(v)}
+            row['tensor_values_sha256']=digest_arrays([v.detach().cpu().numpy() for v in state.values() if torch.is_tensor(v)])
+            row['optimizer_state_present']=any('optim' in str(k).lower() for k in ck)
+            row['semantic_proto_keys']=list(ck.get('semantic_protos',{}))
+            row['ancestor_manifest_present']=any(k in ck for k in ['ancestry','training_exposure_ids','input_manifest_sha256'])
+            row['ancestor_status']='known_old_source_R1_R3;no_complete_ancestor_identity_closure'
+        except Exception as exc:row.update(safe_load_error=repr(exc),ancestor_status='unknown;no unsafe pickle fallback')
+        records.append(row)
+    js(out/'SAFE_CHECKPOINT_METADATA.json',records)
+    table(out/'CHECKPOINT_PROVENANCE.csv',list(PROV.values()))
+    print('7 inspected safely;NO APPROVED Sstar',flush=True)
+if __name__=='__main__':main()

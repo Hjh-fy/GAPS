@@ -1,0 +1,58 @@
+"""Parse real archived CLIs without invoking main, model construction or training."""
+from common import *
+
+def plain(x):
+    if isinstance(x,(str,int,float,bool,type(None))):return x
+    if isinstance(x,(list,tuple)):return [plain(v) for v in x]
+    if isinstance(x,dict):return {str(k):plain(v) for k,v in x.items()}
+    return str(x)
+
+def main():
+    torch,cfg,ds,ns=runtime();out=HERE/'binding';out.mkdir(exist_ok=False)
+    sp,se=parser_for('server',ns);cp,ce=parser_for('client',ns)
+    (out/'SERVER_CLI_HELP.txt').write_text(sp.format_help(),encoding='utf-8')
+    (out/'CLIENT_CLI_HELP.txt').write_text(cp.format_help(),encoding='utf-8')
+    profiles=[]
+    for profile in ns['CLASSIFICATION_PROFILE_FLAGS']:
+        conf=ns['make_config'](profile=profile,batch_size=16,local_epochs=1,seed=42,num_classes=4,input_dim=8,num_clients=6,num_phases=3)
+        profiles.append(dict(profile=profile,**{k:getattr(conf,k) for k in ['UPLOAD_PROTO_STATS','USE_ALIGN','USE_REPLAY_DISTILL','USE_PROTO_DECOUPLING','USE_REG_LOSS']}))
+    js(out/'PROFILE_TRUTH_TABLE.json',profiles)
+    structure=['--profile','ce_only','--seed','42','--num-classes','4','--input-dim','8','--num-clients','6','--num-phases','3']
+    zero=['coral','global-mmd','class-mmd','proto-anchor','adv','proto','consistency','residual','proto-mmd','stage-mmd','align-reg-legacy']
+    binds=[]
+    for b in range(6):
+        label=f'P3-PILOT-C5-A4-B{b}-S42'
+        serverargv=['--strategy','gaps' if b>=3 else 'fedavg','--rounds','25','--min-clients','3' if b==2 else '2','--output-dir',f'UNRUN/{label}','--run-name',label]+structure
+        serverargv+=['--da-preset','none','--proto-ema-alpha','0.8','--use-selective-agg',str(b==5),'--selective-warmup','3','--selective-min-scale','0.3','--use-proto-mmd','False','--use-domain-adapt',str(b>=3),'--use-adapted-as-global',str(b>=4),'--domain-adapt-steps','100','--domain-adapt-warmup','0','--strict-calibration-split','True','--da-use-coral','False','--da-use-mmd','False','--da-use-adversarial','False','--da-use-align-reg-legacy','False','--da-lambda-target-ce','1' if b>=3 else '0','--da-target-ce-label-smoothing','0','--da-target-ce-class-balanced','False','--da-server-opt-lr','0.0005']
+        for k in zero:serverargv+=['--da-lambda-'+k,'0']
+        if b>=3:serverargv+=['--server-val-data',str(HERE/'data/client_1')+','+str(HERE/'data/client_2'),'--server-calib-data',str(HERE/'data/client_5')]
+        args=sp.parse_args(serverargv);preset=se['apply_da_preset'](args,set(vars(args)))
+        # The exact make_config arguments in server_app.main include batch_size=32.
+        conf=ns['make_config'](seed=args.seed,num_classes=args.num_classes,input_dim=args.input_dim,num_clients=args.num_clients,num_phases=args.num_phases,batch_size=32,profile=args.profile)
+        clients=[]
+        for cid in ([] if b==1 else [1,2]+([5] if b==2 else [])):
+            argv=['--client-id',str(cid),'--data-root',str(HERE/'data'/f'client_{cid}'),'--local-epochs','50' if cid==5 else '1','--batch-size','16','--eval-split','calibration']+structure
+            ca=cp.parse_args(argv)
+            cc=ns['make_config'](seed=ca.seed,num_classes=ca.num_classes,input_dim=ca.input_dim,num_clients=ca.num_clients,num_phases=ca.num_phases,batch_size=ca.batch_size,local_epochs=ca.local_epochs,profile=ca.profile,device=ca.device)
+            clients.append(dict(client_id=cid,argv=argv,effective_args=vars(ca),effective_config=plain(vars(cc))))
+        blockers=['no_proven_legal_Sstar','generic_server_has_no_initial_checkpoint_CLI','SEQ_LEN_100_vs_export_50']
+        if b==1:blockers+=['no_generic_target_only_execution_entry;strict_target_entry_rejects_new_spec']
+        if b>=3:blockers+=['server_batch32_causes_80000_target_presentations','pure_CE_profile_disables_stats_upload','server_source_pool_capped_500_not_full_2520']
+        binds.append(dict(experiment_id=label,execute=False,status='BLOCKED',server_argv=serverargv if b!=1 else None,parsed_server_reference_even_if_not_used=vars(args),da_preset_application=plain(preset),effective_server_config_reference=plain(vars(conf)),client_bindings=clients,target_only_binding=None if b!=1 else dict(status='NO_APPROVED_EXECUTABLE_ENTRY',required_updates=2500,blocks=25,steps_per_block=100,batch_size=16),evaluation=dict(default_client_eval_split=cp.get_default('eval_split'),explicit_eval_split='calibration',server_fraction_evaluate=1.0,min_evaluate_clients=args.min_clients,selection='forbidden;fixed_round25',real_test_mount='absent'),missing_requested_capabilities=blockers))
+    js(out/'SIX_EFFECTIVE_CONFIGS.json',binds)
+    def differences(x,y):return {k:[x.get(k),y.get(k)] for k in set(x)|set(y) if x.get(k)!=y.get(k)}
+    b3,b4,b5=[r['parsed_server_reference_even_if_not_used'] for r in binds[3:]]
+    delta34=differences(b3,b4);delta45=differences(b4,b5)
+    assert set(delta34)=={'run_name','output_dir','use_adapted_as_global'}
+    assert set(delta45)=={'run_name','output_dir','use_selective_agg'}
+    js(out/'SINGLE_FACTOR_PARSER_CHECK.json',dict(status='PASS_PARSER_ONLY_NOT_RUNNABLE_CONTRACT',B3_B4=delta34,B4_B5=delta45,common_proto_ema=.8,common_upload=False,prototype_upload_requirement='BLOCKED:both equally disabled is not sufficient'))
+    evidence=[]
+    keywords=['batch_size=32','SEQ_LEN','initial_state','initial-state','fraction_evaluate','min_evaluate_clients','UPLOAD_PROTO_STATS','expected_counts','2360','strict_matrix','validate_entry_spec','MAX_VAL_BATCHES','max_samples = 500','normalize=False']
+    for rel in ['config.py','gaps_flower/server_app.py','gaps_flower/client_app.py','gaps_flower/task.py','gaps_flower/strategy.py','outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py','outputs/FedOnGas_最终机制消融_C5_5pct_20261025/code/frozen_v2/matched_entry.py']:
+        for ln,line in enumerate(textof(rel).splitlines(),1):
+            if any(k in line for k in keywords):evidence.append(dict(path=rel,line=ln,code=line.strip()))
+    table(out/'CODE_LOCATIONS.csv',evidence)
+    table(out/'V5_CONFIG_PROVENANCE.csv',list(PROV.values()))
+    print('PARSED6;B3/4 and B4/5 deltas checked;ALL BLOCKED',flush=True)
+
+if __name__=='__main__':main()

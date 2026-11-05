@@ -1,0 +1,15 @@
+{
+  "status": "BLOCKED_BUDGET_MISMATCH",
+  "scope": "original loader and original run_adaptation;Tiny model;auxloss helpers test doubles at zero;synthetic100x8;not fullTCN",
+  "steps": 2500,
+  "target_label_presentations": 80000,
+  "expected": 40000,
+  "batch_size": 32,
+  "source_dataset_before_cap": 2520,
+  "source_dataset_after_cap": 500,
+  "source_forward_presentations": 859600,
+  "MAX_VAL_BATCHES": 10,
+  "source_CE_batches_per_step": 10,
+  "extra_source_feature_batch_per_step": 1,
+  "real_target_gradient_steps": 0
+}

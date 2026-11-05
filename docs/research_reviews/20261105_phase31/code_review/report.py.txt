@@ -1,0 +1,190 @@
+"""Write decision artifacts from completed probes; no training or test evaluation."""
+from common import *
+import collections,math
+
+def md(name,s):(HERE/name).write_text(s.strip()+'\n',encoding='utf-8')
+
+def main():
+    q=read(HERE/'evidence/DATA_IDENTITY_QA.json');cl=read(HERE/'checks_v2/CLIENT_GRADIENT_BUDGET.json');sv=read(HERE/'checks_v2/SERVER_GRADIENT_BUDGET.json');ch=read(HERE/'chain_v3/SUMMARY.json');sc=read(HERE/'interfaces/MODEL_SCHEMA.json')
+    assert sv['target_label_presentations']==80000 and cl['results'][2]['label_presentations']==40000
+    assert ch['B3_still_runs_adaptation'] and sc['state_bytes']==144692
+    # A future explicit index sampler is registered, not injected into frozen loaders.
+    rng=np.random.RandomState(42);schedule=[]
+    for block in range(1,26):
+        for epoch in range(1,51):
+            perm=rng.permutation(32)
+            for half in range(2):schedule.append(dict(step=len(schedule)+1,block=block,epoch=epoch,indices=';'.join(map(str,perm[half*16:(half+1)*16]))))
+    assert len(schedule)==2500
+    counts=collections.Counter(int(x) for r in schedule for x in r['indices'].split(';'));assert set(counts.values())=={1250}
+    table(HERE/'binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv',schedule)
+    js(HERE/'binding/SAMPLER_LOCK_PROPOSAL.json',dict(status='PLANNED_NOT_IMPLEMENTED_IN_RUNNER',seed=42,rng='numpy.RandomState MT19937',batch_size=16,steps=2500,presentations=40000,per_window_presentations=1250,window_identity_manifest_sha256=sha(HERE/'evidence/TRAINING_WINDOW_IDENTITIES.csv'),schedule_sha256=sha(HERE/'binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv'),requirement='all target-bearing branches must consume identical index schedule and record actual index receipts;native default shuffle alone does not prove equality'))
+    active=rows(HERE/'evidence/ACTIVE_CHECKPOINT_PATHS.csv');activecounts=collections.Counter(r['root'] for r in active)
+    js(HERE/'evidence/ACTIVE_SEARCH_LIMITS.json',dict(path_counts=dict(activecounts),original_rg_exit=2,original_inventory='partial;rg traversal returned2;stderr not retained;no exhaustive disk nonexistence claim',research_worktree_rg_exit=0,mmd_worktree_rg_exit=0,read_scope='paths only;not 7739 ancestry examinations',decision='only provenance-closed checkpoints eligible;none demonstrated'))
+    gates=[]
+    for b in range(6):
+        reasons=['SSTAR_ANCESTRY_NOT_CLOSED','NO_GENERIC_SSTAR_LOAD_SWITCH','SEQ_METADATA_100_VS_50']
+        if b==1:reasons+=['OLD_TARGET_RUNNER_SPEC_REJECTED','TARGET_BATCH16_SAMPLER_NOT_BOUND']
+        if b==2:reasons+=['TARGET_SAMPLER_NOT_BOUND']
+        if b>=3:reasons+=['SERVER_BATCH32_80000_NOT_40000','CE_ONLY_NO_PROTO_UPLOAD','SOURCE_CAP500_NOT_EXPLICITLY_APPROVED','TARGET_SAMPLER_NOT_BOUND']
+        gates.append(dict(experiment_id=f'P3-PILOT-C5-A4-B{b}-S42',status='BLOCKED',formal_training_started=False,target_test_evaluated=False,blockers=';'.join(reasons),source_local_steps=0 if b==1 else 3950,target_bearing_steps=0 if b==0 else 2500,target_presentations_contract=0 if b==0 else 40000,target_presentations_native_verified=0 if b==0 else 40000 if b in [1,2] else 80000,prototype_state='synthetic equal;production unavailable' if b>=3 else 'not required'))
+    table(HERE/'PILOT_GATE_MATRIX.csv',gates)
+    costs=[]
+    for b in range(6):
+        clients=0 if b==1 else 3 if b==2 else 2;payloads=clients*2*25
+        costs.append(dict(group=f'B{b}',planned_rounds=0 if b==1 else 25,target_blocks=25 if b==1 else 0,source_local_steps=0 if b==1 else 3950,source_local_label_presentations=0 if b==1 else 63000,target_optimizer_steps=0 if b==0 else 2500,extra_server_optimizer_steps=2500 if b>=3 else 0,target_presentations_required=0 if b==0 else 40000,native_server_presentations_counterexample=80000 if b>=3 else 0,source_CE_presentations_native_DA=781400 if b>=3 else 0,source_extra_forward_presentations_native_DA=78200 if b>=3 else 0,model_parameter_bytes=sc['parameter_bytes'],flower_state_bytes=sc['state_bytes'],model_payload_transfers=payloads,estimated_model_tensor_bytes=payloads*sc['state_bytes'],prototype_wire_bytes='NOT_MEASURED',elapsed_seconds='NOT_MEASURED',status='PLANNED_BLOCKED;payload_estimate_not_network_measurement'))
+    table(HERE/'PILOT_COST_BUDGET.csv',costs)
+    js(HERE/'ANOMALIES.json',dict(retained=[dict(id='AST_LINENO',stage='initial exploratory import',cause='harness AST nodes lacked location;fixed with ast.fix_missing_locations',production_changed=False),dict(id='FIRST_BUDGET_INCOMPLETE',stage='checks/',cause='original process exit not recovered;only no-optimization loader receipt persisted;not counted as a completed probe',recovery='checks_v2 complete;original helper exposed via isolated utils module',production_changed=False),dict(id='CHAIN_SIGNATURE',evidence='CHAIN_FAILURE.txt',cause='test double passed an extra positional argument to get_parameters',recovery='followed real signature'),dict(id='CHAIN_RETURN_TYPE',evidence='CHAIN_FAILURE_V2.txt',cause='test double treated (arrays,keys) tuple as arrays',recovery='unpacked and asserted key order;chain_v3 complete'),dict(id='SNAPSHOT_DEPENDENCY',cause='strict code snapshot omits imported fedongas_mmd_protocol.py',recovery='archived matched protocol constant used only for whitelist metadata;full strict runner not run'),dict(id='ACTIVE_CENSUS_PARTIAL',cause='original root rg traversal exit2;stderr not retained',recovery='report partial path inventory,never approve unknown ancestors')],synthetic_verified_optimizer_steps=5158,synthetic_aborted_attempt_steps='not certified;excluded from completed count',real_data_optimizer_steps=0,formal_pilots=0,Sstar_pretraining=0,real_test_feature_reads=0))
+    md('README.md','''# FedOnGas Phase3.1：目标感知联邦更新运行前预检
+
+结论：**预检工作完成，六组正式pilot全部BLOCKED，不批准启动训练。** 依据v5、Phase0.5及Phase3固定3794b71666358a597d5ed3cea65fadead8ff5719。本轮独立worktree完成身份导出、真实CLI解析、原数值循环合成计数和Flower接口合成版本链；真实数据梯度0、S*预训练0、六组pilot0、目标Test输入读取/推理0、网络训练0、部署0。
+
+|门禁|结果|实际证据|
+|---|---|---|
+|合法源/C5 A4输入|PASS|C1Day4+C2Day1/7，120暴露2520窗；C5Day18 16暴露32窗；复用原预处理/QC|
+|合法共同S*|BLOCKED|2203个v5权重后缀条目普查、7重点端点安全元数据检查；无完整Day7祖先合同；未用旧权重顶替|
+|六组CLI/profile|BLOCKED|实际parser接受的参数已保存，但通用入口缺S*加载/SEQ50绑定，严格入口拒绝新ID|
+|目标客户端预算|PASS合成计数|32窗、batch16、50epochs×25调用=2500更新/40000呈现；仅Tiny合成模型|
+|服务器预算|BLOCKED|原loader+原DA循环2500更新实际80000目标呈现；硬编码batch32；源还被截到500窗|
+|反馈链|PASS合成接口|原fit/configure_fit/aggregate_fit/_run_domain_adapt/EMA/序列化；B3返回aggregated，B4返回adapted；数值训练用明确替身|
+|B4/B5原型条件|BLOCKED生产路径|注入相同原型的合成隔离检查通过；真实ce_only不上传原型，B5不会激活|
+
+阅读：[S*与源预训练方案](SSTAR_AUDIT.md) → [有效参数及真实命令](EFFECTIVE_CONFIG_AND_COMMANDS.md) → [数据/标签访问](DATA_AND_LABEL_AUDIT.md) → [预算实测与差异](UPDATE_BUDGET_AUDIT.md) → [版本链](VERSION_CHAIN_AUDIT.md) → [成本与继续条件](NEXT_DECISION.md)。逐组判定PILOT_GATE_MATRIX.csv；原生计数为反例证据，不是准许运行配置。
+
+关键新增认识：TCN本体可处理50×8，实测22765参数、80个state张量。Flower传输全部state的张量载荷144692B，不能继续用91060B参数字节代替总state载荷。旧模型结构能严格加载，也不能证明祖先数据合法。纯CE、原型上传、原型损失、参数选择性加权是独立语义，当前通用profile没有把它们完全解耦。
+
+只建议下一轮最小入口/合同补齐及一次源预训练，完成后重新预检；不扩大六组，不自动开始72分支。不以局部门禁通过替代整体批准。所有目标Test已观察，后续pilot仍为回顾性研究。
+''')
+    md('SSTAR_AUDIT.md','''# 合法源分类起点S*审计
+
+## 结论和搜索边界
+
+没有证据充分的合法S*，不是断言整台机器不存在任何未知权重。v5 SOURCE_INVENTORY中2203条.pth/.pt/.ckpt路径（可能含非分类资产）均进入清单；7个严格分类候选逐文件SHA及weights_only=True安全加载已完成。活动仓库额外路径清单见ACTIVE_CHECKPOINT_PATHS及ACTIVE_SEARCH_LIMITS：原仓库遍历exit2为部分清单，另外两个worktree路径遍历完整；未把数千条路径冒充逐模型祖先审查。registered worktree清单同样不是其所有资产的完整取证。
+
+7个候选属于旧source R1–R3/目标微调或服务器适配协议；其祖先训练身份未闭合为C1Day4、C2Day1/7。旧source-only A0也不例外。SAFE_CHECKPOINT_METADATA逐个保留checkpoint SHA、80个state键/形状、分类头、保存round、model_config、prototype键、optimizer和ancestry字段是否存在；缺项保持unknown，不能从路径或最终权重反推“没用过Test”。容器中没有完整原始暴露训练名单和祖先SHA链，优化器状态通常未保存，prototype/encoder版本也不能完整追溯。**不产生SSTAR_LOCKED。**
+
+## 可复用结构、输入与预处理
+
+原task.create_model→utils.create_model_by_config(with_reg_head=False)→FedGasBaseModel；TCN+attention池化、64D特征、4类。原代码合成(2,50,8)前向输出logits(2,4)、cls/reg特征均(2,64)，无梯度；旧A0结构strict load成功仅证明schema兼容。默认配置SEQ_LEN100仍被generic DA验证器当成输入长度，因此这是元数据/入口冲突，不能说TCN数学上不能处理50。
+
+标签0/1/2/3=Ethanol/CO/Ethylene/Methane。复用20–50s基线g0、原process_raw、5Hz、50×8有效响应窗口、固定valid mask，loader normalize=False，不添加未验证归一化。训练期FEATURE_NOISE_STD=0.01、既有网络dropout保留为共同结构条件；ce_only关闭alignment/replay/regression/DP/MixStyle/传感器增强。遗留USE_CONTRASTIVE_CONSISTENCY=True等标志不等于实际进入客户端loss，须核对调用点及系数；不通过改profile引入其他损失。
+
+## 唯一一次源预训练固定方案（PLANNED，未执行）
+
+ID P31-SSTAR-DAY7-S42-PLAN；random seed42全新随机初始化，无外部祖先，encoder/分类头同一state版本；optimizer新建，语义原型空。仅C1Day4 40暴露840窗、C2Day1/7 80暴露1680窗，120暴露2520窗；不读任何C3/C4/C5或源R4。纯Source FedAvg、25轮、源每轮1epoch、batch16、Adam5e-4、无辅助损失/DA/选择性加权，普通样本量权重1/3、2/3；默认原Client每轮重建Adam必须明记，不携带旧优化器状态。固定round25，不按验证/测试选轮；SourceCE的calibration_文件是同一源训练池别名，不是独立验证集。
+
+源本地每轮53+105=158步，总3950步、63000次源窗呈现。需要记录随机初始state/encoder/head/schema/参数序列SHA，代码与配置SHA，全部源暴露/窗口身份和输入SHA，各轮上/下行SHA及最终S*的祖先链。optimizer从S*分叉时按统一规则重置；如不保存optimizer，必须明确模型checkpoint不支持精确中途训练续跑，而不虚称全状态恢复。
+
+执行命令的真实解析模板见EFFECTIVE_CONFIG_AND_COMMANDS.md。当前命令**不能直接生成已批准的S***：generic SEQ元数据100且续训无initial-state开关；历史strict runner只接受旧ID/batch32，另有未闭合依赖。下一轮仅做薄入口/新spec，复用现有模型、训练循环、普通FedAvg、独立stats上传与哈希记录组件；不改数值算法。薄入口未审阅和复检前不执行本预训练，更不串联六组pilot。
+
+本机CPU可用、CUDA不可用。预算：源特征单份4032000B；模型参数91060B、完整Flower state载荷144692B；两客户端25轮双向张量载荷约14.4692MB，不含protobuf/原型/重试。CPU墙钟暂无合法实测，采用25×(53t_C1batch+105t_C2batch+t_round通信/聚合)登记，不用Tiny测试时长估计TCN训练。一次固定预训练获准后记录首轮耗时外推，仅用于进度，不改实验端点。
+''')
+    binds=read(HERE/'binding/SIX_EFFECTIVE_CONFIGS.json')
+    commands=['# 真实CLI绑定与尚未闭合的有效配置\n','以下全部**BLOCKED / DO NOT RUN**，仅解析了原parser，未调用main、未启动服务器。没有伪造--seq-len、--initial-state、--server-batch-size或--eval-split none。SIX_EFFECTIVE_CONFIGS.json包含6组完整args/config/client命令及无法表达字段；B1没有通用合法执行入口，故server_argv=null，不造一个可运行结果。\n',
+    '公共配置：seed42、4类、8通道、num-clients6（容纳ID5，不表示6个训练客户端）、3个phase槽、ce_only、25轮、batch16客户端、LR5e-4；目标Day18 A4固定32窗。B3–B5 sourceCE=1（原代码隐含）、targetCE=1，DA warmup0保证25×100步；所有CORAL/global及class MMD/对抗/proto/consistency/residual/stage/legacy align系数显式0，相关开关关闭。B4/B5 EMA=.8、warmup3、min_scale=.3一致。\n',
+    'B3/B4语义唯一区别use_adapted_as_global；B4/B5唯一区别use_selective_agg。parser实际差分还包含run_name/output_dir这两个身份字段，均逐项保存，未藏其他训练差异。两边UPLOAD_PROTO_STATS=False相同并不满足“共同上传原型”的必要条件，所以生产机制对照仍BLOCKED。\n',
+    '原server实际batch_size32、SEQ_LEN100、新随机初始化（没有S*加载入口）、fraction_evaluate1/min_evaluate_clients=min_clients；实际DA loader另有batch32和源500封顶。client明确--eval-split calibration，数据包根本不含test_*；这避免默认test读取，但evaluate回调仍运行Calibration，不得隐去，也不得用日志选轮。若要求完全无evaluate回调，需要薄入口显式fraction_evaluate0，现有CLI不能假造该开关。\n']
+    def quote(a):return '"'+str(a)+'"' if (' ' in str(a) or ',' in str(a)) else str(a)
+    for r in binds:
+        commands+=['\n## '+r['experiment_id']+' — BLOCKED\n']
+        if r['server_argv']:
+            commands+=['```powershell\npython -m gaps_flower.server_app '+' '.join(map(quote,r['server_argv']))+'\n```\n']
+        else:
+            commands+=['B1可复用的旧真实CLI模板（新ID会在原validate_entry_spec拒绝；SSTAR_PENDING和SPEC_PENDING为未生成输入，不可执行）：\n```powershell\npython -m gaps_flower.fedongas_strict_entry target --data-root C5_A4_DATA --initial-state SSTAR_PENDING --spec SPEC_PENDING --output UNRUN_B1\n```\n该旧入口要求random initialization语义且batch32/旧ID，不能把已训练S*伪标random绕过验证。新的目标独立微调应复用其循环和原Client，先绑定25×100次、batch16及optimizer重置/同序采样再复检。\n']
+        for c in r['client_bindings']:commands+=['```powershell\npython -m gaps_flower.client_app '+' '.join(map(quote,c['argv']))+'\n```\n']
+    commands+=['\n## 一次源预训练模板（只登记，BLOCKED）\n从B0真实server/client模板复制，run-name改P31-SSTAR-DAY7-S42-PLAN、两个源客户端保持不变、起点明确为random。它不是从S*续训；仍需薄入口把实际50×8输入合同/元数据写对并输出祖先合同。没有额外调参或新增源训练轮数。\n',
+    '\n## 既有专用入口复用范围\nstrict_entry已有initial-state与独立upload-stats；其whitelist固定旧7组batch32并要求random，实际执行新ID验证得到Unapproved strict experiment configuration，未开权重文件。matched_entry已有接收/上传指纹链，但限定旧M0–M3、两个源ID1/2与[2360,2360]，不满足840/1680或第三目标客户端。SOURCE snapshot自身缺少一个导入protocol，白名单元数据测试只借用了另一归档的原常量；未宣称全依赖runner通过。不能删除guard、篡改旧ID或借旧reference文件让新实验过门禁。\n']
+    md('EFFECTIVE_CONFIG_AND_COMMANDS.md','\n'.join(commands))
+    md('DATA_AND_LABEL_AUDIT.md','''# 数据身份、预处理及标签访问
+
+evidence/TRAINING_WINDOW_IDENTITIES.csv逐行2552个训练窗，含原暴露文件、设备、日期、气体、浓度、起止秒、rawSHA、物理窗口身份、export row。源仅C1Day4(840窗)及C2Day1/7(1680窗)，共120次独立暴露；目标仅C5Day18 A4每气体4次/两固定响应窗(60、150s)，16暴露32窗。不重新选浓度，不随机窗口混合角色。源21窗/暴露有重叠，2520窗不是2520次独立采集。
+
+真实原始文件仅打开136个：120源+16目标Calibration，RAW_ACCESS_TRACE逐文件SHA及操作。直接复用归档process_raw/有效mask，匹配Phase1锁定窗口身份，数据形状50×8、float32，labels0..3。没有回归浓度标签数组；GasSensorWindowDataset按原逻辑填零占位，USE_REG_LOSS=False。身份表浓度元数据为审计字段，不是额外监督任务。
+
+本地data含18个npy：三客户端各train/calibration的features、class labels、phase labels。source calibration_是同一合法训练池复制，target calibration_是同32条train复制，不增加任何独立标签，不冒充Development。phase全0仅ordinary-class原型中性索引，不是实测动力学phase。模型schema保留num_phases3，其它phase槽未利用；若日后研究真实阶段必须另立合同。
+
+EXCLUDED_ROLE_IDENTITIES保留Development/Test/unused/reserved身份元数据和历史SHA，不导出其数值。C5Day22 Test未打开；本轮没有任何Test数组推理、评分、模型选择或新预测类别路由。旧阶段文件仅哈希验证，其历史结果不构成本轮训练信号。
+
+|组|训练标签访问|Development/Test|独立目标标签与重复呈现|
+|---|---|---|---|
+|B0|源两个客户端CE|均禁入训练/回调|0|
+|B1|S*后仅C5 A4 CE|均禁入|16暴露32窗；预定40000呈现|
+|B2|源CE+C5普通第三客户端CE|均禁入|相同A4；num_examples=32，不按50epochs膨胀|
+|B3/B4/B5|源本地CE+服务器sourceCE/targetCE；服务器可见标定输入/标签|均禁入|相同A4；原生服务器实际80000，因而BLOCKED|
+
+这些是角色预算/访问合同，不是声称真实六组已经运行。服务器看到target校准标签是集中监督适配，不宣传标签仅端侧或隐私隔离。
+
+## 最终评价与时间边界
+
+目标C5Day22 40暴露840窗只在全部端点及配置SHA锁定后由独立离线评价程序释放。不能default test、server-val指向目标Development/Test、best-test-round、事后选择设备最佳策略。旧数据已被观察，后续仍标回顾性，不能重称首次盲测。
+
+全部组固定端点round25（B1 block25/update2500）；B3同时保存aggregated与adapted诊断，B3–B5主要适配端点统一用adapted，下一轮分发模型身份另列；禁止按两者分数择优。报告Accuracy、Macro-F1（固定4类、zero_division0）、逐类Recall/混淆矩阵、按暴露等权错误率：每暴露错窗比例后对暴露平均。单窗指标与暴露多数投票/均值融合另列；不将窗口bootstrap当独立重复。
+
+源C1/C2 R4作为全部模型锁定后的历史保持评价，提前冻结身份与valid mask，不能用它们source预训练或选参；其原通用角色表为unused不意味着可随意转作训练。保持量同时报更新前S*与更新后指标差、逐类/逐暴露变化；source与target不同数据域分别汇报。C3Day8接入→C5Day18接入的模型可做顺序更新，但C3Day17 Test早于C5接入；接入后评价它只能叫历史留出暴露保持，不叫未来在线新采集。未来未接入节点的cal/dev/test不得反向进入此前训练，transfer只能在端点锁定后离线审计。C4Day3早于共同源Day7，只保留回顾性支线。
+''')
+    md('UPDATE_BUDGET_AUDIT.md','''# 更新预算：实际循环计数与不能满足的部分
+
+## 数据流与原Client循环
+
+真实导出loader只遍历、不优化：C1 840→53批(52×16+8)，C2 1680→105批，C5 32→2批×16，drop_last=False。合成Tiny模型运行**原Client.train_one_round**及原CE/禁用辅助损失函数，计数optimizer.step及实际CE标签行数：C1一轮53/840；C2一轮105/1680；C5每调用50epochs、调用25次→2500/40000。原Adam每次调用重建，LR5e-4；reg权重取0测试替身只作用于已关闭、返回0的回归项，不影响目标CE。
+
+完成的证据在checks_v2/CLIENT_GRADIENT_BUDGET.json；这证明原循环与batch16的计数关系，未证明未来六组已消费同一采样序列，也未训练真实源/目标模型。PROPOSED_TARGET_BATCH_SCHEDULE固定2500个16索引批，每窗1250次、合计40000；hash锁在SAMPLER_LOCK_PROPOSAL，但尚未绑定真实runner。未来必须记录实际索引消费逐批匹配；不能只用shuffle seed或名义epochs推定。
+
+## 服务器实际反例
+
+原GapsStrategy._init_domain_adapt_loaders与原ServerDomainAdaptation.run_adaptation在合成100×8输入、Tiny模型、零辅助损失测试替身上实际跑25×100次Adam更新。采用100是隔离原验证器默认schema；没有把研究数据50填充成100。真实研究入口在schema验证时即会拒绝50，其后潜在预算冲突仍可在合成合法shape上复现。
+
+结果：2500次optimizer.step、目标80000次（每步32）；计划要求40000。不能通过减成1250步、改变A4数据或复制成不同“独立样本”解决，否则又违反固定2500步/16暴露合同。最小修补是未来薄入口显式batch16和共同采样序列，然后重新计数，而不是改冻结算法。
+
+原server另把2520源窗RandomState42无放回截取500；每步SourceCE取10批，另1批源特征forward，即便所有辅助loss系数0也仍执行。25次适配调用观察到859600源forward呈现，其中按循环结构与批大小分解CE781400、附加forward78200。前者为参与sourceCE的重复标签呈现，后者只forward；都不是新独立标签。500源子集尚未登记身份/浓度覆盖，不能静默把完整源池当全量服务器CE。下一轮先明确去封顶或固定合法源子集身份及source每步批数，不根据目标Test效果选择；B3/B4/B5必须一致。
+
+## TAC和比较范围
+
+真实CheckpointFedAvg.aggregate_fit合成3客户端840、1680、32，只有target参数置1，其余0，输出每个state值=32/2552=0.01253918495（约1.254%），与预期一致；上传num_examples来自dataset长度，不是1600/round呈现数，不设1/3。旧严格/匹配runner仍拒绝第三客户端，不能用旧runner已完成宣称TAC合同已经闭合。
+
+B1只目标本地更新，B2三个客户端联合平均，B3–B5两个源本地更新+服务器混合CE。全组只计划匹配共同S*与目标监督预算，不是完全等算力、等目标函数单因素比较。真正单因素仅B3/B4反馈、B4/B5参数权重。全部保留源CE、本地/服务器计算、重复标签呈现与成本差异。
+''')
+    md('VERSION_CHAIN_AUDIT.md','''# 反馈、encoder与原型版本链
+
+chain_v3调用原GapsFlowerClient.fit、Flower configure_fit、GapsStrategy.aggregate_fit、原_run_domain_adapt包装、实际权重计算/EMA/参数序列化与checkpoint保存。没有启动网络；本地优化和DA数值类分别用明确的确定性测试替身，避免训练TCN或访问真实Test。原数值优化循环的计数另在checks_v2完成。这不是完整六组训练或真实网络收发验收。
+
+采用warmup后的合成round4→5，起点都是零Tiny模型、相同两个客户端、EMA.8及相同受控prototype fixture。不是伪称已经真实跑过round1–3。逐轮保存received、received_encoder、trained_encoder、uploaded、aggregated、adapted、returned与prototype内容SHA及来源配对。fixture原型来自手工向量，版本配对仅是测试receipt，不能证明真实模型原型有语义质量。
+
+验证：B3/B4每轮均执行100次适配请求，B3返回aggregated、B4返回adapted；下轮参数等于上轮returned，且客户端fit实际加载后hash等于分发hash。B3无模型反馈仍上传/更新/分发EMA原型，故不能叫“完全没有任何信息反馈”。B4/B5只改选择性参数加权，EMA输入与内容hash在受控fixture下完全一致，权重计算在round4真正激活；未来真实两轨encoder不同导致新原型内容不同属于机制后果，不能要求训练后原型数值强行相等，但必须同初始原型、同上传/EMA规则。
+
+负检查：无prototype上传、初始语义原型为空时，即便use_selective_agg=True，原代码报告no semantic_protos且不激活参数加权。PROFILE_TRUTH_TABLE表明通用ce_only/replay_only没有纯CE+stats，能上传的profile同时启用alignment/decouple，违背当前关闭辅助loss合同；不能靠换成gaps_cls让门禁通过。
+
+生产尚缺：合法S*与初始原型身份、纯CE独立stats上传、真实encoder→prototype计算版本证明、同序sampler、Thin runner端到端接纳及真实收发成本。可直接复用旧SourceClient独立upload_stats和matched ReceiptClient/反馈hash工具，但旧spec/客户端计数不能冒充新协议。
+
+CHAIN_FAILURE与CHAIN_FAILURE_V2保留测试替身签名/返回值误用及修复；chain_v3完成后没有再重跑合成优化循环。未修改归档生产代码。合成链只支持接口行为断言，不支持分类精度/收益或原型创新性结论。
+''')
+    md('NEXT_DECISION.md','''# 资源预算、最终判定及下一轮最小工作
+
+**正式六组全部BLOCKED；本轮不批准pilot，不运行一次源预训练，更不自动扩72分支。** PILOT_GATE_MATRIX逐组给出原因。数据身份/真实loader、客户端合成预算、TAC样本权重、合成反馈分发可分别PASS，不覆盖S*与生产入口BLOCKED。
+
+按固定25轮，B0/B2/B3/B4/B5各3950源本地步，B1为0；目标承载B1/B2各2500，B3/B4/B5各2500服务器混合更新，总12500目标承载步；服务器7500不能与它再相加重复统计。六组源本地19750步，若另批准一次S*源预训练再加3950。目标要求每组40000呈现，但原生服务器每组80000仅为阻塞反例，不采纳为计划。B3/B4/B5源额外CE/forward见PILOT_COST_BUDGET，未来修补后必须重计。
+
+实测模型22765参数=91060B，但Flower数组序列80个state tensor合计144692B（包含state键重复/别名呈现等）；以传输序列为准。两源25轮双向权重载荷约14.4692MB/组；TAC三客户端约21.7038MB/组；五个联邦分支合计79.5806MB（四个两源+一个TAC）；B1本地不产生Flower权重流。另一次S*约14.4692MB。仅估算张量载荷，不含protobuf/JSON原型、标签上传、握手/重传/评估/故障；不是实测网络或隐私保证。本机无CUDA，墙钟/峰值内存和Pi耗时NOT_MEASURED，不能从Tiny合成时间推断。
+
+## 下一轮顺序（需另行批准执行）
+
+1. 只做薄入口/参数合同补齐，不改算法：复用既有源模型与原训练循环；明确SEQ50、初始S*加载及祖先/optimizer合同、batch16和固定sampler、纯CE+独立stats、普通第三客户端接纳、禁Test回调。新命名空间spec，不删旧guard/旧强基线；不凭空添加CLI说明而无实现。
+2. 先冻结sourceCE采样/源500封顶处理及额外批数，建立B3/B4/B5同一规则和成本合同；不依目标Test调选择。把目标16暴露/32窗和原型phase0普通类语义写入schema。
+3. 重新执行无Test最小预检：真实effective_config、相同目标索引消费、2500/40000、B3/4与B4/5差分、原型/encoder版本链、异常来源立即停止。新入口必须把缺省test路径拒绝；真实训练环境不挂载Test。
+4. 若仍无合法S*，只批准SSTAR_AUDIT中一次25轮Source FedAvg；不用目标Dev/Test挑端点。保存SSTAR_LOCKED与完整祖先合同后，重新汇总六组PASS/BLOCKED，**再决定**六组pilot。一次源预训练与六组pilot分开授权和注册。
+
+任何祖先unknown、Test访问、预算不等、B3/B4额外loss差异或B4/B5不一致的初始原型/上传规则均停止相关行。不得删B1/B2强基线换取批准。只有各门禁闭合后才讨论研究反馈是否有收益；此轮没有精度结果，不能宣称目标感知更新已在严格协议获证。
+
+评价预先固定：全部锁定后目标C5Day22、源R4、后接节点离线Accuracy/Macro-F1/逐类Recall/暴露等权错误率、保持下降、通信/版本/更新成本。C3Day17相对C5Day18为历史保持；C4继续回顾性。完整模型保持与未来在线采集不得混称，已观察目标Test不得重新标盲测。
+''')
+    md('REPRODUCIBILITY.md','''# 可复现证据及执行边界
+
+本地入口依次为export_and_census.py、config_audit.py、checkpoint_audit.py、budget_checks.py、version_chain.py、final_probes.py、report.py、verify.py。依赖common.py及只读Phase2A/audit_common、Phase1/phase1_common、v5原函数和已锁身份。命令为`PYTHON_EXECUTABLE research/fedongas_phase31_20261105/<script>.py`，环境PYTHONDONTWRITEBYTECODE=1/PYTHONIOENCODING=utf-8；版本见interfaces/ENVIRONMENT。本轮没有安装包或网络训练。
+
+这些入口使用exist_ok=False保留旧制品，**不应在本已封存目录反复运行**。重新验证只执行verify.py（只读校验及写独立verification记录）；若需重放合成测试，复制脚本到新的输出目录，保留同SHA的v5/历史依赖，不覆盖checks/chain。common.py AST隔离原函数，V5_*_PROVENANCE按原始源码SHA可核对未改数值实现。版本链仅数值训练用double，不包装成TCN真实训练。
+
+本地保留真实源/Calibration tensor、完整2552窗身份、136raw读取日志、配置命令、2500步预定索引、7权重元数据、原生预算反例、6次适配链和接收SHA、局部失败记录及合成checkpoint。没有真实Test数据包、SSTAR_LOCKED或六组研究checkpoint。ARTIFACT_SHA256封存本轮全部有效与失败制品（不含manifest自身）；后续发布receipt放独立publication目录，不修改封存内容。
+
+GitHub只发精简文档、配置、来源/身份/成本摘要、测试收据、脚本文本与源/发布SHA；不发npy、任何pth/权重、raw信号、71D输入、v5或ZIP。PUBLICATION_MANIFEST区分本地原文件SHA与路径脱敏/LF转换后的发布SHA；外部agent可审阅，不能仅靠精简包重训。测试/评价未进行，未来正式精度仍缺证据。
+''')
+    print('REPORTS_WRITTEN;ALL6 BLOCKED',flush=True)
+if __name__=='__main__':main()

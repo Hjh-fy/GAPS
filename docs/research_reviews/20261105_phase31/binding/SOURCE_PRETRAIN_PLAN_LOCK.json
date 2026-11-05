@@ -1,0 +1,27 @@
+{
+  "status": "PLANNED_BLOCKED_NOT_RUN",
+  "id": "P31-SSTAR-DAY7-S42-PLAN",
+  "seed": 42,
+  "source_exposures": 120,
+  "source_windows": 2520,
+  "source_cohorts": [
+    "C1 Day4",
+    "C2 Day1/7"
+  ],
+  "rounds": 25,
+  "batch_size": 16,
+  "lr": 0.0005,
+  "local_epochs": 1,
+  "steps": 3950,
+  "source_presentations": 63000,
+  "initialization": "new random;no pretrained ancestors",
+  "model_schema_sha256": "3e0fd0876a560a45c3b96e11bbdfb1cf61f591667caa7ac17ff9c341409209de",
+  "source_and_cal_identity_manifest_sha256": "e69184b8ee02e06a2f13cfe2498d49ebe4125f9db862ec806899f963aa288ad4",
+  "dependencies": "source rows only;C5 calibration rows in identity manifest MUST be excluded",
+  "input_shapes": [
+    50,
+    8
+  ],
+  "checkpoint_selection": "fixed_round25",
+  "missing": "thin entry/schema/provenance closure;no execution approved"
+}

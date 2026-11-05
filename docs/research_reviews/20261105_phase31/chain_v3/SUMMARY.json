@@ -1,0 +1,20 @@
+{
+  "status": "PASS_SYNTHETIC_INTERFACE_ONLY;PRODUCTION_BLOCKED",
+  "rounds": [
+    4,
+    5
+  ],
+  "scope": "real GapsFlowerClient.fit/configure_fit/aggregate_fit/_run_domain_adapt/EMA/serialization;local optimizer and DA numeric training are explicit deterministic doubles;no sockets;no TCN model",
+  "proto_fixture_intervention": true,
+  "common_ema_and_upload_fixtures": true,
+  "B3_next": "aggregated",
+  "B4_next": "adapted",
+  "B3_still_runs_adaptation": true,
+  "B4_B5_proto_hashes_equal": true,
+  "pure_CE_no_stats_selective_active": false,
+  "TAC_target_num_examples": 32,
+  "TAC_total_examples": 2552,
+  "TAC_target_weight": 0.012539184952978056,
+  "target_test_read": false,
+  "real_target_gradient_steps": 0
+}

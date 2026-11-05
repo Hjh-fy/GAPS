@@ -1,0 +1,34 @@
+usage: config_audit.py [-h] [--server-address SERVER_ADDRESS] --client-id
+                       CLIENT_ID [--run-tag RUN_TAG] --data-root DATA_ROOT
+                       [--device DEVICE] [--local-epochs LOCAL_EPOCHS]
+                       [--batch-size BATCH_SIZE] [--seed SEED]
+                       [--num-classes NUM_CLASSES] [--input-dim INPUT_DIM]
+                       [--num-clients NUM_CLIENTS] [--num-phases NUM_PHASES]
+                       [--eval-split {calibration,test}]
+                       [--profile {ce_only,align_only,align_replay,proto_only,replay_only,proto_replay,smoke,gaps_cls,gaps,gaps_classification,classification,strong_cls}]
+
+Run one GAPS Flower edge client
+
+options:
+  -h, --help            show this help message and exit
+  --server-address SERVER_ADDRESS
+  --client-id CLIENT_ID
+  --run-tag RUN_TAG     Optional controller-owned run identity used for
+                        process provenance.
+  --data-root DATA_ROOT
+  --device DEVICE
+  --local-epochs LOCAL_EPOCHS
+  --batch-size BATCH_SIZE
+  --seed SEED
+  --num-classes NUM_CLASSES
+  --input-dim INPUT_DIM
+  --num-clients NUM_CLIENTS
+  --num-phases NUM_PHASES
+  --eval-split {calibration,test}
+                        Split used during Flower round evaluation. Formal
+                        experiments should use calibration; reserve test for
+                        post-training evaluation.
+  --profile {ce_only,align_only,align_replay,proto_only,replay_only,proto_replay,smoke,gaps_cls,gaps,gaps_classification,classification,strong_cls}
+                        Client training profile: smoke=CE-only,
+                        gaps_cls/strong_cls=CE + server prototype alignment +
+                        replay distill

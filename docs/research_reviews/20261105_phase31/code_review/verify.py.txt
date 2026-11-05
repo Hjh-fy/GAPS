@@ -1,0 +1,68 @@
+"""Readonly stage verification; no optimization, inference or real Test arrays."""
+from common import *
+import collections,subprocess
+
+def main():
+    checks=[]
+    old=a.verify_previous()
+    expected={A:'32440237d4b920ffe5dd606f6f599678d9c0d9456a30888ff96e785cd97b058d',ROOT/'research/fedongas_phase2b_20261104':'ad8ff3b010343f0b8ce13365150003576c874bae473de1dc7035dbb0a0c2fb27',P3:'f8787e7f7cbc4415f351a736f3b955e665dd3fe7b27e43e7172c891773f31232'}
+    for folder,h in expected.items():
+        p1.verify_sha(folder/'ARTIFACT_SHA256.csv',h);rr=rows(folder/'ARTIFACT_SHA256.csv')
+        for r in rr:p1.verify_sha(folder/r['path'],r['sha256'])
+        old[folder.name]=len(rr)
+    # P05 metadata/roles; no numerical Test arrays opened, even for verification.
+    p05_count=0
+    for r in rows(p1.P05/'MANIFEST_SHA256.csv'):
+        p1.verify_sha(p1.P05/r['path'],r['sha256']);p05_count+=1
+    prov={}
+    for rel in ['binding/V5_CONFIG_PROVENANCE.csv','checks_v2/V5_PROBE_PROVENANCE.csv','checkpoints/CHECKPOINT_PROVENANCE.csv','chain_v3/PROVENANCE.csv','interfaces/PROVENANCE.csv']:
+        for r in rows(HERE/rel):
+            p1.verify_sha(BASE/r['path'],r['sha256']);prov[r['path']]=r
+    ids=rows(HERE/'evidence/TRAINING_WINDOW_IDENTITIES.csv');raw=rows(HERE/'evidence/RAW_ACCESS_TRACE.csv')
+    assert len(ids)==2552 and len(raw)==136
+    allowed={r['filename']:r for r in rows(p1.P05/'results_v2/ROLES_A4.csv')}
+    for r in raw:
+        assert allowed[r['filename']]['role']==('calibration' if r['client_id']=='5' else 'source_train_pool')
+        p1.verify_sha(p1.ORIGINAL/'dataset/data1'/r['filename'],r['raw_sha256'])
+    counts=collections.Counter(r['client_id'] for r in ids);assert counts=={'1':840,'2':1680,'5':32}
+    assert len({r['filename'] for r in ids if r['client_id']=='5'})==16
+    assert {(r['client_id'],r['day']) for r in raw if r['client_id']!='5'}=={('1','4'),('2','1'),('2','7')}
+    assert {r['day'] for r in raw if r['client_id']=='5'}=={'18'}
+    data=read(HERE/'evidence/DATA_EXPORT_MANIFEST.json')
+    for r in data:p1.verify_sha(HERE/r['path'],r['sha256'])
+    assert len(data)==18 and not list((HERE/'data').rglob('test*'))
+    client=read(HERE/'checks_v2/CLIENT_GRADIENT_BUDGET.json');server=read(HERE/'checks_v2/SERVER_GRADIENT_BUDGET.json');chain=read(HERE/'chain_v3/SUMMARY.json')
+    assert client['results'][2]['optimizer_steps']==2500 and client['results'][2]['label_presentations']==40000
+    assert server['steps']==2500 and server['target_label_presentations']==80000 and server['expected']==40000
+    assert chain['B4_B5_proto_hashes_equal'] and chain['B3_still_runs_adaptation'] and not chain['pure_CE_no_stats_selective_active']
+    receipts=read(HERE/'chain_v3/VERSION_CHAIN_RECEIPTS.json');incoming=read(HERE/'chain_v3/CLIENT_RECEIPTS.json')
+    for b in ['B3','B4','B5']:
+        r=[x for x in receipts if x['group']==b];assert len(r)==2 and r[1]['received']==r[0]['returned']
+        for x in r:
+            assert x['returned']==x['aggregated' if b=='B3' else 'adapted']
+            for y in [y for y in incoming if y['group']==b and y['round']==x['round']]:assert y['received']==x['received']
+    bind=read(HERE/'binding/SIX_EFFECTIVE_CONFIGS.json');assert len(bind)==6 and all(r['status']=='BLOCKED' and not r['execute'] for r in bind)
+    for r in bind:
+        for c in r['client_bindings']:assert c['effective_args']['eval_split']=='calibration' and c['effective_config']['USE_REG_LOSS']==False
+        if r['experiment_id'].split('-')[-2] in ['B3','B4','B5']:
+            aa=r['parsed_server_reference_even_if_not_used'];assert aa['da_lambda_target_ce']==1
+            for k,v in aa.items():
+                if k.startswith('da_lambda_') and k!='da_lambda_target_ce':assert v==0,(k,v)
+    schedule=rows(HERE/'binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv');assert len(schedule)==2500
+    cc=collections.Counter(int(i) for r in schedule for i in r['indices'].split(';'));assert len(cc)==32 and set(cc.values())=={1250}
+    lock=read(HERE/'binding/SAMPLER_LOCK_PROPOSAL.json');p1.verify_sha(HERE/'binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv',lock['schedule_sha256'])
+    gates=rows(HERE/'PILOT_GATE_MATRIX.csv');assert len(gates)==6 and all(r['status']=='BLOCKED' for r in gates)
+    assert not list(HERE.glob('*SSTAR_LOCKED*')) and not (HERE/'UNRUN').exists()
+    # Compile new probe source only; do not execute any training probe twice.
+    for p in HERE.glob('*.py'):compile(p.read_text(encoding='utf-8-sig'),str(p),'exec')
+    tracked=subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).decode();assert tracked==''
+    before=read(A/'evidence_v2/PROTECTION_AND_ACCESS_QA.json')['original_git_tracked_status']
+    original_now=read(HERE/'ORIGINAL_GIT_STATUS.json')['stdout'];assert original_now==before.replace('\x00','\n')
+    result=dict(status='PASS_AUDIT_VERIFICATION;SIX_PILOTS_BLOCKED',prior_payload_files_verified=old,phase05_payload_files_verified=p05_count,v5_used_assets_verified=len(prov),source_and_cal_raw_files_verified=136,export_files_verified=18,export_total_bytes=sum((HERE/r['path']).stat().st_size for r in data),identity_windows=2552,source_exposures=120,target_cal_exposures=16,completed_synthetic_optimizer_steps=5158,synthetic_version_chain_rounds=6,formal_pilots=0,Sstar_pretraining=0,real_data_optimizer_steps=0,target_test_raw_or_tensor_reads=0,real_test_inference=0,model_schema_no_grad_synthetic_forward=True,old_schema_loading_does_not_approve_ancestry=True,production_budget_pass=False,production_prototype_upload_pass=False,legal_Sstar_pass=False,tracked_worktree_clean=True,original_tracked_status_unchanged=True,limitations=['checks first attempt lacks completed receipt','active original path inventory partial exit2','partial interface proofs not actual TCN or network training','v5 only read assets verified;full archive not rehashed'],stage='Phase3.1',phase3_fixed_commit='3794b71666358a597d5ed3cea65fadead8ff5719')
+    target=HERE/'VERIFICATION_FINAL.json'
+    if target.exists():assert read(target)==result
+    else:js(target,result)
+    if (HERE/'ARTIFACT_SHA256.csv').exists():
+        for r in rows(HERE/'ARTIFACT_SHA256.csv'):p1.verify_sha(HERE/r['path'],r['sha256'])
+    print(json.dumps(dict(status=result['status'],old_payloads=sum(old.values()),v5_used=len(prov),real_target_training=0,all6='BLOCKED')),flush=True)
+if __name__=='__main__':main()

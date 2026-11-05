@@ -1,0 +1,139 @@
+usage: config_audit.py [-h] [--server-address SERVER_ADDRESS]
+                       [--rounds ROUNDS] [--min-clients MIN_CLIENTS]
+                       [--output-dir OUTPUT_DIR] [--run-name RUN_NAME]
+                       [--seed SEED] [--num-classes NUM_CLASSES]
+                       [--input-dim INPUT_DIM] [--num-clients NUM_CLIENTS]
+                       [--num-phases NUM_PHASES]
+                       [--profile {ce_only,align_only,align_replay,proto_only,replay_only,proto_replay,smoke,gaps_cls,gaps,gaps_classification,classification,strong_cls}]
+                       [--save-history SAVE_HISTORY]
+                       [--strategy {fedavg,gaps}]
+                       [--proto-ema-alpha PROTO_EMA_ALPHA]
+                       [--use-selective-agg USE_SELECTIVE_AGG]
+                       [--selective-warmup SELECTIVE_WARMUP]
+                       [--selective-min-scale SELECTIVE_MIN_SCALE]
+                       [--use-proto-mmd USE_PROTO_MMD]
+                       [--da-preset {none,default,fixed_da_strong}]
+                       [--use-domain-adapt USE_DOMAIN_ADAPT]
+                       [--server-val-data SERVER_VAL_DATA]
+                       [--server-calib-data SERVER_CALIB_DATA]
+                       [--domain-adapt-steps DOMAIN_ADAPT_STEPS]
+                       [--domain-adapt-warmup DOMAIN_ADAPT_WARMUP]
+                       [--da-use-coral DA_USE_CORAL] [--da-use-mmd DA_USE_MMD]
+                       [--da-use-adversarial DA_USE_ADVERSARIAL]
+                       [--da-mmd-objective {legacy_quartic,mmd2}]
+                       [--da-stage-alignment {legacy_intra_domain,cross_domain_same_class_phase}]
+                       [--da-adv-feature-objective {legacy_grl_plus,wasserstein_min}]
+                       [--da-coral-class-conditional DA_CORAL_CLASS_CONDITIONAL]
+                       [--da-use-align-reg-legacy DA_USE_ALIGN_REG_LEGACY]
+                       [--da-lambda-align-reg-legacy DA_LAMBDA_ALIGN_REG_LEGACY]
+                       [--strict-calibration-split STRICT_CALIBRATION_SPLIT]
+                       [--da-device DA_DEVICE]
+                       [--use-adapted-as-global USE_ADAPTED_AS_GLOBAL]
+                       [--da-lambda-coral DA_LAMBDA_CORAL]
+                       [--da-lambda-global-mmd DA_LAMBDA_GLOBAL_MMD]
+                       [--da-lambda-class-mmd DA_LAMBDA_CLASS_MMD]
+                       [--da-lambda-proto-anchor DA_LAMBDA_PROTO_ANCHOR]
+                       [--da-lambda-adv DA_LAMBDA_ADV]
+                       [--da-lambda-target-ce DA_LAMBDA_TARGET_CE]
+                       [--da-lambda-proto DA_LAMBDA_PROTO]
+                       [--da-lambda-consistency DA_LAMBDA_CONSISTENCY]
+                       [--da-lambda-residual DA_LAMBDA_RESIDUAL]
+                       [--da-lambda-proto-mmd DA_LAMBDA_PROTO_MMD]
+                       [--da-lambda-stage-mmd DA_LAMBDA_STAGE_MMD]
+                       [--da-target-ce-label-smoothing DA_TARGET_CE_LABEL_SMOOTHING]
+                       [--da-target-ce-class-balanced DA_TARGET_CE_CLASS_BALANCED]
+                       [--da-server-opt-lr DA_SERVER_OPT_LR]
+
+Run the GAPS Flower server
+
+options:
+  -h, --help            show this help message and exit
+  --server-address SERVER_ADDRESS
+  --rounds ROUNDS
+  --min-clients MIN_CLIENTS
+  --output-dir OUTPUT_DIR
+  --run-name RUN_NAME
+  --seed SEED
+  --num-classes NUM_CLASSES
+  --input-dim INPUT_DIM
+  --num-clients NUM_CLIENTS
+  --num-phases NUM_PHASES
+  --profile {ce_only,align_only,align_replay,proto_only,replay_only,proto_replay,smoke,gaps_cls,gaps,gaps_classification,classification,strong_cls}
+                        Server model/config profile; keep this aligned with
+                        client --profile for matrix runs
+  --save-history SAVE_HISTORY
+                        是否保存 history.json 记录 (True/False)
+  --strategy {fedavg,gaps}
+                        聚合策略: fedavg (Flower默认FedAvg) 或 gaps (GAPS自定义聚合)
+  --proto-ema-alpha PROTO_EMA_ALPHA
+                        语义原型 EMA 平滑系数 (仅 --strategy gaps 生效)
+  --use-selective-agg USE_SELECTIVE_AGG
+                        是否启用选择性聚合 (仅 --strategy gaps 生效)
+  --selective-warmup SELECTIVE_WARMUP
+                        选择性聚合预热轮数，前 N 轮使用标准 FedAvg
+  --selective-min-scale SELECTIVE_MIN_SCALE
+                        选择性聚合最小缩放因子，防止权重归零
+  --use-proto-mmd USE_PROTO_MMD
+                        是否计算原型级域漂移诊断 (仅 --strategy gaps 生效)
+  --da-preset {none,default,fixed_da_strong}
+                        Optional server-side DA preset; explicit CLI flags
+                        override preset values
+  --use-domain-adapt USE_DOMAIN_ADAPT
+                        是否启用服务端域适应 CORAL/MMD/对抗 (需 --server-val-data 和
+                        --server-calib-data)
+  --server-val-data SERVER_VAL_DATA
+                        源域验证集目录: 源域 training client 的 calibration_features.npy
+                        (如 client_1,client_2)
+  --server-calib-data SERVER_CALIB_DATA
+                        目标域校准集目录: 目标域 test client 的 calibration_features.npy
+                        (如 client_3)
+  --domain-adapt-steps DOMAIN_ADAPT_STEPS
+                        域适应优化步数 K
+  --domain-adapt-warmup DOMAIN_ADAPT_WARMUP
+                        域适应预热轮数
+  --da-use-coral DA_USE_CORAL
+                        域适应是否启用 Deep CORAL 损失
+  --da-use-mmd DA_USE_MMD
+                        域适应是否启用 MMD 对齐损失
+  --da-use-adversarial DA_USE_ADVERSARIAL
+                        域适应是否启用对抗训练 (WGAN-GP + GRL)
+  --da-mmd-objective {legacy_quartic,mmd2}
+  --da-stage-alignment {legacy_intra_domain,cross_domain_same_class_phase}
+  --da-adv-feature-objective {legacy_grl_plus,wasserstein_min}
+  --da-coral-class-conditional DA_CORAL_CLASS_CONDITIONAL
+                        Deep CORAL 是否按类别分别对齐；单机强分类基座默认使用 class-conditional
+                        CORAL
+  --da-use-align-reg-legacy DA_USE_ALIGN_REG_LEGACY
+                        兼容单机旧版 server_representation_learning 的直接 local-
+                        proto→semantic-proto 对齐项，仅用于复现实验诊断
+  --da-lambda-align-reg-legacy DA_LAMBDA_ALIGN_REG_LEGACY
+                        legacy align-reg 诊断项权重；只有 --da-use-align-reg-legacy
+                        true 时生效
+  --strict-calibration-split STRICT_CALIBRATION_SPLIT
+                        服务端 DA 数据是否强制读取 calibration_* split，防止 fallback 到
+                        test/train 造成泄漏
+  --da-device DA_DEVICE
+                        域适应计算设备 (cpu 或 cuda)
+  --use-adapted-as-global USE_ADAPTED_AS_GLOBAL
+                        Return domain-adapted parameters to clients in the
+                        next Flower round
+  --da-lambda-coral DA_LAMBDA_CORAL
+  --da-lambda-global-mmd DA_LAMBDA_GLOBAL_MMD
+  --da-lambda-class-mmd DA_LAMBDA_CLASS_MMD
+  --da-lambda-proto-anchor DA_LAMBDA_PROTO_ANCHOR
+  --da-lambda-adv DA_LAMBDA_ADV
+  --da-lambda-target-ce DA_LAMBDA_TARGET_CE
+  --da-lambda-proto DA_LAMBDA_PROTO
+                        DA prototype learning loss weight, matching single-
+                        machine LAMBDA_PROTO
+  --da-lambda-consistency DA_LAMBDA_CONSISTENCY
+                        DA source consistency-to-prototypes loss weight
+  --da-lambda-residual DA_LAMBDA_RESIDUAL
+                        DA device residual matching loss weight
+  --da-lambda-proto-mmd DA_LAMBDA_PROTO_MMD
+                        DA inter-client prototype MMD/consistency weight
+  --da-lambda-stage-mmd DA_LAMBDA_STAGE_MMD
+                        DA stage-wise MMD weight within each class
+  --da-target-ce-label-smoothing DA_TARGET_CE_LABEL_SMOOTHING
+  --da-target-ce-class-balanced DA_TARGET_CE_CLASS_BALANCED
+  --da-server-opt-lr DA_SERVER_OPT_LR

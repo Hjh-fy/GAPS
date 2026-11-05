@@ -1,0 +1,13 @@
+# 反馈、encoder与原型版本链
+
+chain_v3调用原GapsFlowerClient.fit、Flower configure_fit、GapsStrategy.aggregate_fit、原_run_domain_adapt包装、实际权重计算/EMA/参数序列化与checkpoint保存。没有启动网络；本地优化和DA数值类分别用明确的确定性测试替身，避免训练TCN或访问真实Test。原数值优化循环的计数另在checks_v2完成。这不是完整六组训练或真实网络收发验收。
+
+采用warmup后的合成round4→5，起点都是零Tiny模型、相同两个客户端、EMA.8及相同受控prototype fixture。不是伪称已经真实跑过round1–3。逐轮保存received、received_encoder、trained_encoder、uploaded、aggregated、adapted、returned与prototype内容SHA及来源配对。fixture原型来自手工向量，版本配对仅是测试receipt，不能证明真实模型原型有语义质量。
+
+验证：B3/B4每轮均执行100次适配请求，B3返回aggregated、B4返回adapted；下轮参数等于上轮returned，且客户端fit实际加载后hash等于分发hash。B3无模型反馈仍上传/更新/分发EMA原型，故不能叫“完全没有任何信息反馈”。B4/B5只改选择性参数加权，EMA输入与内容hash在受控fixture下完全一致，权重计算在round4真正激活；未来真实两轨encoder不同导致新原型内容不同属于机制后果，不能要求训练后原型数值强行相等，但必须同初始原型、同上传/EMA规则。
+
+负检查：无prototype上传、初始语义原型为空时，即便use_selective_agg=True，原代码报告no semantic_protos且不激活参数加权。PROFILE_TRUTH_TABLE表明通用ce_only/replay_only没有纯CE+stats，能上传的profile同时启用alignment/decouple，违背当前关闭辅助loss合同；不能靠换成gaps_cls让门禁通过。
+
+生产尚缺：合法S*与初始原型身份、纯CE独立stats上传、真实encoder→prototype计算版本证明、同序sampler、Thin runner端到端接纳及真实收发成本。可直接复用旧SourceClient独立upload_stats和matched ReceiptClient/反馈hash工具，但旧spec/客户端计数不能冒充新协议。
+
+CHAIN_FAILURE与CHAIN_FAILURE_V2保留测试替身签名/返回值误用及修复；chain_v3完成后没有再重跑合成优化循环。未修改归档生产代码。合成链只支持接口行为断言，不支持分类精度/收益或原型创新性结论。

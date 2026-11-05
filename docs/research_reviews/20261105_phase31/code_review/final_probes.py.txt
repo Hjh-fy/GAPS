@@ -1,0 +1,38 @@
+"""No-training model schema, old guard rejection, environment and protection probes."""
+from common import *
+import platform,importlib.metadata,subprocess
+
+def main():
+    torch,cfg,ds,ns=runtime();torch.set_num_threads(1);out=HERE/'interfaces';out.mkdir(exist_ok=True)
+    p1.load('model',path('model.py'))
+    isolate('utils.py',{'create_model_by_config'},ns);isolate('gaps_flower/task.py',{'create_model'},ns)
+    conf=ns['make_config'](profile='ce_only',batch_size=16,num_classes=4,input_dim=8,num_clients=6,num_phases=3,seed=42,device='cpu')
+    model=ns['create_model'](conf).eval();state=model.state_dict()
+    with torch.no_grad():outputs=model(torch.zeros(2,50,8))
+    assert list(outputs[0].shape)==[2,4] and list(outputs[1].shape)==[2,64]
+    parameter_num=sum(p.numel() for p in model.parameters());state_bytes=sum(t.numel()*t.element_size() for t in state.values())
+    cand=rows(HERE/'evidence/KNOWN_CLASSIFIER_CANDIDATES.csv')[0]
+    ck=torch.load(path(cand['archived_checkpoint'].removeprefix('source/workspace/')),map_location='cpu',weights_only=True)
+    mismatch=model.load_state_dict(ck['model_state'],strict=True)
+    result=dict(status='PASS_SCHEMA_ONLY_NOT_SSTAR',synthetic_forward_shape=[2,50,8],outputs=[list(v.shape) for v in outputs],default_metadata_seq_len=conf.SEQ_LEN,sequence_metadata_conflict='length-agnostic TCN accepts50;generic DA input validator still requires100',model_class=type(model).__name__,parameter_count=parameter_num,state_tensor_count=len(state),state_bytes=state_bytes,parameter_bytes=parameter_num*4,feature_noise_std=conf.FEATURE_NOISE_STD,label_map={'0':'Ethanol','1':'CO','2':'Ethylene','3':'Methane'},old_A0_schema_strict_load=str(mismatch),old_A0_ancestry='REJECTED_REGARDLESS_OF_SCHEMA_COMPATIBILITY',state_schema={k:dict(shape=list(v.shape),dtype=str(v.dtype)) for k,v in state.items()},gradients=0,weights_saved=False)
+    if (out/'MODEL_SCHEMA.json').exists():assert read(out/'MODEL_SCHEMA.json')==result
+    else:js(out/'MODEL_SCHEMA.json',result)
+    en=dict(Path=Path,hashlib=hashlib)
+    # Strict snapshot does not bundle this imported dependency. Use the archived
+    # matched protocol constant ONLY to build whitelist rows, not to run training.
+    protocol='outputs/FedOnGas_最终机制消融_C5_5pct_20261025/code/frozen_v2/gaps_flower/fedongas_mmd_protocol.py'
+    isolate(protocol,{'FORBIDDEN_LOSSES'},en)
+    entry='outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py'
+    isolate(entry,{'strict_matrix','validate_entry_spec'},en)
+    try:en['validate_entry_spec']({'experiment_id':'P3-PILOT-C5-A4-B1-S42'},'NEVER_OPENED')
+    except ValueError as exc:rejection=str(exc)
+    else:raise AssertionError('Old strict whitelist unexpectedly accepted new identity')
+    assert rejection=='Unapproved strict experiment configuration'
+    js(out/'OLD_ENTRY_GUARD.json',dict(status='PASS_EXPECTED_REJECTION',new_identity='P3-PILOT-C5-A4-B1-S42',exception=rejection,old_approved_rows=en['strict_matrix'](),checkpoint_opened=False,dependency_constant_source=protocol,dependency_note='strict snapshot omits imported protocol;archived matched constant used for metadata whitelist probe only;full runner dependency closure not claimed',conclusion='reuse components;cannot execute new pilot unchanged'))
+    versions={}
+    for name in ['torch','numpy','scikit-learn','scipy','flwr','grpcio']:
+        try:versions[name]=importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:versions[name]='NOT_INSTALLED'
+    js(out/'ENVIRONMENT.json',dict(python=sys.version,executable=sys.executable,platform=platform.platform(),packages=versions,cuda_available=torch.cuda.is_available(),cuda_devices=[torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],threads=1,installations=0))
+    table(out/'PROVENANCE.csv',list(PROV.values()));print('MODEL_SCHEMA/OLD_GUARD PASS;state_bytes',state_bytes,'parameters',parameter_num,flush=True)
+if __name__=='__main__':main()

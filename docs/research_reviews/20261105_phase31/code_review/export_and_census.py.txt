@@ -1,0 +1,41 @@
+"""Export source and permitted Calibration only; never open real Test arrays."""
+from common import *
+import subprocess,collections
+def main():
+    out=HERE/'evidence';out.mkdir(exist_ok=False);data=HERE/'data';data.mkdir()
+    a.verify_previous()
+    for folder in [A,P3,ROOT/'research/fedongas_phase2b_20261104']:
+        for r in rows(folder/'ARTIFACT_SHA256.csv'):p1.verify_sha(folder/r['path'],r['sha256'])
+    v=p1.frozen();old=ROOT/'research/fedongas_phase1_20261102/run_v2/data'
+    source=read(old/'source_metadata.json');cal=read(old/'C5_cal_A4_metadata.json');roles={r['filename']:r for r in rows(p1.P05/'results_v2/ROLES_A4.csv')}
+    assert len(source)==2520 and len(cal)==32 and len(set(m['filename'] for m in source))==120 and len(set(m['filename'] for m in cal))==16
+    trace=[];identities=[];written=[]
+    for cid,mm in [(1,[m for m in source if m['client_id']==1]),(2,[m for m in source if m['client_id']==2]),(5,cal)]:
+        xx=[];yy=[];cache={}
+        for m in mm:
+            r=roles[m['filename']];assert r['role']==('calibration' if cid==5 else 'source_train_pool')
+            if m['filename'] not in cache:
+                p=p1.ORIGINAL/'dataset/data1'/m['filename'];p1.verify_sha(p,m['raw_sha256']);cache[m['filename']]=v.strict.process_raw(p);trace.append(dict(filename=m['filename'],client_id=cid,day=m['day'],role=r['role'],raw_sha256=sha(p),operation='process_raw_source_or_cal_only'))
+            parsed=cache[m['filename']];i=next(i for i,q in enumerate(parsed['metadata']) if abs(q['start_s']-m['start_s'])<1e-6 and abs(q['end_s']-m['end_s'])<1e-6);assert parsed['metadata'][i]['valid']
+            xx.append(parsed['x'][i]);yy.append(m['gas_id']);identities.append(dict(m,export_client=cid,export_row=len(xx)-1,phase_label=0,phase_semantics='ordinary_class_neutral_key;not measured physical phase'))
+        x=np.array(xx,dtype=np.float32);y=np.array(yy,dtype=np.int64);p=data/f'client_{cid}';p.mkdir()
+        assert x.shape==({1:840,2:1680,5:32}[cid],50,8)
+        # calibration_ source directories are explicit DA copies of the SAME legal source population.
+        for split in ['train','calibration']:
+            for name,arr in [('features',x),('classification_labels',y),('phase_labels',np.zeros(len(x),np.int64))]:
+                f=p/f'{split}_{name}.npy'
+                with f.open('xb') as handle:np.save(handle,arr,allow_pickle=False)
+                written.append(dict(path=f.relative_to(HERE).as_posix(),rows=len(arr),shape=list(arr.shape),dtype=str(arr.dtype),sha256=sha(f)))
+    table(out/'TRAINING_WINDOW_IDENTITIES.csv',identities);table(out/'RAW_ACCESS_TRACE.csv',trace);js(out/'DATA_EXPORT_MANIFEST.json',written)
+    future=[r for r in roles.values() if r['role'] in ['development','test'] or r['role'] in ['unused','reserved_calibration']];table(out/'EXCLUDED_ROLE_IDENTITIES.csv',[dict(filename=r['filename'],role=r['role'],client_id=r['client_id'],day=r['day'],sha256=r['sha256']) for r in future])
+    assert not set(r['filename'] for r in trace)&set(r['filename'] for r in future)
+    js(out/'DATA_IDENTITY_QA.json',dict(status='PASS',source_exposures=120,source_windows=2520,C1_windows=840,C2_windows=1680,target_C5_A4_exposures=16,target_unique_window_labels=32,target_independent_exposures=16,target_day=18,target_test_raw_reads=0,target_development_raw_reads=0,regression_label_arrays_exported=False,real_gradient_steps=0,phase_label_note='all0 neutral ordinary-class index,no physical phase inference',server_source_calibration_alias='same source training population,not independent validation',test_arrays_exported=False,calibration_export_alias='same32 train rows;not extra labels'))
+    census=[]
+    for k,r in INDEX.items():
+        if k.endswith(('.pth','.pt','.ckpt')):census.append(dict(path=k,manifest_sha256=r['sha256'],bytes=r['bytes'],check='manifest_inventory_only',Sstar_eligibility='unknown_without_full_ancestry_or_known_old_cohort'))
+    table(out/'CLASSIFIER_CHECKPOINT_CENSUS.csv',census)
+    candidates=rows(p1.P05/'CHECKPOINT_REUSE_CANDIDATES.csv');table(out/'KNOWN_CLASSIFIER_CANDIDATES.csv',[dict(r,Sstar_status='BLOCKED',reason='known sourceR1-R3 exceeds Day7;target-adapted endpoints not source-only') for r in candidates])
+    wt=subprocess.check_output(['git','worktree','list','--porcelain']).decode();js(out/'SSTAR_SEARCH_SCOPE.json',dict(v5_checkpoint_manifest_entries=len(census),known_hashed_candidates=len(candidates),known_legal_Day7_source_classifiers=0,scope='full v5 checkpoint manifest census + verified strict7 candidate contracts + registered worktree inventory + currentPhase no classification training;not a proof no unknown model exists on entire disk',verdict='NO_PROVEN_LEGAL_SSTAR;unknown ancestors reject reuse',worktrees=wt))
+    js(out/'EXPORT_SUMMARY.json',dict(status='PASS',files=len(written),raw_accesses=len(trace),target_test_accesses=0,census=len(census)))
+    print(json.dumps(dict(status='EXPORTED_SOURCE_AND_CAL_ONLY',tensor_files=len(written),raw_files=len(trace),census=len(census))),flush=True)
+if __name__=='__main__':main()

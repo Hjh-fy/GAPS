@@ -1,0 +1,2806 @@
+[
+  {
+    "experiment_id": "FONG-STRICT19-C5-A0-L0-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-A0-L0-S42/remote_server/server_round_025.pth",
+    "sha256": "d651a8e5eaaac9fabd91b92c57606ac55b145392d13682e2a073ad85f5d0511f",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "round",
+      "model_state",
+      "parameter_keys",
+      "run_name"
+    ],
+    "model_config": {},
+    "round": 25,
+    "run_name": "FONG-STRICT19-C5-A0-L0-S42",
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "4ffa26b7759a020656109c141d2aee46584f3ccbf0cf16ab44b58cfc09667daf",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  },
+  {
+    "experiment_id": "FONG-STRICT19-C5-B0-L8-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-B0-L8-S42/remote_server/target_update_2500.pth",
+    "sha256": "c6d58ee6e29a92e8600dba6da15313ef59107aed73683f7983a69aca518e1212",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "model_state",
+      "spec",
+      "updates",
+      "target_test_opened"
+    ],
+    "model_config": {},
+    "round": null,
+    "run_name": null,
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "fb829f08562e6ec496893a02d9542f1ebd37fb41cb21b47556625e95b03607a9",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  },
+  {
+    "experiment_id": "FONG-STRICT19-C5-B1-L8-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-B1-L8-S42/remote_server/server_round_025_adapted.pth",
+    "sha256": "1176c5b8004c4e5e16702c791ef668b7f465b07f6319ed6de3cf872f4e3cc045",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "round",
+      "model_state",
+      "run_name",
+      "spec",
+      "target_test_opened"
+    ],
+    "model_config": {},
+    "round": 25,
+    "run_name": "FONG-STRICT19-C5-B1-L8-S42",
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "a4a4fc73f30910e49459e58cb53cb7640e430a4f3ffe2c0a3e66259fb352012c",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  },
+  {
+    "experiment_id": "FONG-STRICT19-C5-A5-L8-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-A5-L8-S42/remote_server/server_round_025_adapted.pth",
+    "sha256": "e84728175eadef2b34e5f291e50bf5b9e17632cf4b32529a99976431d062f620",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "round",
+      "model_state",
+      "run_name",
+      "spec",
+      "target_test_opened"
+    ],
+    "model_config": {},
+    "round": 25,
+    "run_name": "FONG-STRICT19-C5-A5-L8-S42",
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "3d83a1f36c300fec9b86d0c0cf29280da56912cabdddab944e0d1f076f086d65",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  },
+  {
+    "experiment_id": "FONG-STRICT19-C5-B0-L16-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-B0-L16-S42/remote_server/target_update_2500.pth",
+    "sha256": "492608a32a68f2e3788c89d45c4c893951a0bfe7b4461c049c72bbcd2962a2dd",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "model_state",
+      "spec",
+      "updates",
+      "target_test_opened"
+    ],
+    "model_config": {},
+    "round": null,
+    "run_name": null,
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "598b4d79e6bcdac77fdccd9a27892d1e9b47fe192f749a681be29c7d4186398d",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  },
+  {
+    "experiment_id": "FONG-STRICT19-C5-B1-L16-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-B1-L16-S42/remote_server/server_round_025_adapted.pth",
+    "sha256": "4b398da4ecb61183f128301867e5482315badfbc35cd78ddad74503c187f09b7",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "round",
+      "model_state",
+      "run_name",
+      "spec",
+      "target_test_opened"
+    ],
+    "model_config": {},
+    "round": 25,
+    "run_name": "FONG-STRICT19-C5-B1-L16-S42",
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "715403a0eb7e1f30dc031945899c36a0b1dd968cd010c5fa33924b029754c60c",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  },
+  {
+    "experiment_id": "FONG-STRICT19-C5-A5-L16-S42",
+    "path": "outputs/FedOnGas_严格少标定与系统成本_20261020/runs/FONG-STRICT19-C5-A5-L16-S42/remote_server/server_round_025_adapted.pth",
+    "sha256": "4f6061e75b1ddbea0a26c5e4df9b28033eb1443274488ea11ab57a84a783d93f",
+    "status": "BLOCKED_NOT_DAY7_SOURCE",
+    "inference": false,
+    "container_keys": [
+      "round",
+      "model_state",
+      "run_name",
+      "spec",
+      "target_test_opened"
+    ],
+    "model_config": {},
+    "round": 25,
+    "run_name": "FONG-STRICT19-C5-A5-L16-S42",
+    "parameter_keys": [
+      "tcn1.conv.depthwise.weight",
+      "tcn1.conv.depthwise.bias",
+      "tcn1.conv.pointwise.weight",
+      "tcn1.conv.pointwise.bias",
+      "tcn1.norm.weight",
+      "tcn1.norm.bias",
+      "tcn1.downsample.weight",
+      "tcn1.downsample.bias",
+      "tcn2.conv.depthwise.weight",
+      "tcn2.conv.depthwise.bias",
+      "tcn2.conv.pointwise.weight",
+      "tcn2.conv.pointwise.bias",
+      "tcn2.norm.weight",
+      "tcn2.norm.bias",
+      "tcn2.downsample.weight",
+      "tcn2.downsample.bias",
+      "tcn3.conv.depthwise.weight",
+      "tcn3.conv.depthwise.bias",
+      "tcn3.conv.pointwise.weight",
+      "tcn3.conv.pointwise.bias",
+      "tcn3.norm.weight",
+      "tcn3.norm.bias",
+      "tcn_layers.0.conv.depthwise.weight",
+      "tcn_layers.0.conv.depthwise.bias",
+      "tcn_layers.0.conv.pointwise.weight",
+      "tcn_layers.0.conv.pointwise.bias",
+      "tcn_layers.0.norm.weight",
+      "tcn_layers.0.norm.bias",
+      "tcn_layers.0.downsample.weight",
+      "tcn_layers.0.downsample.bias",
+      "tcn_layers.1.conv.depthwise.weight",
+      "tcn_layers.1.conv.depthwise.bias",
+      "tcn_layers.1.conv.pointwise.weight",
+      "tcn_layers.1.conv.pointwise.bias",
+      "tcn_layers.1.norm.weight",
+      "tcn_layers.1.norm.bias",
+      "tcn_layers.1.downsample.weight",
+      "tcn_layers.1.downsample.bias",
+      "tcn_layers.2.conv.depthwise.weight",
+      "tcn_layers.2.conv.depthwise.bias",
+      "tcn_layers.2.conv.pointwise.weight",
+      "tcn_layers.2.conv.pointwise.bias",
+      "tcn_layers.2.norm.weight",
+      "tcn_layers.2.norm.bias",
+      "tcn.0.conv.depthwise.weight",
+      "tcn.0.conv.depthwise.bias",
+      "tcn.0.conv.pointwise.weight",
+      "tcn.0.conv.pointwise.bias",
+      "tcn.0.norm.weight",
+      "tcn.0.norm.bias",
+      "tcn.0.downsample.weight",
+      "tcn.0.downsample.bias",
+      "tcn.1.conv.depthwise.weight",
+      "tcn.1.conv.depthwise.bias",
+      "tcn.1.conv.pointwise.weight",
+      "tcn.1.conv.pointwise.bias",
+      "tcn.1.norm.weight",
+      "tcn.1.norm.bias",
+      "tcn.1.downsample.weight",
+      "tcn.1.downsample.bias",
+      "tcn.2.conv.depthwise.weight",
+      "tcn.2.conv.depthwise.bias",
+      "tcn.2.conv.pointwise.weight",
+      "tcn.2.conv.pointwise.bias",
+      "tcn.2.norm.weight",
+      "tcn.2.norm.bias",
+      "channel_attn.2.weight",
+      "channel_attn.2.bias",
+      "self_attn.in_proj_weight",
+      "self_attn.in_proj_bias",
+      "self_attn.out_proj.weight",
+      "self_attn.out_proj.bias",
+      "attn_linear.weight",
+      "attn_linear.bias",
+      "feat_proj.weight",
+      "feat_proj.bias",
+      "cls_proj.weight",
+      "cls_proj.bias",
+      "classifier.weight",
+      "classifier.bias"
+    ],
+    "tensor_shapes": {
+      "tcn1.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn1.conv.depthwise.bias": [
+        8
+      ],
+      "tcn1.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.conv.pointwise.bias": [
+        32
+      ],
+      "tcn1.norm.weight": [
+        32
+      ],
+      "tcn1.norm.bias": [
+        32
+      ],
+      "tcn1.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn1.downsample.bias": [
+        32
+      ],
+      "tcn2.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn2.conv.depthwise.bias": [
+        32
+      ],
+      "tcn2.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn2.norm.weight": [
+        48
+      ],
+      "tcn2.norm.bias": [
+        48
+      ],
+      "tcn2.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn2.downsample.bias": [
+        48
+      ],
+      "tcn3.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn3.conv.depthwise.bias": [
+        48
+      ],
+      "tcn3.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn3.conv.pointwise.bias": [
+        48
+      ],
+      "tcn3.norm.weight": [
+        48
+      ],
+      "tcn3.norm.bias": [
+        48
+      ],
+      "tcn_layers.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn_layers.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn_layers.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn_layers.0.norm.weight": [
+        32
+      ],
+      "tcn_layers.0.norm.bias": [
+        32
+      ],
+      "tcn_layers.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn_layers.0.downsample.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn_layers.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn_layers.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.1.norm.weight": [
+        48
+      ],
+      "tcn_layers.1.norm.bias": [
+        48
+      ],
+      "tcn_layers.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn_layers.1.downsample.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn_layers.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn_layers.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn_layers.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn_layers.2.norm.weight": [
+        48
+      ],
+      "tcn_layers.2.norm.bias": [
+        48
+      ],
+      "tcn.0.conv.depthwise.weight": [
+        8,
+        1,
+        3
+      ],
+      "tcn.0.conv.depthwise.bias": [
+        8
+      ],
+      "tcn.0.conv.pointwise.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.conv.pointwise.bias": [
+        32
+      ],
+      "tcn.0.norm.weight": [
+        32
+      ],
+      "tcn.0.norm.bias": [
+        32
+      ],
+      "tcn.0.downsample.weight": [
+        32,
+        8,
+        1
+      ],
+      "tcn.0.downsample.bias": [
+        32
+      ],
+      "tcn.1.conv.depthwise.weight": [
+        32,
+        1,
+        3
+      ],
+      "tcn.1.conv.depthwise.bias": [
+        32
+      ],
+      "tcn.1.conv.pointwise.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.1.norm.weight": [
+        48
+      ],
+      "tcn.1.norm.bias": [
+        48
+      ],
+      "tcn.1.downsample.weight": [
+        48,
+        32,
+        1
+      ],
+      "tcn.1.downsample.bias": [
+        48
+      ],
+      "tcn.2.conv.depthwise.weight": [
+        48,
+        1,
+        3
+      ],
+      "tcn.2.conv.depthwise.bias": [
+        48
+      ],
+      "tcn.2.conv.pointwise.weight": [
+        48,
+        48,
+        1
+      ],
+      "tcn.2.conv.pointwise.bias": [
+        48
+      ],
+      "tcn.2.norm.weight": [
+        48
+      ],
+      "tcn.2.norm.bias": [
+        48
+      ],
+      "channel_attn.2.weight": [
+        8,
+        8
+      ],
+      "channel_attn.2.bias": [
+        8
+      ],
+      "self_attn.in_proj_weight": [
+        144,
+        48
+      ],
+      "self_attn.in_proj_bias": [
+        144
+      ],
+      "self_attn.out_proj.weight": [
+        48,
+        48
+      ],
+      "self_attn.out_proj.bias": [
+        48
+      ],
+      "attn_linear.weight": [
+        1,
+        48
+      ],
+      "attn_linear.bias": [
+        1
+      ],
+      "feat_proj.weight": [
+        64,
+        48
+      ],
+      "feat_proj.bias": [
+        64
+      ],
+      "cls_proj.weight": [
+        64,
+        48
+      ],
+      "cls_proj.bias": [
+        64
+      ],
+      "classifier.weight": [
+        4,
+        64
+      ],
+      "classifier.bias": [
+        4
+      ]
+    },
+    "tensor_values_sha256": "e4f3d60965e6d490acf5d5c95f14152f6d74ba40cae55262f7efd6ffb72f5a76",
+    "optimizer_state_present": false,
+    "semantic_proto_keys": [],
+    "ancestor_manifest_present": false,
+    "ancestor_status": "known_old_source_R1_R3;no_complete_ancestor_identity_closure"
+  }
+]

@@ -1,0 +1,45 @@
+{
+  "retained": [
+    {
+      "id": "AST_LINENO",
+      "stage": "initial exploratory import",
+      "cause": "harness AST nodes lacked location;fixed with ast.fix_missing_locations",
+      "production_changed": false
+    },
+    {
+      "id": "FIRST_BUDGET_INCOMPLETE",
+      "stage": "checks/",
+      "cause": "original process exit not recovered;only no-optimization loader receipt persisted;not counted as a completed probe",
+      "recovery": "checks_v2 complete;original helper exposed via isolated utils module",
+      "production_changed": false
+    },
+    {
+      "id": "CHAIN_SIGNATURE",
+      "evidence": "CHAIN_FAILURE.txt",
+      "cause": "test double passed an extra positional argument to get_parameters",
+      "recovery": "followed real signature"
+    },
+    {
+      "id": "CHAIN_RETURN_TYPE",
+      "evidence": "CHAIN_FAILURE_V2.txt",
+      "cause": "test double treated (arrays,keys) tuple as arrays",
+      "recovery": "unpacked and asserted key order;chain_v3 complete"
+    },
+    {
+      "id": "SNAPSHOT_DEPENDENCY",
+      "cause": "strict code snapshot omits imported fedongas_mmd_protocol.py",
+      "recovery": "archived matched protocol constant used only for whitelist metadata;full strict runner not run"
+    },
+    {
+      "id": "ACTIVE_CENSUS_PARTIAL",
+      "cause": "original root rg traversal exit2;stderr not retained",
+      "recovery": "report partial path inventory,never approve unknown ancestors"
+    }
+  ],
+  "synthetic_verified_optimizer_steps": 5158,
+  "synthetic_aborted_attempt_steps": "not certified;excluded from completed count",
+  "real_data_optimizer_steps": 0,
+  "formal_pilots": 0,
+  "Sstar_pretraining": 0,
+  "real_test_feature_reads": 0
+}

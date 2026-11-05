@@ -1,0 +1,109 @@
+"""Exercise actual Flower strategy and client interfaces, with explicit training doubles."""
+from common import *
+import time,logging,copy
+from types import SimpleNamespace
+
+def main():
+    torch,cfg,ds,ns=runtime();torch.set_num_threads(1);out=HERE/'chain_v3';out.mkdir(exist_ok=False)
+    # Import the original strategy, not a reimplementation. Only DA's numerical
+    # training class is replaced; actual DA loop counts are in budget_checks.py.
+    pkg=types.ModuleType('gaps_flower');pkg.__path__=[str(path('gaps_flower/strategy.py').parent)];sys.modules['gaps_flower']=pkg
+    path('gaps_flower/domain_adaptation_inputs.py')
+    strategy=p1.load('gaps_flower.strategy',path('gaps_flower/strategy.py'))
+    from flwr.common import FitRes,Status,Code,ndarrays_to_parameters,parameters_to_ndarrays
+    class Tiny(torch.nn.Module):
+        def __init__(self):
+            super().__init__();self.encoder=torch.nn.Linear(2,2,bias=False);self.classifier=torch.nn.Linear(2,4,bias=False)
+            for p in self.parameters():torch.nn.init.zeros_(p)
+    class DADouble:
+        def __init__(self,model,val_loader,calib_loader,semantic_protos,device,hyperparams):
+            self.model=model;self.device=device;self.sem=copy.deepcopy(semantic_protos);self.hp=hyperparams
+        def reset_round_state(self,model,semantic_protos):self.model=model;self.sem=copy.deepcopy(semantic_protos)
+        def run_adaptation(self,num_steps,**kwargs):
+            assert self.hp['LAMBDA_TARGET_CE']==1 and self.hp['LAMBDA_CLASS_MMD']==0
+            with torch.no_grad():
+                for p in self.model.parameters():p.add_(.125)
+            return self.model,dict(num_steps=num_steps,scope='DETERMINISTIC_ADAPTATION_DOUBLE_NO_GRADIENT')
+        def get_semantic_protos(self):return self.sem
+    da_module=types.ModuleType('gaps_flower.domain_adaptation');da_module.ServerDomainAdaptation=DADouble;sys.modules['gaps_flower.domain_adaptation']=da_module
+    path('gaps_flower/domain_adaptation.py')
+    incoming=[]
+    def training_double(host,round_idx,fit_config):
+        arr,ordered_keys=ns['get_parameters'](host.model);assert ordered_keys==host.keys
+        receipt=dict(group=host.group,round=round_idx,client_id=host.client_id,received=digest_arrays(arr),received_encoder=digest_arrays(arr[:1]),broadcast_proto_sha256=hashlib.sha256(fit_config.get('semantic_protos_json','').encode()).hexdigest())
+        with torch.no_grad():
+            for p in host.model.parameters():p.add_(host.client_id*.01)
+        updated,ordered_keys=ns['get_parameters'](host.model);assert ordered_keys==host.keys
+        proto={'(0,0)':[1.,0.] if host.client_id==1 else [0.,1.]} if host.upload_fixture else {}
+        receipt.update(trained=digest_arrays(updated),trained_encoder=digest_arrays(updated[:1]),prototype_fixture_sha256=hashlib.sha256(json.dumps(proto,sort_keys=True).encode()).hexdigest())
+        incoming.append(receipt)
+        return updated,host.samples,dict(client_id=host.client_id,prototype_json=json.dumps(proto),class_phase_counts_json=json.dumps({'(0,0)':host.samples}) if proto else '{}')
+    env=dict(ns,time=time,logger=logging.getLogger('client_interface'),train_one_round=training_double)
+    nativefit=method('gaps_flower/client_app.py','GapsFlowerClient','fit',env)
+    class Manager:
+        def __init__(self,clients):self.clients=clients
+        def num_available(self):return len(self.clients)
+        def sample(self,num_clients,min_num_clients=None,**_):return self.clients[:num_clients]
+    def protosha(st):return digest_arrays([v.detach().cpu().numpy() for k,v in sorted(st.semantic_protos.items())])
+    def setup(group,feedback=False,selective=False,uploads=True,clients=(1,2)):
+        model=Tiny();state=copy.deepcopy(model.state_dict());keys=list(state);counts={1:840,2:1680,5:32}
+        st=strategy.GapsStrategy(parameter_keys=keys,reference_state=state,output_dir=str(out/group),run_name=group,model_config=dict(seq_len=50,input_dim=8,num_classes=4,num_phases=3),fraction_fit=1.,fraction_evaluate=0.,min_fit_clients=len(clients),min_available_clients=len(clients),use_selective_agg=selective,use_proto_mmd=False,use_domain_adapt=False,proto_ema_alpha=.8,selective_warmup=3,selective_min_scale=.3,use_adapted_as_global=feedback,domain_adapt_steps=100,domain_adapt_warmup=0,da_use_coral=False,da_use_mmd=False,da_use_adversarial=False,da_use_align_reg_legacy=False,da_lambda_target_ce=1.,**{k:0. for k in ['da_lambda_coral','da_lambda_global_mmd','da_lambda_class_mmd','da_lambda_proto_anchor','da_lambda_adv','da_lambda_proto','da_lambda_consistency','da_lambda_residual','da_lambda_proto_mmd','da_lambda_stage_mmd','da_lambda_align_reg_legacy']})
+        st.use_domain_adapt=group in ['B3','B4','B5'];st.da_server_opt_lr=.0005
+        st._da_source_arrays=(np.zeros((2520,50,8),np.float32),np.zeros(2520,np.int64),np.zeros(2520,np.int64))
+        st._da_target_arrays=(np.ones((32,50,8),np.float32),np.zeros(32,np.int64),np.zeros(32,np.int64))
+        def build(state,device):m=Tiny().to(device);m.load_state_dict(state);return m
+        st._build_da_model=build
+        if uploads:st.semantic_protos={'(0,0)':torch.tensor([1.,0.])}
+        proxies=[]
+        for cid in clients:
+            m=Tiny();conf=ns['make_config'](profile='ce_only',batch_size=16,local_epochs=50 if cid==5 else 1,num_classes=4,input_dim=8,num_clients=6,num_phases=3)
+            gc=SimpleNamespace(model=m,keys=keys,samples=counts[cid],client_id=cid,group=group,upload_fixture=uploads)
+            proxy=SimpleNamespace(cid=str(cid),host=SimpleNamespace(client_id=cid,train_samples=counts[cid],config=conf,model=m,parameter_keys=keys,last_server_state=None,gaps_client=gc,profile='ce_only',canonical_profile='ce_only',seed=42))
+            proxies.append(proxy)
+        return st,keys,ndarrays_to_parameters([v.numpy() for v in state.values()]),proxies
+    chain=[];pairprotos={}
+    for b in ['B3','B4','B5']:
+        st,keys,params,proxies=setup(b,feedback=b!='B3',selective=b=='B5')
+        # Round4 is an intentional warmed-up synthetic fixture, not a claimed
+        # production round1->4 history. Two consecutive actual dispatches follow.
+        prev=None;ph=[]
+        for rnd in [4,5]:
+            receive=digest_arrays(parameters_to_ndarrays(params));assert prev is None or receive==prev
+            fits=st.configure_fit(rnd,params,Manager(proxies));results=[]
+            for proxy,instruction in fits:
+                ar,n,metrics=nativefit(proxy.host,parameters_to_ndarrays(instruction.parameters),instruction.config)
+                results.append((proxy,FitRes(Status(Code.OK,''),ndarrays_to_parameters(ar),n,metrics)))
+            pre_proto=protosha(st);returned,_=st.aggregate_fit(rnd,results,[])
+            agg=torch.load(out/b/f'server_round_{rnd:03d}.pth',weights_only=True)['model_state']
+            ada=torch.load(out/b/f'server_round_{rnd:03d}_adapted.pth',weights_only=True)['model_state']
+            ah=digest_arrays([agg[k].numpy() for k in keys]);dh=digest_arrays([ada[k].numpy() for k in keys]);rh=digest_arrays(parameters_to_ndarrays(returned))
+            assert rh==(ah if b=='B3' else dh) and ah!=dh
+            for r in incoming[-2:]:assert r['received']==receive
+            event=st._round_events[rnd];assert event['domain_adapt_summary']['num_steps']==100
+            row=dict(group=b,round=rnd,received=receive,aggregated=ah,adapted=dh,returned=rh,returned_kind=event['returned_parameters'],pre_proto_sha256=pre_proto,post_proto_sha256=protosha(st),selective=event['selective_agg'],adaptation_steps_requested=100,gradient_steps=0)
+            chain.append(row);ph.append(row['post_proto_sha256']);prev=rh;params=returned
+        pairprotos[b]=ph
+    assert pairprotos['B4']==pairprotos['B5']==pairprotos['B3']
+    # Real pure-CE upload behavior leaves semantic prototypes absent: selective
+    # aggregation has no active mechanism even though its CLI boolean is true.
+    st,keys,params,proxies=setup('NO_STATS',selective=True,uploads=False)
+    fits=st.configure_fit(4,params,Manager(proxies));rr=[]
+    for proxy,ins in fits:
+        ar,n,metrics=nativefit(proxy.host,parameters_to_ndarrays(ins.parameters),ins.config);rr.append((proxy,FitRes(Status(Code.OK,''),ndarrays_to_parameters(ar),n,metrics)))
+    st.aggregate_fit(4,rr,[]);assert not st.semantic_protos and not st._round_events[4]['selective_agg']['selective_active']
+    # Native ordinary FedAvg consumes the target's dataset size, not its epochs.
+    model=Tiny();keys=list(model.state_dict());ref=model.state_dict()
+    avg=strategy.CheckpointFedAvg(parameter_keys=keys,reference_state=ref,output_dir=str(out/'TAC'),run_name='TAC',fraction_fit=1,fraction_evaluate=0,min_fit_clients=3,min_available_clients=3)
+    rr=[]
+    for cid,n,value in [(1,840,0.),(2,1680,0.),(5,32,1.)]:
+        rr.append((SimpleNamespace(cid=str(cid)),FitRes(Status(Code.OK,''),ndarrays_to_parameters([np.full(tuple(v.shape),value,np.float32) for v in ref.values()]),n,dict(client_id=cid))))
+    tac,_=avg.aggregate_fit(1,rr,[]);target_weight=32/2552
+    for ar in parameters_to_ndarrays(tac):assert np.allclose(ar,target_weight,atol=1e-8)
+    js(out/'VERSION_CHAIN_RECEIPTS.json',chain);js(out/'CLIENT_RECEIPTS.json',incoming)
+    js(out/'SUMMARY.json',dict(status='PASS_SYNTHETIC_INTERFACE_ONLY;PRODUCTION_BLOCKED',rounds=[4,5],scope='real GapsFlowerClient.fit/configure_fit/aggregate_fit/_run_domain_adapt/EMA/serialization;local optimizer and DA numeric training are explicit deterministic doubles;no sockets;no TCN model',proto_fixture_intervention=True,common_ema_and_upload_fixtures=True,B3_next='aggregated',B4_next='adapted',B3_still_runs_adaptation=True,B4_B5_proto_hashes_equal=True,pure_CE_no_stats_selective_active=False,TAC_target_num_examples=32,TAC_total_examples=2552,TAC_target_weight=target_weight,target_test_read=False,real_target_gradient_steps=0))
+    table(out/'PROVENANCE.csv',list(PROV.values()));print('CHAIN and TAC PASS_SYNTHETIC;no-stats B5 inactive',flush=True)
+if __name__=='__main__':
+    import traceback
+    try:main()
+    except Exception:
+        (HERE/'CHAIN_FAILURE_V3.txt').write_text(traceback.format_exc(),encoding='utf-8');raise

@@ -1,0 +1,39 @@
+{
+  "status": "PASS_SYNTHETIC_COUNTS",
+  "results": [
+    {
+      "scope": "SYNTHETIC_TINY_MODEL_ORIGINAL_CLIENT_LOOP",
+      "client": "C1",
+      "rows": 840,
+      "epochs": 1,
+      "rounds": 1,
+      "optimizer_steps": 53,
+      "label_presentations": 840,
+      "optimizer_reset": "each original Client.train_one_round call",
+      "upload_proto_stats": false
+    },
+    {
+      "scope": "SYNTHETIC_TINY_MODEL_ORIGINAL_CLIENT_LOOP",
+      "client": "C2",
+      "rows": 1680,
+      "epochs": 1,
+      "rounds": 1,
+      "optimizer_steps": 105,
+      "label_presentations": 1680,
+      "optimizer_reset": "each original Client.train_one_round call",
+      "upload_proto_stats": false
+    },
+    {
+      "scope": "SYNTHETIC_TINY_MODEL_ORIGINAL_CLIENT_LOOP",
+      "client": "TARGET",
+      "rows": 32,
+      "epochs": 50,
+      "rounds": 25,
+      "optimizer_steps": 2500,
+      "label_presentations": 40000,
+      "optimizer_reset": "each original Client.train_one_round call",
+      "upload_proto_stats": false
+    }
+  ],
+  "real_target_gradient_steps": 0
+}

@@ -1,0 +1,12 @@
+{
+  "status": "PLANNED_NOT_IMPLEMENTED_IN_RUNNER",
+  "seed": 42,
+  "rng": "numpy.RandomState MT19937",
+  "batch_size": 16,
+  "steps": 2500,
+  "presentations": 40000,
+  "per_window_presentations": 1250,
+  "window_identity_manifest_sha256": "e69184b8ee02e06a2f13cfe2498d49ebe4125f9db862ec806899f963aa288ad4",
+  "schedule_sha256": "81133d4f0be5c5eefd13bf37af4e6f195df378263e87dbf971e8bfc08a67041a",
+  "requirement": "all target-bearing branches must consume identical index schedule and record actual index receipts;native default shuffle alone does not prove equality"
+}

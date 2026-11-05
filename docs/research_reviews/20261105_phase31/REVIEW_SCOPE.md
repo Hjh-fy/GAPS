@@ -1,0 +1,9 @@
+# 外部agent审阅范围
+
+本包是Phase3.1运行前证据与BLOCKED报告，不是已运行六组分类结果。读README→SSTAR_AUDIT→EFFECTIVE_CONFIG_AND_COMMANDS→UPDATE_BUDGET_AUDIT→VERSION_CHAIN_AUDIT→NEXT_DECISION。优先检查：S*祖先身份缺失是否充分阻断；server batch32→80000反例；ce_only关闭原型上传导致B5无效；源500封顶和10源CE批次成本；两个单因素parser差分与真实返回/接收hash；TAC按32/2552权重；C3历史保持和C4回顾性语义。
+
+包含6组真实解析参数、完整profile/CLI帮助、7旧checkpoint安全元数据、136暴露身份与SHA、32目标窗metadata、源/标定tensor文件SHA、2500步预定采样表、原Client/DA合成计数、实际Flower接口链收据、模型80state张量schema、环境、历史制品验证、负检查和失败说明、新脚本文本。不含7715条原仓库部分路径清单或2203条v5候选路径清单（本地保留、边界公开），不把路径普查当逐模型合法性证明。
+
+原始信号、18个npy、任何pth/权重、71D输入、v5/ZIP、source2520逐窗完整表和旧测试结果均保留本地；没有新的Test性能。链测试使用Tiny模型和显式确定性训练替身；预算测试原循环有真实合成梯度，不是TCN真实数据训练。公开包不能独立重训，依赖本地只读v5/历史阶段；脚本中的路径别名需要恢复。PUBLICATION_MANIFEST区分原SHA与脱敏后SHA，ARTIFACT_SHA256是完整本地145制品的来源清单，不表示所有payload已上传。
+
+所有六组继续BLOCKED，独立源预训练也仅计划。没有新SSTAR_LOCKED；严禁用公开合成链checkpoint路径或旧schema兼容结论替代合法S*。

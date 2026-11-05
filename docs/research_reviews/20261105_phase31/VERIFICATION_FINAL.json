@@ -1,0 +1,40 @@
+{
+  "status": "PASS_AUDIT_VERIFICATION;SIX_PILOTS_BLOCKED",
+  "prior_payload_files_verified": {
+    "fedongas_phase1_20261102": 125,
+    "fedongas_phase15_20261102": 185,
+    "fedongas_phase2a_20261103": 43,
+    "fedongas_phase2b_20261104": 92,
+    "fedongas_phase3_20261104": 25
+  },
+  "phase05_payload_files_verified": 53,
+  "v5_used_assets_verified": 21,
+  "source_and_cal_raw_files_verified": 136,
+  "export_files_verified": 18,
+  "export_total_bytes": 8250368,
+  "identity_windows": 2552,
+  "source_exposures": 120,
+  "target_cal_exposures": 16,
+  "completed_synthetic_optimizer_steps": 5158,
+  "synthetic_version_chain_rounds": 6,
+  "formal_pilots": 0,
+  "Sstar_pretraining": 0,
+  "real_data_optimizer_steps": 0,
+  "target_test_raw_or_tensor_reads": 0,
+  "real_test_inference": 0,
+  "model_schema_no_grad_synthetic_forward": true,
+  "old_schema_loading_does_not_approve_ancestry": true,
+  "production_budget_pass": false,
+  "production_prototype_upload_pass": false,
+  "legal_Sstar_pass": false,
+  "tracked_worktree_clean": true,
+  "original_tracked_status_unchanged": true,
+  "limitations": [
+    "checks first attempt lacks completed receipt",
+    "active original path inventory partial exit2",
+    "partial interface proofs not actual TCN or network training",
+    "v5 only read assets verified;full archive not rehashed"
+  ],
+  "stage": "Phase3.1",
+  "phase3_fixed_commit": "3794b71666358a597d5ed3cea65fadead8ff5719"
+}

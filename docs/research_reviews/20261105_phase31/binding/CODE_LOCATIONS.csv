@@ -1,0 +1,23 @@
+path,line,code
+config.py,21,SEQ_LEN: int = 100
+gaps_flower/server_app.py,188,"batch_size=32,"
+gaps_flower/server_app.py,210,"""seq_len"": config.SEQ_LEN,"
+gaps_flower/server_app.py,214,"fraction_evaluate=1.0,"
+gaps_flower/server_app.py,216,"min_evaluate_clients=args.min_clients,"
+gaps_flower/task.py,153,"config.UPLOAD_PROTO_STATS = bool(flags[""align""] or flags[""decouple""])"
+gaps_flower/task.py,288,"normalize=False,"
+gaps_flower/task.py,345,"""proto_stats_uploaded"": int(bool(gaps_client.config.UPLOAD_PROTO_STATS)),"
+gaps_flower/task.py,347,if gaps_client.config.UPLOAD_PROTO_STATS:
+gaps_flower/strategy.py,1006,"""MAX_VAL_BATCHES"": 10,"
+gaps_flower/strategy.py,1126,"batch_size=32,"
+gaps_flower/strategy.py,1152,"normalize=False,"
+gaps_flower/strategy.py,1161,"batch_size=32,"
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,18,def strict_matrix():
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,29,"updates=2500 if variant!='A0' else 0,batch_size=32,lr=.0005,local_epochs=1,"
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,35,"def validate_entry_spec(spec,initial_path,use_domain_adapt=None):"
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,36,"expected=next((r for r in strict_matrix() if r['experiment_id']==spec['experiment_id']),None)"
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,86,self.config.UPLOAD_PROTO_STATS=upload_stats;self.client.config.UPLOAD_PROTO_STATS=upload_stats
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,157,"p=argparse.ArgumentParser();p.add_argument('role',choices=['server','client','target']);p.add_argument('--data-root',required=True);p.add_argument('--initial-state',required=True)"
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,159,"a=p.parse_args();torch.set_num_threads(4 if a.role=='client' and a.client_id==1 else 1);initial=torch.load(a.initial_state,map_location='cpu',weights_only=False)"
+outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_entry.py,162,"spec=json.loads(Path(a.spec).read_text());validate_entry_spec(spec,a.initial_state,a.use_domain_adapt);output=Path(a.output)"
+outputs/FedOnGas_最终机制消融_C5_5pct_20261025/code/frozen_v2/matched_entry.py,55,"if counts!=[2360,2360]:raise RuntimeError('Source data population changed')"

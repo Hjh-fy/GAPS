@@ -1,0 +1,74 @@
+"""Execute original loaders/client/DA loops on synthetic fixtures, not research models."""
+from common import *
+import logging,collections
+from types import SimpleNamespace
+def main():
+    torch,cfg,ds,ns=runtime();torch.set_num_threads(1);out=HERE/'checks_v2';out.mkdir(exist_ok=False)
+    sourceinputs=read(HERE/'evidence/DATA_EXPORT_MANIFEST.json')
+    for r in sourceinputs:p1.verify_sha(HERE/r['path'],r['sha256'])
+    dataflow=[]
+    for cid in (1,2,5):
+        loader=ds.create_train_loader(HERE/'data'/f'client_{cid}',batch_size=16,shuffle=False,normalize=False);sizes=[len(batch[0]) for batch in loader]
+        assert sum(sizes)=={1:840,2:1680,5:32}[cid]
+        dataflow.append(dict(client=cid,batches=len(sizes),batch_sizes=sizes,rows=sum(sizes),drop_last=loader.drop_last,regression_labels='not exported;dataset fills unused zero vector'))
+    js(out/'REAL_DATA_LOADER_COUNTS.json',dict(status='PASS_NO_OPTIMIZATION',flows=dataflow,target_test_read=False,gradient_steps=0))
+    class Tiny(torch.nn.Module):
+        def __init__(self):super().__init__();self.encoder=torch.nn.Linear(1,2);self.classifier=torch.nn.Linear(2,4);self.seen=collections.Counter()
+        def forward(self,x):
+            tags=x[:,0,0];self.seen['target_rows']+=int((tags==1).sum());self.seen['source_rows']+=int((tags==0).sum());z=self.encoder(x.flatten(1).mean(1,keepdim=True));return self.classifier(z),z,z
+    Adam=torch.optim.Adam;counts=collections.Counter()
+    class CountAdam(Adam):
+        def step(self,*args,**kwargs):counts['steps']+=1;return super().step(*args,**kwargs)
+    torch.optim.Adam=CountAdam
+    try:
+        cn=dict(torch=torch,np=np,F=torch.nn.functional,get_lambda_reg=lambda *_:0)
+        # The isolated original method imports this helper by module name. Provide
+        # the unchanged helper without importing unrelated production globals.
+        un=dict(torch=torch,F=torch.nn.functional)
+        isolate('utils.py',{'compute_regression_loss_combined'},un)
+        utils_fixture=types.ModuleType('utils');utils_fixture.compute_regression_loss_combined=un['compute_regression_loss_combined'];sys.modules['utils']=utils_fixture
+        native=method('client.py','Client','train_one_round',cn)
+        for name in ['_compute_classification_loss','_compute_align_loss','_compute_distill_loss','_compute_regression_loss']:
+            method('client.py','Client',name,cn)
+        results=[]
+        for tag,n,epochs,rounds in [('C1',840,1,1),('C2',1680,1,1),('TARGET',32,50,25)]:
+            config=ns['make_config'](profile='ce_only',batch_size=16,local_epochs=epochs,device='cpu');model=Tiny();x=np.ones((n,50,8),np.float32);y=np.arange(n)%4
+            loader=ds.DataLoader(ds.GasSensorWindowDataset(x,np.zeros((n,4),np.float32),y,np.zeros(n,np.int64),normalize=False),batch_size=16,shuffle=True)
+            host=SimpleNamespace(model=model,train_loader=loader,config=config,device='cpu',prev_model=None)
+            samples=[0];original=cn['_compute_classification_loss']
+            def classification(logits,y):samples[0]+=len(y);return original(host,logits,y)
+            host._compute_classification_loss=classification
+            for name in ['_compute_align_loss','_compute_distill_loss','_compute_regression_loss']:setattr(host,name,types.MethodType(cn[name],host))
+            host.get_parameters=lambda **_:dict(model.state_dict());start=counts['steps']
+            print('START',tag,flush=True)
+            for r in range(1,rounds+1):native(host,r)
+            steps=counts['steps']-start;assert steps=={'C1':53,'C2':105,'TARGET':2500}[tag]
+            assert samples[0]=={'C1':840,'C2':1680,'TARGET':40000}[tag]
+            results.append(dict(scope='SYNTHETIC_TINY_MODEL_ORIGINAL_CLIENT_LOOP',client=tag,rows=n,epochs=epochs,rounds=rounds,optimizer_steps=steps,label_presentations=samples[0],optimizer_reset='each original Client.train_one_round call',upload_proto_stats=config.UPLOAD_PROTO_STATS))
+        js(out/'CLIENT_GRADIENT_BUDGET.json',dict(status='PASS_SYNTHETIC_COUNTS',results=results,real_target_gradient_steps=0))
+        # Actual loader construction, bypassing filesystem/shape validation ONLY for synthetic counting.
+        stns=dict(np=np,torch=torch,OrderedDict=collections.OrderedDict)
+        loaderfn=method('gaps_flower/strategy.py','GapsStrategy','_init_domain_adapt_loaders',stns)
+        arrays=lambda n,tag:(np.full((n,100,8),tag,np.float32),np.arange(n,dtype=np.int64)%4,np.zeros(n,np.int64))
+        owner=SimpleNamespace(_da_source_arrays=arrays(2520,0),_da_target_arrays=arrays(32,1));loaderfn(owner)
+        assert owner._calib_loader.batch_size==32 and len(owner._val_loader.dataset)==500
+        dns=dict(torch=torch,np=np,F=torch.nn.functional);run=method('gaps_flower/domain_adaptation.py','ServerDomainAdaptation','run_adaptation',dns)
+        samplefn=method('gaps_flower/domain_adaptation.py','ServerDomainAdaptation','_sample_model_outputs',dns)
+        host=SimpleNamespace(model=Tiny(),val_loader=owner._val_loader,calib_loader=owner._calib_loader,device=torch.device('cpu'),hp=dict(MAX_VAL_BATCHES=10,LAMBDA_TARGET_CE=1.,**{k:0. for k in ['LAMBDA_DEEP_CORAL','LAMBDA_GLOBAL_MMD','LAMBDA_CLASS_MMD','LAMBDA_PROTO_ANCHOR','LAMBDA_ADV_DOMAIN','LAMBDA_PROTO','LAMBDA_CONSISTENCY','LAMBDA_RES','LAMBDA_PROTO_MMD','LAMBDA_STAGE_MMD','LAMBDA_ALIGN_REG_LEGACY']}),domain_discriminator=None,target_ce_class_weights=None,semantic_protos=torch.nn.ParameterDict(),device_residuals={},client_mus=[],logger=logging.getLogger('synthetic_DA'))
+        zero=lambda:torch.tensor(0.)
+        host._set_round_client_statistics=lambda **_:None;host._build_optimizer=lambda:CountAdam(host.model.parameters(),lr=.0005)
+        host._sample_model_outputs=types.MethodType(samplefn,host)
+        host._as_class_ids=lambda x:x.long();host._method_definition=lambda:{}
+        host._compute_mmd_losses=lambda *_:(zero(),zero(),zero());host._compute_server_proto_losses=lambda:(zero(),zero(),zero())
+        for name in ['_compute_consistency_loss','_compute_stage_mmd_loss','_compute_align_reg_legacy_loss']:setattr(host,name,lambda *_:zero())
+        start=counts['steps']
+        for r in range(25):run(host,num_steps=100)
+        steps=counts['steps']-start;assert steps==2500 and host.model.seen['target_rows']==80000
+        js(out/'SERVER_GRADIENT_BUDGET.json',dict(status='BLOCKED_BUDGET_MISMATCH',scope='original loader and original run_adaptation;Tiny model;auxloss helpers test doubles at zero;synthetic100x8;not fullTCN',steps=steps,target_label_presentations=host.model.seen['target_rows'],expected=40000,batch_size=owner._calib_loader.batch_size,source_dataset_before_cap=2520,source_dataset_after_cap=500,source_forward_presentations=host.model.seen['source_rows'],MAX_VAL_BATCHES=10,source_CE_batches_per_step=10,extra_source_feature_batch_per_step=1,real_target_gradient_steps=0))
+    finally:torch.optim.Adam=Adam
+    table(out/'V5_PROBE_PROVENANCE.csv',list(PROV.values()));print('COUNTS CHECKED:client2500/40000 PASS;native server2500/80000 BLOCKED',flush=True)
+if __name__=='__main__':
+    import traceback
+    try:main()
+    except Exception:
+        (HERE/'BUDGET_FAILURE_V2.txt').write_text(traceback.format_exc(),encoding='utf-8');raise

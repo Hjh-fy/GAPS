@@ -1,0 +1,50 @@
+[
+  {
+    "profile": "ce_only",
+    "UPLOAD_PROTO_STATS": false,
+    "USE_ALIGN": false,
+    "USE_REPLAY_DISTILL": false,
+    "USE_PROTO_DECOUPLING": false,
+    "USE_REG_LOSS": false
+  },
+  {
+    "profile": "align_only",
+    "UPLOAD_PROTO_STATS": true,
+    "USE_ALIGN": true,
+    "USE_REPLAY_DISTILL": false,
+    "USE_PROTO_DECOUPLING": false,
+    "USE_REG_LOSS": false
+  },
+  {
+    "profile": "align_replay",
+    "UPLOAD_PROTO_STATS": true,
+    "USE_ALIGN": true,
+    "USE_REPLAY_DISTILL": true,
+    "USE_PROTO_DECOUPLING": false,
+    "USE_REG_LOSS": false
+  },
+  {
+    "profile": "proto_only",
+    "UPLOAD_PROTO_STATS": true,
+    "USE_ALIGN": true,
+    "USE_REPLAY_DISTILL": false,
+    "USE_PROTO_DECOUPLING": true,
+    "USE_REG_LOSS": false
+  },
+  {
+    "profile": "replay_only",
+    "UPLOAD_PROTO_STATS": false,
+    "USE_ALIGN": false,
+    "USE_REPLAY_DISTILL": true,
+    "USE_PROTO_DECOUPLING": false,
+    "USE_REG_LOSS": false
+  },
+  {
+    "profile": "proto_replay",
+    "UPLOAD_PROTO_STATS": true,
+    "USE_ALIGN": true,
+    "USE_REPLAY_DISTILL": true,
+    "USE_PROTO_DECOUPLING": true,
+    "USE_REG_LOSS": false
+  }
+]
