@@ -1,0 +1,24 @@
+{
+  "experiment_id": "P33R-NET-SYNTH-S42-R2",
+  "rounds": 2,
+  "clients": [
+    1,
+    2
+  ],
+  "synthetic_rows": [
+    840,
+    1680
+  ],
+  "shape": [
+    50,
+    8
+  ],
+  "batch": 16,
+  "source_epochs": 1,
+  "seed": 42,
+  "address": "127.0.0.1:8080",
+  "expected_steps": 316,
+  "expected_presentations": 5040,
+  "real_numeric_reads": false,
+  "formal_SOURCE": false
+}

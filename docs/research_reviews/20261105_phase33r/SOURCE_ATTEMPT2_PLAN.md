@@ -1,0 +1,13 @@
+# SOURCE attempt2预注册（未授权、未执行）
+
+新ID P33R-SOURCE-DAY7-S42-ATTEMPT2。科学spec与原730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7完全相同：C1Day4、C2Day1/7，120暴露/2520窗，source1/2分别840/1680，seed42，25轮、各1epoch、batch16、Adam5e-4，3950源步/63000呈现，纯FedAvg。新runtime/contract SHA和完整ENVIRONMENT_LOCK绑定在SOURCE_ATTEMPT2_REGISTRATION。
+
+继续使用原注册SOURCE_RANDOM_INITIAL.pth与其原lock，完整state SHAa935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7；不重新生成、不加载旧已训练分类权重。canonical只读源数据/身份仍在Phase32，不复制或打开目标数值。未来SOURCE input_pools仍只枚举1/2。输出固定本版本source_attempt2/server、client_1、client_2，当前不存在；原attempt1目录与授权文件保留。
+
+三条真实runtime argv数组已预注册，可用原生server/client action；--spec/--checkpoint/--checkpoint-lock/--output/--address/--client-id均为已实现CLI。注册的server argv已在无新授权时实际解析并被PermissionError拒绝，尚未加载输入或启动网络。生产主入口不经过synthetic network.py。
+
+必须在下一轮单独批准后，在本版本根目录新建TRAINING_AUTHORIZATION.json并记录新批准事件（实验ID、runtime/contract/env SHA、attempt2、限定SOURCE）。payload仍沿用两字段approved_spec_sha256与purpose=SOURCE，科学spec SHA相同不代表旧批准可复用。当前只读Phase32中已消费的同名文件不会被新runtime查询；不得把旧文件复制过来冒充新批准。未批准前不能运行任何SOURCE/target/pilot。
+
+未来源run保存25轮checkpoint/receipt和最终SSTAR锁，验证新代码SHA、同随机祖先/源身份及每轮返回链，然后固定合法源输入做恢复一致性；本轮没有这些真实训练证据。native旧run_name字符串P32-SOURCE仅是保留的内部标签，实际身份以新注册ID、独立目录、attempt号和代码/环境SHA为准，不能让attempt1看似成功。
+
+执行前必须调用execution_environment.clean_environment清除PYTHONPATH及旧FEDONGAS观察器变量，在新进程先核对runtime与contract都来自本版本。MODULE_IMPORT_PRECHECK已用内存模拟污染环境验证；不会实际启动旧观察器。环境清理和模块路径是attempt2授权前必要条件。

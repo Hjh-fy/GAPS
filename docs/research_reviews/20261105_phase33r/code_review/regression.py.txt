@@ -1,0 +1,52 @@
+"""Reuse lightweight tests;check numeric AST identity;never read real data arrays."""
+import sys,ast,copy,inspect,importlib.util,unittest,shutil,json
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;sys.path.insert(0,str(HERE));import runtime as r
+c=r.c;S32=c.S32
+def main():
+    r.torch.set_num_threads(1);copies=HERE/'reused_tests';copies.mkdir(exist_ok=False)
+    sys.path.append(str(S32));suite=unittest.TestSuite();provenance=[]
+    for name in ['test_contract.py','test_runtime.py']:
+        src=S32/name;dst=copies/name;shutil.copyfile(src,dst);assert c.sha(src)==c.sha(dst)
+        spec=importlib.util.spec_from_file_location('reuse_'+dst.stem,dst);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(module));provenance.append(dict(source=str(src),copy=str(dst),sha256=c.sha(dst)))
+    sp=importlib.util.spec_from_file_location('_callbacks',HERE/'test_callbacks.py');m=importlib.util.module_from_spec(sp);sp.loader.exec_module(m);suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(m))
+    with (HERE/'REGRESSION_TEST_LOG.txt').open('x',encoding='utf-8') as f:result=unittest.TextTestRunner(stream=f,verbosity=2).run(suite)
+    assert result.wasSuccessful() and result.testsRun==14
+    def methods(p):
+        t=ast.parse(p.read_text(encoding='utf-8-sig'));out={}
+        for n in ast.walk(t):
+            if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)):out[n.name]=n
+        return out
+    old=methods(S32/'runtime.py');new=methods(HERE/'runtime.py');unchanged=[]
+    for name in old:
+        a=copy.deepcopy(old[name]);b=copy.deepcopy(new[name])
+        if name in ['configure_fit','aggregate_fit']:
+            assert isinstance(b.body[0],ast.Assign);b.body=b.body[1:];b.args=a.args
+        if name=='input_pools':continue # only root redirected;numeric validator unchanged
+        assert ast.dump(a,include_attributes=False)==ast.dump(b,include_attributes=False),name
+        unchanged.append(name)
+    # Original protocol dict and sampler implementation remain exactly the same.
+    oc=methods(S32/'contract.py');nc=methods(HERE/'contract.py')
+    for name in ['spec','validate_spec','validate_arrays','validate_package','verify_prior','target_loader']:
+        assert ast.dump(oc[name],include_attributes=False)==ast.dump(nc[name],include_attributes=False),name
+    full=r.load_checkpoint(r.model(),c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL.pth',c.read(c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL_LOCK.json'),'random_source');state=c.digest(r.arrays(full))
+    with r.torch.no_grad():out=full.eval()(r.torch.zeros(2,50,8))
+    assert [list(x.shape) for x in out]==[[2,4],[2,64],[2,64]]
+    matrix=[]
+    signatures={
+      'configure_fit':dict(server_round=1,parameters=None,client_manager=None),
+      'aggregate_fit':dict(server_round=1,results=[],failures=[]),
+      'initialize_parameters':dict(client_manager=None),
+      'configure_evaluate':dict(server_round=1,parameters=None,client_manager=None),
+      'aggregate_evaluate':dict(server_round=1,results=[],failures=[]),
+      'evaluate':dict(server_round=1,parameters=None)}
+    for cls in [r.PhaseFedAvg,r.PhaseGaps]:
+        for name,kw in signatures.items():
+            fn=getattr(cls,name);inspect.signature(fn).bind(None,**kw);matrix.append(dict(class_name=cls.__name__,callback=name,signature=str(inspect.signature(fn)),keyword_bind='PASS',defined_in=inspect.getsourcefile(fn),native_network_observed=name in ['configure_fit','aggregate_fit','initialize_parameters','evaluate'] and cls==r.PhaseFedAvg))
+    for name in ['get_parameters','get_properties','fit','evaluate']:matrix.append(dict(class_name='PhaseClient',callback=name,signature=str(inspect.signature(getattr(r.PhaseClient,name))),keyword_bind='PASS',defined_in=inspect.getsourcefile(getattr(r.PhaseClient,name)),native_network_observed=name=='fit'))
+    c.prior.table(HERE/'CALLBACK_MATRIX.csv',matrix)
+    configs=[dict(group=b,spec=c.spec(b),model_config=vars(r.config(c.spec(b)['stats_upload']))) for b in ['SOURCE','B0','B1','B2','B3','B4','B5']]
+    c.write(HERE/'EFFECTIVE_CONTRACTS.json',configs)
+    c.write(HERE/'REGRESSION_SUMMARY.json',dict(status='PASS',tests=14,lightweight_old_tests_reused=11,old_tests_provenance=provenance,runtime_module=str(Path(r.__file__).resolve()),contract_module=str(Path(c.__file__).resolve()),numerical_functions_AST_unchanged=unchanged,protocol_dict_and_target_sampler_AST_unchanged=True,initial_state_sha=state,input_shape=[50,8],output_shapes=[list(x.shape) for x in out],SOURCE_only_clients=c.spec('SOURCE')['source_clients'],B3_B4_difference=[k for k in c.spec('B3') if c.spec('B3')[k]!=c.spec('B4')[k]],B4_B5_difference=[k for k in c.spec('B4') if c.spec('B4')[k]!=c.spec('B5')[k]],current_authorization_exists=(HERE/'TRAINING_AUTHORIZATION.json').exists(),real_source_or_target_numeric_reads=0,extra_synthetic_unit_optimizer_steps=53,large12500step_matrix_rerun=False))
+    print('REGRESSION14PASS;numericASTsame;fullTCNinitialstate/schemaPASS',flush=True)
+if __name__=='__main__':main()

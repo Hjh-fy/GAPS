@@ -1,0 +1,78 @@
+{
+  "status": "PASS",
+  "tests": 14,
+  "lightweight_old_tests_reused": 11,
+  "old_tests_provenance": [
+    {
+      "source": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\test_contract.py",
+      "copy": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\reused_tests\\test_contract.py",
+      "sha256": "d5f666aa93024a8f1e8adde0dec42009b7beeb8a59b75757edaf0a3d4cec3d5b"
+    },
+    {
+      "source": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\test_runtime.py",
+      "copy": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\reused_tests\\test_runtime.py",
+      "sha256": "0b36856bde4a6632cbe1c0370f8c54ea31f461d209c76b7548f387be8c59fea4"
+    }
+  ],
+  "runtime_module": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+  "contract_module": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contract.py",
+  "numerical_functions_AST_unchanged": [
+    "config",
+    "model",
+    "arrays",
+    "encoder_sha",
+    "strict_arrays",
+    "validate_state",
+    "validate_stats",
+    "load_checkpoint",
+    "dataset",
+    "source_loader",
+    "strategy",
+    "effective",
+    "main",
+    "__init__",
+    "evaluate",
+    "fit",
+    "configure_fit",
+    "aggregate_fit",
+    "_build_da_model",
+    "_init_domain_adapt_loaders",
+    "_run_domain_adapt"
+  ],
+  "protocol_dict_and_target_sampler_AST_unchanged": true,
+  "initial_state_sha": "a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7",
+  "input_shape": [
+    50,
+    8
+  ],
+  "output_shapes": [
+    [
+      2,
+      4
+    ],
+    [
+      2,
+      64
+    ],
+    [
+      2,
+      64
+    ]
+  ],
+  "SOURCE_only_clients": [
+    1,
+    2
+  ],
+  "B3_B4_difference": [
+    "group",
+    "feedback"
+  ],
+  "B4_B5_difference": [
+    "group",
+    "selective"
+  ],
+  "current_authorization_exists": false,
+  "real_source_or_target_numeric_reads": 0,
+  "extra_synthetic_unit_optimizer_steps": 53,
+  "large12500step_matrix_rerun": false
+}

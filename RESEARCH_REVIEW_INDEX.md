@@ -1,11 +1,11 @@
 # GAPS 研究审阅入口
 
-审阅分支`codex/research-reviews`，每轮提供固定commit。
+审阅分支`codex/research-reviews`，各阶段提供固定commit。
 
-最新：[Phase3.3 SOURCE启动失败审计](docs/research_reviews/20261105_phase33/README.md) · [根因](docs/research_reviews/20261105_phase33/ROOT_CAUSE.md) · [执行证据](docs/research_reviews/20261105_phase33/EXECUTION_AUDIT.md) · [停止/下一步](docs/research_reviews/20261105_phase33/NEXT_DECISION.md)。
+最新：[Phase3.3R原生兼容与网络验收](docs/research_reviews/20261105_phase33r/README.md) · [修复/回归](docs/research_reviews/20261105_phase33r/REPAIR_AND_REGRESSION.md) · [原生网络](docs/research_reviews/20261105_phase33r/NATIVE_NETWORK_REPORT.md) · [权限环境](docs/research_reviews/20261105_phase33r/NETWORK_PERMISSION.md) · [attempt2计划](docs/research_reviews/20261105_phase33r/SOURCE_ATTEMPT2_PLAN.md) · [门禁](docs/research_reviews/20261105_phase33r/NEXT_DECISION.md)。
 
-唯一SOURCE启动在第1轮fit分发前失败：冻结configure_fit参数名不兼容Flower实际关键字调度；客户端另遇默认沙箱localhost连接权限10013。0梯度更新、0完成轮、0checkpoint、无Sstar、无Test数值读取、无重试或pilot。此前Phase3.2局部预检漏测原生调度，不能继续据此宣布完整入口就绪。需要新注册兼容修复/无真实数据网络预检并另行批准恢复SOURCE。
+NativeFlower真实两轮PASS，受控普通用户localhost8080通信及关闭/资源释放PASS；14轻量回归通过，算法/科学spec/初始state不变。仅合成输入316网络优化步，真实源/目标数值读取0。SOURCE attempt2已独立预注册、清理继承环境并验证新模块路径，具备重新申请授权条件，未授权/未启动；六组pilot继续BLOCKED_NO_SSTAR。
 
-历史：[Phase3.2固定b0c7a5c](https://github.com/Hjh-fy/GAPS/blob/b0c7a5cabfec3a41b40cdf67fc0802b67103a3ed/docs/research_reviews/20261105_phase32/README.md) · [Phase3.1固定b05c139](https://github.com/Hjh-fy/GAPS/blob/b05c139d757a79994f8fc2fc983f1475052bdd45/docs/research_reviews/20261105_phase31/README.md) · [Phase3](docs/research_reviews/20261104_phase3/README.md) · [Phase2B](docs/research_reviews/20261104_phase2b/README.md) · [Phase2A](docs/research_reviews/20261103_phase2a/README.md) · [Phase1.5](docs/research_reviews/20261102_phase15/README.md) · [Phase1](docs/research_reviews/20261102_phase1/README.md) · [Phase0.5](docs/research_reviews/20261102_phase05/README.md)。
+历史：[Phase3.3失败固定41bcbba](https://github.com/Hjh-fy/GAPS/blob/41bcbba60a4b0b167182efc9e14873fdecd29f33/docs/research_reviews/20261105_phase33/README.md) · [Phase3.2固定b0c7a5c](https://github.com/Hjh-fy/GAPS/blob/b0c7a5cabfec3a41b40cdf67fc0802b67103a3ed/docs/research_reviews/20261105_phase32/README.md) · [Phase3.1](docs/research_reviews/20261105_phase31/README.md) · [Phase3](docs/research_reviews/20261104_phase3/README.md) · [Phase2B](docs/research_reviews/20261104_phase2b/README.md) · [Phase2A](docs/research_reviews/20261103_phase2a/README.md) · [Phase1.5](docs/research_reviews/20261102_phase15/README.md) · [Phase1](docs/research_reviews/20261102_phase1/README.md) · [Phase0.5](docs/research_reviews/20261102_phase05/README.md)。
 
-[发布约定](docs/research_reviews/PUBLISHING_POLICY.md)：不自动合并main，不上传原始输入/模型权重/v5/ZIP。
+[发布约定](docs/research_reviews/PUBLISHING_POLICY.md)：不自动合并main；原始输入、权重、v5/ZIP均本地保留。

@@ -1,0 +1,119 @@
+"""Validate actual network evidence and preserve old versions without data reads."""
+import sys,json,hashlib,subprocess,collections
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;sys.path.insert(0,str(HERE));import runtime as r
+c=r.c
+def md(name,s):(HERE/name).write_text(s.strip()+'\n',encoding='utf-8')
+def main():
+    net=HERE/'network_smoke_01';done=c.read(net/'COMPLETE.json');assert done['status']=='PASS_NATIVE_NETWORK' and done['codes']=={'server':0,'client_1':0,'client_2':0}
+    server=c.read(net/'server/server_complete.json');rr=server['receipts'];assert len(rr)==2
+    clients={cid:c.read(net/f'client_{cid}/client_complete.json') for cid in [1,2]};ends=[c.read(net/f'{role}/process_end.json') for role in ['server','client_1','client_2']]
+    assert sum(x['steps'] for x in clients.values())==316 and sum(x['presentations'] for x in clients.values())==5040
+    assert all(not x['blocked_numeric_open'] and x['successful_real_numeric_reads']==0 for x in ends)
+    rows=[]
+    for i,record in enumerate(rr):
+        assert record['samples']==[840,1680] and record['clients']==[1,2]
+        if i:assert record['received']==rr[i-1]['returned']
+        for cid in [1,2]:
+            rec=clients[cid]['receipts'][i];assert rec['received']==record['received'] and rec['uploaded']==record['uploads'][cid-1]
+            rows.append(dict(round=i+1,client_id=cid,received=rec['received'],uploaded=rec['uploaded'],aggregated_returned=record['returned'],num_examples=rec['num_examples'],weight='1/3' if cid==1 else '2/3',model_state_bytes=record['state_payload_down']//2,FitIns_proto_bytes_total=record['protobuf_fit_down'],FitRes_proto_bytes_total=record['protobuf_fit_up']))
+    c.prior.table(HERE/'NETWORK_VERSION_CHAIN.csv',rows)
+    ev=[json.loads(x) for x in (net/'server/events.jsonl').read_text(encoding='utf-8').splitlines()]
+    assert len([x for x in ev if x['event']=='configure_fit' and x['native_Server_fit_round'] and x['keyword_names']==['client_manager','parameters','server_round']])==2
+    assert len([x for x in ev if x['event']=='aggregate_fit' and x['native_Server_fit_round'] and x['FitRes_count']==2])==2
+    ident=[c.read(net/f'{role}/identity.json') for role in ['server','client_1','client_2']]
+    assert len({x['initial_state_sha'] for x in ident})==1 and all(x['runtime_sha']==c.sha(HERE/'runtime.py') and x['contract_sha']==c.sha(HERE/'contract.py') for x in ident)
+    assert not list(net.rglob('*SSTAR*')) and not(HERE/'TRAINING_AUTHORIZATION.json').exists() and not(HERE/'source_attempt2').exists()
+    reg=c.read(HERE/'SOURCE_ATTEMPT2_REGISTRATION.json');assert reg['runtime_sha256']==c.sha(HERE/'runtime.py') and reg['contract_sha256']==c.sha(HERE/'contract.py') and reg['environment_contract_sha256']==c.sha(HERE/'ENVIRONMENT_LOCK.json') and reg['executed']==False
+    assert c.read(HERE/'REGRESSION_SUMMARY.json')['tests']==14 and c.read(HERE/'NEW_AUTHORIZATION_GUARD.json')['status']=='PASS'
+    # Preserve history without opening ANY real source/target numerical arrays.
+    old=c.S32;anchor='86a97e7ab95c1c3d8b46192b3cae0870d42fcbd9a577bed28374b14d27beed2a';assert c.sha(old/'ARTIFACT_SHA256.csv')==anchor
+    checked=skipped=0
+    for x in c.prior.rows(old/'ARTIFACT_SHA256.csv'):
+        p=old/x['path']
+        if p.suffix.lower() in ['.npy','.npz','.pth','.pt','.onnx']:skipped+=1;continue
+        assert c.sha(p)==x['sha256'];checked+=1
+    p33=HERE.parent/'fedongas_phase33_20261105';assert c.sha(p33/'ARTIFACT_SHA256.csv')=='09fad4a7d9e04fad4ba64ee7892bf326e530a16d96ad629e8dbebbf6a734fef9'
+    for x in c.prior.rows(p33/'ARTIFACT_SHA256.csv'):assert c.sha(p33/x['path'])==x['sha256']
+    source_run=c.prior.rows(p33/'SOURCE_RUN_FILE_MANIFEST.csv')
+    for x in source_run:assert c.sha(c.ROOT/x['path'])==x['sha256']
+    frozen=[]
+    for x in c.prior.rows(old/'V5_IMPORT_PROVENANCE.csv'):
+        p=c.prior.path(x['path']);assert c.sha(p)==x['sha256'];frozen.append(x)
+    c.prior.table(HERE/'V5_NUMERIC_SOURCE_PROVENANCE.csv',frozen)
+    c.write(HERE/'FINAL_VERIFICATION.json',dict(status='PASS_NATIVE_COMPAT_AND_SYNTHETIC_NETWORK;SOURCE_ATTEMPT2_AWAITS_APPROVAL',native_Flower_dispatch='PASS',localhost_in_approved_environment='PASS',default_sandbox_connect='BLOCKED10013',algorithm_data_contract_unchanged=True,callback_unit_signature_checks='PASS',regression_tests=14,old_lightweight_tests_reused=11,synthetic_network_rounds=2,synthetic_client_steps=316,synthetic_presentations=5040,synthetic_unit_extra_steps=53,real_source_numeric_reads=0,target_numeric_reads=0,initial_random_state_sha=ident[0]['initial_state_sha'],native_configure_keyword_rounds=2,native_aggregate_rounds=2,next_round_SHA_matches=True,all_process_exit0=True,port8080_released=True,firewall_changed=False,port_changed=False,new_training_authorization=False,formal_SOURCE_attempts=0,old_attempt1_preserved=True,old_Phase32_manifest_unchanged=True,old_Phase32_non_numeric_payloads_verified=checked,old_Phase32_numerical_payloads_not_reopened=skipped,old_Phase33_payloads_verified=42,source_attempt2_registration='READY_TO_REQUEST_APPROVAL;NOT_STARTED',pilot_status='ALL6_BLOCKED_NO_SSTAR',network_wall_seconds=done['wall_seconds'],protobuf_FitIns_total=sum(x['protobuf_fit_down'] for x in rr),protobuf_FitRes_total=sum(x['protobuf_fit_up'] for x in rr),wire_bytes='NOT_MEASURED',full_model_state_bytes=rr[0]['state_payload_down']//2,tracked_worktree_clean=subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).decode()==''))
+    md('README.md','''# FedOnGas Phase3.3R：Flower原生兼容与合成网络验收
+
+**Native Flower调度PASS、受控localhost通信PASS、算法/数据合同保持不变。SOURCE attempt2具备重新申请授权条件，但未授权、未启动；六组pilot仍全部BLOCKED_NO_SSTAR。** 基于Phase3.2固定b0c7a5cabfec3a41b40cdf67fc0802b67103a3ed及Phase3.3失败固定41bcbba60a4b0b167182efc9e14873fdecd29f33。
+
+独立研究版本新增runtime.py/contract.py，不覆盖旧文件。仅把configure_fit/aggregate_fit公开参数改回Flower规范名称，并在内部使用原局部别名；另把canonical源输入/初始锁指向只读Phase32，授权与输出留在新版本。REPAIR_DIFF及AST回归证明训练/聚合/EMA/DA/损失/预算函数保持不变。
+
+|验收项|结果|
+|---|---|
+|签名/Signature.bind|修复前2失败，修复后3测试通过；全部调度回调矩阵已核对|
+|原生网络两轮|真正server+两个client，Server.fit_round原生keyword configure、FitIns/合成fit/FitRes/aggregate/下一轮全state接收均通过|
+|模型/初始state|原TCN50×8、4类、64D；同注册随机初始SHA，未重生成|
+|预算|固定两轮合成网络316优化步/5040呈现；另轻量unit53合成步；不是正式SOURCE25轮|
+|真实输入|真实源数值/目标数据读取0，进程审计拒绝真实npy/npz/raw；无SOURCE授权|
+|网络权限|默认沙箱connect10013仍在；批准的普通用户宿主localhost8080成功；未改防火墙/端口，无管理员令牌|
+|退出/资源|3进程exit0，正常断开，8080可重新bind|
+|attempt1与未来|失败现场42制品及旧代码未覆盖；attempt2仅预注册，独立输出/新代码及环境SHA|
+
+阅读：[修复与回归](REPAIR_AND_REGRESSION.md) → [网络验收](NATIVE_NETWORK_REPORT.md) → [权限环境](NETWORK_PERMISSION.md) → [SOURCE恢复计划](SOURCE_ATTEMPT2_PLAN.md) → [门禁](NEXT_DECISION.md)。完整参数SOURCE_ATTEMPT2_REGISTRATION及ENVIRONMENT_LOCK，指纹/成本NETWORK_VERSION_CHAIN和FINAL_VERIFICATION。
+''')
+    md('REPAIR_AND_REGRESSION.md','''# 最小修复及回归
+
+runtime.py的configure_fit(self,server_round,parameters,client_manager)内部增加rnd/params/manager别名，aggregate_fit(self,server_round,results,failures)内部增加rnd别名；原body逐AST相同。已安装Flower1.23对configure使用keyword，对aggregate实际使用位置参数，两种公共keyword绑定均支持。继承的initialize_parameters、configure/aggregate_evaluate、evaluate和client get_parameters/get_properties/fit/evaluate逐项inspect/Signature.bind核验，客户端evaluate仍拒绝训练期评价。
+
+新contract只增加canonical只读根：数据/Source身份/随机祖先锁仍来自Phase32，未来授权文件则在本版本根目录。S*来源检查要求本版本runtime/contract SHA和完整25轮源receipt/checkpoint，不接受旧代码来源伪装。原Phase32 runtime、旧授权、Phase33 attempt1现场均未改写。
+
+复用原11个轻量unit的原字节副本，作用于新模块，加3个callback测试共14通过；保留修复前keyword红测。测试覆盖50×8/4类/64D、完整随机state、预算篡改/unknown输入失败、固定目标sampler、rawdtype、精确classstats与protoSHA等。只新增53个Tiny合成unit更新，不重跑原12500步矩阵。AST核对SOURCE科学spec、目标loader、DA/聚合/反馈和统计body不变；B3/B4除group身份仅feedback，B4/B5除身份仅selective，SOURCE仍仅client1/2。
+
+网络验收另走原生Server.fit_round，不以这些unit的直接调用替代。既有数值实现来自v5已校验源SHA。历史真实数值文件未为“验证”而重新打开；旧manifest/非数值payload和失败现场哈希核对，数值payload由只读路径与历史锁保留，不宣称本轮完整重哈希数值输入。
+''')
+    md('NATIVE_NETWORK_REPORT.md',f'''# 原生Flower两轮网络验收
+
+测试P33R-NET-SYNTH-S42-R2，固定127.0.0.1:8080，server与两个独立client进程。使用原TCN和注册随机state，客户端只在内存生成840/1680个50×8合成输入；不调用runtime.main/input_pools、不使用SOURCE授权。固定2轮、原CE/Adam5e-4、batch16，每轮1epoch。总316合成step、5040呈现，三进程均exit0；总墙钟{done['wall_seconds']:.3f}秒，仅是该合成网络测试，不估计真实源训练速度。
+
+server/events.jsonl逐轮记录真实Server.fit_round调用栈；configure收到真实keyword client_manager/parameters/server_round，返回两个FitIns；aggregate收到两个真实FitRes。client日志含train/reconnect消息及正常Disconnect/shutdown。下一轮received SHA等于前轮returned，上传SHA与服务器收据一致。参数按840/1680加权；源样本数不由重复呈现膨胀。
+
+完整state载荷144692B；两轮FitIns protobuf总621220B，FitRes总624300B（包括字段/metadata），不是TCP/TLS wire量。NETWORK_VERSION_CHAIN保留每个client/round fullstate SHA，原始native收据留本地。测试checkpoint位于network_smoke_01命名空间、run_name为合成测试ID且model_config标synthetic_only；没有正式SOURCE checkpoint、SSTAR或source_attempt2目录。
+
+每个进程在runtime导入之前安装numeric文件审计，所有npy/npz及dataset/data1 raw文件访问均拒绝；实际没有触发，成功真实数值读取0。随机初始模型权重读取是本轮明确允许的模型合同验证，不是读取真实气体数据。除固定两轮外不自动追加网络轮数。三个进程退出后在同8080再次bind成功，记录资源释放。
+''')
+    md('NETWORK_PERMISSION.md','''# 网络权限与执行环境合同
+
+默认沙箱：同一127.0.0.1:8080可bind，但connect返回Socket10013，本轮一字节无模型诊断再次确认。不能从bind成功推断可握手，默认沙箱不可用于SOURCE网络执行。
+
+本轮按用户授权在允许localhost的宿主执行上下文运行合成test；仍为同一用户，IsUserAnAdmin=False，无UAC管理员令牌，地址固定127.0.0.1:8080，不监听0.0.0.0。没有修改防火墙、扫描或更换端口、安装新服务或改变模型/数据权限。宿主访问许可来自本次明确合成网络授权，不等于真实SOURCE授权。
+
+ENVIRONMENT_LOCK保存Python3.12.4可执行文件SHA、Flower1.23.0、gRPC1.76.0、Torch2.5.1及numpy/scipy/sklearn/psutil版本、Windows版本、匿名化用户哈希、线程/环境变量和实际代码SHA。网络进程身份、argv、退出及真实bind/connect/资源释放记录在network_smoke_01；一字节默认诊断只界定权限，不替代原生Flower验收。
+
+未来SOURCE必须在同等允许localhost的受控环境、同版本与固定端口核验通过后执行。不能用关闭防火墙、额外提升权限或任意换端口来绕过预检。端口占用就BLOCKED，不自动改地址。
+''')
+    md('SOURCE_ATTEMPT2_PLAN.md','''# SOURCE attempt2预注册（未授权、未执行）
+
+新ID P33R-SOURCE-DAY7-S42-ATTEMPT2。科学spec与原730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7完全相同：C1Day4、C2Day1/7，120暴露/2520窗，source1/2分别840/1680，seed42，25轮、各1epoch、batch16、Adam5e-4，3950源步/63000呈现，纯FedAvg。新runtime/contract SHA和完整ENVIRONMENT_LOCK绑定在SOURCE_ATTEMPT2_REGISTRATION。
+
+继续使用原注册SOURCE_RANDOM_INITIAL.pth与其原lock，完整state SHAa935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7；不重新生成、不加载旧已训练分类权重。canonical只读源数据/身份仍在Phase32，不复制或打开目标数值。未来SOURCE input_pools仍只枚举1/2。输出固定本版本source_attempt2/server、client_1、client_2，当前不存在；原attempt1目录与授权文件保留。
+
+三条真实runtime argv数组已预注册，可用原生server/client action；--spec/--checkpoint/--checkpoint-lock/--output/--address/--client-id均为已实现CLI。注册的server argv已在无新授权时实际解析并被PermissionError拒绝，尚未加载输入或启动网络。生产主入口不经过synthetic network.py。
+
+必须在下一轮单独批准后，在本版本根目录新建TRAINING_AUTHORIZATION.json并记录新批准事件（实验ID、runtime/contract/env SHA、attempt2、限定SOURCE）。payload仍沿用两字段approved_spec_sha256与purpose=SOURCE，科学spec SHA相同不代表旧批准可复用。当前只读Phase32中已消费的同名文件不会被新runtime查询；不得把旧文件复制过来冒充新批准。未批准前不能运行任何SOURCE/target/pilot。
+
+未来源run保存25轮checkpoint/receipt和最终SSTAR锁，验证新代码SHA、同随机祖先/源身份及每轮返回链，然后固定合法源输入做恢复一致性；本轮没有这些真实训练证据。native旧run_name字符串P32-SOURCE仅是保留的内部标签，实际身份以新注册ID、独立目录、attempt号和代码/环境SHA为准，不能让attempt1看似成功。
+''')
+    md('NEXT_DECISION.md','''# 最终门禁
+
+- Native Flower调度：PASS，真实两轮、两client及实际Server.fit_round。
+- localhost网络：批准的普通用户宿主环境PASS；默认沙箱仍BLOCKED10013。
+- 算法和数据合同：保持；只修回调名字和版本/只读路径，不改模型、目标函数、预算、初始state或源身份。
+- SOURCE attempt2：具备重新申请一次独立授权的条件，未授权、未执行。
+- 六组pilot：继续全部BLOCKED_NO_SSTAR，不自动启动或扩72分支。
+
+下一轮必须先明确批准attempt2及新runtime/environment/输出合同，再执行一次SOURCE；本轮不创建授权，不复用已消费旧授权。只有真实25轮S*来源和恢复验收闭合后，才另行决定C5A4六组。合成网络PASS不证明真实源模型已经训练、收敛或取得准确率，也不等于六组已获授权。
+
+Phase33 attempt1完整失败证据保留；旧Phase32/Phase33报告及制品不覆盖。未来Test仅最终端点锁定后离线评价，C3历史保持/C4回顾性语义不变。
+''')
+    print('FINALPASS_NATIVE_NETWORK;ATTEMPT2_READY_FOR_APPROVAL_ONLY;PILOTSBLOCKED',flush=True)
+if __name__=='__main__':main()

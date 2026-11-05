@@ -1,0 +1,167 @@
+"""Thin Phase3 entry: original models/Client/Flower/DA, strict new contracts."""
+import sys,os,json,copy,argparse,importlib,time
+from pathlib import Path
+import contract as c
+import numpy as np
+BASE=c.prior.BASE/'source/workspace';sys.path.insert(0,str(BASE))
+for rel in ['config.py','model.py','utils.py','client.py','federated_dataset.py','gaps_flower/task.py','gaps_flower/client_app.py','gaps_flower/strategy.py','gaps_flower/domain_adaptation.py','gaps_flower/domain_adaptation_inputs.py']:c.prior.path(rel)
+import torch,flwr as fl
+from torch.utils.data import DataLoader,TensorDataset
+from gaps_flower import task
+from gaps_flower.client_app import GapsFlowerClient
+from gaps_flower.strategy import GapsStrategy,CheckpointFedAvg,weighted_average
+from gaps_flower.domain_adaptation_inputs import load_domain_adaptation_arrays
+from client import Client
+from flwr.common import ndarrays_to_parameters,parameters_to_ndarrays,serde
+
+def config(stats=False):
+    q=task.make_config(device='cpu',local_epochs=1,batch_size=16,profile='ce_only',seed=42,num_classes=4,input_dim=8,num_clients=6,num_phases=3)
+    q.SEQ_LEN=50;q.UPLOAD_PROTO_STATS=stats
+    if any([q.USE_ALIGN,q.USE_REPLAY_DISTILL,q.USE_PROTO_DECOUPLING,q.USE_REG_LOSS,q.USE_SENSOR_AUG,q.USE_DP]):raise ValueError('unexpected auxiliary objective')
+    return q
+def model():return task.create_model(config())
+def arrays(m):return task.get_parameters(m)[0]
+def encoder_sha(m):return c.digest([v.detach().cpu().numpy() for k,v in m.state_dict().items() if not k.startswith('classifier.')])
+def strict_arrays(m,aa):
+    state=list(m.state_dict().values())
+    if len(aa)!=len(state):raise ValueError('state tensor count')
+    for v,a in zip(state,aa):
+        if tuple(v.shape)!=tuple(a.shape) or v.detach().cpu().numpy().dtype!=a.dtype or not np.isfinite(a).all():raise ValueError('state schema or finite mismatch')
+def validate_state(m,state):
+    reference=m.state_dict()
+    if set(state)!=set(reference):raise ValueError('unknown model state keys')
+    for k,v in reference.items():
+        t=state[k]
+        if not torch.is_tensor(t) or t.shape!=v.shape or t.dtype!=v.dtype or not torch.isfinite(t).all():raise ValueError('raw state schema/dtype/finite mismatch')
+def validate_stats(metrics,n):
+    if metrics.get('prototype_content_sha')!=__import__('hashlib').sha256(metrics.get('prototype_json','').encode()).hexdigest():raise ValueError('prototype content receipt mismatch')
+    protos=json.loads(metrics.get('prototype_json','{}'));counts=json.loads(metrics.get('class_phase_counts_json','{}'));var=json.loads(metrics.get('prototype_var_json','{}'))
+    keys={f'{g},0' for g in range(4)}
+    if set(protos)!=keys or set(counts)!=keys or set(var)!=keys or any(type(v)!=int or v!=n//4 for v in counts.values()):raise ValueError('class stats identity/counts')
+    for v in list(protos.values())+list(var.values())+[json.loads(metrics.get('global_feature_json','[]'))]:
+        if np.asarray(v).shape!=(64,) or not np.isfinite(v).all():raise ValueError('stats feature/variance contract')
+    if any((np.asarray(v)<0).any() for v in var.values()):raise ValueError('negative variance')
+def load_checkpoint(m,path,lock,kind):
+    c.checkpoint_manifest(path,lock,kind)
+    ck=torch.load(path,map_location='cpu',weights_only=True)
+    if set(ck)!={'model_state','kind','seed','source_identity_sha256'} or ck['kind']!=kind or ck['seed']!=42 or ck['source_identity_sha256']!=c.source_identity_sha():raise ValueError('checkpoint container')
+    validate_state(m,ck['model_state']);m.load_state_dict(ck['model_state'],strict=True);strict_arrays(m,arrays(m))
+    if kind=='sstar' and c.digest(arrays(m))!=lock['round_receipts'][-1]['returned']:raise ValueError('checkpoint endpoint mismatch')
+    if kind=='random_source' and c.digest(arrays(m))!=lock['initial_sha256']:raise ValueError('random initial state mismatch')
+    return m
+def dataset(a):
+    x,y,p=a;return TensorDataset(torch.from_numpy(x),torch.from_numpy(y),torch.zeros(len(y),4),torch.from_numpy(p))
+def input_pools(s):
+    c.validate_spec(s);pools={}
+    ids=[1,2] if s['group']=='SOURCE' else [1,2,5]
+    for cid in ids:
+        root=c.DATA_ROOT/('target' if cid==5 else 'source')/f'client_{cid}'
+        pools[cid]=dataset(c.validate_package(root,dict(client_id=cid)))
+    return pools
+def source_loader(ds,seed=42):return DataLoader(ds,batch_size=16,shuffle=True,drop_last=False,generator=torch.Generator().manual_seed(seed),num_workers=0)
+
+class PhaseClient(GapsFlowerClient):
+    def __init__(self,cid,s,initial,ds,out):
+        c.validate_spec(s)
+        if cid not in (s['source_clients']+([5] if s['group']=='B2' else [5] if s['group']=='B1' else [])):raise ValueError('client role not registered')
+        self.s=s;self.client_id=cid;self.seed=42;self.profile=self.canonical_profile='ce_only';self.config=config(s['stats_upload']);self.model=initial;self.parameter_keys=list(initial.state_dict());self.train_samples=len(ds);self.last_server_state=None;self.ds=ds;self.audit=[];self.receipts=[];self.out=Path(out);self.out.mkdir(parents=True,exist_ok=True)
+        self.gaps_client=Client(cid,self.config);self.gaps_client.model=self.model;self.gaps_client.train_loader=source_loader(ds);self.next_round=1
+    def evaluate(self,*a,**k):raise PermissionError('training evaluation is disabled;Test/Dev never mounted')
+    def fit(self,parameters,config):
+        parameters=[a.copy() for a in parameters]
+        rnd=int(config.get('server_round',0))
+        if rnd!=self.next_round or rnd not in range(1,26):raise ValueError('round/version mismatch')
+        strict_arrays(self.model,parameters)
+        if c.digest(parameters)!=config.get('expected_received_sha'):raise ValueError('broadcast SHA mismatch')
+        if self.client_id==5:self.gaps_client.train_loader=c.target_loader(self.ds,rnd,self.audit)
+        else:self.gaps_client.train_loader=source_loader(self.ds,42+rnd)
+        start=len(self.audit);aa,n,metrics=super().fit(parameters,config)
+        received=c.digest(parameters);uploaded=c.digest(aa);enc=encoder_sha(self.model)
+        if self.client_id==5 and (len(self.audit)-start!=100 or sum(r['rows'] for r in self.audit[start:])!=1600):raise ValueError('target actual budget mismatch')
+        metrics.update(received_sha=received,uploaded_sha=uploaded,prototype_encoder_sha=enc,uploaded_encoder_sha=enc,prototype_content_sha=c.sha_json(metrics.get('prototype_json','')) if hasattr(c,'sha_json') else __import__('hashlib').sha256(metrics.get('prototype_json','').encode()).hexdigest())
+        self.receipts.append(dict(round=rnd,received=received,uploaded=uploaded,encoder=enc,num_examples=n,prototype_sha=metrics['prototype_content_sha'],prototype_encoder=enc))
+        c.write(self.out/f'receipt_{rnd:03}.json',self.receipts[-1]);c.write(self.out/f'target_indices_{rnd:03}.json',self.audit[start:] if self.client_id==5 else [])
+        self.next_round+=1;return aa,n,metrics
+
+class ReceiptMixin:
+    def configure_fit(self,server_round,parameters,client_manager):
+        rnd,params,manager=server_round,parameters,client_manager
+        self.broadcast=c.digest(parameters_to_ndarrays(params))
+        if rnd!=len(self.receipts)+1 or rnd not in range(1,26) or self.broadcast!=(self.receipts[-1]['returned'] if self.receipts else self.initial_state_sha):raise ValueError('server distribution chain mismatch')
+        fits=super().configure_fit(rnd,params,manager)
+        for proxy,ins in fits:ins.config.update(server_round=rnd,expected_received_sha=self.broadcast)
+        self.protobuf_down=sum(serde.fit_ins_to_proto(ins).ByteSize() for _,ins in fits)
+        return fits
+    def aggregate_fit(self,server_round,results,failures):
+        rnd=server_round
+        if failures:raise ValueError('client failure;no partial aggregation')
+        want=[1,2,5] if self.s['group']=='B2' else [1,2]
+        ordered=sorted(results,key=lambda r:int(r[1].metrics.get('client_id',-1)))
+        if [int(r.metrics.get('client_id',-1)) for _,r in ordered]!=want:raise ValueError('unexpected participants')
+        samples=[]
+        for _,r in ordered:
+            cid=int(r.metrics['client_id']);aa=parameters_to_ndarrays(r.parameters);strict_arrays(self.schema_model,aa)
+            if r.num_examples!={1:840,2:1680,5:32}[cid] or r.metrics.get('received_sha')!=self.broadcast or r.metrics.get('uploaded_sha')!=c.digest(aa):raise ValueError('upload identity/version/weight')
+            if self.s['stats_upload']:
+                validate_stats(r.metrics,r.num_examples)
+                task.set_parameters(self.schema_model,aa,self.parameter_keys)
+                if r.metrics.get('prototype_encoder_sha')!=encoder_sha(self.schema_model) or r.metrics.get('uploaded_encoder_sha')!=encoder_sha(self.schema_model):raise ValueError('stale prototype encoder')
+            samples.append(r.num_examples)
+        params,metrics=super().aggregate_fit(rnd,ordered,failures);returned=c.digest(parameters_to_ndarrays(params))
+        self.receipts.append(dict(round=rnd,received=self.broadcast,returned=returned,clients=want,samples=samples,uploads=[r.metrics['uploaded_sha'] for _,r in ordered],prototype_encoder=[r.metrics.get('prototype_encoder_sha') for _,r in ordered],state_payload_up=sum(sum(a.nbytes for a in parameters_to_ndarrays(r.parameters)) for _,r in ordered),state_payload_down=len(want)*sum(a.nbytes for a in parameters_to_ndarrays(params)),protobuf_fit_up=sum(serde.fit_res_to_proto(r).ByteSize() for _,r in ordered),protobuf_fit_down=self.protobuf_down))
+        self.receipts[-1].update(checkpoint_sha256=c.sha(self.output_dir/f'server_round_{rnd:03}.pth'),entry_sha256=c.sha(Path(__file__)),contract_sha256=c.sha(c.HERE/'contract.py'))
+        c.write(self.output_dir/f'phase32_receipt_{rnd:03}.json',self.receipts[-1])
+        return params,metrics
+class PhaseFedAvg(ReceiptMixin,CheckpointFedAvg):pass
+class PhaseGaps(ReceiptMixin,GapsStrategy):
+    def _build_da_model(self,state,device):
+        m=copy.deepcopy(self.template).to(device);m.load_state_dict(state,strict=True);return m
+    def _init_domain_adapt_loaders(self):
+        self._val_loader=c.RecordedLoader(source_loader(self.source_ds,42+self.current_round),self.source_audit,self.current_round)
+        self._calib_loader=c.target_loader(self.target_ds,self.current_round,self.target_audit)
+    def _run_domain_adapt(self,rnd,state,aa,results,weights):
+        self.current_round=rnd;start=len(self.target_audit);ss=len(self.source_audit)
+        # Native reset_round_state refreshes model/optimizer. Refreshing loaders
+        # each round binds the registered target block without changing the loop.
+        self._init_domain_adapt_loaders()
+        if self._da_trainer is not None:self._da_trainer.val_loader=self._val_loader;self._da_trainer.calib_loader=self._calib_loader
+        result=super()._run_domain_adapt(rnd,state,aa,results,weights)
+        used=self.target_audit[start:]
+        if len(used)!=100 or sum(r['rows'] for r in used)!=1600:raise ValueError('DA actual target budget')
+        c.write(self.output_dir/f'phase32_DA_indices_{rnd:03}.json',dict(target=used,source=self.source_audit[ss:]))
+        return result
+def strategy(s,initial,pools,out):
+    c.validate_spec(s);state=initial.state_dict();keys=list(state)
+    kw=dict(parameter_keys=keys,reference_state=state,output_dir=str(out),run_name='P32-'+s['group'],model_config=dict(seq_len=50,input_dim=8,num_classes=4,num_phases=3,profile='ce_only'),fraction_fit=1.,fraction_evaluate=0.,min_fit_clients=3 if s['group']=='B2' else 2,min_evaluate_clients=0,min_available_clients=3 if s['group']=='B2' else 2,initial_parameters=ndarrays_to_parameters(arrays(initial)),fit_metrics_aggregation_fn=weighted_average,accept_failures=False)
+    if s['server_DA']:
+        st=PhaseGaps(**kw,use_domain_adapt=False,use_selective_agg=s['selective'],use_adapted_as_global=s['feedback'],proto_ema_alpha=.8,selective_warmup=3,selective_min_scale=.3,use_proto_mmd=False,domain_adapt_steps=100,domain_adapt_warmup=0,da_use_coral=False,da_use_mmd=False,da_use_adversarial=False,da_use_align_reg_legacy=False,da_lambda_target_ce=1.,da_server_opt_lr=.0005,**{k:0. for k in ['da_lambda_coral','da_lambda_global_mmd','da_lambda_class_mmd','da_lambda_proto_anchor','da_lambda_adv','da_lambda_proto','da_lambda_consistency','da_lambda_residual','da_lambda_proto_mmd','da_lambda_stage_mmd','da_lambda_align_reg_legacy']})
+        st.use_domain_adapt=True;st.source_ds=torch.utils.data.ConcatDataset([pools[1],pools[2]]);st.target_ds=pools[5];st.template=copy.deepcopy(initial);st.target_audit=[];st.source_audit=[]
+    else:st=PhaseFedAvg(**kw)
+    st.s=s;st.schema_model=copy.deepcopy(initial);st.receipts=[];st.initial_state_sha=c.digest(arrays(initial));return st
+
+def effective(s):
+    c.validate_spec(s);return dict(spec=s,config=vars(config(s['stats_upload'])),model='archived FedGasBaseModel TCN-Attention64D',target_sampler_sha=None if s['group']=='SOURCE' else c.sha(c.P31/'binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv'),source_identity_sha=c.source_identity_sha(),server_source_pool=2520,server_batch16=True,server_MAX_VAL_BATCHES=10,server_extra_source_forward=True,callbacks='fraction_evaluate0;client evaluate raises',model_initialization=s['initialization'])
+def main():
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['plan','server','client','target']);p.add_argument('--spec',required=True);p.add_argument('--checkpoint');p.add_argument('--checkpoint-lock');p.add_argument('--client-id',type=int);p.add_argument('--output',required=True);p.add_argument('--address',default='127.0.0.1:8080');a=p.parse_args()
+    s=c.validate_spec(c.read(a.spec));out=Path(a.output)
+    if a.action=='plan':c.write(out,effective(s));return
+    # Commands exist; this guard requires a separately supplied post-review token.
+    approval=c.HERE/'TRAINING_AUTHORIZATION.json'
+    if not approval.exists() or c.read(approval)!={'approved_spec_sha256':c.sha(a.spec),'purpose':s['group']}:raise PermissionError('No training authorization for this spec;preflight only')
+    pools=input_pools(s);initial=load_checkpoint(model(),a.checkpoint,c.read(a.checkpoint_lock),'random_source' if s['group']=='SOURCE' else 'sstar');out.mkdir(parents=True,exist_ok=False);c.write(out/'effective_config.json',effective(s))
+    if a.action=='server':
+        if s['group']=='B1':raise ValueError('B1 uses target action')
+        st=strategy(s,initial,pools,out);fl.server.start_server(server_address=a.address,config=fl.server.ServerConfig(num_rounds=25),strategy=st)
+        if s['group']=='SOURCE':
+            ck=out/'SSTAR.pth'
+            final=torch.load(out/'server_round_025.pth',map_location='cpu',weights_only=True)['model_state'];torch.save(dict(model_state=final,kind='sstar',seed=42,source_identity_sha256=c.source_identity_sha()),ck)
+            c.write(out/'SSTAR_LOCKED.json',dict(kind='sstar',sha256=c.sha(ck),source_identity_sha256=c.source_identity_sha(),seed=42,shape=[50,8],labels=s['labels'],initial_sha256=c.digest(arrays(initial)),round_receipts=st.receipts))
+    elif a.action=='client':
+        if a.client_id not in pools:raise ValueError('unknown client')
+        fl.client.start_numpy_client(server_address=a.address,client=PhaseClient(a.client_id,s,initial,pools[a.client_id],out))
+    else:
+        if s['group']!='B1':raise ValueError('target-only action limited to B1')
+        client=PhaseClient(5,s,initial,pools[5],out);aa=arrays(initial)
+        for rnd in range(1,26):aa,_,_=client.fit(aa,dict(server_round=rnd,expected_received_sha=c.digest(aa)))
+        torch.save(dict(model_state=client.model.state_dict(),spec=s),out/'target_update_2500.pth')
+if __name__=='__main__':main()

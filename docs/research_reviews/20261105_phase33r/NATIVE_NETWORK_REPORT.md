@@ -1,0 +1,9 @@
+# 原生Flower两轮网络验收
+
+测试P33R-NET-SYNTH-S42-R2，固定127.0.0.1:8080，server与两个独立client进程。使用原TCN和注册随机state，客户端只在内存生成840/1680个50×8合成输入；不调用runtime.main/input_pools、不使用SOURCE授权。固定2轮、原CE/Adam5e-4、batch16，每轮1epoch。总316合成step、5040呈现，三进程均exit0；总墙钟24.931秒，仅是该合成网络测试，不估计真实源训练速度。
+
+server/events.jsonl逐轮记录真实Server.fit_round调用栈；configure收到真实keyword client_manager/parameters/server_round，返回两个FitIns；aggregate收到两个真实FitRes。client日志含train/reconnect消息及正常Disconnect/shutdown。下一轮received SHA等于前轮returned，上传SHA与服务器收据一致。参数按840/1680加权；源样本数不由重复呈现膨胀。
+
+完整state载荷144692B；两轮FitIns protobuf总621220B，FitRes总624300B（包括字段/metadata），不是TCP/TLS wire量。NETWORK_VERSION_CHAIN保留每个client/round fullstate SHA，原始native收据留本地。测试checkpoint位于network_smoke_01命名空间、run_name为合成测试ID且model_config标synthetic_only；没有正式SOURCE checkpoint、SSTAR或source_attempt2目录。
+
+每个进程在runtime导入之前安装numeric文件审计，所有npy/npz及dataset/data1 raw文件访问均拒绝；实际没有触发，成功真实数值读取0。随机初始模型权重读取是本轮明确允许的模型合同验证，不是读取真实气体数据。除固定两轮外不自动追加网络轮数。三个进程退出后在同8080再次bind成功，记录资源释放。

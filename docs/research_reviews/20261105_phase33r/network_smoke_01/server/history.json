@@ -1,0 +1,67 @@
+{
+  "run_name": "P33R-NET-SYNTH-S42-R2",
+  "rounds": [
+    {
+      "round": 1,
+      "run_name": "P33R-NET-SYNTH-S42-R2",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 11.472364733335175,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\network_smoke_01\\server\\client_stats_round_001.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\network_smoke_01\\server\\prototype_stats_round_001.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\network_smoke_01\\server\\server_round_001.pth"
+    },
+    {
+      "round": 2,
+      "run_name": "P33R-NET-SYNTH-S42-R2",
+      "fit_clients": 2,
+      "fit_failures": 0,
+      "fit_metrics": {
+        "align_enabled": 0.0,
+        "fit_seconds": 1.4579306666661676,
+        "has_prev_model": 0.0,
+        "local_epochs": 1.0,
+        "num_examples": 1400.0,
+        "proto_decoupling_enabled": 0.0,
+        "proto_stats_uploaded": 0.0,
+        "received_global_prototypes": 0.0,
+        "replay_distill_enabled": 0.0,
+        "seed": 42.0,
+        "train_samples": 1400.0,
+        "use_align": 0.0,
+        "use_proto_decoupling": 0.0,
+        "use_replay_distill": 0.0
+      },
+      "aggregation_method": "fedavg",
+      "client_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\network_smoke_01\\server\\client_stats_round_002.json",
+      "prototype_stats": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\network_smoke_01\\server\\prototype_stats_round_002.json",
+      "global_feature_summary": {},
+      "prototype_summary": {
+        "num_global_prototypes": 0,
+        "num_global_proto_vars": 0
+      },
+      "checkpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\network_smoke_01\\server\\server_round_002.pth"
+    }
+  ]
+}

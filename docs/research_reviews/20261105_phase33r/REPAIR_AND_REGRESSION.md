@@ -1,0 +1,9 @@
+# 最小修复及回归
+
+runtime.py的configure_fit(self,server_round,parameters,client_manager)内部增加rnd/params/manager别名，aggregate_fit(self,server_round,results,failures)内部增加rnd别名；原body逐AST相同。已安装Flower1.23对configure使用keyword，对aggregate实际使用位置参数，两种公共keyword绑定均支持。继承的initialize_parameters、configure/aggregate_evaluate、evaluate和client get_parameters/get_properties/fit/evaluate逐项inspect/Signature.bind核验，客户端evaluate仍拒绝训练期评价。
+
+新contract只增加canonical只读根：数据/Source身份/随机祖先锁仍来自Phase32，未来授权文件则在本版本根目录。S*来源检查要求本版本runtime/contract SHA和完整25轮源receipt/checkpoint，不接受旧代码来源伪装。原Phase32 runtime、旧授权、Phase33 attempt1现场均未改写。
+
+复用原11个轻量unit的原字节副本，作用于新模块，加3个callback测试共14通过；保留修复前keyword红测。测试覆盖50×8/4类/64D、完整随机state、预算篡改/unknown输入失败、固定目标sampler、rawdtype、精确classstats与protoSHA等。只新增53个Tiny合成unit更新，不重跑原12500步矩阵。AST核对SOURCE科学spec、目标loader、DA/聚合/反馈和统计body不变；B3/B4除group身份仅feedback，B4/B5除身份仅selective，SOURCE仍仅client1/2。
+
+网络验收另走原生Server.fit_round，不以这些unit的直接调用替代。既有数值实现来自v5已校验源SHA。历史真实数值文件未为“验证”而重新打开；旧manifest/非数值payload和失败现场哈希核对，数值payload由只读路径与历史锁保留，不宣称本轮完整重哈希数值输入。

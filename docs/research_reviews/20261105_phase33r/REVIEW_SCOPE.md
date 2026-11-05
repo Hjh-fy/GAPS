@@ -1,0 +1,9 @@
+# 外部审阅范围
+
+本包是Phase3.3R最小Flower兼容修复/两轮合成网络/执行合同证据，不是SOURCE attempt2训练结果。可审阅新runtime/contract完整源码、最小diff、callback红绿测试与矩阵、复用11unit的字节来源、原生server/client完整日志、每轮state/protobuf收据、网络权限/身份环境、新模块导入检查、attempt2真实argv和独立授权边界。
+
+原生network_smoke_01真走Server.fit_round和网络，不是位置调用回调替代；测试初始化为原注册TCN随机state，所有训练输入为内存合成数据，316合成优化步/5040呈现。无真实源或目标数值读取，另轻量unit53合成步。三个process正常关闭、固定8080释放。默认沙箱10013仍在；批准的普通用户宿主localhost环境通过，不改防火墙/端口/管理员权限。
+
+本地82制品包含合成checkpoint与负测试fixture，公开省略全部pth/npy/npz等二进制。没有正式SOURCE checkpoint/Sstar/授权；原始输入、旧初始权重、v5/ZIP不上传。ARTIFACT_SHA256是本地完整清单，PUBLICATION_MANIFEST区分原SHA/脱敏后SHA。源码别名RESEARCH_WORKTREE/FROZEN_BASELINE_V5/PYTHON_ENV需要本地私有资产恢复，不是独立训练包。
+
+未来SOURCE attempt2仍需单独批准；必须使用execution_environment.clean_environment清除旧观察器/import变量，并先新进程验证模块路径。旧SOURCE科学specSHA相同不代表旧已消费授权可复用。六组pilot仍缺合法Sstar且未获授权，不能因本网络PASS而自动串联。

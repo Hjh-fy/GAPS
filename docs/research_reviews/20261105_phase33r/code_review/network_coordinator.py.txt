@@ -1,0 +1,37 @@
+"""Fixed synthetic network budget;no SOURCE authorization or runtime main calls."""
+import sys,os,socket,time,subprocess,json
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;sys.path.insert(0,str(HERE));import contract as c
+def main():
+    assert not(HERE/'TRAINING_AUTHORIZATION.json').exists()
+    contract=c.read(HERE/'SYNTHETIC_NETWORK_CONTRACT.json');assert contract['rounds']==2 and contract['expected_steps']==316 and contract['address']=='127.0.0.1:8080'
+    run=HERE/'network_smoke_01';run.mkdir(exist_ok=False)
+    s=socket.socket();s.bind(('127.0.0.1',8080));s.close()
+    c.write(run/'START.json',dict(experiment=contract['experiment_id'],rounds=2,roles=['server','client_1','client_2'],host_environment_approved=True,source_authorization_used=False))
+    env=os.environ.copy();env.pop('PYTHONPATH',None);env.pop('FEDONGAS_SOURCE_OBSERVER',None)
+    env.update(PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8',PYTHONUNBUFFERED='1',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1')
+    procs=[];logs=[];start=time.perf_counter()
+    try:
+        for role in ['server','client_1','client_2']:
+            f=(run/(role+'.log')).open('xb');logs.append(f);argv=[sys.executable,str(HERE/'network.py'),role]
+            p=subprocess.Popen(argv,cwd=c.ROOT,env=env,stdout=f,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0));procs.append((role,p,argv))
+        c.write(run/'PROCESSES.json',[dict(role=x,pid=p.pid,argv=a) for x,p,a in procs])
+        while any(p.poll() is None for _,p,_ in procs):
+            if any(p.poll() is not None and p.returncode!=0 for _,p,_ in procs):raise RuntimeError('synthetic process failed;preserve no automatic retry')
+            if time.perf_counter()-start>300:raise TimeoutError('fixed5min synthetic ceiling')
+            time.sleep(.2)
+        codes={role:p.wait() for role,p,_ in procs};assert all(x==0 for x in codes.values()),codes
+        # A successful native disconnect and bind after exit establish release.
+        sock=socket.socket();sock.bind(('127.0.0.1',8080));sock.close()
+        c.write(run/'COMPLETE.json',dict(status='PASS_NATIVE_NETWORK',codes=codes,wall_seconds=time.perf_counter()-start,port8080_released=True,formal_SOURCE_attempts=0,synthetic_rounds=2))
+    except BaseException:
+        import traceback
+        for _,p,_ in procs:
+            if p.poll() is None:p.terminate()
+        for _,p,_ in procs:
+            try:p.wait(timeout=10)
+            except subprocess.TimeoutExpired:p.kill()
+        c.write(run/'FAILED.json',dict(status='BLOCKED',error=traceback.format_exc(),codes={r:p.poll() for r,p,_ in procs}));raise
+    finally:
+        for f in logs:f.close()
+if __name__=='__main__':main()

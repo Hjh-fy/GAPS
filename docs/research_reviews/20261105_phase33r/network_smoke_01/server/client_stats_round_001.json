@@ -1,0 +1,41 @@
+{
+  "run_name": "P33R-NET-SYNTH-S42-R2",
+  "round": 1,
+  "clients": [
+    {
+      "client_id": 1,
+      "num_examples": 840,
+      "proto_examples": 0,
+      "local_epochs": 1,
+      "fit_seconds": 10.975374000001466,
+      "feature_norm": 0.0,
+      "feature_mean": 0.0,
+      "feature_std": 0.0,
+      "class_phase_counts": {},
+      "prototype_count": 0,
+      "prototype_var_count": 0,
+      "received_global_prototypes": 0,
+      "use_align": 0,
+      "use_replay_distill": 0,
+      "device_residual_norm": 0.0
+    },
+    {
+      "client_id": 2,
+      "num_examples": 1680,
+      "proto_examples": 0,
+      "local_epochs": 1,
+      "fit_seconds": 11.720860100002028,
+      "feature_norm": 0.0,
+      "feature_mean": 0.0,
+      "feature_std": 0.0,
+      "class_phase_counts": {},
+      "prototype_count": 0,
+      "prototype_var_count": 0,
+      "received_global_prototypes": 0,
+      "use_align": 0,
+      "use_replay_distill": 0,
+      "device_residual_norm": 0.0
+    }
+  ],
+  "global_summary": {}
+}

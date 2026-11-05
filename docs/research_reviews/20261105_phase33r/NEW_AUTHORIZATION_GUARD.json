@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "registered_argv_parsed": true,
+  "old_authorization_does_not_unlock_new_version": true,
+  "new_authorization_absent": true,
+  "denied_before_input_pools": true,
+  "process_exit": 1,
+  "stderr": "Traceback (most recent call last):\r\n  File \"RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py\", line 167, in <module>\r\n    if __name__=='__main__':main()\r\n                            ^^^^^^\r\n  File \"RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py\", line 150, in main\r\n    if not approval.exists() or c.read(approval)!={'approved_spec_sha256':c.sha(a.spec),'purpose':s['group']}:raise PermissionError('No training authorization for this spec;preflight only')\r\n                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\r\nPermissionError: No training authorization for this spec;preflight only\r\n",
+  "SOURCE_attempt2_started": false
+}

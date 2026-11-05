@@ -1,0 +1,21 @@
+"""Fresh-process environment recipe for future attempt2;no authorization/training."""
+import os,sys,json,subprocess
+from pathlib import Path
+HERE=Path(__file__).resolve().parent
+REMOVE=['PYTHONPATH','FEDONGAS_SOURCE_OBSERVER','FEDONGAS_ROLE','FEDONGAS_OBSERVER_OUT','FEDONGAS_WORKSPACE','P33R_TEST_MODULE_DIR']
+def clean_environment(base=None):
+    env=dict(os.environ if base is None else base)
+    for key in REMOVE:env.pop(key,None)
+    env.update(PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8',PYTHONUNBUFFERED='1',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1')
+    return env
+def main():
+    # Simulated inherited settings are cleaned in memory, never used to start an
+    # old observer or write into the preserved attempt1 directory.
+    poison=os.environ.copy();poison.update({k:'SIMULATED_OLD_ENV_MUST_NOT_EXECUTE' for k in REMOVE});env=clean_environment(poison)
+    code="import sys,json;from pathlib import Path;sys.path.insert(0,"+repr(str(HERE))+");import runtime as r;h=Path("+repr(str(HERE))+");assert Path(r.__file__).resolve()==h/'runtime.py';assert Path(r.c.__file__).resolve()==h/'contract.py';assert not(h/'TRAINING_AUTHORIZATION.json').exists();print(json.dumps({'runtime':r.__file__,'contract':r.c.__file__,'old_observer_loaded':'sitecustomize' in sys.modules,'new_auth_exists':False,'data_arrays_loaded':False}))"
+    p=subprocess.run([sys.executable,'-c',code],cwd=HERE.parents[1],env=env,capture_output=True)
+    assert p.returncode==0,p.stderr.decode('utf-8',errors='replace')
+    result=json.loads(p.stdout);assert not result['old_observer_loaded']
+    (HERE/'MODULE_IMPORT_PRECHECK.json').write_text(json.dumps(dict(status='PASS',inherited_vars_removed=REMOVE,poisoned_environment_normalized=True,fresh_process=result,training=False),ensure_ascii=False,indent=2),encoding='utf-8')
+    print('CLEAN_ENV_FRESH_MODULE_IMPORT_PASS;NO_SOURCE',flush=True)
+if __name__=='__main__':main()

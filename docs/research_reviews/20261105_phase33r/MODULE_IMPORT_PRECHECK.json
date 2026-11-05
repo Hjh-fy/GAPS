@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "inherited_vars_removed": [
+    "PYTHONPATH",
+    "FEDONGAS_SOURCE_OBSERVER",
+    "FEDONGAS_ROLE",
+    "FEDONGAS_OBSERVER_OUT",
+    "FEDONGAS_WORKSPACE",
+    "P33R_TEST_MODULE_DIR"
+  ],
+  "poisoned_environment_normalized": true,
+  "fresh_process": {
+    "runtime": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+    "contract": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contract.py",
+    "old_observer_loaded": false,
+    "new_auth_exists": false,
+    "data_arrays_loaded": false
+  },
+  "training": false
+}

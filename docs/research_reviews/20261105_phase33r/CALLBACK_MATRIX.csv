@@ -1,0 +1,17 @@
+class_name,callback,signature,keyword_bind,defined_in,native_network_observed
+PhaseFedAvg,configure_fit,"(self, server_round, parameters, client_manager)",PASS,RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\runtime.py,True
+PhaseFedAvg,aggregate_fit,"(self, server_round, results, failures)",PASS,RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\runtime.py,True
+PhaseFedAvg,initialize_parameters,"(self, client_manager: flwr.server.client_manager.ClientManager) -> Optional[flwr.common.typing.Parameters]",PASS,PYTHON_ENV\Lib\site-packages\flwr\server\strategy\fedavg.py,True
+PhaseFedAvg,configure_evaluate,"(self, server_round: int, parameters: flwr.common.typing.Parameters, client_manager: flwr.server.client_manager.ClientManager) -> list[tuple[flwr.server.client_proxy.ClientProxy, flwr.common.typing.EvaluateIns]]",PASS,PYTHON_ENV\Lib\site-packages\flwr\server\strategy\fedavg.py,False
+PhaseFedAvg,aggregate_evaluate,"(self, server_round: 'int', results: 'List[Tuple[ClientProxy, EvaluateRes]]', failures: 'List[BaseException]') -> 'Tuple[Optional[float], dict]'",PASS,FROZEN_BASELINE_V5\source\workspace\gaps_flower\strategy.py,False
+PhaseFedAvg,evaluate,"(self, server_round: int, parameters: flwr.common.typing.Parameters) -> Optional[tuple[float, dict[str, Union[bool, bytes, float, int, str]]]]",PASS,PYTHON_ENV\Lib\site-packages\flwr\server\strategy\fedavg.py,True
+PhaseGaps,configure_fit,"(self, server_round, parameters, client_manager)",PASS,RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\runtime.py,False
+PhaseGaps,aggregate_fit,"(self, server_round, results, failures)",PASS,RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\runtime.py,False
+PhaseGaps,initialize_parameters,"(self, client_manager: flwr.server.client_manager.ClientManager) -> Optional[flwr.common.typing.Parameters]",PASS,PYTHON_ENV\Lib\site-packages\flwr\server\strategy\fedavg.py,False
+PhaseGaps,configure_evaluate,"(self, server_round: int, parameters: flwr.common.typing.Parameters, client_manager: flwr.server.client_manager.ClientManager) -> list[tuple[flwr.server.client_proxy.ClientProxy, flwr.common.typing.EvaluateIns]]",PASS,PYTHON_ENV\Lib\site-packages\flwr\server\strategy\fedavg.py,False
+PhaseGaps,aggregate_evaluate,"(self, server_round: 'int', results: 'List[Tuple[ClientProxy, EvaluateRes]]', failures: 'List[BaseException]') -> 'Tuple[Optional[float], dict]'",PASS,FROZEN_BASELINE_V5\source\workspace\gaps_flower\strategy.py,False
+PhaseGaps,evaluate,"(self, server_round: int, parameters: flwr.common.typing.Parameters) -> Optional[tuple[float, dict[str, Union[bool, bytes, float, int, str]]]]",PASS,PYTHON_ENV\Lib\site-packages\flwr\server\strategy\fedavg.py,False
+PhaseClient,get_parameters,"(self, config)",PASS,FROZEN_BASELINE_V5\source\workspace\gaps_flower\client_app.py,False
+PhaseClient,get_properties,"(self, config: dict[str, typing.Union[bool, bytes, float, int, str]]) -> dict[str, typing.Union[bool, bytes, float, int, str]]",PASS,PYTHON_ENV\Lib\site-packages\flwr\client\numpy_client.py,False
+PhaseClient,fit,"(self, parameters, config)",PASS,RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\runtime.py,True
+PhaseClient,evaluate,"(self, *a, **k)",PASS,RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\runtime.py,False

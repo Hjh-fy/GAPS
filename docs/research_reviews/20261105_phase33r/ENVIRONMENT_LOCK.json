@@ -1,0 +1,51 @@
+{
+  "status": "VALIDATED_FOR_LOCALHOST_NATIVE_NETWORK",
+  "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:03:56) [MSC v.1929 64 bit (AMD64)]",
+  "python_executable": "PYTHON_ENV\\python.exe",
+  "python_binary_sha256": "4e5a83fcdcd12bcb9ae4dc98c5405effe35dc5ac10d89982c6a6a3646493f88a",
+  "packages": {
+    "torch": "2.5.1",
+    "numpy": "1.26.4",
+    "scipy": "1.13.1",
+    "scikit-learn": "1.8.0",
+    "flwr": "1.23.0",
+    "grpcio": "1.76.0",
+    "psutil": "7.0.0"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "host_user_hash": "7b43c1af7a68b1e275378c171136a3f11971bb3998653f9690a72a8d91d121a5",
+  "token_is_admin": false,
+  "required_scope": "approved host process permitting127.0.0.1:8080 bind/connect;no UAC/firewallchanges;no external listeners",
+  "default_sandbox_socket_connect": "10013 observedPhase33;not acceptable training environment",
+  "bind_address": "127.0.0.1:8080",
+  "firewall_changed": false,
+  "port_changed": false,
+  "environment_variables": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUNBUFFERED": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "network_test_contract_sha": "38d8d1f6e93b030cf02915b11ef6d88e71c0d9f97cc71b45117c37add33ce8e5",
+  "network_code_sha": "31fa7337beac36cb7d9058f1da3f87f4acc4566ff30ed536056e2523e231d631",
+  "network_coordinator_sha": "6efb2b816e8926c888f9a12794378821ee3e659b47fa578f39e2cf8c700089b5",
+  "validated_runtime_sha": "23111427b229c2d6e966e728312168c212ceb99421837cc587ab0a59911a5e5f",
+  "validated_contract_sha": "04fbdc65e619c299cc5485e23ae369a92181b1ed87f1581853c3692054a3d7ba",
+  "required_environment_unsets": [
+    "PYTHONPATH",
+    "FEDONGAS_SOURCE_OBSERVER",
+    "FEDONGAS_ROLE",
+    "FEDONGAS_OBSERVER_OUT",
+    "FEDONGAS_WORKSPACE",
+    "P33R_TEST_MODULE_DIR"
+  ],
+  "environment_recipe_path": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\execution_environment.py",
+  "environment_recipe_sha256": "9b6675e90eae207a568cd3909e4dab1b9d40c8037b4316b579dec4833f784244",
+  "required_fresh_module_paths": {
+    "runtime": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\runtime.py",
+    "contract": "RESEARCH_WORKTREE\\research\\fedongas_phase33r_20261105\\contract.py"
+  },
+  "fresh_process_check": "MODULE_IMPORT_PRECHECK.json PASS;run again before any future authorization"
+}

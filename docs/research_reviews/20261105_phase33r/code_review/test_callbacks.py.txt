@@ -1,0 +1,20 @@
+import unittest,inspect,sys,os
+from pathlib import Path
+HERE=Path(__file__).resolve().parent
+sys.path.insert(0,os.environ.get('P33R_TEST_MODULE_DIR',str(HERE)))
+import runtime as r
+
+class CallbackTests(unittest.TestCase):
+    def test_configure_fit_accepts_native_keyword_dispatch(self):
+        try:inspect.signature(r.ReceiptMixin.configure_fit).bind(None,server_round=1,parameters=None,client_manager=None)
+        except TypeError as e:self.fail('native Flower configure_fit keyword dispatch incompatible: '+str(e))
+    def test_aggregate_fit_accepts_public_keyword_contract(self):
+        try:inspect.signature(r.ReceiptMixin.aggregate_fit).bind(None,server_round=1,results=[],failures=[])
+        except TypeError as e:self.fail('Flower aggregate_fit keyword contract incompatible: '+str(e))
+    def test_inherited_callbacks_accept_native_keywords(self):
+        kw=dict(initialize_parameters=dict(client_manager=None),configure_evaluate=dict(server_round=1,parameters=None,client_manager=None),aggregate_evaluate=dict(server_round=1,results=[],failures=[]),evaluate=dict(server_round=1,parameters=None))
+        for cls in [r.PhaseFedAvg,r.PhaseGaps]:
+            for name,args in kw.items():inspect.signature(getattr(cls,name)).bind(None,**args)
+        for name,args in [('get_parameters',dict(config={})),('get_properties',dict(config={})),('fit',dict(parameters=[],config={}))]:inspect.signature(getattr(r.PhaseClient,name)).bind(None,**args)
+        inspect.signature(r.PhaseClient.evaluate).bind(None,parameters=[],config={})
+if __name__=='__main__':unittest.main(verbosity=2)

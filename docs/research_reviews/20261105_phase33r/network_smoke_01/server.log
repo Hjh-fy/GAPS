@@ -1,0 +1,55 @@
+[93mWARNING [0m:   DEPRECATED FEATURE: flwr.server.start_server() is deprecated.
+	Instead, use the `flower-superlink` CLI command to start a SuperLink as shown below:
+
+		$ flower-superlink --insecure
+
+	To view usage and all available options, run:
+
+		$ flower-superlink --help
+
+	Using `start_server()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+[92mINFO [0m:      Starting Flower server, config: num_rounds=2, round_timeout=120s
+[92mINFO [0m:      Flower ECE: gRPC server running (2 rounds), SSL is disabled
+[92mINFO [0m:      [INIT]
+[92mINFO [0m:      Using initial global parameters provided by strategy
+[92mINFO [0m:      Starting evaluation of initial global parameters
+[92mINFO [0m:      Evaluation returned no results (`None`)
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 1]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\network_smoke_01\server\client_stats_round_001.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\network_smoke_01\server\prototype_stats_round_001.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\network_smoke_01\server\server_round_001.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 2]
+[92mINFO [0m:      configure_fit: strategy sampled 2 clients (out of 2)
+[92mINFO [0m:      aggregate_fit: received 2 results and 0 failures
+[GAPS] Saved client stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\network_smoke_01\server\client_stats_round_002.json
+[GAPS] Saved prototype stats: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\network_smoke_01\server\prototype_stats_round_002.json
+[GAPS] Saved aggregated checkpoint: RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\network_smoke_01\server\server_round_002.pth
+[92mINFO [0m:      configure_evaluate: no clients selected, skipping evaluation
+[92mINFO [0m:      
+[92mINFO [0m:      [SUMMARY]
+[92mINFO [0m:      Run finished 2 round(s) in 14.50s
+[92mINFO [0m:      	History (metrics, distributed, fit):
+[92mINFO [0m:      	{'align_enabled': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'fit_seconds': [(1, 11.472364733335175), (2, 1.4579306666661676)],
+[92mINFO [0m:      	 'has_prev_model': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'local_epochs': [(1, 1.0), (2, 1.0)],
+[92mINFO [0m:      	 'num_examples': [(1, 1400.0), (2, 1400.0)],
+[92mINFO [0m:      	 'proto_decoupling_enabled': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'proto_stats_uploaded': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'received_global_prototypes': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'replay_distill_enabled': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'seed': [(1, 42.0), (2, 42.0)],
+[92mINFO [0m:      	 'train_samples': [(1, 1400.0), (2, 1400.0)],
+[92mINFO [0m:      	 'use_align': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'use_proto_decoupling': [(1, 0.0), (2, 0.0)],
+[92mINFO [0m:      	 'use_replay_distill': [(1, 0.0), (2, 0.0)]}
+[92mINFO [0m:      

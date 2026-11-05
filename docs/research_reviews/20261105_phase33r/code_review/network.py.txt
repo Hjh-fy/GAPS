@@ -1,0 +1,86 @@
+"""Dedicated two-round native Flower test;all training inputs are synthetic."""
+import sys,os,json,time,atexit,inspect,hashlib,traceback
+from pathlib import Path
+HERE=Path(__file__).resolve().parent
+role=sys.argv[1] if len(sys.argv)>1 else ''
+if role not in ['server','client_1','client_2']:raise ValueError('synthetic test role only')
+RUN=HERE/'network_smoke_01';OUT=RUN/role;OUT.mkdir(parents=True,exist_ok=True)
+numeric=[];blocked=[]
+def audit(event,args):
+    if event!='open' or not isinstance(args[0],(str,bytes,os.PathLike)):return
+    p=Path(os.fsdecode(args[0]));s=str(p).replace('\\','/').lower()
+    if p.suffix.lower() in ['.npy','.npz'] or '/dataset/data1/' in s:
+        blocked.append(str(p));raise PermissionError('Synthetic network denies all real numeric data files')
+sys.addaudithook(audit)
+import runtime as r
+c=r.c;torch=r.torch;np=r.np
+import psutil,importlib.metadata,platform,ctypes
+from flwr.common import ndarrays_to_parameters,parameters_to_ndarrays,serde
+CONTRACT={'experiment_id':'P33R-NET-SYNTH-S42-R2','rounds':2,'clients':[1,2],'synthetic_rows':[840,1680],'shape':[50,8],'batch':16,'source_epochs':1,'seed':42,'address':'127.0.0.1:8080','expected_steps':316,'expected_presentations':5040,'real_numeric_reads':False,'formal_SOURCE':False}
+def emit(name,data):c.write(OUT/(name+'.json'),data)
+def logevent(data):
+    with (OUT/'events.jsonl').open('a',encoding='utf-8') as f:f.write(json.dumps(data,ensure_ascii=False)+'\n')
+started=time.perf_counter();steps=[0];rows=[0];active=[False]
+def finish():emit('process_end',dict(role=role,pid=os.getpid(),seconds=time.perf_counter()-started,synthetic_optimizer_steps=steps[0],synthetic_presentations=rows[0],blocked_numeric_open=blocked,successful_real_numeric_reads=0))
+atexit.register(finish)
+def fixture(cid):
+    n={1:840,2:1680}[cid];rng=np.random.RandomState(1000+cid)
+    x=rng.normal(0,.1,(n,50,8)).astype(np.float32);y=np.arange(n,dtype=np.int64)%4;p=np.zeros(n,np.int64)
+    return r.dataset((x,y,p))
+def native_stack():return any(f.function=='fit_round' and f.filename.replace('\\','/').endswith('/flwr/server/server.py') for f in inspect.stack())
+def main():
+    assert c.read(HERE/'SYNTHETIC_NETWORK_CONTRACT.json')==CONTRACT
+    assert not(HERE/'TRAINING_AUTHORIZATION.json').exists()
+    torch.set_num_threads(1)
+    lock=c.read(c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL_LOCK.json')
+    initial=r.load_checkpoint(r.model(),c.CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL.pth',lock,'random_source')
+    initial_sha=c.digest(r.arrays(initial));assert initial_sha=='a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7'
+    emit('identity',dict(role=role,pid=os.getpid(),experiment=CONTRACT['experiment_id'],initial_state_sha=initial_sha,python=sys.version,python_executable=sys.executable,flower=importlib.metadata.version('flwr'),grpc=importlib.metadata.version('grpcio'),torch=importlib.metadata.version('torch'),platform=platform.platform(),username_sha256=hashlib.sha256(psutil.Process().username().encode()).hexdigest(),token_is_admin=bool(ctypes.windll.shell32.IsUserAnAdmin()),address=CONTRACT['address'],execution='approved host localhost;no firewall change;no UAC elevation requested',runtime_sha=c.sha(HERE/'runtime.py'),contract_sha=c.sha(HERE/'contract.py'),network_code_sha=c.sha(Path(__file__))))
+    s=c.spec('SOURCE')
+    if role=='server':
+        # No real input loader. The same factory and numeric callbacks are used.
+        st=r.strategy(s,initial,{1:fixture(1),2:fixture(2)},OUT)
+        st.run_name=CONTRACT['experiment_id'];st.model_config.update(synthetic_only=True,experiment=CONTRACT['experiment_id'])
+        old_configure=st.configure_fit;old_aggregate=st.aggregate_fit
+        def configure(*args,**kwargs):
+            assert native_stack() and set(kwargs)=={'server_round','parameters','client_manager'} and not args
+            logevent(dict(event='configure_fit',native_Server_fit_round=True,keyword_names=sorted(kwargs),round=kwargs['server_round']))
+            pairs=old_configure(*args,**kwargs)
+            assert len(pairs)==2
+            logevent(dict(event='FitIns_distributed',round=kwargs['server_round'],clients=[p.cid for p,_ in pairs],state_sha=c.digest(parameters_to_ndarrays(pairs[0][1].parameters)),protobuf_bytes=sum(serde.fit_ins_to_proto(ins).ByteSize() for _,ins in pairs)))
+            return pairs
+        def aggregate(*args,**kwargs):
+            assert native_stack();rnd=args[0] if args else kwargs['server_round'];res=args[1] if args else kwargs['results']
+            logevent(dict(event='aggregate_fit',native_Server_fit_round=True,round=rnd,positional_arguments=len(args),keyword_names=sorted(kwargs),FitRes_count=len(res),client_ids=sorted(int(x.metrics['client_id']) for _,x in res),FitRes_proto_bytes=sum(serde.fit_res_to_proto(x).ByteSize() for _,x in res)))
+            return old_aggregate(*args,**kwargs)
+        st.configure_fit=configure;st.aggregate_fit=aggregate
+        r.fl.server.start_server(server_address=CONTRACT['address'],config=r.fl.server.ServerConfig(num_rounds=2,round_timeout=120),strategy=st)
+        assert len(st.receipts)==2
+        emit('server_complete',dict(status='PASS',receipts=st.receipts,synthetic_only=True,formal_SOURCE_checkpoint=False,registered_clients=2))
+    else:
+        cid=int(role[-1]);client=r.PhaseClient(cid,s,initial,fixture(cid),OUT)
+        step=torch.optim.Adam.step;iterator=torch.utils.data.DataLoader.__iter__;oldfit=client.fit
+        def counted_step(opt,*a,**kw):
+            v=step(opt,*a,**kw)
+            if active[0]:steps[0]+=1
+            return v
+        def counted_iterator(loader):
+            for batch in iterator(loader):
+                if active[0]:rows[0]+=len(batch[0]);assert tuple(batch[0].shape[1:])==(50,8)
+                yield batch
+        torch.optim.Adam.step=counted_step;torch.utils.data.DataLoader.__iter__=counted_iterator
+        def fit(parameters,config):
+            before=steps[0];present=rows[0];active[0]=True
+            try:result=oldfit(parameters,config)
+            finally:active[0]=False
+            assert steps[0]-before=={1:53,2:105}[cid] and rows[0]-present=={1:840,2:1680}[cid]
+            logevent(dict(event='fit',round=config['server_round'],steps=steps[0]-before,presentations=rows[0]-present,received=c.digest(parameters),uploaded=c.digest(result[0])))
+            return result
+        client.fit=fit
+        r.fl.client.start_numpy_client(server_address=CONTRACT['address'],client=client)
+        assert len(client.receipts)==2 and steps[0]=={1:106,2:210}[cid]
+        emit('client_complete',dict(status='PASS',receipts=client.receipts,steps=steps[0],presentations=rows[0],synthetic_only=True))
+if __name__=='__main__':
+    try:main()
+    except BaseException:
+        emit('failure',dict(error=traceback.format_exc()));raise

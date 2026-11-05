@@ -1,0 +1,62 @@
+--- frozen_Phase32/runtime.py
++++ Phase33R/runtime.py
+@@ -55,7 +55,7 @@
+     c.validate_spec(s);pools={}
+     ids=[1,2] if s['group']=='SOURCE' else [1,2,5]
+     for cid in ids:
+-        root=c.HERE/'data'/('target' if cid==5 else 'source')/f'client_{cid}'
++        root=c.DATA_ROOT/('target' if cid==5 else 'source')/f'client_{cid}'
+         pools[cid]=dataset(c.validate_package(root,dict(client_id=cid)))
+     return pools
+ def source_loader(ds,seed=42):return DataLoader(ds,batch_size=16,shuffle=True,drop_last=False,generator=torch.Generator().manual_seed(seed),num_workers=0)
+@@ -84,14 +84,16 @@
+         self.next_round+=1;return aa,n,metrics
+ 
+ class ReceiptMixin:
+-    def configure_fit(self,rnd,params,manager):
++    def configure_fit(self,server_round,parameters,client_manager):
++        rnd,params,manager=server_round,parameters,client_manager
+         self.broadcast=c.digest(parameters_to_ndarrays(params))
+         if rnd!=len(self.receipts)+1 or rnd not in range(1,26) or self.broadcast!=(self.receipts[-1]['returned'] if self.receipts else self.initial_state_sha):raise ValueError('server distribution chain mismatch')
+         fits=super().configure_fit(rnd,params,manager)
+         for proxy,ins in fits:ins.config.update(server_round=rnd,expected_received_sha=self.broadcast)
+         self.protobuf_down=sum(serde.fit_ins_to_proto(ins).ByteSize() for _,ins in fits)
+         return fits
+-    def aggregate_fit(self,rnd,results,failures):
++    def aggregate_fit(self,server_round,results,failures):
++        rnd=server_round
+         if failures:raise ValueError('client failure;no partial aggregation')
+         want=[1,2,5] if self.s['group']=='B2' else [1,2]
+         ordered=sorted(results,key=lambda r:int(r[1].metrics.get('client_id',-1)))
+--- frozen_Phase32/contract.py
++++ Phase33R/contract.py
+@@ -3,6 +3,7 @@
+ from pathlib import Path
+ import numpy as np
+ HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];P31=HERE.parent/'fedongas_phase31_20261105'
++S32=HERE.parent/'fedongas_phase32_20261105';DATA_ROOT=S32/'data';CANONICAL_CONTRACTS=S32/'contracts'
+ sys.dont_write_bytecode=True
+ sys.path.insert(0,str(P31));import common as prior
+ def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+@@ -41,7 +42,7 @@
+     return x,y,p
+ def source_identity_sha():
+     verify_prior();expected=[r for r in prior.rows(P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv') if r['client_id'] in ['1','2']]
+-    p=HERE/'contracts/SOURCE_WINDOW_IDENTITIES.csv'
++    p=CANONICAL_CONTRACTS/'SOURCE_WINDOW_IDENTITIES.csv'
+     if prior.rows(p)!=expected:raise ValueError('source identity ledger changed')
+     return sha(p)
+ def checkpoint_manifest(path,lock,kind):
+@@ -49,10 +50,10 @@
+     if set(lock)!={'kind','sha256','source_identity_sha256','seed','shape','labels','initial_sha256','round_receipts'}:raise ValueError('unknown checkpoint contract')
+     if lock['kind']!=kind or lock['seed']!=42 or lock['shape']!=[50,8] or lock['labels']!=spec('SOURCE')['labels']:raise ValueError('model identity')
+     if lock['source_identity_sha256']!=source_identity_sha() or sha(path)!=lock['sha256']:raise ValueError('checkpoint provenance SHA')
+-    registered=HERE/'contracts/SOURCE_RANDOM_INITIAL_LOCK.json'
++    registered=CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL_LOCK.json'
+     if sha(registered)!='49bd47670e77b1c934940198183fdc1f0779b75e6ad9c00d3dc74d9cb896ba83':raise ValueError('registered random lock altered')
+     anchor=read(registered)
+-    if sha(HERE/'contracts/SOURCE_RANDOM_INITIAL.pth')!=anchor['sha256'] or lock['initial_sha256']!=anchor['initial_sha256']:raise ValueError('initial ancestor mismatch')
++    if sha(CANONICAL_CONTRACTS/'SOURCE_RANDOM_INITIAL.pth')!=anchor['sha256'] or lock['initial_sha256']!=anchor['initial_sha256']:raise ValueError('initial ancestor mismatch')
+     if kind=='sstar':
+         rows=lock['round_receipts']
+         if len(rows)!=25 or [r['round'] for r in rows]!=list(range(1,26)):raise ValueError('source round ancestry')

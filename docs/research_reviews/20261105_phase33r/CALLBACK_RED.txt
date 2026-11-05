@@ -1,0 +1,52 @@
+test_aggregate_fit_accepts_public_keyword_contract (__main__.CallbackTests.test_aggregate_fit_accepts_public_keyword_contract) ... FAIL
+test_configure_fit_accepts_native_keyword_dispatch (__main__.CallbackTests.test_configure_fit_accepts_native_keyword_dispatch) ... FAIL
+test_inherited_callbacks_accept_native_keywords (__main__.CallbackTests.test_inherited_callbacks_accept_native_keywords) ... ok
+
+======================================================================
+FAIL: test_aggregate_fit_accepts_public_keyword_contract (__main__.CallbackTests.test_aggregate_fit_accepts_public_keyword_contract)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\test_callbacks.py", line 12, in test_aggregate_fit_accepts_public_keyword_contract
+    try:inspect.signature(r.ReceiptMixin.aggregate_fit).bind(None,server_round=1,results=[],failures=[])
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\inspect.py", line 3267, in bind
+    return self._bind(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\inspect.py", line 3180, in _bind
+    raise TypeError(msg) from None
+TypeError: missing a required argument: 'rnd'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\test_callbacks.py", line 13, in test_aggregate_fit_accepts_public_keyword_contract
+    except TypeError as e:self.fail('Flower aggregate_fit keyword contract incompatible: '+str(e))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Flower aggregate_fit keyword contract incompatible: missing a required argument: 'rnd'
+
+======================================================================
+FAIL: test_configure_fit_accepts_native_keyword_dispatch (__main__.CallbackTests.test_configure_fit_accepts_native_keyword_dispatch)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\test_callbacks.py", line 9, in test_configure_fit_accepts_native_keyword_dispatch
+    try:inspect.signature(r.ReceiptMixin.configure_fit).bind(None,server_round=1,parameters=None,client_manager=None)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\inspect.py", line 3267, in bind
+    return self._bind(args, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\inspect.py", line 3180, in _bind
+    raise TypeError(msg) from None
+TypeError: missing a required argument: 'rnd'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase33r_20261105\test_callbacks.py", line 10, in test_configure_fit_accepts_native_keyword_dispatch
+    except TypeError as e:self.fail('native Flower configure_fit keyword dispatch incompatible: '+str(e))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: native Flower configure_fit keyword dispatch incompatible: missing a required argument: 'rnd'
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.096s
+
+FAILED (failures=2)
