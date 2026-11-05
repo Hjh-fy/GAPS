@@ -1,0 +1,53 @@
+{
+  "experiment_id": "P32-SOURCE-DAY7-S42",
+  "attempt": 1,
+  "utc": "2026-11-05T13:21:07.457837+00:00",
+  "observer_sha": "91948e64109df41fd6e6857c69ac5ecda738e84081cd3a81c38c22c77d98b066",
+  "coordinator_sha": "392f0359808d88b90eee11285b2361c1f1670c281115e76719c315b49ebc4e55",
+  "no_retry": true,
+  "commands": [
+    [
+      "PYTHON_ENV\\python.exe",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runtime.py",
+      "server",
+      "--spec",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE.json",
+      "--checkpoint",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+      "--checkpoint-lock",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+      "--output",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runs\\SOURCE\\server"
+    ],
+    [
+      "PYTHON_ENV\\python.exe",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runtime.py",
+      "client",
+      "--spec",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE.json",
+      "--checkpoint",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+      "--checkpoint-lock",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+      "--output",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runs\\SOURCE\\client_1",
+      "--client-id",
+      "1"
+    ],
+    [
+      "PYTHON_ENV\\python.exe",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runtime.py",
+      "client",
+      "--spec",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE.json",
+      "--checkpoint",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+      "--checkpoint-lock",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+      "--output",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runs\\SOURCE\\client_2",
+      "--client-id",
+      "2"
+    ]
+  ]
+}

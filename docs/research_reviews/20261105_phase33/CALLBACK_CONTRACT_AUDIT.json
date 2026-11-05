@@ -1,0 +1,24 @@
+{
+  "status": "CONFIRMED_CONFIGURE_FIT_BLOCKER",
+  "installed_flower_version": "1.23.0",
+  "installed_server_file": "PYTHON_ENV\\Lib\\site-packages\\flwr\\server\\server.py",
+  "installed_server_sha": "dfd9b81523764feb9503e9e8f67b2d3747965b4728f88514008326a5ddd5ec97",
+  "fit_round_source": "    def fit_round(\n        self,\n        server_round: int,\n        timeout: Optional[float],\n    ) -> Optional[\n        tuple[Optional[Parameters], dict[str, Scalar], FitResultsAndFailures]\n    ]:\n        \"\"\"Perform a single round of federated averaging.\"\"\"\n        # Get clients and their respective instructions from strategy\n        client_instructions = self.strategy.configure_fit(\n            server_round=server_round,\n            parameters=self.parameters,\n            client_manager=self._client_manager,\n        )\n\n        if not client_instructions:\n            log(INFO, \"configure_fit: no clients selected, cancel\")\n            return None\n        log(\n            INFO,\n            \"configure_fit: strategy sampled %s clients (out of %s)\",\n            len(client_instructions),\n            self._client_manager.num_available(),\n        )\n\n        # Collect `fit` results from all clients participating in this round\n        results, failures = fit_clients(\n            client_instructions=client_instructions,\n            max_workers=self.max_workers,\n            timeout=timeout,\n            group_id=server_round,\n        )\n        log(\n            INFO,\n            \"aggregate_fit: received %s results and %s failures\",\n            len(results),\n            len(failures),\n        )\n\n        # Aggregate training results\n        aggregated_result: tuple[\n            Optional[Parameters],\n            dict[str, Scalar],\n        ] = self.strategy.aggregate_fit(server_round, results, failures)\n\n        parameters_aggregated, metrics_aggregated = aggregated_result\n        return parameters_aggregated, metrics_aggregated, (results, failures)\n",
+  "callbacks": [
+    {
+      "callback": "configure_fit",
+      "signature": "(self, rnd, params, manager)",
+      "keyword_bind": "FAIL",
+      "error": "missing a required argument: 'rnd'"
+    },
+    {
+      "callback": "aggregate_fit",
+      "signature": "(self, rnd, results, failures)",
+      "keyword_bind": "FAIL",
+      "error": "missing a required argument: 'rnd'"
+    }
+  ],
+  "actual_configure_dispatch": "keyword server_round/parameters/client_manager",
+  "actual_aggregate_dispatch": "positional in installed1.23;public keyword API still incompatible",
+  "training_or_inference": false
+}

@@ -1,0 +1,24 @@
+"""Validate immutable registration and grant the user's exact SOURCE authorization."""
+import sys,os,socket,json
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];S32=HERE.parent/'fedongas_phase32_20261105';sys.path.insert(0,str(S32))
+import contract as c
+EXPECTED='730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7'
+def main():
+    assert c.sha(S32/'ARTIFACT_SHA256.csv')=='86a97e7ab95c1c3d8b46192b3cae0870d42fcbd9a577bed28374b14d27beed2a'
+    for row in c.prior.rows(S32/'ARTIFACT_SHA256.csv'):assert c.sha(S32/row['path'])==row['sha256'],row['path']
+    reg=c.read(S32/'EXECUTION_REGISTRY_LOCK.json')[0];assert reg['experiment_id']=='P32-SOURCE-DAY7-S42' and reg['spec_sha']==EXPECTED==c.sha(S32/'contracts/SOURCE.json')
+    assert c.sha(S32/'runtime.py')==reg['entry_sha'] and c.sha(S32/'contract.py')==reg['contract_sha'] and c.sha(S32/'cli_plans/SOURCE.json')==reg['effective_sha']
+    assert not (S32/'runs/SOURCE').exists() and not(S32/'TRAINING_AUTHORIZATION.json').exists() and not(HERE/'ONCE_STARTED.json').exists()
+    import runtime as r
+    r.torch.set_num_threads(1);s=c.validate_spec(c.read(S32/'contracts/SOURCE.json'));assert r.effective(s)==c.read(S32/'cli_plans/SOURCE.json')
+    pools=r.input_pools(s);assert sorted(pools)==[1,2] and [len(pools[i]) for i in [1,2]]==[840,1680]
+    identities=c.prior.rows(S32/'contracts/SOURCE_WINDOW_IDENTITIES.csv');assert len({x['filename'] for x in identities})==120 and {(x['client_id'],x['day']) for x in identities}=={('1','4'),('2','1'),('2','7')}
+    lock=c.read(S32/'contracts/SOURCE_RANDOM_INITIAL_LOCK.json');m=r.load_checkpoint(r.model(),S32/'contracts/SOURCE_RANDOM_INITIAL.pth',lock,'random_source');assert c.digest(r.arrays(m))==lock['initial_sha256']
+    cmd=c.read(S32/'contracts/COMMANDS.json')[0];assert cmd['group']=='SOURCE' and cmd['spec_sha256']==EXPECTED and len(cmd['commands'])==3
+    sock=socket.socket();sock.bind(('127.0.0.1',8080));sock.close()
+    c.write(HERE/'PRE_RUN_VERIFICATION.json',dict(status='PASS',registered_experiment='P32-SOURCE-DAY7-S42',source_spec_SHA256=EXPECTED,entry_SHA256=reg['entry_sha'],contract_SHA256=reg['contract_sha'],effective_SHA256=reg['effective_sha'],initial_checkpoint_SHA256=lock['sha256'],initial_state_SHA256=lock['initial_sha256'],source_identity_SHA256=c.source_identity_sha(),source_windows=2520,source_exposures=120,target_arrays_loaded=False,phase32_payloads_verified=931,source_pools=[1,2],observer='read-only audits;Python numeric file allowlist;one CPU thread/process;registered argv unchanged',commands=cmd['commands'],earlier_COMMANDS_effective_field='superseded draft;authoritative EXECUTION_REGISTRY_LOCK and cli_plans verified'))
+    c.write(S32/'TRAINING_AUTHORIZATION.json',dict(approved_spec_sha256=EXPECTED,purpose='SOURCE'))
+    c.write(HERE/'AUTHORIZATION_RECEIPT.json',dict(user_explicit_approval=True,experiment_id='P32-SOURCE-DAY7-S42',spec_sha256=EXPECTED,purpose='SOURCE',authorization_path=str(S32/'TRAINING_AUTHORIZATION.json'),authorization_sha256=c.sha(S32/'TRAINING_AUTHORIZATION.json'),pilot_authorization=False,max_full_runs=1))
+    print('PRE_RUN PASS;SOURCE AUTHORIZATION CREATED;NO TRAINING YET',flush=True)
+if __name__=='__main__':main()

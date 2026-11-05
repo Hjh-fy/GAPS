@@ -1,0 +1,23 @@
+{
+  "role": "guard_selftest",
+  "seconds": 8.797365500009619,
+  "peak_RSS_bytes": 336388096,
+  "total_optimizer_steps": 0,
+  "completed_rounds": 0,
+  "numeric_access": [
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\data\\target\\client_5\\train_features.npy",
+      "mode": "r",
+      "allowed": false,
+      "time": 1793884779.9175525
+    }
+  ],
+  "denied": [
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\data\\target\\client_5\\train_features.npy",
+      "mode": "r",
+      "allowed": false,
+      "time": 1793884779.9175525
+    }
+  ]
+}

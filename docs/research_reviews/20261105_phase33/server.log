@@ -1,0 +1,42 @@
+[93mWARNING [0m:   DEPRECATED FEATURE: flwr.server.start_server() is deprecated.
+	Instead, use the `flower-superlink` CLI command to start a SuperLink as shown below:
+
+		$ flower-superlink --insecure
+
+	To view usage and all available options, run:
+
+		$ flower-superlink --help
+
+	Using `start_server()` is deprecated.
+
+            This is a deprecated feature. It will be removed
+            entirely in future versions of Flower.
+        
+[92mINFO [0m:      Starting Flower server, config: num_rounds=25, no round_timeout
+[92mINFO [0m:      Flower ECE: gRPC server running (25 rounds), SSL is disabled
+[92mINFO [0m:      [INIT]
+[92mINFO [0m:      Using initial global parameters provided by strategy
+[92mINFO [0m:      Starting evaluation of initial global parameters
+[92mINFO [0m:      Evaluation returned no results (`None`)
+[92mINFO [0m:      
+[92mINFO [0m:      [ROUND 1]
+Traceback (most recent call last):
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\runtime.py", line 165, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "RESEARCH_WORKTREE\research\fedongas_phase32_20261105\runtime.py", line 152, in main
+    st=strategy(s,initial,pools,out);fl.server.start_server(server_address=a.address,config=fl.server.ServerConfig(num_rounds=25),strategy=st)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\site-packages\flwr\compat\server\app.py", line 164, in start_server
+    hist = run_fl(
+           ^^^^^^^
+  File "PYTHON_ENV\Lib\site-packages\flwr\server\server.py", line 492, in run_fl
+    hist, elapsed_time = server.fit(
+                         ^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\site-packages\flwr\server\server.py", line 115, in fit
+    res_fit = self.fit_round(
+              ^^^^^^^^^^^^^^^
+  File "PYTHON_ENV\Lib\site-packages\flwr\server\server.py", line 217, in fit_round
+    client_instructions = self.strategy.configure_fit(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: ReceiptMixin.configure_fit() got an unexpected keyword argument 'server_round'

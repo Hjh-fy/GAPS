@@ -1,0 +1,10 @@
+{
+  "status": "STOPPED_NO_RETRY",
+  "error": "Traceback (most recent call last):\n  File \"RESEARCH_WORKTREE\\research\\fedongas_phase33_20261105\\launch.py\", line 38, in run\n    codes={role:p.wait() for role,p in procs};assert all(v==0 for v in codes.values()),codes\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'server': 1, 'client_1': 1, 'client_2': 1}\n",
+  "codes": {
+    "server": 1,
+    "client_1": 1,
+    "client_2": 1
+  },
+  "wall_seconds": 12.98977049998939
+}

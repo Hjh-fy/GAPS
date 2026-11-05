@@ -1,0 +1,9 @@
+# 审阅范围与纠正
+
+本包是一次SOURCE真实启动的失败证据，不是完成25轮训练的结果。包含全部本地42个制品的可读副本：启动前hash/原argv、SOURCE专用授权、one-shot记录、三个进程完整日志及source-only访问记录、zero-step/内存、实际SDK调度signature审计、单字节网络诊断、三个输出配置、停止决定、源码观察器/协调器。除路径脱敏/LF外不删除失败记录。ARTIFACT_SHA256与PUBLICATION_MANIFEST分别记录本地和发布后SHA。
+
+两个guard selftest故意触发目标文件的PermissionError，未读取数值；与正式进程36次source数值打开/0target/0denied分开。授权SOURCE启动一次后立即停止，没有以0step为由自行重试。脚本不是重试授权，也不能按公开授权样例绕过ONCE_STARTED或换输出目录重跑。
+
+此前Phase3.2局部合成计数仍为历史证据，但不能继续外推完整Flower入口可运行。固定Phase3.2不覆盖，新报告说明实际keyword回调遗漏与默认沙箱connect限制。aggregate_fit在本机实际是位置调用，不把其公共keyword问题虚报为本次第二次崩溃。全部stage32旧payloadhash不变。
+
+没有新权重/Sstar/Test性能。原始数据、所有旧权重、v5/ZIP仍私有本地；本包没有输入数值。PYTHON_ENV/RESEARCH_WORKTREE/FROZEN_BASELINE_V5/ORIGINAL_WORKSPACE为路径别名，SDK源函数只作为本机调度审计，不意味着新实现或新算法。

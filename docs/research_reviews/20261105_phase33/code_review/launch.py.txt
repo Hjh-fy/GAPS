@@ -1,0 +1,54 @@
+"""One-shot coordinator;executes exact frozen argv,never retries training."""
+import sys,os,time,socket,subprocess,datetime
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];S32=HERE.parent/'fedongas_phase32_20261105';sys.path.insert(0,str(S32))
+import contract as c
+import psutil
+def environment(role):
+    env=os.environ.copy();env.update(PYTHONDONTWRITEBYTECODE='1',PYTHONIOENCODING='utf-8',PYTHONUNBUFFERED='1',OMP_NUM_THREADS='1',MKL_NUM_THREADS='1',OPENBLAS_NUM_THREADS='1',PYTHONPATH=str(HERE),FEDONGAS_SOURCE_OBSERVER='1',FEDONGAS_WORKSPACE=str(ROOT),FEDONGAS_OBSERVER_OUT=str(HERE/'observer'),FEDONGAS_ROLE=role)
+    return env
+def selftest():
+    code="from pathlib import Path;import os; p=Path(os.environ['FEDONGAS_WORKSPACE'])/'research/fedongas_phase32_20261105/data/target/client_5/train_features.npy'\ntry: p.open('rb')\nexcept PermissionError: print('GUARD_REJECT_BEFORE_OPEN')\nelse: raise AssertionError('guard bypass')"
+    v=subprocess.run([sys.executable,'-c',code],env=environment('guard_selftest_v2'),cwd=ROOT,capture_output=True)
+    c.write(HERE/'GUARD_SELFTEST_V2.json',dict(status='PASS' if v.returncode==0 and b'GUARD_REJECT_BEFORE_OPEN' in v.stdout else 'FAIL',exit_code=v.returncode,stdout=v.stdout.decode('utf-8',errors='replace'),stderr=v.stderr.decode('utf-8',errors='replace'),real_training=0,observer_sha=c.sha(HERE/'sitecustomize.py')))
+    assert c.read(HERE/'GUARD_SELFTEST_V2.json')['status']=='PASS'
+def run():
+    pre=c.read(HERE/'PRE_RUN_VERIFICATION.json');assert pre['status']=='PASS' and c.read(HERE/'GUARD_SELFTEST_V2.json')['status']=='PASS' and c.read(HERE/'GUARD_SELFTEST_V2.json')['observer_sha']==c.sha(HERE/'sitecustomize.py')
+    commands=pre['commands'];assert commands==c.read(S32/'contracts/COMMANDS.json')[0]['commands']
+    assert not(S32/'runs/SOURCE').exists();assert c.read(S32/'TRAINING_AUTHORIZATION.json')==dict(approved_spec_sha256=pre['source_spec_SHA256'],purpose='SOURCE')
+    for p,h in [(S32/'runtime.py',pre['entry_SHA256']),(S32/'contract.py',pre['contract_SHA256']),(S32/'contracts/SOURCE.json',pre['source_spec_SHA256'])]:assert c.sha(p)==h
+    sock=socket.socket();sock.bind(('127.0.0.1',8080));sock.close()
+    c.write(HERE/'ONCE_STARTED.json',dict(experiment_id='P32-SOURCE-DAY7-S42',attempt=1,utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),observer_sha=c.sha(HERE/'sitecustomize.py'),coordinator_sha=c.sha(Path(__file__)),no_retry=True,commands=commands))
+    procs=[];handles=[];t=time.perf_counter();peak_sum=0;peak_rss={};samples=0
+    try:
+        for role,cmd in zip(['server','client_1','client_2'],commands):
+            log=(HERE/(role+'.log')).open('xb');handles.append(log)
+            p=subprocess.Popen(cmd,cwd=ROOT,env=environment(role),stdout=log,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0));procs.append((role,p))
+        c.write(HERE/'PROCESSES.json',[dict(role=role,pid=p.pid,argv=commands[i]) for i,(role,p) in enumerate(procs)])
+        while any(p.poll() is None for _,p in procs):
+            bad=[(role,p.returncode) for role,p in procs if p.poll() is not None and p.returncode!=0]
+            if bad:raise RuntimeError('Training process failed;no retry: '+str(bad))
+            rss=0
+            for role,p in procs:
+                try:q=psutil.Process(p.pid).memory_info().rss;rss+=q;peak_rss[role]=max(peak_rss.get(role,0),q)
+                except psutil.Error:pass
+            peak_sum=max(peak_sum,rss);samples+=1
+            if time.perf_counter()-t>7200:raise TimeoutError('2h execution monitor ceiling;no retry')
+            time.sleep(.2)
+        codes={role:p.wait() for role,p in procs};assert all(v==0 for v in codes.values()),codes
+        c.write(HERE/'EXECUTION_COMPLETE.json',dict(status='PROCESS_EXIT0;AWAITING_MODEL_AUDIT',codes=codes,wall_seconds=time.perf_counter()-t,peak_concurrent_RSS_bytes=peak_sum,peak_RSS_by_process=peak_rss,memory_sampling_seconds=.2,memory_samples=samples,formal_SOURCE_attempts=1,pilots_started=0))
+    except BaseException:
+        import traceback
+        for _,p in procs:
+            if p.poll() is None:p.terminate()
+        for _,p in procs:
+            try:p.wait(timeout=15)
+            except subprocess.TimeoutExpired:p.kill()
+        c.write(HERE/'EXECUTION_FAILED.json',dict(status='STOPPED_NO_RETRY',error=traceback.format_exc(),codes={role:p.poll() for role,p in procs},wall_seconds=time.perf_counter()-t))
+        raise
+    finally:
+        for f in handles:f.close()
+if __name__=='__main__':
+    if sys.argv[1:] == ['selftest']:selftest()
+    elif sys.argv[1:]==['run']:run()
+    else:raise ValueError('action selftest or run required')

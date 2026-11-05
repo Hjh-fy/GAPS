@@ -1,0 +1,105 @@
+"""Seal failed one-shot launch evidence;no model training or target data reads."""
+import sys,json,inspect,collections,subprocess
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];S32=HERE.parent/'fedongas_phase32_20261105';sys.path.insert(0,str(S32))
+import contract as c
+import psutil
+def md(name,s):(HERE/name).write_text(s.strip()+'\n',encoding='utf-8')
+def main():
+    pre=c.read(HERE/'PRE_RUN_VERIFICATION.json');failed=c.read(HERE/'EXECUTION_FAILED.json');assert failed['status']=='STOPPED_NO_RETRY'
+    run=S32/'runs/SOURCE';files=sorted(p for p in run.rglob('*') if p.is_file());assert len(files)==3 and all(p.name=='effective_config.json' for p in files)
+    assert not list(run.rglob('*.pth')) and not list(run.rglob('*LOCKED*')) and not list(run.rglob('receipt*'))
+    obs=[c.read(HERE/'observer'/f'{role}_process.json') for role in ['server','client_1','client_2']]
+    for x in obs:
+        assert x['total_optimizer_steps']==x['completed_rounds']==0 and not x['denied']
+        assert len(x['numeric_access'])==12 and all(z['allowed'] and '/data/source/' in z['path'].replace('\\','/') for z in x['numeric_access'])
+    for p in files:assert c.sha(p)==pre['effective_SHA256']
+    assert c.sha(S32/'runtime.py')==pre['entry_SHA256'] and c.sha(S32/'contract.py')==pre['contract_SHA256']
+    old=c.prior.rows(S32/'ARTIFACT_SHA256.csv')
+    for x in old:assert c.sha(S32/x['path'])==x['sha256'],x['path']
+    c.prior.table(HERE/'SOURCE_RUN_FILE_MANIFEST.csv',[dict(path=p.relative_to(ROOT).as_posix(),bytes=p.stat().st_size,sha256=c.sha(p)) for p in files])
+    c.prior.table(HERE/'PROCESS_COSTS.csv',[dict(role=x['role'],process_seconds=x['seconds'],peak_RSS_bytes=x['peak_RSS_bytes'],optimizer_steps=0,completed_rounds=0,numeric_open_events=len(x['numeric_access']),target_numeric_open_events=0) for x in obs])
+    allround=[]
+    for rnd in range(1,26):
+        for cid,n,steps in [(1,840,53),(2,1680,105)]:allround.append(dict(round=rnd,client_id=cid,registered_dataset_rows=n,planned_steps=steps,planned_window_presentations=n,actual_steps=0,actual_training_presentations=0,actual_participation=False,planned_FedAvg_weight='1/3' if cid==1 else '2/3',returned_state_SHA='NOT_GENERATED',status='FAILED_BEFORE_DISPATCH' if rnd==1 else 'NOT_STARTED'))
+    c.prior.table(HERE/'SOURCE_ROUND_STATUS.csv',allround)
+    matrix=[]
+    for b in ['B0','B1','B2','B3','B4','B5']:
+        matrix.append(dict(group=b,status='BLOCKED',common_Sstar_strict_load='NOT_RUN_MISSING_SSTAR',initial_Sstar_SHA='MISSING',target_budget_contract='2500/40000' if b!='B0' else '0/0',training_started=False,blockers='NO_LEGAL_SSTAR'+('' if b=='B1' else ';FROZEN_CONFIGURE_FIT_KEYWORD_INCOMPATIBLE;NETWORK_RUNTIME_NOT_READY'),protocol_unchanged=True))
+    c.prior.table(HERE/'PILOT_FINAL_MATRIX.csv',matrix)
+    costs=c.read(HERE/'TRANSPORT_DIAGNOSTIC.json');assert costs['default_sandbox']['winerror']==10013 and costs['approved_outside_sandbox']['status']=='PASS'
+    callback=c.read(HERE/'CALLBACK_CONTRACT_AUDIT.json');assert callback['status']=='CONFIRMED_CONFIGURE_FIT_BLOCKER'
+    processes=c.read(HERE/'PROCESSES.json');alive=[]
+    for x in processes:
+        try:cmd=psutil.Process(x['pid']).cmdline();running=any('fedongas_phase32_20261105' in z and 'runtime.py' in z for z in cmd)
+        except psutil.Error:running=False
+        if running:alive.append(x['pid'])
+    assert not alive
+    c.write(HERE/'FINAL_VERIFICATION.json',dict(status='BLOCKED_PRESERVED_NO_RETRY',registered_experiment='P32-SOURCE-DAY7-S42',SOURCE_launch_attempts=1,completed_rounds=0,optimizer_steps=0,training_window_presentations=0,checkpoints_generated=0,legal_Sstar_generated=False,SSTAR_LOCKED_generated=False,Sstar_restoration_test='NOT_RUN_NO_TRAINED_MODEL',real_target_numeric_reads=0,formal_source_numeric_open_events=36,guard_selftest_rejected_target_probes=2,pilots_started=0,worktree_tracked_clean=subprocess.check_output(['git','status','--porcelain','--untracked-files=no']).decode()=='',prior_phase32_payloads_unchanged=len(old),phase32_runtime_sha_unchanged=True,phase32_contract_sha_unchanged=True,initial_random_checkpoint_unchanged=c.sha(S32/'contracts/SOURCE_RANDOM_INITIAL.pth')==pre['initial_checkpoint_SHA256'],observer_steps_each={x['role']:0 for x in obs},wall_seconds=failed['wall_seconds'],peak_RSS_each={x['role']:x['peak_RSS_bytes'] for x in obs},combined_peak_RSS='not persisted on failed branch;sum of individual peaks is only an upper bound',actual_fit_model_payload_bytes=0,wire_handshake_bytes='NOT_MEASURED',running_registered_processes=[],only_confirmed_code_launch_blocker='configure_fit keyword signature',aggregate_callback='public keyword compatibility issue;installed Flower dispatch positional',transport='default sandbox denies loopbackconnect;approved onebyte outside sandbox passes;no new training',authorization_consumed=True,training_retry_allowed=False,source_and_pilot_ready=False))
+    c.write(HERE/'AUTHORIZATION_CONSUMED.json',dict(experiment_id='P32-SOURCE-DAY7-S42',attempts_used=1,training_updates=0,result='FAILED_BEFORE_FIT',source_token_retained_for_provenance=True,coordinator_ONCE_STARTED_retained=True,default_output_paths_now_exist=True,automatic_retry=False,next_training_requires_new_registration_and_explicit_approval=True))
+    md('README.md','''# FedOnGas Phase3.3：SOURCE单次正式启动失败审计
+
+**合法S*未生成。唯一一次注册启动已在第1轮fit分发前失败并停止，实际梯度更新0、完成轮次0；没有自动重跑、没有启动任何pilot。** 依据Phase3.2固定b0c7a5cabfec3a41b40cdf67fc0802b67103a3ed；注册P32-SOURCE-DAY7-S42，spec SHA730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7。
+
+启动前spec、最终effective、runtime、contract、初始checkpoint/全state及120源暴露2520窗身份均通过SHA核验。SOURCE授权目的与spec完全匹配，初始权重没有重新生成。使用原COMMANDS中三条argv，只有环境观察钩子记录步骤/采样/成本与限制数值文件访问，不适配callback、不改算法/参数/冻结代码。
+
+失败原因：冻结ReceiptMixin.configure_fit(self,rnd,params,manager)不接受Flower1.23原生server实际传入的server_round=/parameters=/client_manager=关键字，TypeError发生在fit_clients之前。两个client还独立记录ConnectEx10013：默认沙箱连1字节localhost也失败，批准的沙箱外同测试通过。后者只是无模型/无训练诊断，不是训练重试。
+
+Phase3.2合成循环/两轮integration都用位置参数调用，因此只能证明局部数值/接口路径，遗漏原生Flower调度；先前“可直接批准执行”的结论据此不足。旧报告保留原文，本报告增加纠正，不以导入/--help成功冒充真实网络入口通过。
+
+|用户要求的最终问题|本轮实际结论|
+|---|---|
+|合法S*是否成功生成？|否，0checkpoint，无SSTAR_LOCKED|
+|是否具备来源与恢复完整证据？|具备启动来源/失败/零更新证据；没有训练25轮和训练后恢复证据|
+|六组是否已消除最后阻塞？|否，均缺S*；联邦分支还受真实callback/传输运行条件阻塞|
+|下一轮可否直接启动六组C5 A4？|不可；先注册兼容修复与无数据网络预检，再另行批准恢复SOURCE|
+
+读取：[根因与最小修复建议](ROOT_CAUSE.md) → [完整执行证据](EXECUTION_AUDIT.md) → [停止/恢复边界](NEXT_DECISION.md)。PROCESS_COSTS、SOURCE_ROUND_STATUS、PILOT_FINAL_MATRIX和FINAL_VERIFICATION提供机器可读证据。完整现场仍在本地Phase32/runs/SOURCE（只有3份effective配置）及本Phase33日志/观察记录。
+''')
+    md('ROOT_CAUSE.md','''# 原因、验证与范围纠正
+
+## 已确认的代码阻塞
+
+原runtime.py:87的ReceiptMixin.configure_fit把Flower公共参数重命名成rnd/params/manager。已安装Flower1.23 server.Server.fit_round在实际原生调度中以server_round、parameters、client_manager关键字调用。Python在进入函数体前抛TypeError；没有配置完成FitIns，没有调用fit_clients，没有本地优化。server.log保存完整栈；CALLBACK_CONTRACT_AUDIT保存SDK文件SHA、实际函数源文本、冻结方法signature及Signature.bind复现，无训练。
+
+aggregate_fit(self,rnd,results,failures)也不兼容公共server_round关键字，但本机Flower1.23实际对aggregate_fit采用位置参数。因此这是应一并校准的公共接口问题，**不是本轮第二个实际触发的服务器错误**，也不能断言修好configure后它必然在本机失败。
+
+最小未来改动：在新版本入口使用标准configure_fit(self,server_round,parameters,client_manager)，内部别名rnd/params/manager继续调用原body；aggregate_fit参数名按公共接口恢复。算法、数据/seed/25轮/batch16/lr/初始权重不变。必须新代码版本与注册SHA，不覆盖Phase32，也不能在观察器中偷偷适配而继续声称原代码通过。
+
+## 独立传输限制
+
+两个client原日志均出现gRPC ConnectEx10013。无模型、无Flower、无训练的一字节localhost测试在同默认沙箱同样10013，而经批准的沙箱外测试成功，隔离出执行环境连接权限限制。TCP bind可成功不足以证明TCP connect或Flower握手可用。未将此写成模型/算法问题；不修改防火墙、不换端口猜测，也未重跑SOURCE。
+
+## Phase3.2遗漏
+
+preflight.py/integration.py直接位置调用configure_fit与aggregate_fit，成功验证了计数/EMA/回传等局部机制，却未走Server.fit_round的原生关键字调度；--help只验证parser/import。真实启动暴露这一差异。后续必须无真实数据地调用原生server调度，覆盖keyword签名、客户端连接/握手、初始模型广播和关闭流程后，再申请训练。以前“接口预检PASS”需限定为当时测试范围，不能外推完整Flower可运行。
+''')
+    md('EXECUTION_AUDIT.md','''# 单次执行及证据
+
+正式SOURCE启动次数1、完整训练完成次数0、原生Adam.step次数0。ONCE_STARTED记录唯一启动与完全原argv；AUTHORIZATION_RECEIPT记录用户SOURCE专用批准；EXECUTION_FAILED记录三个exit1、现场栈与12.9897705秒墙钟。没有修改已锁spec/runtime/contract或任何v5/Phase0–3.2既有payload；新授权和runs是本次明确允许的新文件。
+
+三个进程均在observer_ready后运行，Torch线程1。只读观察器包装原Adam.step/初始化、RandomSampler/DataLoader和原Client.train_one_round，不改变参数、损失、随机种子、排序或输出。observer启动异常会立即exit78，避免静默失去记录。正式server/client1/client2各报告0优化步、0完整round，观察到的12次数字文件打开均为合法C1/C2的6个source文件（hash读取+np.load）；总36次源数值打开，目标数值访问0。两个guard selftest的故意目标打开被拒绝、没有成功读取；与正式进程零拒绝/零目标访问分开记录。
+
+源输入120暴露/2520窗合法性保持：C1Day4 840、C2Day1/7 1680，50×8/4类/phase0，原始预处理与有效mask由canonical SHA固定。训练进程只把source包作为数据输入，Python层数值白名单拒绝其它npy/npz，并非声称实现容器或隐私隔离。来源元数据/清单用于身份审计，没有目标数值输入或监督更新。
+
+runs/SOURCE恰好3个effective_config.json，与最终SOURCE注册effective SHA一致；没有训练receipt、server_round_001、其余25轮模型或SSTAR文件。SOURCE_ROUND_STATUS按50个planned client-round条目记录实际0，不伪造63k呈现或25轮链。状态表中840/1680与1/3、2/3都是已注册数据量/计划权重，不是实际聚合参与证据。
+
+成本：约13秒为失败启动总墙钟，非训练耗时。逐进程峰值RSS约379MB见PROCESS_COSTS；异常分支未持久化coordinator的并发峰值，不能将单进程峰值相加冒充实测并发峰值。没有fit模型参数收发，wire握手/错误流量未计量；不能声称已测出模型训练通信成本。没有S*，训练后strict load/合法源输入恢复推理均NOT_RUN，不用随机模型或旧权重补齐。
+
+独立read-only审阅确认configure keyword失败、实际aggregate位置调用、零step范围和冻结代码SHA。诊断期间无额外模型训练，也未读取真实目标Test。所有权重/数值数据继续留本地；本轮没有新训练权重可公开。
+''')
+    md('NEXT_DECISION.md','''# 停止、恢复与下一轮门禁
+
+本轮停在BLOCKED。SOURCE唯一启动已经使用，无论0步还是25轮，不自动把失败启动重算成“还可再跑一次”。保留SOURCE授权文件、ONCE_STARTED、3个失败输出目录和全部日志；不覆盖、不清理、不改冻结runtime，不自动开始第二次SOURCE或任何pilot。
+
+下一阶段可审阅的最小工作：新注册版本修复configure_fit公共关键字名称，校准aggregate_fit公共签名；原模型/数据/spec超参数保持不变；补原生Flower dispatcher与本机gRPC无真实数据冒烟，必须明确实际运行环境/套接字权限。通过后请求单独批准恢复SOURCE，指定新输出位置并保留本次attempt1。批准SOURCE仍不授权pilot，不能自动扩72分支。
+
+在新合法S*生成及25轮state/receipt/来源/恢复一致性验收前，六组全部BLOCKED。B1缺S*；B0/B2/B3/B4/B5同时缺S*和可运行的原生callback/网络条件。B1–B5原2500/40000合同未改变，B3/B4仅反馈、B4/B5仅参数加权的预注册定义保留，但不等于本轮完成以S*初始化的最终核验。
+
+恢复证据可从FINAL_VERIFICATION、SOURCE_RUN_FILE_MANIFEST、原授权/命令/启动前SHA、进程日志和observer读取；没有可恢复的训练中间状态/optimizer或最终S*。当前原命令会因已有输出目录而拒绝覆盖；不要手工换输出目录绕过一次性边界。后续真实训练必须先新登记并得到明确授权。
+
+本轮没有目标Test评价、分类准确率、预测类别路由或Pi部署。C3Day17仍只能作为C5Day18后历史保持集，C4保留回顾性，数据协议和未来固定端点评价不变。
+''')
+    c.write(HERE/'INDEPENDENT_REVIEW.json',dict(status='CONFIRMED_BLOCKERS',reviewer='phase32_review;read-only follow-up',findings=['configure_fit actual keyword dispatch fails','aggregate public keyword mismatch;actualSDK positional','prior preflight invoked positionally','all3zero steps;source numeric files only;3configs no checkpoints','runtime and contract hashes unchanged'],separate_transport_diagnostic='default sandbox10013;approved outside sandbox onebyte PASS',no_edits_or_training_in_review=True))
+    print('FAILURE AUDITED:SOURCEattempt1;0updates;NO SSTAR;ALL6BLOCKED;NO RETRY',flush=True)
+if __name__=='__main__':main()

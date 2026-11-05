@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "registered_experiment": "P32-SOURCE-DAY7-S42",
+  "source_spec_SHA256": "730e5d3e95c7176e605badd32eb2b309c90046f65bcd059987c73a42498a87a7",
+  "entry_SHA256": "18e621bda32a8ad44782bb03829ddfe0650a4f99c6426f39e9cb8f038497937c",
+  "contract_SHA256": "42482855cfb29f2c135c61145544cf0537ee655e3ae18829599ca293e26d80a2",
+  "effective_SHA256": "429bcbf39d869106855153118dd6b93b4651592a540335fcc236b1c9f827bbd7",
+  "initial_checkpoint_SHA256": "5d1779b78999471d97d1a32b4b86f4caef50dc8355163b5fc90cf0eb5b5e0783",
+  "initial_state_SHA256": "a935101402f3fbe0b8d6f111e8bb0d0cf5fffbc7bea7d59743287cff550790d7",
+  "source_identity_SHA256": "e4327cd18913e233eb39cd2118be8ada636f8dbc5c3fd2a49c7ef7c7d01b3334",
+  "source_windows": 2520,
+  "source_exposures": 120,
+  "target_arrays_loaded": false,
+  "phase32_payloads_verified": 931,
+  "source_pools": [
+    1,
+    2
+  ],
+  "observer": "read-only audits;Python numeric file allowlist;one CPU thread/process;registered argv unchanged",
+  "commands": [
+    [
+      "PYTHON_ENV\\python.exe",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runtime.py",
+      "server",
+      "--spec",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE.json",
+      "--checkpoint",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+      "--checkpoint-lock",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+      "--output",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runs\\SOURCE\\server"
+    ],
+    [
+      "PYTHON_ENV\\python.exe",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runtime.py",
+      "client",
+      "--spec",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE.json",
+      "--checkpoint",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+      "--checkpoint-lock",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+      "--output",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runs\\SOURCE\\client_1",
+      "--client-id",
+      "1"
+    ],
+    [
+      "PYTHON_ENV\\python.exe",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runtime.py",
+      "client",
+      "--spec",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE.json",
+      "--checkpoint",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL.pth",
+      "--checkpoint-lock",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\contracts\\SOURCE_RANDOM_INITIAL_LOCK.json",
+      "--output",
+      "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\runs\\SOURCE\\client_2",
+      "--client-id",
+      "2"
+    ]
+  ],
+  "earlier_COMMANDS_effective_field": "superseded draft;authoritative EXECUTION_REGISTRY_LOCK and cli_plans verified"
+}

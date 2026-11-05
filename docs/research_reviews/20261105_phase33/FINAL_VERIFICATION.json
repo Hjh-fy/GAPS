@@ -1,0 +1,42 @@
+{
+  "status": "BLOCKED_PRESERVED_NO_RETRY",
+  "registered_experiment": "P32-SOURCE-DAY7-S42",
+  "SOURCE_launch_attempts": 1,
+  "completed_rounds": 0,
+  "optimizer_steps": 0,
+  "training_window_presentations": 0,
+  "checkpoints_generated": 0,
+  "legal_Sstar_generated": false,
+  "SSTAR_LOCKED_generated": false,
+  "Sstar_restoration_test": "NOT_RUN_NO_TRAINED_MODEL",
+  "real_target_numeric_reads": 0,
+  "formal_source_numeric_open_events": 36,
+  "guard_selftest_rejected_target_probes": 2,
+  "pilots_started": 0,
+  "worktree_tracked_clean": true,
+  "prior_phase32_payloads_unchanged": 931,
+  "phase32_runtime_sha_unchanged": true,
+  "phase32_contract_sha_unchanged": true,
+  "initial_random_checkpoint_unchanged": true,
+  "observer_steps_each": {
+    "server": 0,
+    "client_1": 0,
+    "client_2": 0
+  },
+  "wall_seconds": 12.98977049998939,
+  "peak_RSS_each": {
+    "server": 379428864,
+    "client_1": 378884096,
+    "client_2": 379113472
+  },
+  "combined_peak_RSS": "not persisted on failed branch;sum of individual peaks is only an upper bound",
+  "actual_fit_model_payload_bytes": 0,
+  "wire_handshake_bytes": "NOT_MEASURED",
+  "running_registered_processes": [],
+  "only_confirmed_code_launch_blocker": "configure_fit keyword signature",
+  "aggregate_callback": "public keyword compatibility issue;installed Flower dispatch positional",
+  "transport": "default sandbox denies loopbackconnect;approved onebyte outside sandbox passes;no new training",
+  "authorization_consumed": true,
+  "training_retry_allowed": false,
+  "source_and_pilot_ready": false
+}
