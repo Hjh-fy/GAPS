@@ -1,0 +1,27 @@
+"""Pilot-specific authorization/roles;all numeric training functions frozen in R."""
+import sys,json,copy
+from p35_common import *
+def main():
+    if len(sys.argv)!=3:raise ValueError('group and registeredrole required')
+    group,role=sys.argv[1:]
+    if group not in GROUPS or role not in roles(group):raise ValueError('unregistered group/role')
+    reg=c.read(HERE/'registrations'/f'{group}.json');auth=c.read(HERE/'authorizations'/f'{group}.json')
+    if auth!=reg['authorization'] or auth['scope']!='C5_A4_SEED42_PILOT_ONLY':raise PermissionError('pilot authorization mismatch')
+    if c.sha(HERE/'entry.py')!=reg['entry_sha256'] or c.sha(R/'runtime.py')!=reg['runtime_sha256'] or c.sha(R/'contract.py')!=reg['contract_sha256']:raise ValueError('entry version changed')
+    if c.sha(HERE/'p35_common.py')!=reg['common_sha256']:raise ValueError('binding version changed')
+    s=c.validate_spec(c.read(HERE/'specs'/f'{group}.json'));assert c.sha(HERE/'specs'/f'{group}.json')==reg['spec_sha256']
+    out=HERE/'runs'/group/role;out.mkdir(parents=True,exist_ok=False)
+    model=load_model();pools=active_pools(group,role)
+    effective=dict(scientific=r.effective(s),experiment=reg['experiment_id'],active_dataset_ids=dataset_ids(group,role),initial_state_sha256=c.digest(r.arrays(model)),initial_file_sha256=c.sha(SSTAR),initial_prototypes='empty',selection='fixed25',role=role)
+    c.write(out/'effective_config.json',effective)
+    if role=='server':
+        st=r.strategy(s,model,pools,out)
+        r.fl.server.start_server(server_address='127.0.0.1:8080',config=r.fl.server.ServerConfig(num_rounds=25),strategy=st)
+    elif role.startswith('client_'):
+        cid=int(role.split('_')[1]);r.fl.client.start_numpy_client(server_address='127.0.0.1:8080',client=r.PhaseClient(cid,s,model,pools[cid],out))
+    else:
+        # Exact frozen B1 target loop, only authorization/output binding differs.
+        cl=r.PhaseClient(5,s,model,pools[5],out);aa=r.arrays(model)
+        for rnd in range(1,26):aa,_,_=cl.fit(aa,dict(server_round=rnd,expected_received_sha=c.digest(aa)))
+        r.torch.save(dict(model_state=cl.model.state_dict(),spec=s),out/'target_update_2500.pth')
+if __name__=='__main__':main()

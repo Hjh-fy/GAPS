@@ -1,0 +1,28 @@
+{
+  "status": "PASS_FIXED_SIX_ENDPOINTS_EVALUATED",
+  "groups": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "domains": [
+    "C1Day21",
+    "C2Day16",
+    "C5Day22"
+  ],
+  "raw_exposures": 120,
+  "windows": {
+    "1": 840,
+    "2": 840,
+    "5": 840
+  },
+  "target_training_Reads": 0,
+  "all_six_lock_before_test": true,
+  "retrospective": true,
+  "training_seed_count": 1,
+  "endpoint_selection": "fixed round25 only",
+  "unexpected_data_reads": 0
+}

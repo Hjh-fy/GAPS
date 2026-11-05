@@ -1,0 +1,25 @@
+{
+  "scope": "pre-registration utility only; no formal pilot started",
+  "issues": [
+    {
+      "stage": "first import",
+      "error": "AttributeError: partially initialized module common has no attribute BASE",
+      "cause": "new helper filename shadowed immutable Phase31 common module",
+      "resolution": "renamed new helper p35_common.py before registrations",
+      "gradient_steps": 0,
+      "numeric_input_reads": 0
+    },
+    {
+      "stage": "evaluation metadata admission",
+      "error": "AssertionError: assumed C2 R4 Day20 did not match canonical future identities",
+      "canonical_fact": "C2 R4 is Day16; C1 R4 Day21; C5 Test Day22",
+      "resolution": "corrected new assertion and prose to existing canonical identities; no source or target role changed",
+      "source_and_calibration_package_checks_had_run": true,
+      "target_Test_numeric_reads": 0,
+      "gradient_steps": 0
+    }
+  ],
+  "registration_completed_only_after_both_resolved": true,
+  "formal_pilot_retries": 0,
+  "historical_files_modified": false
+}

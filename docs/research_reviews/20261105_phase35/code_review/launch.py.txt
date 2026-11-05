@@ -1,0 +1,86 @@
+"""One-shot sequential registered pilots; fail closed and never retry/evaluate."""
+import sys,os,time,socket,subprocess,hashlib,datetime,ctypes,traceback
+from p35_common import *
+from execution_environment import clean_environment,REMOVE
+import psutil
+
+def environment(group,role):
+    env=clean_environment()
+    for k in list(env):
+        if k.startswith(('P34_','P35_','FEDONGAS_')):env.pop(k)
+    env.update(PYTHONPATH=str(HERE/'observer_bootstrap'),P35_OBSERVER='1',P35_WORKSPACE=str(ROOT),P35_OBSERVER_OUT=str(HERE/'observer'/group),P35_ROLE=role,P35_GROUP=group)
+    return env
+
+def socket_check():
+    s=socket.socket();s.bind(('127.0.0.1',8080));s.listen(1);s.settimeout(3);q=socket.socket();q.settimeout(3)
+    try:
+        q.connect(('127.0.0.1',8080));a,_=s.accept();q.send(b'x');assert a.recv(1)==b'x';q.close();a.close()
+    finally:q.close();s.close()
+
+def preflight():
+    assert not ctypes.windll.shell32.IsUserAnAdmin()
+    lock=c.read(R/'ENVIRONMENT_LOCK.json');assert hashlib.sha256(psutil.Process().username().encode()).hexdigest()==lock['host_user_hash']
+    socket_check()
+    code="from pathlib import Path;import runtime as r;assert Path(r.__file__).resolve()==Path("+repr(str(R/'runtime.py'))+");p=Path("+repr('ORIGINAL_WORKSPACE/dataset/data1/b5/B5_GCO_F010_R4.txt')+")\ntry:p.open('rb')\nexcept PermissionError:print('GUARD_DENIED_BEFORE_OPEN')\nelse:raise AssertionError('guard bypass')"
+    p=subprocess.run([sys.executable,'-c',code],cwd=ROOT,env=environment('guard','server'),capture_output=True)
+    assert p.returncode==0 and b'GUARD_DENIED_BEFORE_OPEN' in p.stdout,p.stderr.decode('utf-8',errors='replace')
+    c.write(HERE/'HOST_AND_OBSERVER_PREFLIGHT.json',dict(status='PASS',localhost='127.0.0.1:8080 bind/connect',normal_user=True,administrator=False,firewall_changed=False,port_changed=False,guard='raw Test open denied before access',observer_sha256=c.sha(HERE/'observer_bootstrap/sitecustomize.py'),launch_sha256=c.sha(HERE/'launch.py'),old_environment_removed=True,training=False))
+    print('HOST+GUARD PASS;NO_TRAINING',flush=True)
+
+def gate(b):
+    assert c.read(HERE/'PRE_RUN_VERIFICATION.json')['status']=='PASS'
+    host=c.read(HERE/'HOST_AND_OBSERVER_PREFLIGHT.json');assert host['status']=='PASS' and host['observer_sha256']==c.sha(HERE/'observer_bootstrap/sitecustomize.py') and host['launch_sha256']==c.sha(HERE/'launch.py')
+    reg=c.read(HERE/'registrations'/f'{b}.json');assert reg['authorization']==c.read(HERE/'authorizations'/f'{b}.json')
+    for p,h in [(HERE/'entry.py',reg['entry_sha256']),(HERE/'p35_common.py',reg['common_sha256']),(R/'runtime.py',reg['runtime_sha256']),(R/'contract.py',reg['contract_sha256']),(R/'ENVIRONMENT_LOCK.json',reg['environment_sha256']),(SSTAR,reg['Sstar_file_sha256']),(HERE/'specs'/f'{b}.json',reg['spec_sha256'])]:assert c.sha(p)==h,(p,h)
+    assert c.digest(r.arrays(load_model()))==STATE
+    for cid in [1,2,5]:c.validate_package(c.DATA_ROOT/('target' if cid==5 else 'source')/f'client_{cid}',dict(client_id=cid))
+    assert not(HERE/'runs'/b).exists() and not(HERE/'started'/f'{b}.json').exists()
+    socket_check();return reg
+
+def run_one(b):
+    reg=gate(b);(HERE/'started').mkdir(exist_ok=True)
+    c.write(HERE/'started'/f'{b}.json',dict(experiment=reg['experiment_id'],utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),registration_sha256=c.sha(HERE/'registrations'/f'{b}.json'),observer_sha256=c.sha(HERE/'observer_bootstrap/sitecustomize.py'),commands=reg['commands'],one_launch_no_retry=True))
+    logs=HERE/'logs'/b;logs.mkdir(parents=True,exist_ok=False);procs=[];files=[];t=time.perf_counter();peak={};combined=0
+    try:
+        for cmd in reg['commands']:
+            role=cmd['role'];f=(logs/(role+'.log')).open('xb');files.append(f)
+            p=subprocess.Popen(cmd['argv'],cwd=ROOT,env=environment(b,role),stdout=f,stderr=subprocess.STDOUT,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0));procs.append((role,p))
+        c.write(logs/'PROCESSES.json',[dict(role=role,pid=p.pid,argv=reg['commands'][i]['argv']) for i,(role,p) in enumerate(procs)])
+        while any(p.poll() is None for _,p in procs):
+            if any(p.poll() is not None and p.returncode!=0 for _,p in procs):raise RuntimeError('pilot child failed;no retry')
+            rss=0
+            for role,p in procs:
+                try:n=psutil.Process(p.pid).memory_info().rss;peak[role]=max(peak.get(role,0),n);rss+=n
+                except psutil.Error:pass
+            combined=max(combined,rss)
+            if time.perf_counter()-t>7200:raise TimeoutError('registered monitor ceiling2h;no retry')
+            time.sleep(.2)
+        codes={role:p.wait() for role,p in procs};assert all(v==0 for v in codes.values()),codes
+        c.write(logs/'EXECUTION_COMPLETE.json',dict(status='PROCESS_EXIT0_AWAITING_AUDIT',codes=codes,wall_seconds=time.perf_counter()-t,peak_RSS_by_process=peak,peak_concurrent_RSS_bytes=combined))
+        from audit import audit_group
+        audit_group(b)
+        print(b+' ENDPOINT_LOCKED',flush=True)
+    except BaseException:
+        for _,p in procs:
+            if p.poll() is None:p.terminate()
+        for _,p in procs:
+            try:p.wait(timeout=10)
+            except subprocess.TimeoutExpired:p.kill()
+        c.write(logs/'FAILED.json',dict(status='BLOCKED_NO_RETRY',error=traceback.format_exc(),codes={role:p.poll() for role,p in procs},seconds=time.perf_counter()-t));raise
+    finally:
+        for f in files:f.close()
+
+def run():
+    assert not(HERE/'MATRIX_STARTED.json').exists()
+    c.write(HERE/'MATRIX_STARTED.json',dict(order=GROUPS,retries=0,target_test_release=False,authorized='userPhase3.5',coordinator_sha256=c.sha(Path(__file__))))
+    try:
+        for b in GROUPS:run_one(b)
+        locks={b:c.sha(HERE/'locks'/f'{b}.json') for b in GROUPS}
+        c.write(HERE/'ALL_SIX_ENDPOINTS_LOCKED.json',dict(status='PASS_ALL_SIX_LOCKED',locks=locks,Test_opened=False,evaluation_authorized_after_contract_check=True))
+        print('ALL_SIX_LOCKED;NO_TEST_YET',flush=True)
+    except BaseException:c.write(HERE/'MATRIX_BLOCKED.json',dict(status='BLOCKED_INCOMPLETE_NO_EVALUATION',error=traceback.format_exc(),locked=[b for b in GROUPS if (HERE/'locks'/f'{b}.json').exists()],no_retry=True));raise
+if __name__=='__main__':
+    r.torch.set_num_threads(1)
+    if sys.argv[1:]==['preflight']:preflight()
+    elif sys.argv[1:]==['run']:run()
+    else:raise ValueError('preflight or run required')

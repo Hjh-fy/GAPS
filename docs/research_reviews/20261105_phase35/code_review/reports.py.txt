@@ -1,0 +1,131 @@
+"""One-time reports after matrix completion/failure, no training or Test reads."""
+from p35_common import *
+import collections,datetime
+
+def md(name,s):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(s)
+
+def main():
+    r.torch.set_num_threads(1)
+    success=(HERE/'ALL_SIX_ENDPOINTS_LOCKED.json').exists();evaluated=(HERE/'evaluation/EVALUATION_COMPLETE.json').exists();assert success or (HERE/'MATRIX_BLOCKED.json').exists()
+    for p,h in c.read(HERE/'EXECUTION_EXTENSION_FINAL.json')['files'].items():assert c.sha(HERE/p)==h,'execution code changed'
+    if evaluated:
+        assert c.sha(HERE/'evaluate.py')==c.read(HERE/'EVALUATION_RELEASE.json')['evaluation_code_sha256']
+        assert c.read(HERE/'SUPPLEMENTAL_INTEGRITY.json')['status']=='PASS'
+    rows=[];locked={};costs=[]
+    for b in GROUPS:
+        p=HERE/'locks'/f'{b}.json';lock=c.read(p) if p.exists() else None
+        if lock:locked[b]=lock
+        rows.append(dict(group=b,training_status='PASS' if lock else 'BLOCKED_OR_NOT_STARTED',endpoint_status=lock['status'] if lock else 'NO_LOCK',endpoint_sha=lock['endpoint_state_sha256'] if lock else '',target_steps=lock['target_updates'] if lock else '',target_presentations=lock['target_presentations'] if lock else '',evaluation='PASS' if evaluated else 'BLOCKED_NO_PARTIAL_COMPARISON'))
+        if lock:
+            costs.append(dict(group=b,wall_seconds=lock['cost']['wall_seconds'],peak_concurrent_RSS_bytes=lock['cost']['peak_concurrent_RSS_bytes'],all_optimizer_updates=lock['all_optimizer_updates'],target_updates=lock['target_updates'],target_presentations=lock['target_presentations'],local_source_CE_presentations=lock['local_source_CE_presentations'],server_source_CE_presentations=lock['server_source_CE_presentations'],server_source_extra_forward_rows=lock['server_source_extra_forward_rows'],source_stats_extra_forward_rows=lock['source_stats_extra_forward_rows'],protobuf_fit_up_bytes=lock['protobuf_fit_up_bytes'],protobuf_fit_down_bytes=lock['protobuf_fit_down_bytes']))
+    c.prior.table(HERE/'TRAINING_PASS_BLOCKED.csv',rows)
+    if costs:c.prior.table(HERE/'COMPUTE_AND_COMMUNICATION.csv',costs)
+    modelindex=[]
+    for p in sorted(HERE.rglob('*.pth')):
+        ck=r.torch.load(p,map_location='cpu',weights_only=True);schema=r.model();r.validate_state(schema,ck['model_state']);modelindex.append(dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=c.sha(p),state_sha256=c.digest([ck['model_state'][k].cpu().numpy() for k in schema.state_dict()])))
+    if modelindex:c.prior.table(HERE/'MODEL_VERSION_INDEX.csv',modelindex)
+    # Audit training processes only: guard selftest is separately declared.
+    numeric=[]
+    for b in GROUPS:
+        for role in roles(b):
+            p=HERE/'observer'/b/(role+'_process.json')
+            if p.exists():
+                proc=c.read(p);numeric.append(dict(group=b,role=role,opens=len(proc['numeric_access']),denied=len(proc['denied']),completed_blocks=proc['completed_blocks'],optimizer_steps=proc['total_optimizer_steps'],access_manifest_sha256=c.sha(p)))
+    c.prior.table(HERE/'NUMERIC_ACCESS_AUDIT.csv',numeric)
+    assert all(x['denied']==0 for x in numeric)
+    reg=c.read(HERE/'EXPERIMENT_REGISTRY.json')
+    frozen={}
+    for directory in [P34]:
+        rr=c.prior.rows(directory/'ARTIFACT_SHA256.csv')
+        for x in rr:assert c.sha(directory/x['path'])==x['sha256']
+        frozen[directory.name]=dict(files=len(rr),manifest_sha256=c.sha(directory/'ARTIFACT_SHA256.csv'),status='PASS_UNCHANGED')
+    assert c.sha(R/'runtime.py')==c.read(P34/'SSTAR_ACCEPTANCE_LOCK.json')['runtime_sha256'] and c.sha(R/'contract.py')==c.read(P34/'SSTAR_ACCEPTANCE_LOCK.json')['contract_sha256'];load_model()
+    c.write(HERE/'FROZEN_ASSET_VERIFICATION.json',dict(status='PASS',Phase34=frozen,Phase33R_runtime_contract_Sstar_and_25round_ancestry='PASS_UNCHANGED',v5_used_code='runtime c.prior.path verified fileSHAs;no writes',earlier_phase_content='read-only imports;no overwrites'))
+    details='';source_details='';diagnosis=''
+    if evaluated:
+        metrics=c.prior.rows(HERE/'evaluation/METRICS.csv');target=[x for x in metrics if x['domain']=='C5'];details='|组|目标Accuracy|Macro-F1|暴露等权错误率|\n|---|---:|---:|---:|\n'+''.join(f"|{x['group']}|{float(x['Accuracy']):.6f}|{float(x['MacroF1']):.6f}|{float(x['exposure_equal_error']):.6f}|\n" for x in target)
+        m={x['group']:x for x in target};delta43=float(m['B4']['Accuracy'])-float(m['B3']['Accuracy']);delta54=float(m['B5']['Accuracy'])-float(m['B4']['Accuracy'])
+        source_details='|组|C1 Accuracy|C2 Accuracy|\n|---|---:|---:|\n'+''.join('|'+b+'|'+ '|'.join(f"{100*float(next(x for x in metrics if x['group']==b and x['domain']==d)['Accuracy']):.2f}%" for d in ['C1','C2'])+'|\n' for b in GROUPS+['Sstar'])
+        intervals=[x for x in c.prior.rows(HERE/'evaluation/PAIRED_EXPOSURE_UNCERTAINTY.csv') if x['domain']=='C5']
+        diagnosis='目标暴露等权错误率差值的预定95%区间（百分点；负为改善）：'+ '; '.join(f"{x['contrast']} {100*float(x['exposure_error_difference']):+.3f} [{100*float(x['CI95_low']):+.3f}, {100*float(x['CI95_high']):+.3f}]" for x in intervals)+'。两区间均含0，不能声称反馈或原型加权带来确定的目标改善或确定的目标损害。'
+        diagnosis+=f"\n\n目标CO Recall：B3={100*float(m['B3']['Recall_CO']):.2f}%、B4={100*float(m['B4']['Recall_CO']):.2f}%、B5={100*float(m['B5']['Recall_CO']):.2f}%；反馈同时改善其他气体，形成类别间权衡。B4相对B3的C1 Accuracy提高约2.98个百分点，但目标Accuracy下降约1.55个百分点；B5相对B4的C1下降约5.83个百分点。"
+        diagnosis+='\n\nB1目标Accuracy描述性较高，但C1/C2出现明显遗忘，源Ethylene Recall均为0。B2目标CO Recall为0；普通第三client的小样本权重可能不足以纠正目标偏移，这只是机制假设，未做独立权重消融。不得根据这些已观察Test切换聚合规则或选新参数。Source CE可能保护源类别关系，但各组源监督成本不同，不能把B1/B3差别归为一个等算力单因素。'
+        decision=f'B4−B3目标Accuracy变化{100*delta43:+.3f}个百分点，B5−B4变化{100*delta54:+.3f}个百分点。目标配对区间均含0；这些是单seed、单目标的观察差异，不是跨设备或独立确认性证据。'
+        decision+='\n\n'+('反馈未取得目标准确率增益，应保留负结果，停止本配置的优势主张。' if delta43<=0 else '反馈方向出现目标准确率增益，须同时阅读源保持及暴露区间，尚不能主张稳定有效。')
+        decision+='\n\n'+('原型加权未取得目标准确率增益，停止该配置的增益主张，不追加搜索。' if delta54<=0 else '原型加权方向出现目标准确率增益，仍需源保持和多seed独立批准验证。')
+        if not locked['B5']['selective_contrast_valid']:decision+='\n\nB5选择性加权机制未形成完整有效对照，禁止将结果解释为该机制增益。'
+    else:decision='六组不完整或未通过评估门禁，停止：不释放Test、不计算其余组的测试指标、不选赢家。后续处置须独立批准；不重跑、不调参。'
+    md('README.md',f'''# FedOnGas Phase3.5 C5 A4 seed42 六组pilot
+
+依据Phase3.4固定8ceeebcbd5e9e493c8dec5e726f030e5f9ec2fcc；共同合法Sstar state {STATE}。仅授权B0–B5，各一次、固定25轮；B1–B5使用相同32目标标定窗及预锁索引，B0训练不使用目标数据。数值代码来自未修改Phase33R runtime/contract及v5。
+
+当前训练终点锁定{len(locked)}/6；离线评价{'完成' if evaluated else '未释放/未完成'}。实际状态见TRAINING_PASS_BLOCKED.csv，版本见MODEL_VERSION_INDEX.csv，预算/通信见COMPUTE_AND_COMMUNICATION.csv。
+
+{details}
+
+{decision}
+
+阅读：SCIENTIFIC_CONTRACT.md、TRAINING_EVIDENCE.md、RESULT_ANALYSIS.md、NEXT_DECISION.md、RECOVERY.md、FINAL_VERIFICATION.json。本地保留所有25轮模型、client快照、原型/encoder版本、索引与逐窗预测；GitHub只发布精简脱敏审阅副本。
+
+研究边界：回顾性探索，seed42/C5A4，不是首次盲测、跨设备普遍有效或真实在线验证。无额外seed/72分支/预测类别回归/Pi部署；无测试选轮、事后超参或策略选择。
+''')
+    md('SCIENTIFIC_CONTRACT.md',f'''# 科学与执行合同
+
+源C1Day4、C2Day1/7，120独立暴露2520窗；目标C5Day18A4，16独立暴露32窗。50×8、四类Ethanol/CO/Ethylene/Methane、seed42、batch16、Adam5e-4，统一每轮/块fresh optimizer，固定25端点。
+
+B0 SourceFedAvg从Sstar续训25轮；B1只目标2500CE步；B2普通第三client，num_examples32/2552，100步/轮；B3/4/5均服务器100个优化步骤/轮，每步10批SourceCE+1批TargetCE（每轮1000源批/100目标批），目标2500步40000呈现。B3/4仅adapted反馈开关，B4/5仅原型选择性参数加权开关；stats/EMA.8/warmup3/minscale.3相同、辅助损失关闭。B3主评价也用adapted25，不用其返回aggregated25替代。
+
+新增entry只绑定pilot授权、输出和必要数据角色，仍调用原PhaseClient/strategy/DA，B1复制原循环。普通server无数据；客户端各自数据；DAserver源2520+目标32，无旧500截断。SOURCE旧授权不复用。冻结文件不改。
+
+所有新执行代码与观察器SHA在EXECUTION_EXTENSION_FINAL.json锁定，真实启动外层命令在launch.run前逐项assert。内层校验entry/common/runtime/contract/spec/Sstar和canonicalpack。普通用户localhost8080，不改端口/防火墙/管理员权限；原Flower1.23原生回调不变。观察器仅计数/有限性/快照，不改变损失、参数或随机种子。
+
+训练进程audit hook按角色白名单允许canonical .npy，拒绝其他.npy/.npz及所有dataset/data1原始文件，数据包禁止额外文件与symlink；Dev/Test无loader/回调。该约束是Python进程内访问合同及审计，不宣称OS级网络隔离或隐私保护。B0审计恢复fixture可读取合法Calibration，但不训练/不算准确率/不选模型。
+
+预注册评价：C5Day22、源C1R4Day21/C2R4Day16，全部六端点锁定之后才打开/哈希Test。早期C2Day20字面假设在登记前被canonical身份表纠正，未更改任何原身份。C1/C2保持是历史留出暴露，C2Day16早于Day18接入；不能称未来在线采集。
+
+本轮预登记导入同名与日期断言失败发生在真实训练之前，PREREGISTRATION_ISSUE及EXECUTION_EXTENSION记录保留；没有正式pilot重跑。
+''')
+    md('TRAINING_EVIDENCE.md',f'''# 训练与成本证据
+
+成功锁定{len(locked)}/6，各组25轮/块全state在runs及observer；原生phase32_receipt逐轮记录收到/上传/聚合/返回，encoder+prototype SHA绑定。audit各组ROUND_LEDGER、CHECKPOINTS、FEEDBACK_AND_WEIGHTS给出实际计数与独立聚合参考，容差4eps32×max(1,absreference)。最终state有限、strict load与两次加载固定4合法Calibration窗输出精确一致，不作精度选择。
+
+source每轮53+105步、2520呈现，25轮3950步63000呈现。B1/B2target每轮100步1600呈现，总2500/40000；B2样本聚合32/2552，与重复呈现无关。B3–B5target同2500/40000，另有源客户端3950步、源服务器398800标签呈现、40000额外源forward与126000统计no_grad forward；serverSourceCE共25000批次，partialbatch如实计数。
+
+通信以真实FitIns/FitRes protobuf.ByteSize记录（包含参数、config、stats），同时原始receipt记录statepayload；这不等于包含gRPC/TCP/TLS帧的物理链路字节。初始get_parameters/握手/控制消息不并入该Fit账本；不隐藏为完整链路总量。B1本地无联邦通信。墙钟含进程启动训练，独立audit用时未并入训练完成账本；RSS按.2s采样、子进程观察器.1s，非精确连续峰值。
+
+B1/B2/B3计算位置及额外源更新不同，不能主张等算力单因素。只有B3/B4反馈、B4/B5选择性权重满足预锁机制差异。phase=0为中性类别统计键，不是测得的物理响应阶段。
+
+所有异常均保留，缺支不放Test、不选剩余赢家；完整状态和资源成本见CSV/原日志。
+''')
+    md('RESULT_ANALYSIS.md',f'''# 固定端点结果与边界
+
+{details}
+
+{decision}
+
+{source_details}
+
+{diagnosis}
+
+目标与源的Accuracy、MacroF1、各气体Recall、四类混淆矩阵、单窗和暴露等权错误率分别在evaluation/METRICS.csv、CONFUSIONS.json、EXPOSURE_ERRORS.csv；源对共同Sstar的变化在SOURCE_RETENTION_CHANGE.csv。逐窗结果在PRIVATE_WINDOW_PREDICTIONS.csv，不以窗数充当独立样本量。原始质量掩码自动保留有效窗口，不按误差丢弃。
+
+PAIRED_EXPOSURE_UNCERTAINTY.csv仅预定B4−B3/B5−B4，40独立暴露按气体分层、配对bootstrap2000，seed20261105，差值负值表示错误率降低。区间只反映给定单次训练下的暴露抽样变化；跨暴露仍共享设备/日期/浓度设置，不是多训练种子或独立新设备证据。保留全部负收益和逐类权衡。
+
+本轮评价模型未用于调参/选轮/策略切换；既有回归Test已观察，因此整个研究继续标记回顾性，不能恢复首次盲测语义。未执行额外训练来挽救任一负结果。
+''')
+    md('NEXT_DECISION.md','# 继续/停止\n\n'+decision+'\n\n本轮到此结束。多seed、顺序C3→C5接入、完整矩阵、模型机制改动均须后续独立决策；不自动执行。\n')
+    md('RECOVERY.md',f'''# 恢复与不可重跑约束
+
+主要代码：entry.py为入口，launch.py为一次性协调器，audit.py为无训练验收，evaluate.py为全部端点锁定后离线评价；冻结Phase33R runtime.py/contract.py和v5原client/strategy/DA为数值内核。registrations/Bx.json含真实argv，specs/authorizations分别独立注册。Python/依赖继承Phase33R ENVIRONMENT_LOCK.json。
+
+主要输出：runs/Bx/server/server_round_025.pth（B0/B2）；runs/B1/target/target_update_2500.pth；runs/B3、B4、B5/server/server_round_025_adapted.pth。锁和SHA见locks/Bx.json、MODEL_VERSION_INDEX。observer有全部client25轮训练后state、真实梯度步数和索引。server有全部聚合及DA模型、原型、EMA、统计。
+
+恢复推理：按对应锁校验文件SHA，使用r.model()、r.validate_state(model,ck['model_state'])、strictload，再model.eval()输入float32[N,50,8]；分类logits形状[N,4]，沿类别轴argmax(1)，标签顺序Ethanol/CO/Ethylene/Methane。完整输入需原采样/预处理合同，不能用任意71D回归特征直接输入分类器。
+
+每个授权max_launches1，started/MATRIX_STARTED阻止重复；不要通过删除标记重跑。失败恢复须保留当前目录并单独批准新attempt，不沿用已消费授权。公开副本不含权重、原始数据或输入特征，无法独立复训，须本地归档。v5、旧Phase及Sstar来源仍只读。
+''')
+    c.write(HERE/'FINAL_VERIFICATION.json',dict(status='PASS_SIX_TRAIN_AND_EVAL' if success and evaluated else 'BLOCKED_INCOMPLETE',six_training_success=success,evaluation_complete=evaluated,locked_groups=list(locked),training_test_reads=0,formal_launches=len(list((HERE/'started').glob('*.json'))),retries=0,same_Sstar=STATE,frozen_assets_unchanged=True,all_finite_strict_load=True,all_models_indexed=len(modelindex),training_access_records=len(numeric),B5_mechanism_valid=locked.get('B5',{}).get('selective_contrast_valid'),retrospective=True,seeds=[42],unapproved_experiments=0))
+    inventory=[dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=c.sha(p)) for p in sorted(HERE.rglob('*')) if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv'];c.prior.table(HERE/'ARTIFACT_SHA256.csv',inventory)
+    print(json.dumps(dict(status='REPORTS_SEALED',files=len(inventory),bytes=sum(x['bytes'] for x in inventory),locked=len(locked),evaluated=evaluated)),flush=True)
+if __name__=='__main__':main()

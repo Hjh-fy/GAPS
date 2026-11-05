@@ -1,0 +1,80 @@
+"""Offline fixed-endpoint evaluation; requires all six completed endpoint locks."""
+from p35_common import *
+import datetime,collections,traceback
+from sklearn.metrics import accuracy_score,f1_score,recall_score,confusion_matrix
+
+def gate():
+    allsix=c.read(HERE/'ALL_SIX_ENDPOINTS_LOCKED.json');assert allsix['status']=='PASS_ALL_SIX_LOCKED'
+    for b in GROUPS:
+        assert allsix['locks'][b]==c.sha(HERE/'locks'/f'{b}.json');lock=c.read(HERE/'locks'/f'{b}.json')
+        assert lock['status']=='PASS_ENDPOINT_LOCKED' and c.sha(Path(lock['endpoint']))==lock['endpoint_file_sha256']
+        m=r.model();ck=r.torch.load(lock['endpoint'],map_location='cpu',weights_only=True);r.validate_state(m,ck['model_state']);m.load_state_dict(ck['model_state'],strict=True);assert c.digest(r.arrays(m))==lock['endpoint_state_sha256']
+    ev=c.prior.rows(HERE/'EVALUATION_IDENTITIES_PREREGISTERED.csv');canonical=[x for x in c.prior.rows(c.P31/'evidence/FUTURE_EVALUATION_IDENTITIES.csv') if x['client_id'] in ['1','2','5']];assert ev==canonical
+    train=c.prior.rows(c.P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv');assert not {x['filename'] for x in ev}&{x['filename'] for x in train}
+    contract=c.read(HERE/'EVALUATION_CONTRACT.json');assert c.sha(HERE/'EVALUATION_CONTRACT.json')==c.read(HERE/'PRE_RUN_VERIFICATION.json')['evaluation_contract_sha']
+    assert {b:c.read(HERE/'registrations'/f'{b}.json')['endpoint'] for b in GROUPS}==contract['endpoint_map']
+    assert {(x['client_id'],x['day']) for x in ev}=={('1','21'),('2','16'),('5','22')}
+    c.write(HERE/'EVALUATION_RELEASE.json',dict(status='PASS_RELEASE_AFTER_ALL_SIX_LOCKED',utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),all_six_sha256=c.sha(HERE/'ALL_SIX_ENDPOINTS_LOCKED.json'),evaluation_code_sha256=c.sha(Path(__file__)),identities_sha256=c.sha(HERE/'EVALUATION_IDENTITIES_PREREGISTERED.csv'),contract_sha256=c.sha(HERE/'EVALUATION_CONTRACT.json'),training_Test_reads=0,selection='fixed25;no besttest;all6evaluated',qualifier='retrospective single seed C5A4;sourceR4 historicalholdouts'))
+    return ev
+
+def metrics(group,domain,meta,y,p):
+    errors=(p!=y);byfile=collections.defaultdict(list)
+    for m,e in zip(meta,errors):byfile[m['filename']].append(float(e))
+    row=dict(group=group,domain=domain,windows=len(y),exposures=len(byfile),Accuracy=float(accuracy_score(y,p)),MacroF1=float(f1_score(y,p,labels=list(range(4)),average='macro',zero_division=0)),window_error=float(errors.mean()),exposure_equal_error=float(r.np.mean([r.np.mean(v) for v in byfile.values()])))
+    recalls=recall_score(y,p,labels=list(range(4)),average=None,zero_division=0)
+    row.update({f'Recall_{name}':float(recalls[i]) for i,name in enumerate(c.spec('B0')['labels'])})
+    matrix=confusion_matrix(y,p,labels=list(range(4))).tolist()
+    exposures=[dict(group=group,domain=domain,filename=f,gas_id=next(m['gas_id'] for m in meta if m['filename']==f),window_count=len(v),error=float(r.np.mean(v))) for f,v in sorted(byfile.items())]
+    return row,matrix,exposures
+
+def main():
+    r.torch.set_num_threads(1);ev=gate();out=HERE/'evaluation';out.mkdir(exist_ok=False)
+    v=c.prior.p1.frozen();datasets={};trace=[];windowmeta=[];qc=[]
+    for cid in [1,2,5]:
+        xx=[];yy=[];mm=[]
+        for identity in [x for x in ev if int(x['client_id'])==cid]:
+            path=c.prior.p1.ORIGINAL/'dataset/data1'/identity['filename'];assert c.prior.p1.sha(path)==identity['raw_sha256']
+            parsed=v.strict.parse_raw_name(path.name);assert parsed['client_id']==cid and str(parsed['day'])==identity['day'];data=v.strict.process_raw(path)
+            kept=0
+            for x,wm in zip(data['x'],data['metadata']):
+                if not wm['valid']:continue
+                meta=dict(identity,gas_id=int(parsed['class_id']),concentration=float(parsed['concentration']),**wm);mm.append(meta);xx.append(x);yy.append(int(parsed['class_id']));kept+=1
+            assert kept>0
+            qc.append(dict(filename=path.name,client_id=cid,day=identity['day'],raw_rows=data['raw_rows'],duplicate_timestamps=data['duplicate_timestamps'],candidate_windows=len(data['x']),valid_windows=kept,invalid_windows=len(data['x'])-kept))
+            trace.append(dict(filename=path.name,client_id=cid,day=identity['day'],raw_sha256=c.prior.p1.sha(path),operation='offline evaluation AFTER all6 endpoint locks'))
+        x=r.np.asarray(xx,dtype=r.np.float32);y=r.np.asarray(yy,dtype=r.np.int64);assert x.shape==(len(y),50,8) and r.np.isfinite(x).all();datasets[cid]=(x,y,mm);windowmeta.extend(mm)
+        with (out/f'C{cid}_PRIVATE_INPUTS.npz').open('xb') as f:r.np.savez_compressed(f,x=x,y=y)
+    c.prior.table(out/'RAW_ACCESS_TRACE.csv',trace);c.prior.table(out/'WINDOW_IDENTITIES.csv',windowmeta);c.prior.table(out/'DATA_QUALITY.csv',qc)
+    metrics_rows=[];all_exp=[];predictions=[];confusions=[]
+    for b in GROUPS+['Sstar']:
+        if b=='Sstar':m=load_model()
+        else:
+            lock=c.read(HERE/'locks'/f'{b}.json');m=r.model();m.load_state_dict(r.torch.load(lock['endpoint'],map_location='cpu',weights_only=True)['model_state'],strict=True)
+        m.eval()
+        for cid in ([1,2] if b=='Sstar' else [1,2,5]):
+            x,y,meta=datasets[cid];logits=[]
+            with r.torch.no_grad():
+                for i in range(0,len(x),128):logits.append(m(r.torch.from_numpy(x[i:i+128]))[0].cpu().numpy())
+            z=r.np.concatenate(logits);assert z.shape==(len(y),4) and r.np.isfinite(z).all();p=z.argmax(1);domain=f'C{cid}';row,mat,exposures=metrics(b,domain,meta,y,p);metrics_rows.append(row);all_exp.extend(exposures);confusions.append(dict(group=b,domain=domain,matrix_true_rows_pred_columns=mat,labels=c.spec('B0')['labels']))
+            for i,a in enumerate(meta):predictions.append(dict(group=b,domain=domain,filename=a['filename'],gas_id=int(y[i]),prediction=int(p[i]),error=int(p[i]!=y[i]),start_s=a['start_s'],end_s=a['end_s'],logits=json.dumps(z[i].tolist())))
+    c.prior.table(out/'METRICS.csv',metrics_rows);c.prior.table(out/'EXPOSURE_ERRORS.csv',all_exp);c.prior.table(out/'PRIVATE_WINDOW_PREDICTIONS.csv',predictions);c.write(out/'CONFUSIONS.json',confusions)
+    changes=[]
+    for row in metrics_rows:
+        if row['group']=='Sstar' or row['domain']=='C5':continue
+        baseline=next(x for x in metrics_rows if x['group']=='Sstar' and x['domain']==row['domain'])
+        changes.append(dict(group=row['group'],domain=row['domain'],Accuracy_change=row['Accuracy']-baseline['Accuracy'],MacroF1_change=row['MacroF1']-baseline['MacroF1'],exposure_error_change=row['exposure_equal_error']-baseline['exposure_equal_error']))
+    c.prior.table(out/'SOURCE_RETENTION_CHANGE.csv',changes)
+    # Paired exposure-level resampling, stratified by class; no window IID claim.
+    boot=[];rng=r.np.random.default_rng(20261105)
+    for domain in ['C1','C2','C5']:
+        for new,old in [('B4','B3'),('B5','B4')]:
+            a={x['filename']:x for x in all_exp if x['domain']==domain and x['group']==new};d={x['filename']:x for x in all_exp if x['domain']==domain and x['group']==old};assert set(a)==set(d)
+            blocks=[r.np.array([a[f]['error']-d[f]['error'] for f in sorted(a) if a[f]['gas_id']==g]) for g in range(4)];assert all(len(z)==10 for z in blocks)
+            bs=[float(r.np.concatenate([rng.choice(z,len(z),replace=True) for z in blocks]).mean()) for _ in range(2000)]
+            boot.append(dict(domain=domain,contrast=new+'-'+old,exposure_error_difference=float(r.np.concatenate(blocks).mean()),CI95_low=float(r.np.quantile(bs,.025)),CI95_high=float(r.np.quantile(bs,.975)),replicates=2000,seed=20261105,unit='independent heldout exposure;paired gas-stratified',scope='test exposure uncertainty conditional on one trained seed'))
+    c.prior.table(out/'PAIRED_EXPOSURE_UNCERTAINTY.csv',boot)
+    c.write(out/'EVALUATION_COMPLETE.json',dict(status='PASS_FIXED_SIX_ENDPOINTS_EVALUATED',groups=GROUPS,domains=['C1Day21','C2Day16','C5Day22'],raw_exposures=len(trace),windows={str(k):len(v[1]) for k,v in datasets.items()},target_training_Reads=0,all_six_lock_before_test=True,retrospective=True,training_seed_count=1,endpoint_selection='fixed round25 only',unexpected_data_reads=0))
+    print('OFFLINE_ALL_SIX_EVALUATED',flush=True)
+if __name__=='__main__':
+    try:main()
+    except BaseException:c.write(HERE/'EVALUATION_FAILED.json',dict(status='BLOCKED_NO_TRAINING_RETRY',error=traceback.format_exc()));raise

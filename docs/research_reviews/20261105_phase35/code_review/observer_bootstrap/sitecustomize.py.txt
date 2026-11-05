@@ -1,0 +1,98 @@
+"""Counts/snapshots/access policy only; never changes numeric training arguments."""
+try:
+    import os,sys,json,time,threading,atexit,traceback,hashlib,inspect
+    from pathlib import Path
+    if os.environ.get('P35_OBSERVER')=='1':
+        ROOT=Path(os.environ['P35_WORKSPACE']);OUT=Path(os.environ['P35_OBSERVER_OUT']);ROLE=os.environ['P35_ROLE'];GROUP=os.environ['P35_GROUP']
+        OUT.mkdir(parents=True,exist_ok=True)
+        active=[None];rounds=[];access=[];denials=[];total=[0];started=time.perf_counter()
+        numeric=ROOT/'research/fedongas_phase32_20261105/data'
+        ids=[5] if ROLE=='target' else [int(ROLE.split('_')[1])] if ROLE.startswith('client_') else [1,2,5] if GROUP in ['B3','B4','B5'] else []
+        allowed={str((numeric/('target' if cid==5 else 'source')/f'client_{cid}'/f'train_{n}.npy').resolve()).lower() for cid in ids for n in ['features','classification_labels','phase_labels']}
+        def audit(event,args):
+            if event!='open' or not isinstance(args[0],(str,bytes,os.PathLike)):return
+            p=Path(os.fsdecode(args[0]));s=str(p.resolve()).lower();normalized=s.replace('\\','/')
+            if p.suffix.lower() in ['.npy','.npz'] or '/dataset/data1/' in normalized:
+                row=dict(path=str(p),allowed=s in allowed,time=time.time());access.append(row)
+                if not row['allowed']:denials.append(row);raise PermissionError('P35 training input denied before open: '+str(p))
+        sys.addaudithook(audit)
+        import psutil
+        process=psutil.Process();peak=[process.memory_info().rss];stop=threading.Event()
+        def poll():
+            while not stop.wait(.1):
+                try:peak[0]=max(peak[0],process.memory_info().rss)
+                except psutil.Error:return
+        threading.Thread(target=poll,daemon=True).start()
+        def save(name,obj):
+            with (OUT/(ROLE+'_'+name+'.json')).open('x',encoding='utf-8') as f:json.dump(obj,f,ensure_ascii=False,indent=2,allow_nan=False)
+        def finish():
+            stop.set();save('process',dict(group=GROUP,role=ROLE,seconds=time.perf_counter()-started,peak_RSS_bytes=peak[0],total_optimizer_steps=total[0],completed_blocks=len(rounds),numeric_access=access,denied=denials))
+        atexit.register(finish)
+        VERSION=ROOT/'research/fedongas_phase33r_20261105';sys.path.insert(0,str(VERSION));import contract as c
+        if Path(c.__file__).resolve()!=VERSION/'contract.py':raise ValueError('wrong contract import')
+        sys.path.insert(0,str(c.prior.BASE/'source/workspace'))
+        import torch,numpy as np
+        import torch.nn.functional as F
+        from client import Client
+        from torch.utils.data import DataLoader,RandomSampler
+        from gaps_flower.domain_adaptation import ServerDomainAdaptation
+        raw_train=Client.train_one_round;raw_da=ServerDomainAdaptation.run_adaptation;raw_init=torch.optim.Adam.__init__;raw_step=torch.optim.Adam.step;raw_iter=DataLoader.__iter__;raw_sampler=RandomSampler.__iter__;raw_ce=F.cross_entropy
+        def adam_init(self,*a,**kw):
+            raw_init(self,*a,**kw)
+            if active[0] is not None:
+                active[0]['optimizer_initializations']+=1
+                if self.state or any(g['lr']!=.0005 for g in self.param_groups):raise ValueError('optimizer init mismatch')
+        def step(self,*a,**kw):
+            if active[0] is not None:
+                for g in self.param_groups:
+                    for p in g['params']:
+                        if p.grad is not None and not torch.isfinite(p.grad).all():raise FloatingPointError('nonfinite gradient')
+            result=raw_step(self,*a,**kw)
+            if active[0] is not None:active[0]['optimizer_steps']+=1;total[0]+=1
+            return result
+        def sampler(self):
+            for i in raw_sampler(self):
+                if active[0] is not None and active[0]['kind']=='client' and torch.is_grad_enabled():active[0]['training_indices'].append(int(i))
+                yield i
+        def iterator(self):
+            for b in raw_iter(self):
+                if active[0] is not None:
+                    if tuple(b[0].shape[1:])!=(50,8) or not torch.isfinite(b[0]).all():raise ValueError('input shape/finite mismatch')
+                    rec=active[0];key='grad_batch_sizes' if torch.is_grad_enabled() else 'no_grad_batch_sizes';rec[key].append(len(b[0]))
+                yield b
+        def cross_entropy(input,target,*a,**kw):
+            if active[0] is not None:
+                rec=active[0];kind='client_ce'
+                if rec['kind']=='DA':
+                    frame=inspect.currentframe().f_back
+                    kind='target_ce' if frame.f_code.co_name=='run_adaptation' and input is frame.f_locals.get('logits_t') else 'source_ce' if frame.f_code.co_name=='run_adaptation' and input is frame.f_locals.get('logits') else 'other_ce'
+                rec['ce_batches'][kind]=rec['ce_batches'].get(kind,0)+1;rec['ce_rows'][kind]=rec['ce_rows'].get(kind,0)+len(target)
+            return raw_ce(input,target,*a,**kw)
+        def record(kind,rnd):return dict(kind=kind,round=rnd,optimizer_initializations=0,optimizer_steps=0,grad_batch_sizes=[],no_grad_batch_sizes=[],training_indices=[],ce_batches={},ce_rows={})
+        def state_sha(model):return c.digest([v.detach().cpu().numpy() for v in model.state_dict().values()])
+        def train(self,*a,**kw):
+            rnd=int(kw.get('current_round',a[0] if a else 0));rec=record('client',rnd);rec.update(client_id=self.client_id,received_state_sha256=state_sha(self.model));t=time.perf_counter();active[0]=rec
+            try:result=raw_train(self,*a,**kw)
+            except BaseException:rec['error']=traceback.format_exc();save(f'failure_{rnd:03}',rec);raise
+            finally:active[0]=None
+            cid=self.client_id;n={1:840,2:1680,5:32}[cid];steps={1:53,2:105,5:100}[cid]
+            if rec['optimizer_steps']!=steps or rec['optimizer_initializations']!=1 or sum(rec['grad_batch_sizes'])!=(1600 if cid==5 else n):raise ValueError('actual client budget mismatch')
+            if cid!=5 and sorted(rec['training_indices'])!=list(range(n)):raise ValueError('source epoch identity mismatch')
+            expected_stats=2*n if self.config.UPLOAD_PROTO_STATS else 0
+            if sum(rec['no_grad_batch_sizes'])!=expected_stats:raise ValueError('prototype forward cost mismatch')
+            if not all(torch.isfinite(v).all() for v in self.model.state_dict().values()):raise FloatingPointError('nonfinite state')
+            snap=OUT/f'{ROLE}_trained_round_{rnd:03}.pth';torch.save(dict(model_state={k:v.detach().cpu().clone() for k,v in self.model.state_dict().items()},round=rnd,observational_only=True),snap)
+            rec.update(trained_state_sha256=state_sha(self.model),state_snapshot_sha256=hashlib.sha256(snap.read_bytes()).hexdigest(),seconds=time.perf_counter()-t,peak_RSS_bytes=peak[0]);rounds.append(rec);save(f'round_{rnd:03}',rec);return result
+        def da(self,*a,**kw):
+            rec=record('DA',len(rounds)+1);rec['optimizer_state_initially_empty']=not bool(self.optimizer.state);rec['optimizer_lr']=[g['lr'] for g in self.optimizer.param_groups];t=time.perf_counter();active[0]=rec
+            try:result=raw_da(self,*a,**kw)
+            except BaseException:rec['error']=traceback.format_exc();save('DA_failure',rec);raise
+            finally:active[0]=None
+            if rec['optimizer_steps']!=100 or rec['ce_batches'].get('target_ce')!=100 or rec['ce_rows'].get('target_ce')!=1600 or rec['ce_batches'].get('source_ce')!=1000:raise ValueError('actual DA objective budget mismatch')
+            if not rec['optimizer_state_initially_empty'] or rec['optimizer_lr']!=[.0005]:raise ValueError('DA optimizer initialization mismatch')
+            rec.update(seconds=time.perf_counter()-t,peak_RSS_bytes=peak[0],final_state_sha256=state_sha(self.model));rounds.append(rec);save(f'DA_round_{len(rounds):03}',rec);return result
+        torch.optim.Adam.__init__=adam_init;torch.optim.Adam.step=step;DataLoader.__iter__=iterator;RandomSampler.__iter__=sampler;F.cross_entropy=cross_entropy;Client.train_one_round=train;ServerDomainAdaptation.run_adaptation=da
+        save('observer_ready',dict(group=GROUP,role=ROLE,pid=os.getpid(),torch_threads=torch.get_num_threads(),observer_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),numeric_hooks='read-only counts/finitechecks/snapshots;no loss/args/seed modification',allowed_dataset_ids=ids,contract_module=str(Path(c.__file__).resolve())))
+except BaseException:
+    import traceback,os,sys
+    sys.stderr.write(traceback.format_exc());os._exit(78)

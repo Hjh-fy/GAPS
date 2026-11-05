@@ -1,0 +1,47 @@
+{
+  "experiment": "P35-C5-A4-B3-S42",
+  "utc": "2026-11-05T14:59:42.166796+00:00",
+  "registration_sha256": "2970e07baca8fdc59635501630f282c1fb6c6fe0c689ba0d4ae63dde374a799f",
+  "observer_sha256": "51df7c739db534edd65e62d783bf3e3806befab60c7127e38b38614920f56835",
+  "commands": [
+    {
+      "role": "server",
+      "argv": [
+        "PYTHON_ENV\\python.exe",
+        "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\entry.py",
+        "B3",
+        "server"
+      ],
+      "dataset_ids": [
+        1,
+        2,
+        5
+      ]
+    },
+    {
+      "role": "client_1",
+      "argv": [
+        "PYTHON_ENV\\python.exe",
+        "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\entry.py",
+        "B3",
+        "client_1"
+      ],
+      "dataset_ids": [
+        1
+      ]
+    },
+    {
+      "role": "client_2",
+      "argv": [
+        "PYTHON_ENV\\python.exe",
+        "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\entry.py",
+        "B3",
+        "client_2"
+      ],
+      "dataset_ids": [
+        2
+      ]
+    }
+  ],
+  "one_launch_no_retry": true
+}

@@ -1,0 +1,78 @@
+"""Post-run identity/state/budget/version gate; no Test or new optimization."""
+from p35_common import *
+import math
+
+def read_state(path,schema):
+    ck=r.torch.load(path,map_location='cpu',weights_only=True);st=ck['model_state'];r.validate_state(schema,st)
+    return ck,c.digest([st[k].detach().cpu().numpy() for k in schema.state_dict()])
+
+def audit_group(b):
+    root=HERE/'runs'/b;obs=HERE/'observer'/b;logs=HERE/'logs'/b;s=c.spec(b);schema=r.model();previous=STATE;rows=[];steps=targets=source_rows=stats_rows=server_sourceCE=server_source_forward=0;comm_up=comm_down=0;activated=[];weight_rows=[];checkpoints=[]
+    assert all(v==0 for v in c.read(logs/'EXECUTION_COMPLETE.json')['codes'].values())
+    for role in roles(b):
+        proc=c.read(obs/(role+'_process.json'));assert not proc['denied'] and all(x['allowed'] for x in proc['numeric_access'])
+        eff=c.read(root/role/'effective_config.json');assert eff['initial_state_sha256']==STATE and eff['scientific']==r.effective(s) and eff['active_dataset_ids']==dataset_ids(b,role)
+    history=c.read(root/'server/history.json')['rounds'] if b!='B1' else []
+    for rnd in range(1,26):
+        server=None
+        if b!='B1':
+            server=c.read(root/'server'/f'phase32_receipt_{rnd:03}.json');assert server['round']==rnd and server['received']==previous
+            want=[1,2,5] if b=='B2' else [1,2];assert server['clients']==want and server['samples']==([840,1680,32] if b=='B2' else [840,1680])
+            ck,aggregate=read_state(root/'server'/f'server_round_{rnd:03}.pth',schema);assert c.sha(root/'server'/f'server_round_{rnd:03}.pth')==server['checkpoint_sha256']
+            checkpoints.append(dict(round=rnd,kind='aggregated',sha256=server['checkpoint_sha256'],state_sha256=aggregate))
+            comm_up+=server['protobuf_fit_up'];comm_down+=server['protobuf_fit_down']
+        ids=[5] if b=='B1' else [1,2,5] if b=='B2' else [1,2];local_states={};weights=[{1:840,2:1680,5:32}[i]/sum({1:840,2:1680,5:32}[j] for j in ids) for i in ids]
+        for j,cid in enumerate(ids):
+            role='target' if b=='B1' else f'client_{cid}';o=c.read(obs/f'{role}_round_{rnd:03}.json');native=c.read(root/role/f'receipt_{rnd:03}.json');n={1:840,2:1680,5:32}[cid]
+            assert o['received_state_sha256']==native['received']==previous and o['trained_state_sha256']==native['uploaded']
+            assert o['optimizer_steps']=={1:53,2:105,5:100}[cid] and o['optimizer_initializations']==1
+            local,trained=read_state(obs/f'{role}_trained_round_{rnd:03}.pth',schema);local_states[cid]=local['model_state'];assert trained==native['uploaded'] and c.sha(obs/f'{role}_trained_round_{rnd:03}.pth')==o['state_snapshot_sha256']
+            if server:assert native['uploaded']==server['uploads'][j] and native['num_examples']==n
+            if cid==5:
+                consumed=c.read(root/role/f'target_indices_{rnd:03}.json');assert [v['indices'] for v in consumed]==c.FixedBatches(rnd).rows
+                assert sum(o['grad_batch_sizes'])==1600;targets+=1600
+            else:
+                assert sorted(o['training_indices'])==list(range(n)) and sum(o['grad_batch_sizes'])==n;source_rows+=n
+            stats_rows+=sum(o['no_grad_batch_sizes']);steps+=o['optimizer_steps']
+            rows.append(dict(group=b,round=rnd,role=role,optimizer_steps=o['optimizer_steps'],label_presentations=sum(o['grad_batch_sizes']),stats_no_grad_forward_rows=sum(o['no_grad_batch_sizes']),received=previous,uploaded=trained,seconds=o['seconds']))
+            if b=='B1':previous=trained
+        if s['server_DA']:
+            d=c.read(obs/f'server_DA_round_{rnd:03}.json');indices=c.read(root/'server'/f'phase32_DA_indices_{rnd:03}.json')
+            assert d['optimizer_steps']==100 and d['ce_rows']['target_ce']==1600 and d['ce_batches']['source_ce']==1000
+            assert [x['indices'] for x in indices['target']]==c.FixedBatches(rnd).rows
+            assert len(indices['source'])==1100 and sum(x['rows'] for x in indices['source'])==sum(d['grad_batch_sizes'])-1600
+            ck,adapted=read_state(root/'server'/f'server_round_{rnd:03}_adapted.pth',schema);assert adapted==d['final_state_sha256']
+            assert server['returned']==(adapted if s['feedback'] else aggregate)
+            checkpoints.append(dict(round=rnd,kind='adapted',sha256=c.sha(root/'server'/f'server_round_{rnd:03}_adapted.pth'),state_sha256=adapted))
+            steps+=100;targets+=1600;server_sourceCE+=d['ce_rows']['source_ce'];server_source_forward+=sum(x['rows'] for x in indices['source'])
+            event=next(x for x in history if x['round']==rnd);sel=event['selective_agg'];assert not sel['selective_active'] or (b=='B5' and rnd>3)
+            similarities=sel.get('client_similarities',{});base=[1/3,2/3];scales=[similarities.get(str(i),1.) for i in [1,2]];weights=[base[i]*scales[i]/sum(base[j]*scales[j] for j in range(2)) for i in range(2)]
+            if sel['selective_active']:activated.append(rnd)
+            weight_rows.append(dict(group=b,round=rnd,active=sel['selective_active'],client1_weight=weights[0],client2_weight=weights[1],prototype_similarity=json.dumps(similarities),aggregated_state=aggregate,adapted_state=adapted,returned=server['returned'],feedback=s['feedback']))
+            rows.append(dict(group=b,round=rnd,role='server_DA',optimizer_steps=100,label_presentations=1600+d['ce_rows']['source_ce'],stats_no_grad_forward_rows=0,received=aggregate,uploaded=adapted,seconds=d['seconds']))
+        elif server:assert server['returned']==aggregate
+        if server:
+            aggregate_state=r.torch.load(root/'server'/f'server_round_{rnd:03}.pth',map_location='cpu',weights_only=True)['model_state']
+            for k,v in aggregate_state.items():
+                ref=sum(local_states[cid][k].double()*weights[i] for i,cid in enumerate(ids));delta=(v.double()-ref).abs().max().item()
+                assert delta<=4*r.np.finfo(r.np.float32).eps*max(1.,ref.abs().max().item()),(b,rnd,k,delta)
+        if server:previous=server['returned']
+    assert targets==(0 if b=='B0' else 40000)
+    assert source_rows==(0 if b=='B1' else 63000)
+    assert stats_rows==(126000 if s['stats_upload'] else 0)
+    assert steps=={'B0':3950,'B1':2500,'B2':6450,'B3':6450,'B4':6450,'B5':6450}[b]
+    assert server_sourceCE==(398800 if s['server_DA'] else 0) and server_source_forward==(438800 if s['server_DA'] else 0)
+    endpoint=root/('target/target_update_2500.pth' if b=='B1' else 'server/server_round_025_adapted.pth' if s['server_DA'] else 'server/server_round_025.pth')
+    final,endpointsha=read_state(endpoint,schema)
+    assert endpointsha==(previous if not s['server_DA'] else adapted),'endpoint must equal fixed final-round state'
+    # Exact saved/loaded parity on legal Calibration only; no accuracy/model selection.
+    fixture=c.validate_package(c.DATA_ROOT/'target/client_5',dict(client_id=5))[0][:4]
+    m=r.model();m.load_state_dict(final['model_state'],strict=True);m.eval();m2=r.model();m2.load_state_dict(r.torch.load(endpoint,map_location='cpu',weights_only=True)['model_state'],strict=True);m2.eval()
+    with r.torch.no_grad():a=m(r.torch.from_numpy(fixture));z=m2(r.torch.from_numpy(fixture))
+    assert all(r.torch.equal(x,y) and r.torch.isfinite(x).all() for x,y in zip(a,z)) and list(a[0].shape)==[4,4]
+    auditdir=HERE/'audit'/b;auditdir.mkdir(parents=True,exist_ok=False);c.prior.table(auditdir/'ROUND_LEDGER.csv',rows);c.prior.table(auditdir/'CHECKPOINTS.csv',checkpoints if checkpoints else [dict(round=i,kind='B1_client_snapshot',sha256=c.sha(obs/f'target_trained_round_{i:03}.pth')) for i in range(1,26)])
+    if weight_rows:c.prior.table(auditdir/'FEEDBACK_AND_WEIGHTS.csv',weight_rows)
+    if b!='B5':assert not activated
+    lock=dict(status='PASS_ENDPOINT_LOCKED',group=b,endpoint=str(endpoint),endpoint_file_sha256=c.sha(endpoint),endpoint_state_sha256=endpointsha,initial_state_sha256=STATE,rounds=25,target_updates=0 if b=='B0' else 2500,target_presentations=targets,all_optimizer_updates=steps,local_source_CE_presentations=source_rows,source_stats_extra_forward_rows=stats_rows,server_source_CE_presentations=server_sourceCE,server_source_extra_forward_rows=server_source_forward-server_sourceCE,protobuf_fit_up_bytes=comm_up,protobuf_fit_down_bytes=comm_down,selective_active_rounds=activated,restore_exact=True,target_Test_reads=0,configuration_sha256=c.sha(HERE/'registrations'/f'{b}.json'),source_identity_sha=c.source_identity_sha(),target_identity_sha=c.sha(c.P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv'),cost=c.read(logs/'EXECUTION_COMPLETE.json'))
+    lock['selective_contrast_valid']=None if b!='B5' else activated==list(range(4,26)) and any(abs(x['client1_weight']-1/3)>1e-8 for x in weight_rows)
+    c.write(HERE/'locks'/f'{b}.json',lock)

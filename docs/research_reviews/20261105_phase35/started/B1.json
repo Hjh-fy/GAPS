@@ -1,0 +1,21 @@
+{
+  "experiment": "P35-C5-A4-B1-S42",
+  "utc": "2026-11-05T14:57:20.689028+00:00",
+  "registration_sha256": "9cd118162a6aad25a136aa867e9df12bea381fb46e58b2f883e953f3f60ae91f",
+  "observer_sha256": "51df7c739db534edd65e62d783bf3e3806befab60c7127e38b38614920f56835",
+  "commands": [
+    {
+      "role": "target",
+      "argv": [
+        "PYTHON_ENV\\python.exe",
+        "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\entry.py",
+        "B1",
+        "target"
+      ],
+      "dataset_ids": [
+        5
+      ]
+    }
+  ],
+  "one_launch_no_retry": true
+}

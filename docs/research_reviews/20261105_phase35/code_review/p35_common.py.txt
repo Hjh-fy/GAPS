@@ -1,0 +1,21 @@
+import sys,json,os
+from pathlib import Path
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];R=HERE.parent/'fedongas_phase33r_20261105';P34=HERE.parent/'fedongas_phase34_20261105'
+sys.dont_write_bytecode=True;sys.path.insert(0,str(R))
+import contract as c
+import runtime as r
+BANK=R/'source_attempt2/server';SSTAR=BANK/'SSTAR.pth';LOCK=BANK/'SSTAR_LOCKED.json';STATE='431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673'
+GROUPS=['B0','B1','B2','B3','B4','B5']
+def load_model():
+    m=r.load_checkpoint(r.model(),SSTAR,c.read(LOCK),'sstar')
+    if c.digest(r.arrays(m))!=STATE:raise ValueError('Sstar state mismatch')
+    return m
+def roles(group):return ['target'] if group=='B1' else ['server','client_1','client_2']+(['client_5'] if group=='B2' else [])
+def dataset_ids(group,role):
+    if role=='target':return [5]
+    if role.startswith('client_'):return [int(role.split('_')[1])]
+    return [1,2,5] if group in ['B3','B4','B5'] else []
+def active_pools(group,role):
+    out={}
+    for cid in dataset_ids(group,role):out[cid]=r.dataset(c.validate_package(c.DATA_ROOT/('target' if cid==5 else 'source')/f'client_{cid}',dict(client_id=cid)))
+    return out

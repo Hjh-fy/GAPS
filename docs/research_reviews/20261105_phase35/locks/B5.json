@@ -1,0 +1,63 @@
+{
+  "status": "PASS_ENDPOINT_LOCKED",
+  "group": "B5",
+  "endpoint": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B5\\server\\server_round_025_adapted.pth",
+  "endpoint_file_sha256": "27e02b54e2b4b3a7ca120ed7bd4787d8a60dacd413b799e6a0769d4ace445ced",
+  "endpoint_state_sha256": "84eb2289c6bd65f6fcf65ee4c1442c0896d8c2cd84660b00f9d5d57c48457b9a",
+  "initial_state_sha256": "431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673",
+  "rounds": 25,
+  "target_updates": 2500,
+  "target_presentations": 40000,
+  "all_optimizer_updates": 6450,
+  "local_source_CE_presentations": 63000,
+  "source_stats_extra_forward_rows": 126000,
+  "server_source_CE_presentations": 398800,
+  "server_source_extra_forward_rows": 40000,
+  "protobuf_fit_up_bytes": 8318683,
+  "protobuf_fit_down_bytes": 7939284,
+  "selective_active_rounds": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25
+  ],
+  "restore_exact": true,
+  "target_Test_reads": 0,
+  "configuration_sha256": "f9d42a427e914433b60312914a1f26b1bfc0d9fc8ec8418bbb619af6652835f0",
+  "source_identity_sha": "e4327cd18913e233eb39cd2118be8ada636f8dbc5c3fd2a49c7ef7c7d01b3334",
+  "target_identity_sha": "e69184b8ee02e06a2f13cfe2498d49ebe4125f9db862ec806899f963aa288ad4",
+  "cost": {
+    "status": "PROCESS_EXIT0_AWAITING_AUDIT",
+    "codes": {
+      "server": 0,
+      "client_1": 0,
+      "client_2": 0
+    },
+    "wall_seconds": 504.3703840000089,
+    "peak_RSS_by_process": {
+      "server": 510705664,
+      "client_1": 451670016,
+      "client_2": 452784128
+    },
+    "peak_concurrent_RSS_bytes": 1412075520
+  },
+  "selective_contrast_valid": true
+}

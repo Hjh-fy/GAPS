@@ -1,0 +1,35 @@
+"""Register/admit six frozen pilots;no Test data or gradient updates."""
+import sys,os,inspect,importlib.metadata,shutil
+from p35_common import *
+def main():
+    assert c.sha(P34/'ARTIFACT_SHA256.csv')=='41e967497b9e5b40d6de202701878b80a733a6a707ccf90339fb5bb98cf92a1e'
+    a=c.read(P34/'SSTAR_ACCEPTANCE_LOCK.json');assert a['status']=='PASS_ACCEPTED_LEGAL_SSTAR' and a['Sstar_state_sha256']==STATE and c.sha(SSTAR)==a['Sstar_file_sha256']
+    env=c.read(R/'ENVIRONMENT_LOCK.json');assert c.sha(sys.executable)==env['python_binary_sha256']
+    for k,v in env['packages'].items():assert importlib.metadata.version(k)==v
+    assert c.sha(R/'runtime.py')==a['runtime_sha256'] and c.sha(R/'contract.py')==a['contract_sha256']
+    r.torch.set_num_threads(1);m=load_model();assert c.digest(r.arrays(m))==STATE
+    assert not(HERE/'runs').exists()
+    for name in ['specs','registrations','authorizations']:
+        p=HERE/name
+        if p.exists():assert not list(p.iterdir()),'never overwrite partial registration'
+        else:p.mkdir()
+    ids=c.prior.rows(c.P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv');cal=[x for x in ids if x['client_id']=='5'];assert len(cal)==32 and len({x['filename'] for x in cal})==16 and {x['day'] for x in cal}=={'18'}
+    assert {x['start_s'] for x in cal}=={'60.0','150.0'}
+    # Data-only admission:canonical masks/shape/labels/fileSHA,never Dev/Test.
+    for cid in [1,2,5]:c.validate_package(c.DATA_ROOT/('target' if cid==5 else 'source')/f'client_{cid}',dict(client_id=cid))
+    source_eval=c.prior.rows(c.P31/'evidence/FUTURE_EVALUATION_IDENTITIES.csv');ev=[x for x in source_eval if x['client_id'] in ['1','2','5']]
+    assert len(ev)==120 and {(x['client_id'],x['day']) for x in ev}=={('1','21'),('2','16'),('5','22')}
+    c.prior.table(HERE/'EVALUATION_IDENTITIES_PREREGISTERED.csv',ev)
+    c.write(HERE/'EVALUATION_CONTRACT.json',dict(target='C5Day22',source_retention=['C1R4Day21','C2R4Day16'],test_exposures_per_domain=40,all_six_endpoint_locks_required=True,preprocessing='unchanged frozenprocess_raw/validmask50x8',window_prediction='individual logit argmax;no exposure fusion',metrics=['Accuracy','MacroF1','Recall4','Confusion4x4','window_error','exposure_equal_error'],endpoint_map={'B0':'aggregated_round25','B1':'target_update2500','B2':'aggregated_round25','B3':'adapted_round25','B4':'adapted_round25','B5':'adapted_round25'},source_baseline='Sstar source domains only',uncertainty=dict(method='gas-stratified paired independent-exposure bootstrap',replicates=2000,seed=20261105,pairs=['B4-B3','B5-B4'],metric='exposure_equal_error',limitation='oneobservedseed/retrospective;not trainingseed variance'),selection='fixed endpoints,no targettest tuning',target_Test_opened=False))
+    old={x['group']:x for x in c.read(R/'EFFECTIVE_CONTRACTS.json')};registry=[]
+    for b in GROUPS:
+        s=c.spec(b);assert s==old[b]['spec'] and vars(r.config(s['stats_upload']))==old[b]['model_config'];c.write(HERE/'specs'/f'{b}.json',s)
+        auth=dict(experiment_id=f'P35-C5-A4-{b}-S42',purpose=b,scope='C5_A4_SEED42_PILOT_ONLY',spec_sha256=c.sha(HERE/'specs'/f'{b}.json'),initial_state_sha256=STATE,independent_approval='userPhase3.5',max_launches=1)
+        reg=dict(experiment_id=auth['experiment_id'],authorization=auth,spec_sha256=auth['spec_sha256'],runtime_sha256=a['runtime_sha256'],contract_sha256=a['contract_sha256'],entry_sha256=c.sha(HERE/'entry.py'),common_sha256=c.sha(HERE/'p35_common.py'),Sstar_file_sha256=a['Sstar_file_sha256'],Sstar_state_sha256=STATE,environment_sha256=c.sha(R/'ENVIRONMENT_LOCK.json'),source_only_authorization_reused=False,endpoint=c.read(HERE/'EVALUATION_CONTRACT.json')['endpoint_map'][b],commands=[dict(role=role,argv=[sys.executable,str(HERE/'entry.py'),b,role],dataset_ids=dataset_ids(b,role)) for role in roles(b)],status='PASS_PRE_RUN_REGISTERED',scientific=r.effective(s))
+        c.write(HERE/'registrations'/f'{b}.json',reg);c.write(HERE/'authorizations'/f'{b}.json',auth);registry.append(dict(group=b,experiment_id=reg['experiment_id'],spec_sha256=reg['spec_sha256'],registration_sha256=c.sha(HERE/'registrations'/f'{b}.json'),status=reg['status']))
+    assert {k for k in c.spec('B3') if c.spec('B3')[k]!=c.spec('B4')[k]}=={'group','feedback'}
+    assert {k for k in c.spec('B4') if c.spec('B4')[k]!=c.spec('B5')[k]}=={'group','selective'}
+    c.write(HERE/'EXPERIMENT_REGISTRY.json',registry);c.write(HERE/'PRE_RUN_VERIFICATION.json',dict(status='PASS',Sstar_state=STATE,six_frozen_specs_match=True,initialization_verified=True,calibration_exposures=16,calibration_windows=32,source_exposures=120,source_windows=2520,target_Test_read=False,entry_binding='newindependentauth/output/data-role binding;numericruntime unchanged',data_role_binding='B0sourceonly/B1targetonly/ordinaryservernoinputs/DAserverSource+Cal;eachclientownpool',evaluation_contract_sha=c.sha(HERE/'EVALUATION_CONTRACT.json'),matrix_stop_on_first_failure=True))
+    print('SIXPILOTREGISTERED;Sstar/cal/sourcegatesPASS;NO_TEST/NO_TRAINING',flush=True)
+if __name__=='__main__':main()
+

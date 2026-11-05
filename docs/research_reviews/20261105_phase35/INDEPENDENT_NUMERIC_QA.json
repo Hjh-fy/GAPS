@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "checked_utc": "2026-11-05T15:29:06.706645+00:00",
+  "method": "independent Python standard-library counts from saved per-window predictions; no sklearn/evaluator reuse",
+  "prediction_records": 16800,
+  "group_domain_pairs": 20,
+  "metric_rows_checked": 20,
+  "metric_scalar_values_checked": 160,
+  "confusion_matrices_checked": 20,
+  "confusion_cells_checked": 320,
+  "exposure_error_records_checked": 800,
+  "source_retention_records_checked": 12,
+  "source_retention_values_checked": 36,
+  "paired_observed_differences_checked": 6,
+  "maximum_absolute_difference": 1.1102230246251565e-16,
+  "maximum_absolute_difference_by_category": {
+    "metrics": 1.1102230246251565e-16,
+    "source_retention": 1.1102230246251565e-16,
+    "exposure_errors": 0.0,
+    "paired_observed_difference": 9.540979117872439e-18
+  },
+  "tolerance": 1e-12,
+  "confusion_mismatches": 0,
+  "all_stored_errors_and_logit_argmax_consistent": true,
+  "same_window_identities_across_models": true,
+  "target_contrasts": [
+    {
+      "contrast": "B4-B3",
+      "Accuracy_change_percentage_points": -1.5476190476190421,
+      "exposure_error_difference": 0.015476190476190477,
+      "saved_CI95_low": -0.04288690476190476,
+      "saved_CI95_high": 0.06904761904761905,
+      "saved_interval_contains_zero": true,
+      "interpretation": "target Accuracy decreased; saved paired exposure-error interval includes zero; no significant-gain claim"
+    },
+    {
+      "contrast": "B5-B4",
+      "Accuracy_change_percentage_points": -0.4761904761904745,
+      "exposure_error_difference": 0.004761904761904773,
+      "saved_CI95_low": -0.004761904761904761,
+      "saved_CI95_high": 0.013095238095238099,
+      "saved_interval_contains_zero": true,
+      "interpretation": "target Accuracy decreased; saved paired exposure-error interval includes zero; no significant-gain claim"
+    }
+  ],
+  "bootstrap_intervals_recomputed": false,
+  "bootstrap_scope": "saved bounds read only; observed paired differences independently checked; both target intervals contain zero",
+  "source_files_sha256": {
+    "PRIVATE_WINDOW_PREDICTIONS.csv": "07f0f130d09e33ab2c96d459811a6543e087baa61894fbabd90f5a08f9cc385b",
+    "METRICS.csv": "e84ac02593d73552fbbb579b1f5f4606228f23c841acc60e82a53e8e447aab4c",
+    "CONFUSIONS.json": "c150417d579fc3bbe9c070ac599322729af3b0e17b4bee700c62c2e9396e39b1",
+    "SOURCE_RETENTION_CHANGE.csv": "1cfc1c9b2c757d4643a4565874d946bbf473ed9e6495e2440b437e44f13077e9",
+    "EXPOSURE_ERRORS.csv": "0b92a35da613171f258c2889a6aa1600d35e5c37e106be71349d1eee0e825198",
+    "PAIRED_EXPOSURE_UNCERTAINTY.csv": "19394df473fdd48d8ce4fc95d19abd07db29f37b0717f689cc9f9a7732bf14bf"
+  },
+  "failures": [],
+  "raw_Test_files_opened": false,
+  "model_inference_performed": false,
+  "training_performed": false,
+  "execution_files_modified": false
+}

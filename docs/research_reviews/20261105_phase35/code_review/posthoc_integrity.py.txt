@@ -1,0 +1,33 @@
+"""Supplemental read-only checks of mechanism/version chains; no input data."""
+from p35_common import *
+def main():
+    assert c.read(HERE/'ALL_SIX_ENDPOINTS_LOCKED.json')['status']=='PASS_ALL_SIX_LOCKED'
+    rows=[];np=r.np
+    for b in ['B3','B4','B5']:
+        previous=None
+        for rnd in range(1,26):
+            d=HERE/'runs'/b/'server';semantic=c.read(d/f'semantic_protos_round_{rnd:03}.json');proto=c.read(d/f'prototype_stats_round_{rnd:03}.json')
+            actual=semantic['semantic_protos'];current=proto['global_prototypes'];assert set(actual)==set(current) and len(actual)==4 and semantic['proto_ema_alpha']==.8
+            err=0.
+            for k in actual:
+                a=np.asarray(actual[k]);now=np.asarray(current[k]);ref=now if previous is None else .8*np.asarray(previous[k])+.2*now;delta=float(np.max(np.abs(a-ref)));assert delta<3e-6;err=max(err,delta)
+            receipt=c.read(d/f'phase32_receipt_{rnd:03}.json')
+            rows.append(dict(group=b,round=rnd,semantic_file_sha256=c.sha(d/f'semantic_protos_round_{rnd:03}.json'),prototype_file_sha256=c.sha(d/f'prototype_stats_round_{rnd:03}.json'),source_uploaded_encoder_sha256=json.dumps(receipt['prototype_encoder']),EMA_max_abs_error=err,prototype_dim=64,neutral_phase=0))
+            previous=actual
+    matches=[]
+    for left,right,rounds in [('B3','B4',[1]),('B4','B5',[1,2,3])]:
+        for rnd in rounds:
+            a=c.read(HERE/'runs'/left/'server'/f'phase32_receipt_{rnd:03}.json');b=c.read(HERE/'runs'/right/'server'/f'phase32_receipt_{rnd:03}.json')
+            # Different feedback may change RETURNED, never same-round computation.
+            assert a['received']==b['received'] and a['uploads']==b['uploads'] and a['prototype_encoder']==b['prototype_encoder']
+            digests=[]
+            for suffix in ['', '_adapted']:
+                states=[]
+                for group in [left,right]:
+                    ck=r.torch.load(HERE/'runs'/group/'server'/f'server_round_{rnd:03}{suffix}.pth',map_location='cpu',weights_only=True);states.append(c.digest([ck['model_state'][k].numpy() for k in ck['parameter_keys']]))
+                assert states[0]==states[1];digests.append(states[0])
+            matches.append(dict(left=left,right=right,round=rnd,same_uploads_encoders=True,aggregated_state=digests[0],adapted_state=digests[1]))
+    c.prior.table(HERE/'PROTOTYPE_EMA_VERSION_CHAIN.csv',rows);c.prior.table(HERE/'PAIRED_MECHANISM_PREFIX_PARITY.csv',matches)
+    c.write(HERE/'SUPPLEMENTAL_INTEGRITY.json',dict(status='PASS',source_prototype_EMA_rounds=75,paired_shared_prefixes=4,actual_encoder_bound=True,no_numeric_input_reads=True,no_training=True,B5_mechanism_valid=c.read(HERE/'locks/B5.json')['selective_contrast_valid']))
+    print('EMA75+PAIRED_PREFIXES4 PASS;NO_INPUTS',flush=True)
+if __name__=='__main__':main()

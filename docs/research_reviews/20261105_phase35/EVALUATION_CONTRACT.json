@@ -1,0 +1,41 @@
+{
+  "target": "C5Day22",
+  "source_retention": [
+    "C1R4Day21",
+    "C2R4Day16"
+  ],
+  "test_exposures_per_domain": 40,
+  "all_six_endpoint_locks_required": true,
+  "preprocessing": "unchanged frozenprocess_raw/validmask50x8",
+  "window_prediction": "individual logit argmax;no exposure fusion",
+  "metrics": [
+    "Accuracy",
+    "MacroF1",
+    "Recall4",
+    "Confusion4x4",
+    "window_error",
+    "exposure_equal_error"
+  ],
+  "endpoint_map": {
+    "B0": "aggregated_round25",
+    "B1": "target_update2500",
+    "B2": "aggregated_round25",
+    "B3": "adapted_round25",
+    "B4": "adapted_round25",
+    "B5": "adapted_round25"
+  },
+  "source_baseline": "Sstar source domains only",
+  "uncertainty": {
+    "method": "gas-stratified paired independent-exposure bootstrap",
+    "replicates": 2000,
+    "seed": 20261105,
+    "pairs": [
+      "B4-B3",
+      "B5-B4"
+    ],
+    "metric": "exposure_equal_error",
+    "limitation": "oneobservedseed/retrospective;not trainingseed variance"
+  },
+  "selection": "fixed endpoints,no targettest tuning",
+  "target_Test_opened": false
+}

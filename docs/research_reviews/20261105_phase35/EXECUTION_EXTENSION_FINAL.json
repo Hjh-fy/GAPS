@@ -1,0 +1,12 @@
+{
+  "files": {
+    "entry.py": "6a7ddf56610defcde28c9a2390d696e2c195711636c871643c074960b26006bb",
+    "p35_common.py": "ff3d18d92b6ef4ca7fa7cfbba92cb0c1a1ea62157e55a6ccf689b8ef35f2ea7a",
+    "launch.py": "cbdd50fe4eec37cc809910ddd87848837c051bfbddf17d8fbcb0ba7530df0528",
+    "audit.py": "af669d04f4d159a12db3820210ed6d7c8097ebf51ce126acac84f90f0b708271",
+    "observer_bootstrap/sitecustomize.py": "51df7c739db534edd65e62d783bf3e3806befab60c7127e38b38614920f56835"
+  },
+  "before_training": true,
+  "reason": "review tightened endpoint digest closure;no numerical training change",
+  "review": "phase32_review no training-blocker;B1 final digest now explicitly bound"
+}
