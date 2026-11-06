@@ -1,0 +1,13 @@
+"""Freeze identity and all diagnostic choices before model execution."""
+from p38r_common import *
+def main():
+    lock=read(P37/'MODEL_SOURCE_LOCK.json');assert sha(P38/'ARTIFACT_SHA256.csv')=='70c6761e1e45c77f31a834f098f92bfcd52083ca6f60369df510d3970ca76f88'
+    assert read(P37/'TOLERANCE_LOCK.json')['classifier_logits_single_vs_batch']==dict(atol=1e-4,rtol=1e-5,require_same_argmax=True)
+    code={str(HERE/p):sha(HERE/p) for p in ['p38r_common.py','core.py','diagnose.py','test_core.py']}
+    code.update({str(p):sha(p) for p in [P37/'assets.py',P37/'prepare.py',P35/'evaluate.py',P38/'inference.py']})
+    inputs={lock['classification_calibration_pack']:lock['classification_calibration_pack_sha256'],lock['calibration_metadata_path']:lock['calibration_metadata_sha256']}
+    for p,h in inputs.items():assert sha(p)==h
+    write(HERE/'REGISTRATION_FINAL_V2.json',dict(experiment_id='P38R-CAL-BATCH-BACKEND-v1',purpose=PURPOSE,approved_by='explicit user Phase3.8R instruction',phase38_fixed='4dbf732df9ed693c88cb6486099930a428acc90b',phase37_source_lock_sha256=sha(P37/'MODEL_SOURCE_LOCK.json'),tolerance_lock_sha256=sha(P37/'TOLERANCE_LOCK.json'),old_phase38_manifest_sha256=sha(P38/'ARTIFACT_SHA256.csv'),old_drift_sha256=sha(P38/'NUMERIC_DRIFT_EVIDENCE.json'),code_sha256=code,inputs=inputs,groups=GROUPS,models=lock['classifiers'],backend_modes=['original','mkldnn_off','mha_off','both_off'],regimes=['b1','b16','b32','b32_roll7','b128_tile','b128_repeat'],max_model_forward_calls=3200,synthetic_seed=20261106,synthetic_shape=[32,50,8],synthetic_distribution='numpy default_rng standard_normal then float32',output=str(HERE/'run1'),training=False,scaler_refit=False,Day22_reads=False,Pi=False,cli=[sys.executable,str(HERE/'diagnose.py')],registered_at=now(),supersedes_unexecuted_registration_sha256=sha(HERE/'REGISTRATION_FINAL.json'),pre_execution_change='JSON output, same frozen protocol;extra hook/nohook controls every backend/domain b32 and first b1 sample;3020 calls under3200;no model calls yet'))
+    assert (HERE/'EXPERIMENT_MATRIX.csv').exists()
+    print('REGISTERED_CALIBRATION_SYNTHETIC_ONLY')
+if __name__=='__main__':main()

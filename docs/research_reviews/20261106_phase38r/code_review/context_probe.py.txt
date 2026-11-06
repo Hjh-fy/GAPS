@@ -1,0 +1,60 @@
+"""Registered follow-up: input tensor creation versus execution context."""
+from p38r_common import *
+from core import compare
+from diagnose import guard,Capture,digest
+import numpy as np,traceback
+RUN=HERE/'run_context'
+
+def main():
+    reg=read(HERE/'CONTEXT_REGISTRATION.json');assert not RUN.exists()
+    for p,h in reg['code_sha256'].items():assert sha(p)==h
+    lock=read(P37/'MODEL_SOURCE_LOCK.json');guard(lock);RUN.mkdir();write(RUN/'STARTED.json',dict(registration_sha256=sha(HERE/'CONTEXT_REGISTRATION.json'),scope='Calibration only;new explicit diagnostic version',at=now()))
+    sys.path.insert(0,str(P37));import assets
+    a=assets.FrozenAssets();torch=a.r.torch;x=np.load(lock['classification_calibration_pack'],allow_pickle=False)
+    assert digest(x)==read(HERE/'run1/COMPLETE.json')['signal_sha256'] and x.shape==(32,50,8) and x.dtype==np.float32
+    orig=(torch.backends.mkldnn.enabled,torch.backends.mha.get_fastpath_enabled());modes={'original':orig,'mkldnn_off':(False,orig[1]),'mha_off':(orig[0],False),'both_off':(False,False)}
+    cc={'FF':(False,False),'FI':(False,True),'IF':(True,False),'II':(True,True)};calls=[];results=[];layers=[];first=[];profiles=[];outputs={}
+    def tensor(create,n):
+        with torch.inference_mode() if create else torch.no_grad():t=torch.from_numpy(x[:n])
+        assert t.is_inference()==create and t.dtype==torch.float32 and tuple(t.shape)==(n,50,8);return t
+    def infer(m,create,execute,n,hook=False):
+        t=tensor(create,n)
+        with torch.inference_mode() if execute else torch.no_grad():
+            if hook:
+                with Capture(m,torch) as cap:z=m(t)[0].cpu().numpy().copy()
+                return z,cap.arrays()
+            return m(t)[0].cpu().numpy().copy()
+    def counter(m,inp):
+        assert not any(z.training for z in m.modules()) and not torch.is_grad_enabled() and len(calls)<reg['max_forward_calls']
+        calls.append(dict(group=g,mode=mode,context=context,batch=int(inp[0].shape[0]),input_tensor_is_inference=inp[0].is_inference(),execution_inference=torch.is_inference_mode_enabled()))
+    for g in GROUPS:
+        m=a.classifiers[g].model;state=a.previous.c.digest(a.r.arrays(m));h=m.register_forward_pre_hook(counter)
+        try:
+            for mode,(mk,mha) in modes.items():
+                torch.backends.mkldnn.enabled=mk;torch.backends.mha.set_fastpath_enabled(mha)
+                for n in [1,32]:
+                    reference=None;refhidden=None
+                    for context,(create,execute) in cc.items():
+                        z,hidden=infer(m,create,execute,n,True);outputs[f'{g}_{mode}_{context}_b{n}']=z.tolist()
+                        if context=='FF':reference=z;refhidden=hidden
+                        q=compare(z,reference);results.append(dict(group=g,mode=mode,batch=n,context=context,creation_inference=create,execution_inference=execute,comparison='same_batch_vs_FF_no_grad_source',**q))
+                        start=len(layers)
+                        for order,(name,v) in enumerate(hidden.items()):layers.append(dict(group=g,mode=mode,batch=n,context=context,execution_order=order,layer=name,activation_sha256=digest(v),reference_sha256=digest(refhidden[name]),**compare(v,refhidden[name],False)))
+                        this=layers[start:];first.append(dict(group=g,mode=mode,batch=n,context=context,first_nonbitwise=next((v['layer'] for v in this if not v['bitwise_equal']),None),first_description_tolerance_exceeded=next((v['layer'] for v in this if v['window_pass_rate']<1),None)))
+                        if n==32:
+                            unhook=infer(m,create,execute,n);q=compare(unhook,z);results.append(dict(group=g,mode=mode,batch=n,context=context,comparison='hook_vs_nohook',**q));assert q['bitwise_equal']
+                        if g=='B0' and context in ['FF','II']:
+                            with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU],record_shapes=True) as prof:profile=infer(m,create,execute,n)
+                            profiles.append(dict(group=g,mode=mode,batch=n,context=context,profile_matches=compare(profile,z),operators=[dict(key=v.key,count=v.count,input_shapes=v.input_shapes) for v in prof.key_averages(group_by_input_shape=True)]))
+            assert a.previous.c.digest(a.r.arrays(m))==state
+        finally:h.remove();torch.backends.mkldnn.enabled=orig[0];torch.backends.mha.set_fastpath_enabled(orig[1])
+        print(g+' CONTEXT_COMPLETE;calls='+str(len(calls)),flush=True)
+    assert len(calls)==304
+    table(RUN/'CONTEXT_MATRIX.csv',results);table(RUN/'CONTEXT_LAYERS.csv',layers);write(RUN/'FIRST_CONTEXT_DIFFERENCES.json',first);write(RUN/'CONTEXT_OPERATOR_PROFILES.json',profiles);write(RUN/'PRIVATE_CALIBRATION_CONTEXT_LOGITS.json',outputs);write(RUN/'CALL_LEDGER.json',calls)
+    write(RUN/'COMPLETE.json',dict(status='CALIBRATION_CONTEXT_DIAGNOSIS_COMPLETE',forward_calls=len(calls),max_forward_calls=reg['max_forward_calls'],Test=0,training=0,refit=0,regression=0,Pi=0,backend_restored=True,models_unchanged=True,source_signal_sha256=digest(x),registered_code_unchanged=all(sha(p)==v for p,v in reg['code_sha256'].items())))
+    print('CONTEXT_COMPLETE_NO_TEST',flush=True)
+if __name__=='__main__':
+    try:main()
+    except BaseException:
+        if RUN.exists():write(RUN/'FAILED.json',dict(error=traceback.format_exc(),Test=False))
+        raise

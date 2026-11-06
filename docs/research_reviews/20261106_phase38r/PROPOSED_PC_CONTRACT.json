@@ -1,0 +1,20 @@
+{
+  "contract_id": "PC-F32-CPU-SINGLE-v0-PROPOSED",
+  "status": "PROPOSED_FOR_INDEPENDENT_REVIEW_NOT_PRODUCTION_APPROVAL",
+  "models": "unchanged all B0-B5 endpoints and P37 frozen SVR heads",
+  "signal": "strict float32 (50,8);71D separate frozen features;no fit",
+  "canonical_classifier_execution": "CPU batch1,model.eval,torch.inference_mode,threads1",
+  "mkldnn_enabled": true,
+  "mha_fastpath_enabled": true,
+  "environment_reference": "run1/ENVIRONMENT.json + PROCESS_OBSERVATION.json",
+  "atol": 0.0001,
+  "rtol": 1e-05,
+  "reload": "same-contract samebatch float32 byte equality",
+  "reference": "new separately versioned Calibration golden only;no replacement of old batch128 Test reference",
+  "legacy_cross_batch_gate": "original Phase3.8 remains BLOCKED;any contract change requires explicit review,never relabel prior failures",
+  "weights_scaler_changes": false,
+  "backend_selection": "original production values retained;not select lower-error diagnostic mode",
+  "allowed_for_Test": false,
+  "Day22_attempt2_authorized": false,
+  "Pi_authorized": false
+}

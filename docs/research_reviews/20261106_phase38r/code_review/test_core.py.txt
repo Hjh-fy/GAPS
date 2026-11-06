@@ -1,0 +1,26 @@
+import numpy as np,pytest
+from core import regimes,compare,forbidden_numeric_path
+
+def test_original_tolerance_uses_each_reference_component():
+    a=np.array([[.00011,1000.,2.,1.]],dtype='f4');r=np.array([[0.,1000.001,2.,1.]],dtype='f4')
+    z=compare(a,r);assert z['component_pass_rate']==.75 and z['window_pass_rate']==0 and z['argmax_agreement']==1
+
+def test_repeat_inputs_have_fixed_positions_and_not_new_exposures():
+    q=regimes();assert list(q)==['b1','b16','b32','b32_roll7','b128_tile','b128_repeat']
+    for name,(idx,b) in q.items():
+        assert len(idx) in [32,128] and set(idx)==set(range(32)) and all(idx.count(i)==(4 if b==128 else 1) for i in range(32))
+    assert q['b128_tile'][0]==list(range(32))*4 and q['b128_repeat'][0]==[i for i in range(32) for _ in range(4)]
+
+def test_bad_input_shape_and_nonfinite_cannot_pass():
+    with pytest.raises(ValueError):compare(np.zeros((1,4)),np.zeros((2,4)))
+    with pytest.raises(ValueError):compare(np.array([[np.nan,0,0,0]]),np.zeros((1,4)))
+
+def test_bitwise_claim_preserves_signed_zero():
+    x=np.array([[0.,1.,2.,3.]],dtype='f4');y=x.copy();y[0,0]=-0.
+    assert compare(x,y)['component_pass_rate']==1 and not compare(x,y)['bitwise_equal']
+
+def test_test_and_full_private_records_are_forbidden_before_open():
+    for s in ['x/fedongas_phase35_20261105/evaluation/PRIVATE_WINDOW_PREDICTIONS.csv','x/fedongas_phase38_20261106/run1/B0/PRIVATE_WINDOW_RESULTS.json','x/C5_test.npz','x/dataset/data1/B5_GCO_F010_R2.txt']:
+        assert forbidden_numeric_path(s,set())
+    assert not forbidden_numeric_path('x/NUMERIC_DRIFT_EVIDENCE.json',set())
+    assert not forbidden_numeric_path('x/cal.npy',{'x/cal.npy'})

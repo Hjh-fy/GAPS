@@ -1,0 +1,44 @@
+[
+  {
+    "question": "input identity",
+    "level": "L2 Calibration verified",
+    "evidence": "32 inputs SHA match frozen P37 and per-window hashes;float32 50x8;16Day18 exposures",
+    "limit": "Day22 not reopened"
+  },
+  {
+    "question": "state / interface",
+    "level": "L2 exact within same context",
+    "evidence": "source-equivalent inference loop/P37/P38/reload exact;states unchanged",
+    "limit": "actual P35 no_grad context differs from inference;do not collapse contexts"
+  },
+  {
+    "question": "reference serialization",
+    "level": "L1 static + current roundtrip",
+    "evidence": "source tolist/json.dumps;five sealed vectors exactly representfloat32;288 current output sets roundtrip exact",
+    "limit": "full historical Test CSV and row join not reopened;not full-CSV proof"
+  },
+  {
+    "question": "batch shape",
+    "level": "L3 controlled Calibration/synthetic",
+    "evidence": "different batch/position with same frozen state/input causes nonzero differences;all within original tolerance",
+    "limit": "old five threshold breaches not reproduced with allowed inputs"
+  },
+  {
+    "question": "MKLDNN backend",
+    "level": "L3 controlled flag + B0 profiler",
+    "evidence": "same-batch output changes on isolated flag;first b1/b32 difference moves from tcn1.conv.pointwise to self_attn:0 when disabled",
+    "limit": "does not establish a backend bug or sole Day22 cause"
+  },
+  {
+    "question": "MHA context interaction",
+    "level": "L3 controlled Calibration",
+    "evidence": "FF=IF and FI=II;b32 FF vsII differs at self_attn:0;MHA-off removes context difference;B0 profiler bmm versusmm route",
+    "limit": "specific internal operator rounding not separately intervened;profile onlyB0"
+  },
+  {
+    "question": "historical Day22 full root",
+    "level": "L1 compatible mechanism;not confirmed",
+    "evidence": "sealed 5 events exceed original tolerance,old no_grad batch128 differs from single inference execution",
+    "limit": "no Test access or new forward;cannot assert full causal explanation"
+  }
+]

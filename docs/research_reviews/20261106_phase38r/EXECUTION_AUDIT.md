@@ -1,0 +1,11 @@
+# 执行、权限与证据限制
+
+沿用外部管理的独立worktree，新增Phase3.8R目录。REGISTRATION_LOCKED为主诊断唯一实际读取的注册；此前metadata均未执行、保留并supersede。运行前先RED/GREEN四项；独立审查指出np.array_equal不能区分正负零，补一项signed-zero RED→GREEN后五项通过，core用dtype+tobytes精确比较，仍是预执行修改。启动与独立预审报告写入有时间交叠，报告明确不是事前批准，不能倒写审批记录。
+
+主运行3020/3200模型forward；新发现同batch no_grad/inference非byte后另立CONTEXT_REGISTRATION，补充304/400，总3324，不能合称总数小于3200。两份完整账本、console、输入/版本/模型SHA及输出保留。均固定六端点，没有额外训练种子、scaler拟合、回归推理或权重变化；原后端开关恢复，原Phase3.8run1及授权消费未动。
+
+读取范围：新guard在open前禁止所有P35 evaluation、旧P38run1完整记录及未知numeric包；原P37 Calibration白名单同时生效。原始Day22数据及完整历史Test预测未打开。只静态读P38公开NUMERIC_CONSISTENCY和封存五事件；P38 artifact manifest仅作为身份锚，不重新逐文件哈希完整1376记录。原P37 Calibration输入SHA和每窗SHA完全一致。
+
+权限证据限制：主run1保存ACCESS_LOG；补充context进程没有持久化自己的文件访问日志，COMPLETE中的Test=0是程序声明，不能声称另有完整access trace独立证明。补充仍安装同一guard、只沿锁定Calibration路径、signal SHA匹配、未调用Test入口，代码/身份与完成记录支持其范围。保留这个日志缺口，不为补日志重新推理；未来PC验收合同必须要求完整open审计。
+
+PROCESS_OBSERVATION成功记录CPU型号，未取得进程峰值内存或完整墙钟，因此本轮不是运行性能基准。算子profile只用于路径描述，cpu_time不作为部署延迟。完整模型权重、原始Calibration、逐窗logits、全部层矩阵仅本地；公开摘要/差异/来源SHA。原P38全量旧文件不为本轮再读，保护现场的验证是已许可锚/摘要SHA不变，不冒称本轮重新hash其所有payload。

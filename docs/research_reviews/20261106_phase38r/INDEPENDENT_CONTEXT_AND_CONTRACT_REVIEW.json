@@ -1,0 +1,379 @@
+{
+  "status": "PASS_CONTEXT_EVIDENCE_AND_PROPOSAL_WORDING_NOT_PRODUCTION_APPROVAL",
+  "reviewed_at": "2026-11-06T23:26:54.311816+08:00",
+  "material_findings": [],
+  "reviewer_scope": {
+    "model_calls": 0,
+    "model_checkpoint_or_signal_array_loads": 0,
+    "Day22_Test_or_old_Phase38_run1_reads": 0,
+    "source_edits": 0,
+    "allowed_data": "Saved Calibration context and already approved run1 outputs only; standard-library recalculation"
+  },
+  "context_registration_sha256": "698e710f2aeadaef3217c31be63218b433bafd63a94eb0adf6953678a347e226",
+  "registration_and_started_binding_match": true,
+  "all_four_context_code_sha_match": true,
+  "parent_complete_interface_and_registration_binding_match": true,
+  "signal_digest_matches_run1": true,
+  "calls": {
+    "actual": 304,
+    "planned": 304,
+    "limit": 400,
+    "headroom": 96,
+    "ledger_exact_order_matches": true,
+    "per_model": [
+      {
+        "group": "B0",
+        "calls": 64,
+        "start_zero_based": 0,
+        "end_exclusive": 64
+      },
+      {
+        "group": "B1",
+        "calls": 48,
+        "start_zero_based": 64,
+        "end_exclusive": 112
+      },
+      {
+        "group": "B2",
+        "calls": 48,
+        "start_zero_based": 112,
+        "end_exclusive": 160
+      },
+      {
+        "group": "B3",
+        "calls": 48,
+        "start_zero_based": 160,
+        "end_exclusive": 208
+      },
+      {
+        "group": "B4",
+        "calls": 48,
+        "start_zero_based": 208,
+        "end_exclusive": 256
+      },
+      {
+        "group": "B5",
+        "calls": 48,
+        "start_zero_based": 256,
+        "end_exclusive": 304
+      }
+    ],
+    "main_run_calls": 3020,
+    "total_current_round_calls": 3324,
+    "budget_interpretation": "Main 3020/3200; post-main-triggered follow-up 304/400; 3324 is not less than the original main-run cap. Follow-up was separately registered before its own execution, not preregistered before observing run1."
+  },
+  "matrix_statistics": {
+    "all": {
+      "rows": 288,
+      "byte_equal_rows": 264,
+      "tolerance_failed_rows": 0,
+      "max_abs": 1.0967254638671875e-05,
+      "max_threshold_ratio": 0.080822668800894
+    },
+    "primary": {
+      "rows": 192,
+      "byte_equal_rows": 168,
+      "tolerance_failed_rows": 0,
+      "max_abs": 1.0967254638671875e-05,
+      "max_threshold_ratio": 0.080822668800894
+    },
+    "nohook": {
+      "rows": 96,
+      "byte_equal_rows": 96,
+      "tolerance_failed_rows": 0,
+      "max_abs": 0.0,
+      "max_threshold_ratio": 0.0
+    },
+    "hidden_layers": {
+      "rows": 5952,
+      "byte_equal_rows": 5736,
+      "tolerance_failed_rows": 0,
+      "max_abs": 1.1444091796875e-05,
+      "max_threshold_ratio": 0.08849992918462062
+    }
+  },
+  "independent_recalculation": {
+    "engine": "Python standard library only; no numpy or torch imports",
+    "primary_metric_fields_compared": 2112,
+    "metric_mismatches": 0,
+    "all_192_output_sets_exactly_float32_representable": true,
+    "all_192_model_output_layer_digests_match": true,
+    "all_192_first_context_records_rederived": true,
+    "II_output_matches_corresponding_saved_run1_48_cells": true,
+    "FF_IF_equal_all_48_cells": true,
+    "FI_II_equal_all_48_cells": true,
+    "FF_FI_equal_model_counts": [
+      {
+        "mode": "original",
+        "batch": 1,
+        "byte_equal_models": 6
+      },
+      {
+        "mode": "original",
+        "batch": 32,
+        "byte_equal_models": 0
+      },
+      {
+        "mode": "mkldnn_off",
+        "batch": 1,
+        "byte_equal_models": 6
+      },
+      {
+        "mode": "mkldnn_off",
+        "batch": 32,
+        "byte_equal_models": 0
+      },
+      {
+        "mode": "mha_off",
+        "batch": 1,
+        "byte_equal_models": 6
+      },
+      {
+        "mode": "mha_off",
+        "batch": 32,
+        "byte_equal_models": 6
+      },
+      {
+        "mode": "both_off",
+        "batch": 1,
+        "byte_equal_models": 6
+      },
+      {
+        "mode": "both_off",
+        "batch": 32,
+        "byte_equal_models": 6
+      }
+    ]
+  },
+  "first_observable_difference": {
+    "records": 192,
+    "no_difference": 168,
+    "self_attn_output": 24,
+    "nonzero_records": "FI and II, b32, all six models, original and mkldnn_off only",
+    "description_threshold_exceedances": 0
+  },
+  "profile_audit": {
+    "profile_records": 16,
+    "group": "B0 only",
+    "all_profile_output_matches_byte": true,
+    "batch32_routes": [
+      {
+        "mode": "original",
+        "context": "FF",
+        "native_MHA_count": 1,
+        "matrix_multiplications": [
+          {
+            "key": "aten::bmm",
+            "input_shapes": [
+              [
+                32,
+                50,
+                48
+              ],
+              [
+                32,
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "original",
+        "context": "II",
+        "native_MHA_count": 1,
+        "matrix_multiplications": [
+          {
+            "key": "aten::mm",
+            "input_shapes": [
+              [
+                1600,
+                48
+              ],
+              [
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "mkldnn_off",
+        "context": "FF",
+        "native_MHA_count": 1,
+        "matrix_multiplications": [
+          {
+            "key": "aten::bmm",
+            "input_shapes": [
+              [
+                32,
+                50,
+                48
+              ],
+              [
+                32,
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "mkldnn_off",
+        "context": "II",
+        "native_MHA_count": 1,
+        "matrix_multiplications": [
+          {
+            "key": "aten::mm",
+            "input_shapes": [
+              [
+                1600,
+                48
+              ],
+              [
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "mha_off",
+        "context": "FF",
+        "native_MHA_count": 0,
+        "matrix_multiplications": [
+          {
+            "key": "aten::mm",
+            "input_shapes": [
+              [
+                1600,
+                48
+              ],
+              [
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "mha_off",
+        "context": "II",
+        "native_MHA_count": 0,
+        "matrix_multiplications": [
+          {
+            "key": "aten::mm",
+            "input_shapes": [
+              [
+                1600,
+                48
+              ],
+              [
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "both_off",
+        "context": "FF",
+        "native_MHA_count": 0,
+        "matrix_multiplications": [
+          {
+            "key": "aten::mm",
+            "input_shapes": [
+              [
+                1600,
+                48
+              ],
+              [
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "mode": "both_off",
+        "context": "II",
+        "native_MHA_count": 0,
+        "matrix_multiplications": [
+          {
+            "key": "aten::mm",
+            "input_shapes": [
+              [
+                1600,
+                48
+              ],
+              [
+                48,
+                144
+              ]
+            ],
+            "count": 1
+          }
+        ]
+      }
+    ],
+    "inference_limit": "Both original FF and II use native MHA. bmm versus flattened mm projection shapes are observed; QKV attribution follows dimensions and model code. No independent internal-kernel intervention proves an erroneous kernel or the unique historical failure cause."
+  },
+  "control_evidence": "All 96 b32 nohook comparisons report zero difference and byte equality, with registered fail-closed assertion. Separate unhooked raw outputs are not persisted; this is receipt/assertion evidence, not an independent reload of those raw outputs.",
+  "accepted_disclosed_limits": [
+    "Context process did not persist its access log. Test=0 in COMPLETE is a program declaration, supported by static guarded Calibration-only code and signal identity; it is not an independently verified full open trace. No rerun was used to fill that gap.",
+    "Context b1 refers to the first Calibration window, not all 32 independent single-window context comparisons. Input-creation neutrality is limited to tested cells, software and hardware.",
+    "Context code binds the numeric signal digest to run1; its registration data-file SHA map is not separately iterated at runtime. Original FrozenAssets checks its own locks, and the numeric signal identity matches the completed parent.",
+    "Model immutability and flag restoration follow registered assertions/finally and COMPLETE. Context does not persist per-model final state digests or a separate restored-b32 output; run1 has stronger restored-output evidence.",
+    "This review does not approve the separately versioned canonical golden, production execution, Day22 attempt2 or Pi."
+  ],
+  "document_review": {
+    "files": [
+      "README.md",
+      "INTERFACE_AND_SERIALIZATION.md",
+      "BACKEND_AND_LAYER_EVIDENCE.md",
+      "ROOT_CAUSE_CONFIDENCE.json",
+      "PC_CONTRACT_PROPOSAL.md",
+      "PROPOSED_PC_CONTRACT.json",
+      "NEXT_DECISION.md",
+      "EXECUTION_AUDIT.md"
+    ],
+    "material_overclaim_found": false,
+    "root_cause_levels": "Controlled flag/batch/context effects on allowed Calibration/synthetic data are supported. Historical Day22 root remains compatible but unconfirmed; no bug or sole cause is asserted.",
+    "proposal_assessment": "Appropriate as a v0 review proposal. Golden outputs, exact executable contract, input/layout/environment fingerprints, complete open audit, failure recovery and boundary-input acceptance remain future work under explicit approval. The proposal is not an approved replacement for the historical gate.",
+    "budget_and_logging_disclosures": "EXECUTION_AUDIT explicitly separates the post-main follow-up, reports total 3324 and discloses missing context access trace.",
+    "prior_run1_P2_wording_boundaries_closed": "README/interface docs retain the 6 no_grad-only nonbyte controls and 141 nonbyte repeated-position rows; historical acceptance remains BLOCKED."
+  },
+  "historical_acceptance": "Phase3.8 strict acceptance remains BLOCKED; no historical Test forward or revalidation performed by this reviewer.",
+  "artifact_sha256": {
+    "run_context/CALL_LEDGER.json": "1d81e9b012ca1e4525b911b6f9288fe92e6d9422d74c4eff77517e3700b6c9c7",
+    "run_context/COMPLETE.json": "f14c18694d4faf4dc4ed311753a0db873282100d744cc1205493a92a7e53b0c4",
+    "run_context/CONTEXT_LAYERS.csv": "6b96740bcb497984de082909d4df106390280a984b75a41ef17d79664ccfe1fe",
+    "run_context/CONTEXT_MATRIX.csv": "d223a8442cbb6f74a2426722b1394fe846c70873fdddc3ecb8008e6ac9399937",
+    "run_context/CONTEXT_OPERATOR_PROFILES.json": "b35f5636077da8151858bc7c116bf6bc92964fca16c046bc9c922ccad2684cee",
+    "run_context/FIRST_CONTEXT_DIFFERENCES.json": "f7fd764fbc4e4e9242edeb3c1f0839122f85f47adfd16c34115938e3b2edcd60",
+    "run_context/PRIVATE_CALIBRATION_CONTEXT_LOGITS.json": "7d689683be1ba1131ccfc182c007876041c8981b4221ebb314b5a44dd3256d72",
+    "run_context/STARTED.json": "be0aaad7c88e0e8c87cafa79404b61503ae29ede36814c2d81fb9d6f946595dd",
+    "README.md": "bfcf605bdb05f4e2bb84c47aca4057d4f612ca860a77d888ecf85fd048d554b9",
+    "INTERFACE_AND_SERIALIZATION.md": "4cf4eebc0d9789a8a7c0203ef4c63a2265171a43f6d9ad255a8651fa5f464030",
+    "BACKEND_AND_LAYER_EVIDENCE.md": "2c65a0966aa65d448d7d89b053e55a6fff61ce70213cd36d06ac5e9514d53cf8",
+    "ROOT_CAUSE_CONFIDENCE.json": "195b6af83dcdfbb5a9c3888ace94c82163504e6a8a0945fe347f1db9bfbba64c",
+    "PC_CONTRACT_PROPOSAL.md": "85eb584a6915cad98745bb8b7a157b0d1738ed4600d9fa4c26f3e60d3a9b48c2",
+    "PROPOSED_PC_CONTRACT.json": "752fc122b6cff709eaeb416ddd53845db4102f21843f70809f3606e6763abb3a",
+    "NEXT_DECISION.md": "99caba15a85a01ab57ecec81dfb794c1007d08dbbcaf4df7534043c575313e4b",
+    "EXECUTION_AUDIT.md": "4ed9b642d34ccd7012030acb3754ddc927838e6de6d4dc04fb5edb0d1c533d3b"
+  }
+}

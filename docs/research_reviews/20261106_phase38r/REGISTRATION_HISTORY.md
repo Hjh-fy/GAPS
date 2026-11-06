@@ -1,0 +1,11 @@
+# 注册与恢复说明
+
+有效主执行注册仅REGISTRATION_LOCKED.json，run1/STARTED.json记录其SHA；有效补充仅CONTEXT_REGISTRATION.json，run_context/STARTED.json记录其SHA。注册均对应独立目录、用户本轮Calibration/合成授权，不是Day22授权。
+
+REGISTRATION.json、REGISTRATION_FINAL.json、REGISTRATION_FINAL_V2.json及REGISTRATION_EXECUTION_LOCK.json都是主运行前的未执行元数据修订，保留来源和supersedes链。最后锁定版本修正helper模块命名、JSON输出、去hook控制及signed-zero字节定义。此前均0模型调用，不能拿旧文件再启动run1。register.py保留预执行生成历史，不能假设直接再调用它会生成当前最终锁。
+
+父主运行不覆盖、不修改；context是看到六条真实samebatch no_grad差异后预注册的独立推理版本，依然只使用合法32窗Calibration，304次。不修改主诊断代码/结果，也不把它视为重新训练或Day22重跑。
+
+恢复审阅只需读取README和CSV/JSON与ARTIFACT_SHA256，逐文件哈希检查不调用模型。原signal、模型、完整Calibration/合成logits和逐层数据留本地。主/补充run目录已存在，再执行两个入口会拒绝；不应删除目录重跑。代码命令保存于注册和console，已消费版本仅供复核。所有未运行窗口/缺失日志按原记录保留，不补造。
+
+本轮旧Phase3.8现场只核对已批准摘要/五事件/消费记录/清单SHA，不打开1376条完整Test结果或原始输入。下次若另立PC验证版本，必须新ID/目录/注册，不把本轮PC v0提案当授权。公开包中源SHA和脱敏后SHA分别列出，脱敏路径不是可直接运行位置。

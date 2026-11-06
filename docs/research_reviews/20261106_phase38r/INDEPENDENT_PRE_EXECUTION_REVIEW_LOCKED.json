@@ -1,0 +1,115 @@
+{
+  "status": "PASS_CODE_REVIEW_NO_CONFIRMED_BLOCKER",
+  "reviewed_at": "2026-11-06T23:15:27.2878643+08:00",
+  "timing": "Review and implementer launch overlapped. run1 was absent at initial inspection and appeared before this report was written. Implementer confirmed it launched the registered command. This report is not prior approval.",
+  "run1_creation_time": "2026-11-06T23:14:11.6237310+08:00",
+  "effective_registration": "REGISTRATION_LOCKED.json",
+  "effective_registration_sha256": "110bc53b6a14d87536ceef37df998bbf49e0ad452f77e9825dbcc220055c6498",
+  "gate": "PRE_EXECUTION_IDENTITY_GATE_LOCKED.json",
+  "gate_sha256": "7a1c108bca2ffa12d05892d40c743d0f671e47121b47442497dec4355ae18b63",
+  "gate_registration_binding_match": true,
+  "main_directly_reads_locked_registration": true,
+  "started_receipt_uses_locked_registration_sha": true,
+  "earlier_registration_files_not_used_by_main": true,
+  "registered_cli_has_no_optimization_flag": true,
+  "code_sha_checks": [
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\p38r_common.py",
+      "registered_sha256": "32ff040aa5b1a22943d1660d48fd75dc0433108a593f75aba3ee644003cd638b",
+      "actual_sha256": "32ff040aa5b1a22943d1660d48fd75dc0433108a593f75aba3ee644003cd638b",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\core.py",
+      "registered_sha256": "4d6cd8f0e0dccb62bd13f097134f25ebe9634c86e7eac9cde65441b0a0691686",
+      "actual_sha256": "4d6cd8f0e0dccb62bd13f097134f25ebe9634c86e7eac9cde65441b0a0691686",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\diagnose.py",
+      "registered_sha256": "d4425f11f7e14f9f2f83b1db0c31ae5d9201fecc8bb576909513d97d0148c9bc",
+      "actual_sha256": "d4425f11f7e14f9f2f83b1db0c31ae5d9201fecc8bb576909513d97d0148c9bc",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\test_core.py",
+      "registered_sha256": "38824ecabb0cf745fb7046e4c57b20622665bfbea215384bb16821333e19c006",
+      "actual_sha256": "38824ecabb0cf745fb7046e4c57b20622665bfbea215384bb16821333e19c006",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase37_20261106\\assets.py",
+      "registered_sha256": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+      "actual_sha256": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase37_20261106\\prepare.py",
+      "registered_sha256": "7179aa2d94226ee198c766194a748ebec1c857fdfe0e9e8e5f85941f8f837182",
+      "actual_sha256": "7179aa2d94226ee198c766194a748ebec1c857fdfe0e9e8e5f85941f8f837182",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\evaluate.py",
+      "registered_sha256": "a1d22a2940ee5968bd8c2cf81424fbc638567b1191c8df4b10fff909d4f73111",
+      "actual_sha256": "a1d22a2940ee5968bd8c2cf81424fbc638567b1191c8df4b10fff909d4f73111",
+      "match": true
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38_20261106\\inference.py",
+      "registered_sha256": "190b8c7358293b59b5097676e670fdf4e93d5e297fd56b1b9f6ed8aab5c0f621",
+      "actual_sha256": "190b8c7358293b59b5097676e670fdf4e93d5e297fd56b1b9f6ed8aab5c0f621",
+      "match": true
+    }
+  ],
+  "all_eight_code_sha_match": true,
+  "fixed_budget": 3200,
+  "expected_calls": {
+    "main_matrix": 1824,
+    "interfaces_adapters_existing_controls_restore": 1092,
+    "all_model_domain_mode_b1first_b32_hook_controls": 96,
+    "B0_profiles": 8,
+    "total": 3020,
+    "headroom": 180
+  },
+  "hook_controls": {
+    "models": 6,
+    "domains": 2,
+    "backend_modes": 4,
+    "control_batches": [
+      1,
+      32
+    ],
+    "number": 96,
+    "first_b1_window_only": true,
+    "b32_all32_windows": true,
+    "capture_hooks_removed_before_control": true,
+    "strict_byte_equality_asserted": true
+  },
+  "signed_zero_finding_closed": true,
+  "byte_equality": "matching shape and dtype, then C-order tobytes comparison",
+  "signed_zero_test_statically_verified": true,
+  "test_execution": "Reviewer did not execute tests; implementation gate reports five passing pure tests",
+  "guard_and_batch_mapping_unchanged_from_V1_review": true,
+  "backend_restore_finally_and_per_domain_b32_controls_retained": true,
+  "reviewer_scope": {
+    "model_calls": 0,
+    "model_or_checkpoint_loads": 0,
+    "signal_array_loads": 0,
+    "Day22_reads": 0,
+    "historical_Test_evaluation_reads": 0,
+    "old_Phase38_run1_reads": 0,
+    "source_edits": 0,
+    "execution_numeric_output_reads": 0,
+    "written_files": [
+      "INDEPENDENT_PRE_EXECUTION_REVIEW_LOCKED.json"
+    ]
+  },
+  "authorization_boundary": "Code-readiness review under the existing explicit Calibration/synthetic authorization, not new data or deployment authorization and not a retroactive claim of prior approval.",
+  "limitations": [
+    "Actual input identity and original P37 provenance gate are supplied by the implementer; this reviewer did not hash numeric arrays or model files.",
+    "Execution receipts, actual call totals, final state identity and actual backend restoration remain subject to post-run evidence audit.",
+    "Hook controls on changed modes/synthetic cover first b1 window and all b32 windows; they do not individually compare every changed-mode b16/b128 intermediate activation.",
+    "Historical Phase3.8 strict acceptance remains BLOCKED; no Day22 attempt2 or Pi deployment is authorized."
+  ]
+}

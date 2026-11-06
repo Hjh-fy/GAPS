@@ -1,0 +1,25 @@
+"""Read only permissible frozen metadata, Calibration bytes and model hashes."""
+from p38r_common import *
+import subprocess
+def main():
+    r=read(HERE/'REGISTRATION_LOCKED.json');q=read(HERE/'CONTEXT_REGISTRATION.json');done=read(HERE/'run1/COMPLETE.json');ctx=read(HERE/'run_context/COMPLETE.json');checks=[]
+    assert done['calls']==3020 and ctx['forward_calls']==304 and done['registered_code_unchanged'] and ctx['registered_code_unchanged']
+    for which,reg in [('main',r),('context',q)]:
+        for p,h in reg['code_sha256'].items():assert sha(p)==h;checks.append(dict(scope=which,path=p,sha256=h))
+    for p,h in r['inputs'].items():assert sha(p)==h;checks.append(dict(scope='Calibration input',path=p,sha256=h))
+    assert read(HERE/'run1/STARTED.json')['registration_sha256']==sha(HERE/'REGISTRATION_LOCKED.json')
+    assert read(HERE/'run_context/STARTED.json')['registration_sha256']==sha(HERE/'CONTEXT_REGISTRATION.json')
+    assert sha(P37/'ARTIFACT_SHA256.csv')=='a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732'
+    for z in rows(P37/'ARTIFACT_SHA256.csv'):assert sha(P37/z['path'])==z['sha256']
+    assert sha(P38/'ARTIFACT_SHA256.csv')=='70c6761e1e45c77f31a834f098f92bfcd52083ca6f60369df510d3970ca76f88'
+    old={z['path']:z['sha256'] for z in rows(P38/'ARTIFACT_SHA256.csv')}
+    for rel in ['NUMERIC_CONSISTENCY.md','NUMERIC_DRIFT_EVIDENCE.json','AUTHORIZATION_CONSUMED.json']:
+        assert sha(P38/rel)==old[rel];checks.append(dict(scope='approved old P38 summary/provenance only',path=str(P38/rel),sha256=old[rel]))
+    lock=read(P37/'MODEL_SOURCE_LOCK.json')
+    for g,item in lock['classifiers'].items():assert sha(item['endpoint'])==item['endpoint_file_sha256'];checks.append(dict(scope='classifier unchanged',path=item['endpoint'],sha256=item['endpoint_file_sha256']))
+    for item in lock['regressors']:assert sha(item['absolute_path'])==item['sha256'];checks.append(dict(scope='SVR unchanged;no regression inference',path=item['absolute_path'],sha256=item['sha256']))
+    write(HERE/'PROVENANCE_VERIFICATION.json',dict(status='PASS_PERMITTED_ASSETS_AND_CODE_UNCHANGED',checks=checks,P37_payload_hashes_checked=55,P38_full_Test_payload_not_reopened=True,P38_manifest_and_approved_summaries_unchanged=True,training=0,scaler_refit=0,Test_forward=0,Pi=0,new_numeric_inference_by_this_program=0))
+    cmd=[sys.executable,'-m','pytest','test_core.py','-q','-p','no:cacheprovider'];res=subprocess.run(cmd,cwd=HERE,capture_output=True,text=True,encoding='utf-8');assert res.returncode==0 and '5 passed' in res.stdout
+    write(HERE/'FINAL_PURE_TESTS.json',dict(status='PASS_5',command=cmd,stdout=res.stdout,stderr=res.stderr,real_model_calls=0,raw_input_reads=0))
+    print('PROVENANCE_PASS;5_TESTS_PASS;NO_NEW_INFERENCE')
+if __name__=='__main__':main()

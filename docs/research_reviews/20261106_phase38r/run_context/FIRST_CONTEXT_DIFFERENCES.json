@@ -1,0 +1,1538 @@
+[
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "original",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B0",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "original",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B1",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "original",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B2",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "original",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B3",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "original",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B4",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "original",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mkldnn_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "mha_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 1,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "FI",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "IF",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  },
+  {
+    "group": "B5",
+    "mode": "both_off",
+    "batch": 32,
+    "context": "II",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null
+  }
+]

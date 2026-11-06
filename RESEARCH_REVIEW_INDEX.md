@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.8联合离线评价：BLOCKED](docs/research_reviews/20261106_phase38/README.md) · [执行审计](docs/research_reviews/20261106_phase38/EXECUTION_AUDIT.md) · [数值一致性](docs/research_reviews/20261106_phase38/NUMERIC_CONSISTENCY.md) · [继续/停止](docs/research_reviews/20261106_phase38/NEXT_DECISION.md)。
+最新：[Phase3.8R数值差异定位](docs/research_reviews/20261106_phase38r/README.md) · [batch诊断](docs/research_reviews/20261106_phase38r/BATCH_DIAGNOSIS.md) · [后端/逐层](docs/research_reviews/20261106_phase38r/BACKEND_AND_LAYER_EVIDENCE.md) · [PC提案](docs/research_reviews/20261106_phase38r/PC_CONTRACT_PROPOSAL.md) · [继续/停止](docs/research_reviews/20261106_phase38r/NEXT_DECISION.md)。
+
+Calibration/合成主3020+上下文304次；原容差均通过，byte差异保留。定位TCN pointwise跨batch与Attention no_grad/inference路径差，未证明历史5次超容差完整根因。旧P38仍BLOCKED；新PC合同仅提案，Day22/Pi未授权。
+
+上阶段：[Phase3.8联合离线评价：BLOCKED](docs/research_reviews/20261106_phase38/README.md) · [执行审计](docs/research_reviews/20261106_phase38/EXECUTION_AUDIT.md) · [数值一致性](docs/research_reviews/20261106_phase38/NUMERIC_CONSISTENCY.md) · [继续/停止](docs/research_reviews/20261106_phase38/NEXT_DECISION.md)。
 
 唯一执行已消费，1376/5040条；B2完成840，其他五组logits超锁定容差停止，已处理argmax均与P35一致。全矩阵未锁，不评分、不挑赢家、不重试。训练0、refit0、Pi0，先审计数值来源。
 

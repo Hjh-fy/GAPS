@@ -1,0 +1,157 @@
+"""Fixed Calibration/synthetic-only inference diagnosis. No Test access."""
+from p38r_common import *
+from core import regimes,compare,forbidden_numeric_path
+import numpy as np,importlib.util,inspect,platform,importlib.metadata,time,traceback,collections
+RUN=HERE/'run1';ACCESS=[];CALLS=[];MODE='notstarted';DOMAIN='none';PATH='none';ALLOW_NO_GRAD=False
+
+def digest(x):
+    a=np.ascontiguousarray(x);return hashlib.sha256(str(a.dtype).encode()+str(a.shape).encode()+a.tobytes()).hexdigest()
+
+def guard(lock):
+    allowed={str(Path(p).resolve()).lower() for p in [lock['calibration_pack'],lock['classification_calibration_pack'],*lock['raw_Calibration_allowlist']]}
+    def audit(event,args):
+        if event!='open' or not isinstance(args[0],(str,bytes,os.PathLike)):return
+        p=Path(os.fsdecode(args[0])).resolve();s=str(p).lower()
+        if forbidden_numeric_path(s,allowed):
+            ACCESS.append(dict(path=str(p),allowed=False));raise PermissionError('P38R NO TEST: '+str(p))
+        if '/dataset/data1/' in s.replace('\\','/') or p.suffix in ['.npy','.npz']:ACCESS.append(dict(path=str(p),allowed=True))
+    sys.addaudithook(audit)
+
+def load_module(name,p):
+    spec=importlib.util.spec_from_file_location(name,p);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+
+class Capture:
+    def __init__(self,m,torch):self.m=m;self.torch=torch;self.data={};self.order=[];self.handles=[]
+    def save(self,name,value):
+        if self.torch.is_tensor(value):
+            a=value.detach().cpu().numpy().copy();assert a.ndim>=2 and a.dtype==np.float32 and np.isfinite(a).all()
+            if name not in self.data:self.data[name]=[];self.order.append(name)
+            self.data[name].append(a)
+        elif isinstance(value,(tuple,list)):
+            for i,v in enumerate(value):self.save(name+':'+str(i),v)
+    def __enter__(self):
+        self.handles.append(self.m.register_forward_pre_hook(lambda m,a:self.save('MODEL_INPUT',a[0])))
+        for name,mod in self.m.named_modules():
+            self.handles.append(mod.register_forward_hook(lambda m,a,o,n=name:self.save(n or 'MODEL_OUTPUT',o)))
+        return self
+    def __exit__(self,*args):
+        for h in self.handles:h.remove()
+    def arrays(self):return {k:np.concatenate(self.data[k]) for k in self.order}
+
+def main():
+    global MODE,DOMAIN,PATH,ALLOW_NO_GRAD
+    assert not RUN.exists();reg=read(HERE/'REGISTRATION_LOCKED.json')
+    for p,h in reg['code_sha256'].items():assert sha(p)==h
+    for p,h in reg['inputs'].items():assert sha(p)==h
+    lock=read(P37/'MODEL_SOURCE_LOCK.json');assert sha(P37/'MODEL_SOURCE_LOCK.json')==reg['phase37_source_lock_sha256']
+    guard(lock);RUN.mkdir();write(RUN/'STARTED.json',dict(registration_sha256=sha(HERE/'REGISTRATION_LOCKED.json'),purpose=PURPOSE,at=now(),training=False,Test=False))
+    sys.path.insert(0,str(P37));import assets
+    a=assets.FrozenAssets();torch=a.r.torch
+    observed=load_module('_p38_observed_cal_only',P38/'inference.py').ObservedClassifier
+    cal=read(lock['calibration_metadata_path']);assert len(cal)==32 and len({m['filename'] for m in cal})==16 and {m['day'] for m in cal}=={18}
+    x=np.load(lock['classification_calibration_pack'],allow_pickle=False);assert x.shape==(32,50,8) and x.dtype==np.float32 and np.isfinite(x).all()
+    assert digest(x)==read(P37/'calibration_final/CALIBRATION_ACCEPTANCE.json')['signal_array_sha256']
+    calident=rows(P37/'calibration_final/CALIBRATION_IDENTITIES.csv')
+    for i,m in enumerate(calident):assert digest(x[i])==m['signal_sha256']
+    synthetic=np.random.default_rng(reg['synthetic_seed']).standard_normal((32,50,8)).astype('f4')
+    original=(torch.backends.mkldnn.enabled,torch.backends.mha.get_fastpath_enabled());assert torch.get_num_threads()==1
+    modes={'original':original,'mkldnn_off':(False,original[1]),'mha_off':(original[0],False),'both_off':(False,False)}
+    config=dict(python=sys.version,executable=sys.executable,cpu=platform.processor(),machine=platform.machine(),processor_identifier=os.environ.get('PROCESSOR_IDENTIFIER'),platform=platform.platform(),torch=torch.__version__,numpy=np.__version__,torch_config=torch.__config__.show(),parallel_info=torch.__config__.parallel_info(),threads=torch.get_num_threads(),interop_threads=torch.get_num_interop_threads(),mkldnn_available=torch.backends.mkldnn.is_available(),mkldnn_enabled=original[0],mha_fastpath_enabled=original[1],deterministic_algorithms=torch.are_deterministic_algorithms_enabled(),float32_matmul_precision=torch.get_float32_matmul_precision(),dtype='float32 CPU',backend_modes=modes,packages={p:importlib.metadata.version(p) for p in ['torch','numpy','flwr','scikit-learn']})
+    write(RUN/'ENVIRONMENT.json',config)
+    source35=(P35/'evaluate.py').read_text(encoding='utf-8-sig');assert 'range(0,len(x),128)' in source35 and 'm(r.torch.from_numpy(x[i:i+128]))[0].cpu().numpy()' in source35 and 'json.dumps(z[i].tolist())' in source35
+    old=read(P38/'NUMERIC_DRIFT_EVIDENCE.json');events=[]
+    for z in old['events']:
+        sr=np.array(z['single_logits'],dtype='f8');rr=np.array(z['reference_logits'],dtype='f8');d=abs(sr-rr);t=1e-4+1e-5*abs(rr)
+        assert np.array_equal(d,np.array(z['absolute_differences'])) and np.array_equal(t,np.array(z['component_thresholds'])) and sr.argmax()==rr.argmax()
+        assert np.array_equal(sr.astype('f4').astype('f8'),sr) and np.array_equal(rr.astype('f4').astype('f8'),rr)
+        events.append(dict(group=z['group'],max_abs=float(d.max()),max_threshold_ratio=float((d/t).max()),failed_components=np.where(d>t)[0].tolist(),argmax_equal=True,float32_values_exactly_represented=True,single_min=float(sr.min()),single_max=float(sr.max()),reference_min=float(rr.min()),reference_max=float(rr.max())))
+    write(RUN/'SEALED_FIVE_EVENT_AUDIT.json',dict(events=events,old_sha256=sha(P38/'NUMERIC_DRIFT_EVIDENCE.json'),full_Test_CSV_opened=False,full1376_opened=False))
+    matrix=[];interfaces=[];layers=[];first=[];backend=[];positions=[];profiles=[];versions=[];outarrays={};budget=reg['max_model_forward_calls']
+    def counter(mod,inp):
+        assert not mod.training and not any(n.training for n in mod.modules()) and not torch.is_grad_enabled()
+        assert torch.is_inference_mode_enabled() or ALLOW_NO_GRAD
+        assert inp[0].dtype==torch.float32 and inp[0].device.type=='cpu' and tuple(inp[0].shape[1:])==(50,8)
+        assert len(CALLS)<budget;CALLS.append(dict(mode=MODE,domain=DOMAIN,path=PATH,batch=int(inp[0].shape[0]),inference_mode=torch.is_inference_mode_enabled()))
+    def forward(m,xx,bs,kind='raw',capture=False):
+        def go():
+            parts=[]
+            with torch.inference_mode():
+                for j in range(0,len(xx),bs):
+                    if kind=='source35':
+                        with torch.no_grad():z=m(torch.from_numpy(xx[j:j+bs]))[0].cpu().numpy()
+                    else:z=m(torch.from_numpy(xx[j:j+bs]))[0].cpu().numpy()
+                    assert z.dtype==np.float32 and z.shape==(len(xx[j:j+bs]),4);parts.append(z.copy())
+            return np.concatenate(parts)
+        if capture:
+            with Capture(m,torch) as cap:z=go()
+            return z,cap.arrays()
+        return go()
+    def layer_compare(g,domain,mode,name,aa,ref,idx,kind):
+        assert set(aa)==set(ref);start=len(layers)
+        for order,(k,v) in enumerate(aa.items()):
+            q=compare(v,ref[k][idx],False);layers.append(dict(group=g,domain=domain,mode=mode,regime=name,comparison=kind,execution_order=order,layer=k,activation_shape=list(v.shape),activation_sha256=digest(v),reference_sha256=digest(ref[k][idx]),**q))
+        subset=layers[start:];first.append(dict(group=g,domain=domain,mode=mode,regime=name,comparison=kind,first_nonbitwise=next((z['layer'] for z in subset if not z['bitwise_equal']),None),first_description_tolerance_exceeded=next((z['layer'] for z in subset if z['window_pass_rate']<1),None),note='hidden-layer tolerance is descriptive;only logits gate is frozen'))
+    for g in GROUPS:
+        c=a.classifiers[g];m=c.model;h=m.register_forward_pre_hook(counter);state=a.previous.c.digest(a.r.arrays(m));before_scalers={k:v.scaler_sha() for k,v in a.heads.items()};baseline={};baseline32={}
+        modelsource=inspect.getfile(type(m));modules=[dict(name=n,type=type(mod).__name__,training=mod.training) for n,mod in m.named_modules()]
+        versions.append(dict(group=g,file_sha256=c.version,state_sha256=state,model_source=modelsource,model_source_sha256=sha(modelsource),model_class=type(m).__name__,modules=modules,all_eval=not any(v['training'] for v in modules)))
+        restored=a.r.model();ck=torch.load(lock['classifiers'][g]['endpoint'],map_location='cpu',weights_only=True);a.r.validate_state(restored,ck['model_state']);restored.load_state_dict(ck['model_state'],strict=True);restored.eval();rh=restored.register_forward_pre_hook(counter)
+        try:
+            for domain,xx in [('Calibration',x),('synthetic',synthetic)]:
+                DOMAIN=domain
+                for mode,(mk,mha) in modes.items():
+                    MODE=mode;torch.backends.mkldnn.enabled=mk;torch.backends.mha.set_fastpath_enabled(mha);ref_layers=None;ref_logits=None
+                    for name,(idx,bs) in regimes().items():
+                        PATH='native_hooked';z,hidden=forward(m,xx[idx],bs,capture=True);outarrays[g+'_'+domain+'_'+mode+'_'+name]=z
+                        if name=='b1':ref_logits=z;ref_layers=hidden
+                        q=compare(z,ref_logits[idx]);matrix.append(dict(group=g,domain=domain,mode=mode,regime=name,batch=bs,unique_windows=32,input_presentations=len(idx),independent_exposures=16 if domain=='Calibration' else 0,reference='same_mode_b1',**q))
+                        layer_compare(g,domain,mode,name,hidden,ref_layers,idx,'within_mode_vs_b1')
+                        if mode=='original':baseline[(domain,name)]=z
+                        else:backend.append(dict(group=g,domain=domain,mode=mode,regime=name,comparison='same_batch_vs_original_backend',**compare(z,baseline[(domain,name)])))
+                        if name=='b32':
+                            if mode=='original':baseline32[domain]=hidden
+                            else:layer_compare(g,domain,mode,name,hidden,baseline32[domain],list(range(32)),'same_b32_vs_original_backend')
+                        if name.startswith('b128'):
+                            for i in range(32):
+                                where=[j for j,k in enumerate(idx) if k==i];v=z[where];positions.append(dict(group=g,domain=domain,mode=mode,regime=name,window=i,batch_positions=where,duplicate_count=4,**compare(v,np.repeat(v[:1],4,axis=0))))
+                        if domain=='Calibration' and mode=='original':
+                            for path,model,kind in [('P35_source_equivalent_inference',m,'source35'),('P38R_batch_diagnostic_shim',m,'raw'),('strict_reload_same_batch',restored,'raw')]:
+                                PATH=path;y=forward(model,xx[idx],bs,kind=kind);metric=compare(y,z);interfaces.append(dict(group=g,regime=name,path=path,**metric));assert metric['bitwise_equal'],('samebatch interface',g,name,path)
+                            if name=='b1':
+                                for path,adapter in [('P37_actual_ClassifierAdapter',c),('P38_actual_ObservedClassifier',observed(c))]:
+                                    PATH=path;y=np.array([adapter.classify(w)['logits'] for w in xx]);metric=compare(y,z);interfaces.append(dict(group=g,regime=name,path=path,**metric));assert metric['bitwise_equal']
+                            if name=='b32':
+                                PATH='no_hook_b32';y=forward(m,xx,32);interfaces.append(dict(group=g,regime=name,path=PATH,**compare(y,z)));assert np.array_equal(y,z)
+                                PATH='P35_no_grad_only_control';ALLOW_NO_GRAD=True
+                                with torch.no_grad():y=m(torch.from_numpy(xx))[0].cpu().numpy()
+                                ALLOW_NO_GRAD=False;interfaces.append(dict(group=g,regime=name,path=PATH,**compare(y,z)))
+                    for check_bs in [1,32]:
+                        PATH='hook_nonperturbation_control';y=forward(m,xx[:check_bs],check_bs)
+                        want=outarrays[g+'_'+domain+'_'+mode+('_b1' if check_bs==1 else '_b32')][:check_bs]
+                        metric=compare(y,want);interfaces.append(dict(group=g,domain=domain,mode=mode,regime='b'+str(check_bs),path=PATH,**metric));assert metric['bitwise_equal'],('hooks alter outputs',g,domain,mode,check_bs)
+                    if g=='B0' and domain=='Calibration':
+                        for bs in [1,32]:
+                            PATH='CPU_profiler';samples=xx[:bs]
+                            with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU],record_shapes=True) as prof:y=forward(m,samples,bs)
+                            expect=outarrays[g+'_'+domain+'_'+mode+'_b1'][:1] if bs==1 else outarrays[g+'_'+domain+'_'+mode+'_b32']
+                            profiles.append(dict(group=g,domain=domain,mode=mode,batch=bs,profile_vs_native=compare(y,expect),operators=[dict(key=v.key,count=v.count,cpu_time_total=v.cpu_time_total,input_shapes=v.input_shapes) for v in prof.key_averages(group_by_input_shape=True)]))
+                torch.backends.mkldnn.enabled=original[0];torch.backends.mha.set_fastpath_enabled(original[1]);MODE='original_restored';PATH='backend_restore_control';y=forward(m,xx,32);q=compare(y,baseline[(domain,'b32')]);interfaces.append(dict(group=g,domain=domain,regime='b32',path=PATH,**q));assert q['bitwise_equal']
+            assert a.previous.c.digest(a.r.arrays(m))==a.previous.c.digest(a.r.arrays(restored))==state
+            assert {k:v.scaler_sha() for k,v in a.heads.items()}==before_scalers
+        finally:
+            torch.backends.mkldnn.enabled=original[0];torch.backends.mha.set_fastpath_enabled(original[1]);h.remove();rh.remove();ALLOW_NO_GRAD=False
+        print(g+' DIAGNOSTICS_DONE;calls='+str(len(CALLS)),flush=True)
+    serial=[]
+    for key,z in outarrays.items():
+        zz=np.array(json.loads(json.dumps(z.tolist())),dtype='f4');assert np.array_equal(zz,z);serial.append(dict(output=key,windows=len(z),float32_json_roundtrip_exact=True,logits_sha256=digest(z)))
+    table(RUN/'BATCH_MATRIX.csv',matrix);table(RUN/'INTERFACE_MATRIX.csv',interfaces);table(RUN/'LAYER_COMPARISONS.csv',layers);write(RUN/'FIRST_LAYER_DIFFERENCES.json',first);table(RUN/'BACKEND_MATRIX.csv',backend);table(RUN/'REPEATED_POSITION_MATRIX.csv',positions);write(RUN/'CPU_OPERATOR_PROFILES.json',profiles);write(RUN/'MODEL_VERSIONS.json',versions);table(RUN/'SERIALIZATION_ROUNDTRIP.csv',serial);write(RUN/'MODEL_CALL_LEDGER.json',CALLS)
+    write(RUN/'PRIVATE_CALIBRATION_SYNTHETIC_LOGITS.json',{k:z.tolist() for k,z in outarrays.items()})
+    write(RUN/'ACCESS_LOG.json',dict(independent_guard=ACCESS,original_P37_guard=assets.ACCESS,Day22_numeric_opens=0,full_Test_log_opens=0))
+    write(RUN/'COMPLETE.json',dict(status='DIAGNOSTICS_COMPLETE_NOT_OLD_PC_ACCEPTANCE',calls=len(CALLS),budget=budget,signal_sha256=digest(x),synthetic_sha256=digest(synthetic),Calibration_windows=32,Calibration_exposures=16,synthetic_windows=32,models_unchanged=True,scalers_unchanged=True,backend_flags_restored=True,Test_reads=0,training=0,regression_calls=0,scaler_fit=0,Pi=0,registered_code_unchanged=all(sha(p)==v for p,v in reg['code_sha256'].items()),old_phase38_manifest_unchanged=sha(P38/'ARTIFACT_SHA256.csv')==reg['old_phase38_manifest_sha256']))
+    print('P38R_CAL_SYNTH_COMPLETE_NO_TEST',flush=True)
+
+if __name__=='__main__':
+    try:main()
+    except BaseException:
+        if RUN.exists():write(RUN/'FAILED.json',dict(error=traceback.format_exc(),calls=len(CALLS),access=ACCESS,Test=False,training=False))
+        raise

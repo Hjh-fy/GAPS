@@ -1,0 +1,317 @@
+{
+  "status": "PASS_RUN1_CALIBRATION_SYNTHETIC_EVIDENCE_WITH_EXPLICIT_LIMITS",
+  "reviewed_at": "2026-11-06T23:22:03.311083+08:00",
+  "reviewer": "Independent read-only agent",
+  "reviewer_scope": {
+    "model_calls": 0,
+    "model_checkpoint_or_signal_array_loads": 0,
+    "old_Test_evaluation_or_Phase38_run1_reads": 0,
+    "source_edits": 0,
+    "allowed_reads": "New run1 saved Calibration/synthetic outputs and receipts; previously allowed source and registration only"
+  },
+  "registration_sha256": "110bc53b6a14d87536ceef37df998bbf49e0ad452f77e9825dbcc220055c6498",
+  "started_registration_binding_matches": true,
+  "all_registered_code_sha_match": true,
+  "matrix_statistics": {
+    "BATCH_MATRIX": {
+      "rows": 288,
+      "byte_equal_rows": 48,
+      "tolerance_failed_rows": 0,
+      "max_abs": 2.6702880859375e-05,
+      "max_threshold_ratio": 0.21111794429524144,
+      "argmax_all_equal": true
+    },
+    "BACKEND_MATRIX": {
+      "rows": 216,
+      "byte_equal_rows": 65,
+      "tolerance_failed_rows": 0,
+      "max_abs": 3.2901763916015625e-05,
+      "max_threshold_ratio": 0.20778494174082468,
+      "argmax_all_equal": true
+    },
+    "INTERFACE_MATRIX": {
+      "rows": 240,
+      "byte_equal_rows": 234,
+      "tolerance_failed_rows": 0,
+      "max_abs": 1.0967254638671875e-05,
+      "max_threshold_ratio": 0.08082260347790887,
+      "argmax_all_equal": true
+    },
+    "LAYER_COMPARISONS": {
+      "rows": 10044,
+      "byte_equal_rows": 4728,
+      "tolerance_failed_rows": 0,
+      "max_abs": 0.0001430511474609375,
+      "max_threshold_ratio": 0.7965509522766634,
+      "argmax_all_equal": true
+    },
+    "REPEATED_POSITION_MATRIX": {
+      "rows": 3072,
+      "byte_equal_rows": 2931,
+      "tolerance_failed_rows": 0,
+      "max_abs": 2.86102294921875e-06,
+      "max_threshold_ratio": 0.025701297930537916,
+      "argmax_all_equal": true
+    }
+  },
+  "independent_saved_output_recalculation": {
+    "engine": "Python standard library only; csv/json/math/struct; no numpy/torch imports, no inference",
+    "metric_fields_compared": 39336,
+    "metric_mismatches": 0,
+    "batch_rows_recomputed": 288,
+    "backend_rows_recomputed": 216,
+    "repeated_position_rows_recomputed": 3072,
+    "all_saved_logits_exactly_float32_representable": true,
+    "all_288_serialization_digest_rows_match": true,
+    "all_288_model_output_layer_digests_match": true,
+    "all_324_first_layer_records_rederived": true,
+    "all_model_input_layer_comparisons_byte_equal": true
+  },
+  "call_audit": {
+    "expected": 3020,
+    "actual": 3020,
+    "limit": 3200,
+    "headroom": 180,
+    "entire_ledger_matches_static_expected_order": true,
+    "per_model_blocks": [
+      {
+        "group": "B0",
+        "calls": 510
+      },
+      {
+        "group": "B1",
+        "calls": 502
+      },
+      {
+        "group": "B2",
+        "calls": 502
+      },
+      {
+        "group": "B3",
+        "calls": 502
+      },
+      {
+        "group": "B4",
+        "calls": 502
+      },
+      {
+        "group": "B5",
+        "calls": 502
+      }
+    ],
+    "by_path": {
+      "native_hooked": 1824,
+      "P35_source_equivalent_inference": 228,
+      "P38R_batch_diagnostic_shim": 228,
+      "strict_reload_same_batch": 228,
+      "P37_actual_ClassifierAdapter": 192,
+      "P38_actual_ObservedClassifier": 192,
+      "no_hook_b32": 6,
+      "P35_no_grad_only_control": 6,
+      "hook_nonperturbation_control": 96,
+      "CPU_profiler": 8,
+      "backend_restore_control": 12
+    },
+    "by_domain": {
+      "Calibration": 2054,
+      "synthetic": 966
+    },
+    "non_inference_mode_calls": 6,
+    "non_inference_mode_only_path": "P35_no_grad_only_control"
+  },
+  "controls": {
+    "hook_nonperturbation_rows": 96,
+    "all_hook_control_byte_equal": true,
+    "backend_restore_rows": 12,
+    "all_restore_byte_equal": true,
+    "P35_normalized_inference_source_equivalent_rows": 36,
+    "P37_actual_single_window_rows": 6,
+    "P38_actual_single_window_rows": 6,
+    "no_grad_control_nonbyte": [
+      {
+        "group": "B0",
+        "regime": "b32",
+        "path": "P35_no_grad_only_control",
+        "max_abs": "1.0967254638671875e-05",
+        "max_threshold_ratio": "0.06205511038808214"
+      },
+      {
+        "group": "B1",
+        "regime": "b32",
+        "path": "P35_no_grad_only_control",
+        "max_abs": "1.9073486328125e-06",
+        "max_threshold_ratio": "0.008262291397797933"
+      },
+      {
+        "group": "B2",
+        "regime": "b32",
+        "path": "P35_no_grad_only_control",
+        "max_abs": "2.384185791015625e-06",
+        "max_threshold_ratio": "0.016872972501441794"
+      },
+      {
+        "group": "B3",
+        "regime": "b32",
+        "path": "P35_no_grad_only_control",
+        "max_abs": "8.58306884765625e-06",
+        "max_threshold_ratio": "0.08082260347790887"
+      },
+      {
+        "group": "B4",
+        "regime": "b32",
+        "path": "P35_no_grad_only_control",
+        "max_abs": "1.9073486328125e-06",
+        "max_threshold_ratio": "0.008041567505762686"
+      },
+      {
+        "group": "B5",
+        "regime": "b32",
+        "path": "P35_no_grad_only_control",
+        "max_abs": "1.9073486328125e-06",
+        "max_threshold_ratio": "0.009210780137419312"
+      }
+    ]
+  },
+  "profile_audit": [
+    {
+      "group": "B0",
+      "mode": "original",
+      "batch": 1,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 3,
+      "native_MHA_calls": 1
+    },
+    {
+      "group": "B0",
+      "mode": "original",
+      "batch": 32,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 8,
+      "native_MHA_calls": 1
+    },
+    {
+      "group": "B0",
+      "mode": "mkldnn_off",
+      "batch": 1,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 0,
+      "native_MHA_calls": 1
+    },
+    {
+      "group": "B0",
+      "mode": "mkldnn_off",
+      "batch": 32,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 0,
+      "native_MHA_calls": 1
+    },
+    {
+      "group": "B0",
+      "mode": "mha_off",
+      "batch": 1,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 3,
+      "native_MHA_calls": 0
+    },
+    {
+      "group": "B0",
+      "mode": "mha_off",
+      "batch": 32,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 8,
+      "native_MHA_calls": 0
+    },
+    {
+      "group": "B0",
+      "mode": "both_off",
+      "batch": 1,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 0,
+      "native_MHA_calls": 0
+    },
+    {
+      "group": "B0",
+      "mode": "both_off",
+      "batch": 32,
+      "profile_byte_equal": true,
+      "mkldnn_convolution_calls": 0,
+      "native_MHA_calls": 0
+    }
+  ],
+  "identity_and_scope": {
+    "six_saved_model_version_digests_match_registration": true,
+    "all_saved_modules_eval": true,
+    "post_state_and_scaler_unchanged": "Enforced by registered code assertions before successful COMPLETE; no reviewer model/array reload",
+    "access_receipt": "Both independent and original P37 guards record only the approved classification Calibration pack; no rejected or Test numeric open",
+    "guarded_numeric_input_open_count": 1,
+    "pre_guard_registered_calibration_hash_open": "Known code-level SHA input check occurs before audit hook and is outside numeric access log",
+    "backend_flags": "Restored in finally; all 12 per-domain restored-original b32 controls byte identical",
+    "complete": {
+      "status": "DIAGNOSTICS_COMPLETE_NOT_OLD_PC_ACCEPTANCE",
+      "calls": 3020,
+      "budget": 3200,
+      "signal_sha256": "6dced457c36780940d4eb0920032788f091826a54f16e2a8224849283a508c5f",
+      "synthetic_sha256": "4b94d449946e87bc0af39c956b0700ca803c32ac3cb41f101cea1a23f7923f9a",
+      "Calibration_windows": 32,
+      "Calibration_exposures": 16,
+      "synthetic_windows": 32,
+      "models_unchanged": true,
+      "scalers_unchanged": true,
+      "backend_flags_restored": true,
+      "Test_reads": 0,
+      "training": 0,
+      "regression_calls": 0,
+      "scaler_fit": 0,
+      "Pi": 0,
+      "registered_code_unchanged": true,
+      "old_phase38_manifest_unchanged": true
+    }
+  },
+  "first_observable_module_boundary": {
+    "original_Calibration_b32_vs_b1": "tcn1.conv.pointwise for all six models",
+    "mkldnn_off_Calibration_b32_vs_b1": "self_attn:0 for all six models",
+    "mha_off_Calibration_b32_vs_b1": "tcn1.conv.pointwise for all six models",
+    "both_off_Calibration_b32_vs_b1": "self_attn:0 for all six models",
+    "hidden_description_threshold_exceedances": 0
+  },
+  "findings": [
+    {
+      "priority": "P2",
+      "title": "Do not generalize normalized interface byte equality to the original P35 no_grad execution context",
+      "evidence": "All six P35_no_grad_only_control rows differ in bytes at the same b32, although every component passes the frozen tolerance; maximum absolute difference 1.0967254638671875e-05.",
+      "required_claim_boundary": "Actual P35 original execution-context byte equivalence is not established by run1. Context follow-up is a separately registered diagnostic, not a reinterpretation of the 6 retained differences."
+    },
+    {
+      "priority": "P2",
+      "title": "Repeated batch positions are tolerance-equivalent but not universally byte-identical",
+      "evidence": "141 of 3072 repeated-position rows are nonbyte; maximum absolute difference 2.86102294921875e-06; every repeated-position row passes frozen tolerance.",
+      "required_claim_boundary": "Keep the finite repeat-position differences in final tables; do not collapse tolerance pass into byte pass."
+    }
+  ],
+  "conclusion_boundaries": [
+    "All 288 matrix rows pass the original componentwise tolerance on these 32 Calibration and 32 fixed synthetic windows; 48 b1 self-reference rows are included, so this is not 288 independent crossbatch tests.",
+    "16 Calibration exposures remain 16 exposures; b128 tiling/repeating does not add independent data.",
+    "B0 profiles support actual backend route differences for B0 only. First-difference hooks localize observable module outputs, not the first floating-point instruction or a proven historic-Test root cause.",
+    "The sealed five historical event summaries remain tolerance failures. Historical Phase3.8 strict acceptance is still BLOCKED.",
+    "No selected backend is an approved deployment choice; no Day22 attempt2, joint performance scoring or Pi deployment is established by this review.",
+    "Context follow-up is outside run1 and requires a separate report; this review does not certify it."
+  ],
+  "artifact_sha256": {
+    "ACCESS_LOG.json": "6ba8379a46b68c91c3edfba3044f5ee3911304cf1d268e15fe83bb242c0f7476",
+    "BACKEND_MATRIX.csv": "e1ab98a33cbe589061a52b4ef394a6eeac000c8f3cb6b295e62ac25118723c4f",
+    "BATCH_MATRIX.csv": "3da273883a0eff9f14f03c1156a6c5ed58418cba27cbae051ca340a0fe55fe0d",
+    "COMPLETE.json": "9968df4bca19711301dfbf5a315a33733faf879ccace8ec38dfcf00cbdcbf177",
+    "CPU_OPERATOR_PROFILES.json": "f0809628734be9a85031d938a7df983d2dca8c2adb41aaa41b6da53b2fccc37c",
+    "ENVIRONMENT.json": "6eea0ca8dacd39b2659f21e00b3c907137dc7ae23e35bab7bf09e7582c7fa987",
+    "FIRST_LAYER_DIFFERENCES.json": "45e82502624568aa4791c659428fc8f424a68dfe540b1ec19524e98bee427015",
+    "INTERFACE_MATRIX.csv": "22fac531cb11ffe560d30c50d3301fff232d5562f992f0499f9cc82b53582238",
+    "LAYER_COMPARISONS.csv": "1c09ca1d672074c669e2a2f6176daeb9b658a039a8c9490305cb66615c291ed4",
+    "MODEL_CALL_LEDGER.json": "af9f6d2473db1dcace9ac8b5beb60e4df4bda012a60ed252cbf2ad0b0183348b",
+    "MODEL_VERSIONS.json": "40d3dee497d96a0323d8ffb5026277610124249fe5473658dc927ea0d571c42f",
+    "PRIVATE_CALIBRATION_SYNTHETIC_LOGITS.json": "dbc297b5a957c1381d3c5b4a363ed206769cbd1b0363bc9a678e7aafa8341393",
+    "REPEATED_POSITION_MATRIX.csv": "b062707cfc1e9063933b32f7f8aa2b016b021c9f329a64606dc5bad5204ad1b8",
+    "SEALED_FIVE_EVENT_AUDIT.json": "28c00fc97c8926ddbca08057eab98f1b4cfac91968b2672035a653e4a1f24abd",
+    "SERIALIZATION_ROUNDTRIP.csv": "2170bc87f1359fd8400ddb8563b4530280702735350e657e18703ecffc4aa622",
+    "STARTED.json": "b67c82a1d93169b029e801c6201ed97d548271e3622616da7e20709faf4002e3"
+  }
+}

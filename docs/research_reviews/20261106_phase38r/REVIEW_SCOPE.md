@@ -1,0 +1,9 @@
+# 外部审阅范围
+
+本轮不是Day22重试/联合评分。主3020与补充304合计3324次Calibration/合成forward，各自守3200/400注册上限。Calibration16暴露32窗，batch128重复输入不是独立暴露。全部原tol PASS不等于全byte相同；跨batch、重复位置、no_grad/inference负的byte结果均保留。旧五事件仍超容差，原Phase3.8 BLOCKED不变。
+
+公开全部288batch/216backend/240接口/288context行、所有firstdiff、32窗来源/模型SHA、实际原环境、算子路由摘要、精简调用账本和B0完整层边界；完整3324顺序账本、3072位置行、10044主层行/补充层矩阵、算子profile明细和完整Calibration logits留本地，SHA见ARTIFACT。四份未执行注册草稿留本地，公开唯一生效LOCKED和补充CONTEXT，来源链见REGISTRATION_HISTORY。
+
+不上传权重、传感器signal、71D、完整逐窗浓度/分类logits。源码是审阅文本，公开路径脱敏，不可仅凭本包独立推理。PUBLICATION_MANIFEST区分源SHA/公开SHA；其source列表提及本地private文件不表示该文件公开。
+
+重点：原真实P35 no_grad不与inference byte等同；同上下文原adapter/reload完全相同。context创建因素/执行因素隔离后，Attention fastpath的上下文交互被复现，但历史Day22唯一根因仍未证明；QKV维度解释是推断。PC提案未经生产批准，不得取消旧门禁，不自动释放Test/Pi。补充缺少独立持久文件访问trace已明确披露，只有锁定Calibration路径/guard/身份和完成证据，不能声称存在完整访问日志。

@@ -1,0 +1,3242 @@
+[
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B0",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B1",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B2",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B3",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B4",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "Calibration",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "original",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mkldnn_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "mha_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b1",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": null,
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b16",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32",
+    "comparison": "same_b32_vs_original_backend",
+    "first_nonbitwise": "tcn1.conv.pointwise",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b32_roll7",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_tile",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  },
+  {
+    "group": "B5",
+    "domain": "synthetic",
+    "mode": "both_off",
+    "regime": "b128_repeat",
+    "comparison": "within_mode_vs_b1",
+    "first_nonbitwise": "self_attn:0",
+    "first_description_tolerance_exceeded": null,
+    "note": "hidden-layer tolerance is descriptive;only logits gate is frozen"
+  }
+]

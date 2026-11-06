@@ -1,0 +1,10 @@
+item,status
+six frozen models/input/schema,PASS_CALIBRATION_SCOPE
+original tolerance on Calibration/synthetic batch matrix,PASS_288_ROWS
+same-context actual adapters/reload,PASS_BYTE_EQUAL
+actual no_grad vs inference samebatch byte equality,FAIL_BYTE_EQUAL_BUT_PASS_ORIGINAL_TOLERANCE
+context open trace completeness,LIMITED_MISSING_PERSISTED_TRACE
+historical P38 strict acceptance,BLOCKED_UNCHANGED
+new PC contract,PROPOSED_NEEDS_INDEPENDENT_APPROVAL
+Day22 attempt2,NOT_AUTHORIZED_STOP
+Pi deployment,NOT_AUTHORIZED_BLOCKED

@@ -1,0 +1,16 @@
+{
+  "status": "PASS_5",
+  "command": [
+    "PYTHON_ENV\\python.exe",
+    "-m",
+    "pytest",
+    "test_core.py",
+    "-q",
+    "-p",
+    "no:cacheprovider"
+  ],
+  "stdout": ".....                                                                    [100%]\n5 passed in 0.28s\n",
+  "stderr": "",
+  "real_model_calls": 0,
+  "raw_input_reads": 0
+}

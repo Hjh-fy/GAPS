@@ -1,0 +1,148 @@
+{
+  "status": "PASS_PERMITTED_ASSETS_AND_CODE_UNCHANGED",
+  "checks": [
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\p38r_common.py",
+      "sha256": "32ff040aa5b1a22943d1660d48fd75dc0433108a593f75aba3ee644003cd638b"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\core.py",
+      "sha256": "4d6cd8f0e0dccb62bd13f097134f25ebe9634c86e7eac9cde65441b0a0691686"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\diagnose.py",
+      "sha256": "d4425f11f7e14f9f2f83b1db0c31ae5d9201fecc8bb576909513d97d0148c9bc"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38r_20261106\\test_core.py",
+      "sha256": "38824ecabb0cf745fb7046e4c57b20622665bfbea215384bb16821333e19c006"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase37_20261106\\assets.py",
+      "sha256": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase37_20261106\\prepare.py",
+      "sha256": "7179aa2d94226ee198c766194a748ebec1c857fdfe0e9e8e5f85941f8f837182"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\evaluate.py",
+      "sha256": "a1d22a2940ee5968bd8c2cf81424fbc638567b1191c8df4b10fff909d4f73111"
+    },
+    {
+      "scope": "main",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38_20261106\\inference.py",
+      "sha256": "190b8c7358293b59b5097676e670fdf4e93d5e297fd56b1b9f6ed8aab5c0f621"
+    },
+    {
+      "scope": "context",
+      "path": "research\\fedongas_phase38r_20261106\\context_probe.py",
+      "sha256": "de3b3afc6c7b1c12788c081f0dddc478215c9010c9fdbdeb19f5b44e463f3a7a"
+    },
+    {
+      "scope": "context",
+      "path": "research\\fedongas_phase38r_20261106\\diagnose.py",
+      "sha256": "d4425f11f7e14f9f2f83b1db0c31ae5d9201fecc8bb576909513d97d0148c9bc"
+    },
+    {
+      "scope": "context",
+      "path": "research\\fedongas_phase38r_20261106\\core.py",
+      "sha256": "4d6cd8f0e0dccb62bd13f097134f25ebe9634c86e7eac9cde65441b0a0691686"
+    },
+    {
+      "scope": "context",
+      "path": "research\\fedongas_phase38r_20261106\\p38r_common.py",
+      "sha256": "32ff040aa5b1a22943d1660d48fd75dc0433108a593f75aba3ee644003cd638b"
+    },
+    {
+      "scope": "Calibration input",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\data\\target\\client_5\\train_features.npy",
+      "sha256": "5299fa38904353316c20c5a9b4ce2cb50b3c0812ec7c78c6354bea2befb9425c"
+    },
+    {
+      "scope": "Calibration input",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_cal_A4_metadata.json",
+      "sha256": "32782f42bf9da23271626ccff9cae860c2aaa65b6fe4860d1faaa75b7a903d4c"
+    },
+    {
+      "scope": "approved old P38 summary/provenance only",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38_20261106\\NUMERIC_CONSISTENCY.md",
+      "sha256": "5381ee2527dc2b5e55793238d40021d321efccb2cc1e7d79b4bdcc8c3d88f5b0"
+    },
+    {
+      "scope": "approved old P38 summary/provenance only",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38_20261106\\NUMERIC_DRIFT_EVIDENCE.json",
+      "sha256": "5fc4004c1d377d17d542a4aa04a636184fa9d76dc0d803a731fd4cd55b932a3d"
+    },
+    {
+      "scope": "approved old P38 summary/provenance only",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase38_20261106\\AUTHORIZATION_CONSUMED.json",
+      "sha256": "ca568a572d2b7b04c34e57df1e8485f05201c5de2dcf58570531e556cadfb1a0"
+    },
+    {
+      "scope": "classifier unchanged",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B0\\server\\server_round_025.pth",
+      "sha256": "07e879fa627992d9f1465e9db909feb911a3d34fee289ecf7a16f251ada99af9"
+    },
+    {
+      "scope": "classifier unchanged",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B1\\target\\target_update_2500.pth",
+      "sha256": "b1b7c72b9778a483b1bb2774583ff773367083fd5f0ee38757b1c466d32032bc"
+    },
+    {
+      "scope": "classifier unchanged",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B2\\server\\server_round_025.pth",
+      "sha256": "56c6d4cd1f657d9d3122e3809d77ee2274c1f58b2043fdf729945866804fc82c"
+    },
+    {
+      "scope": "classifier unchanged",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B3\\server\\server_round_025_adapted.pth",
+      "sha256": "ad890776743c3929ec9c2b087193a755bacadb2dd86579832d555eefe5367c42"
+    },
+    {
+      "scope": "classifier unchanged",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B4\\server\\server_round_025_adapted.pth",
+      "sha256": "aa9f8a23eed467304d7d745773c196ce749e06d2511fb1031c170a24b9696d90"
+    },
+    {
+      "scope": "classifier unchanged",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B5\\server\\server_round_025_adapted.pth",
+      "sha256": "27e02b54e2b4b3a7ca120ed7bd4787d8a60dacd413b799e6a0769d4ace445ced"
+    },
+    {
+      "scope": "SVR unchanged;no regression inference",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g0.joblib",
+      "sha256": "defe7875017ca115a2f487717dd30b5ecaf53b11525c4a7cf4ba5fdd25d390e5"
+    },
+    {
+      "scope": "SVR unchanged;no regression inference",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g1.joblib",
+      "sha256": "026f10778722ed314397260738635cc1b275e800ebfeb3f70e075260db6c15dd"
+    },
+    {
+      "scope": "SVR unchanged;no regression inference",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g2.joblib",
+      "sha256": "9052c2611b649e13928e477052b531a17b5a3164ed13547042313b9837ec674a"
+    },
+    {
+      "scope": "SVR unchanged;no regression inference",
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g3.joblib",
+      "sha256": "0da681770b778187f17ce45d7eb14dcb92ffb3bc5981a5a39daf5bb6ae121ed7"
+    }
+  ],
+  "P37_payload_hashes_checked": 55,
+  "P38_full_Test_payload_not_reopened": true,
+  "P38_manifest_and_approved_summaries_unchanged": true,
+  "training": 0,
+  "scaler_refit": 0,
+  "Test_forward": 0,
+  "Pi": 0,
+  "new_numeric_inference_by_this_program": 0
+}

@@ -1,0 +1,14 @@
+{
+  "status": "PASS_4_SYNTHETIC_TESTS",
+  "expected_red": "core module absent; pytest collection ModuleNotFoundError before implementation",
+  "green": "4 passed in 0.31s",
+  "command": "PYTHON_EXECUTABLE -m pytest research/fedongas_phase38r_20261106/test_core.py -q -p no:cacheprovider",
+  "real_model_calls": 0,
+  "Test_reads": 0,
+  "checks": [
+    "elementwise relative tolerance",
+    "fixed repetitions/positions",
+    "finite matching shape",
+    "forbidden input paths before open"
+  ]
+}

@@ -1,0 +1,1118 @@
+[
+  {
+    "group": "B0",
+    "file_sha256": "07e879fa627992d9f1465e9db909feb911a3d34fee289ecf7a16f251ada99af9",
+    "state_sha256": "90f1034f67c9e8b1aaa1a04ec148029a9196e29bf5caa9c35751ce5132aae4f5",
+    "model_source": "FROZEN_BASELINE_V5\\source\\workspace\\model.py",
+    "model_source_sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8",
+    "model_class": "FedGasBaseModel",
+    "modules": [
+      {
+        "name": "",
+        "type": "FedGasBaseModel",
+        "training": false
+      },
+      {
+        "name": "tcn1",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn1.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn2.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn_layers",
+        "type": "ModuleList",
+        "training": false
+      },
+      {
+        "name": "tcn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn.0",
+        "type": "AdaptiveAvgPool1d",
+        "training": false
+      },
+      {
+        "name": "channel_attn.1",
+        "type": "Flatten",
+        "training": false
+      },
+      {
+        "name": "channel_attn.2",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "channel_attn.3",
+        "type": "Sigmoid",
+        "training": false
+      },
+      {
+        "name": "self_attn",
+        "type": "MultiheadAttention",
+        "training": false
+      },
+      {
+        "name": "self_attn.out_proj",
+        "type": "NonDynamicallyQuantizableLinear",
+        "training": false
+      },
+      {
+        "name": "attn_linear",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "feat_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "cls_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "dropout",
+        "type": "Dropout",
+        "training": false
+      },
+      {
+        "name": "classifier",
+        "type": "Linear",
+        "training": false
+      }
+    ],
+    "all_eval": true
+  },
+  {
+    "group": "B1",
+    "file_sha256": "b1b7c72b9778a483b1bb2774583ff773367083fd5f0ee38757b1c466d32032bc",
+    "state_sha256": "0eb106b43495392d5ee2983fa90492444b4131f0abd44a29279075e122d01c05",
+    "model_source": "FROZEN_BASELINE_V5\\source\\workspace\\model.py",
+    "model_source_sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8",
+    "model_class": "FedGasBaseModel",
+    "modules": [
+      {
+        "name": "",
+        "type": "FedGasBaseModel",
+        "training": false
+      },
+      {
+        "name": "tcn1",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn1.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn2.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn_layers",
+        "type": "ModuleList",
+        "training": false
+      },
+      {
+        "name": "tcn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn.0",
+        "type": "AdaptiveAvgPool1d",
+        "training": false
+      },
+      {
+        "name": "channel_attn.1",
+        "type": "Flatten",
+        "training": false
+      },
+      {
+        "name": "channel_attn.2",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "channel_attn.3",
+        "type": "Sigmoid",
+        "training": false
+      },
+      {
+        "name": "self_attn",
+        "type": "MultiheadAttention",
+        "training": false
+      },
+      {
+        "name": "self_attn.out_proj",
+        "type": "NonDynamicallyQuantizableLinear",
+        "training": false
+      },
+      {
+        "name": "attn_linear",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "feat_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "cls_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "dropout",
+        "type": "Dropout",
+        "training": false
+      },
+      {
+        "name": "classifier",
+        "type": "Linear",
+        "training": false
+      }
+    ],
+    "all_eval": true
+  },
+  {
+    "group": "B2",
+    "file_sha256": "56c6d4cd1f657d9d3122e3809d77ee2274c1f58b2043fdf729945866804fc82c",
+    "state_sha256": "8ac38b0b9c51379c96e503e81fda8439a325a6747ce8568122b547195715bb07",
+    "model_source": "FROZEN_BASELINE_V5\\source\\workspace\\model.py",
+    "model_source_sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8",
+    "model_class": "FedGasBaseModel",
+    "modules": [
+      {
+        "name": "",
+        "type": "FedGasBaseModel",
+        "training": false
+      },
+      {
+        "name": "tcn1",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn1.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn2.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn_layers",
+        "type": "ModuleList",
+        "training": false
+      },
+      {
+        "name": "tcn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn.0",
+        "type": "AdaptiveAvgPool1d",
+        "training": false
+      },
+      {
+        "name": "channel_attn.1",
+        "type": "Flatten",
+        "training": false
+      },
+      {
+        "name": "channel_attn.2",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "channel_attn.3",
+        "type": "Sigmoid",
+        "training": false
+      },
+      {
+        "name": "self_attn",
+        "type": "MultiheadAttention",
+        "training": false
+      },
+      {
+        "name": "self_attn.out_proj",
+        "type": "NonDynamicallyQuantizableLinear",
+        "training": false
+      },
+      {
+        "name": "attn_linear",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "feat_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "cls_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "dropout",
+        "type": "Dropout",
+        "training": false
+      },
+      {
+        "name": "classifier",
+        "type": "Linear",
+        "training": false
+      }
+    ],
+    "all_eval": true
+  },
+  {
+    "group": "B3",
+    "file_sha256": "ad890776743c3929ec9c2b087193a755bacadb2dd86579832d555eefe5367c42",
+    "state_sha256": "e51ed053a687136cff37eb91eb20bfb57709dd9d3a1cc3418be8a772610538bc",
+    "model_source": "FROZEN_BASELINE_V5\\source\\workspace\\model.py",
+    "model_source_sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8",
+    "model_class": "FedGasBaseModel",
+    "modules": [
+      {
+        "name": "",
+        "type": "FedGasBaseModel",
+        "training": false
+      },
+      {
+        "name": "tcn1",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn1.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn2.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn_layers",
+        "type": "ModuleList",
+        "training": false
+      },
+      {
+        "name": "tcn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn.0",
+        "type": "AdaptiveAvgPool1d",
+        "training": false
+      },
+      {
+        "name": "channel_attn.1",
+        "type": "Flatten",
+        "training": false
+      },
+      {
+        "name": "channel_attn.2",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "channel_attn.3",
+        "type": "Sigmoid",
+        "training": false
+      },
+      {
+        "name": "self_attn",
+        "type": "MultiheadAttention",
+        "training": false
+      },
+      {
+        "name": "self_attn.out_proj",
+        "type": "NonDynamicallyQuantizableLinear",
+        "training": false
+      },
+      {
+        "name": "attn_linear",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "feat_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "cls_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "dropout",
+        "type": "Dropout",
+        "training": false
+      },
+      {
+        "name": "classifier",
+        "type": "Linear",
+        "training": false
+      }
+    ],
+    "all_eval": true
+  },
+  {
+    "group": "B4",
+    "file_sha256": "aa9f8a23eed467304d7d745773c196ce749e06d2511fb1031c170a24b9696d90",
+    "state_sha256": "a1da1916bf6b0e42895ca64dd526d49edd780c14f291f1891d110254623be1fa",
+    "model_source": "FROZEN_BASELINE_V5\\source\\workspace\\model.py",
+    "model_source_sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8",
+    "model_class": "FedGasBaseModel",
+    "modules": [
+      {
+        "name": "",
+        "type": "FedGasBaseModel",
+        "training": false
+      },
+      {
+        "name": "tcn1",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn1.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn2.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn_layers",
+        "type": "ModuleList",
+        "training": false
+      },
+      {
+        "name": "tcn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn.0",
+        "type": "AdaptiveAvgPool1d",
+        "training": false
+      },
+      {
+        "name": "channel_attn.1",
+        "type": "Flatten",
+        "training": false
+      },
+      {
+        "name": "channel_attn.2",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "channel_attn.3",
+        "type": "Sigmoid",
+        "training": false
+      },
+      {
+        "name": "self_attn",
+        "type": "MultiheadAttention",
+        "training": false
+      },
+      {
+        "name": "self_attn.out_proj",
+        "type": "NonDynamicallyQuantizableLinear",
+        "training": false
+      },
+      {
+        "name": "attn_linear",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "feat_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "cls_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "dropout",
+        "type": "Dropout",
+        "training": false
+      },
+      {
+        "name": "classifier",
+        "type": "Linear",
+        "training": false
+      }
+    ],
+    "all_eval": true
+  },
+  {
+    "group": "B5",
+    "file_sha256": "27e02b54e2b4b3a7ca120ed7bd4787d8a60dacd413b799e6a0769d4ace445ced",
+    "state_sha256": "84eb2289c6bd65f6fcf65ee4c1442c0896d8c2cd84660b00f9d5d57c48457b9a",
+    "model_source": "FROZEN_BASELINE_V5\\source\\workspace\\model.py",
+    "model_source_sha256": "f8c0da75f2c5acca6498a44120ed5c05d339f3d1f937b0aa49231be8f94c18f8",
+    "model_class": "FedGasBaseModel",
+    "modules": [
+      {
+        "name": "",
+        "type": "FedGasBaseModel",
+        "training": false
+      },
+      {
+        "name": "tcn1",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn1.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn1.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn2.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn2.downsample",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3",
+        "type": "TCNBlock",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv",
+        "type": "DSConv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.depthwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.conv.pointwise",
+        "type": "Conv1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.norm",
+        "type": "InstanceNorm1d",
+        "training": false
+      },
+      {
+        "name": "tcn3.relu",
+        "type": "ReLU",
+        "training": false
+      },
+      {
+        "name": "tcn_layers",
+        "type": "ModuleList",
+        "training": false
+      },
+      {
+        "name": "tcn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn",
+        "type": "Sequential",
+        "training": false
+      },
+      {
+        "name": "channel_attn.0",
+        "type": "AdaptiveAvgPool1d",
+        "training": false
+      },
+      {
+        "name": "channel_attn.1",
+        "type": "Flatten",
+        "training": false
+      },
+      {
+        "name": "channel_attn.2",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "channel_attn.3",
+        "type": "Sigmoid",
+        "training": false
+      },
+      {
+        "name": "self_attn",
+        "type": "MultiheadAttention",
+        "training": false
+      },
+      {
+        "name": "self_attn.out_proj",
+        "type": "NonDynamicallyQuantizableLinear",
+        "training": false
+      },
+      {
+        "name": "attn_linear",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "feat_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "cls_proj",
+        "type": "Linear",
+        "training": false
+      },
+      {
+        "name": "dropout",
+        "type": "Dropout",
+        "training": false
+      },
+      {
+        "name": "classifier",
+        "type": "Linear",
+        "training": false
+      }
+    ],
+    "all_eval": true
+  }
+]

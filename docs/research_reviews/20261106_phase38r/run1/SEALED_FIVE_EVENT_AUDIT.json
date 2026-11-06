@@ -1,0 +1,81 @@
+{
+  "events": [
+    {
+      "group": "B0",
+      "max_abs": 0.00043582916259765625,
+      "max_threshold_ratio": 2.645059367691902,
+      "failed_components": [
+        1,
+        2,
+        3
+      ],
+      "argmax_equal": true,
+      "float32_values_exactly_represented": true,
+      "single_min": -5.832027912139893,
+      "single_max": 6.4775390625,
+      "reference_min": -5.831955909729004,
+      "reference_max": 6.477103233337402
+    },
+    {
+      "group": "B1",
+      "max_abs": 0.000423431396484375,
+      "max_threshold_ratio": 2.8950985492524235,
+      "failed_components": [
+        1,
+        2
+      ],
+      "argmax_equal": true,
+      "float32_values_exactly_represented": true,
+      "single_min": -10.17405891418457,
+      "single_max": 8.38047981262207,
+      "reference_min": -10.174013137817383,
+      "reference_max": 8.3808012008667
+    },
+    {
+      "group": "B3",
+      "max_abs": 0.0001437664031982422,
+      "max_threshold_ratio": 1.1767216129961273,
+      "failed_components": [
+        2
+      ],
+      "argmax_equal": true,
+      "float32_values_exactly_represented": true,
+      "single_min": -8.635876655578613,
+      "single_max": 9.209543228149414,
+      "reference_min": -8.635890007019043,
+      "reference_max": 9.209460258483887
+    },
+    {
+      "group": "B4",
+      "max_abs": 0.0006282627582550049,
+      "max_threshold_ratio": 6.0774534994158005,
+      "failed_components": [
+        1,
+        2
+      ],
+      "argmax_equal": true,
+      "float32_values_exactly_represented": true,
+      "single_min": -5.954355239868164,
+      "single_max": 14.603195190429688,
+      "reference_min": -5.954058647155762,
+      "reference_max": 14.603425979614258
+    },
+    {
+      "group": "B5",
+      "max_abs": 0.00012916326522827148,
+      "max_threshold_ratio": 1.2452162964553957,
+      "failed_components": [
+        2
+      ],
+      "argmax_equal": true,
+      "float32_values_exactly_represented": true,
+      "single_min": -6.190168857574463,
+      "single_max": 14.636163711547852,
+      "reference_min": -6.190221786499023,
+      "reference_max": 14.63612174987793
+    }
+  ],
+  "old_sha256": "5fc4004c1d377d17d542a4aa04a636184fa9d76dc0d803a731fd4cd55b932a3d",
+  "full_Test_CSV_opened": false,
+  "full1376_opened": false
+}

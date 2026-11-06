@@ -1,0 +1,110 @@
+"""Saved Calibration/synthetic records only. No model or Test loading."""
+from p38r_common import *
+import collections
+def md(name,s):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(s.strip()+'\n')
+def main():
+    run=HERE/'run1';ctx=HERE/'run_context';a=rows(run/'BATCH_MATRIX.csv');b=rows(run/'BACKEND_MATRIX.csv');i=rows(run/'INTERFACE_MATRIX.csv');c=rows(ctx/'CONTEXT_MATRIX.csv');f=read(run/'FIRST_LAYER_DIFFERENCES.json');fc=read(ctx/'FIRST_CONTEXT_DIFFERENCES.json')
+    assert len(a)==288 and len(b)==216 and len(i)==240 and len(c)==288
+    assert all(float(z['window_pass_rate'])==1 and float(z.get('argmax_agreement',1))==1 for z in a+b+i+c)
+    summary=[]
+    for g in GROUPS:
+        for mode in ['original','mkldnn_off','mha_off','both_off']:
+            rr=[z for z in a if z['group']==g and z['domain']=='Calibration' and z['mode']==mode]
+            summary.append(dict(group=g,mode=mode,regimes=6,unique_windows=32,physical_exposures=16,max_abs=max(float(z['max_abs']) for z in rr),max_relative=max(float(z['max_relative']) for z in rr),max_threshold_ratio=max(float(z['max_threshold_ratio']) for z in rr),minimum_component_pass_rate=min(float(z['component_pass_rate']) for z in rr),minimum_window_pass_rate=min(float(z['window_pass_rate']) for z in rr),minimum_argmax_agreement=min(float(z['argmax_agreement']) for z in rr),minimum_top1_top2_margin=min(float(z['margin_min']) for z in rr),status='PASS_CALIBRATION_ONLY'))
+    table(HERE/'CALIBRATION_NUMERIC_SUMMARY.csv',summary)
+    profile=[]
+    for name,folder,file in [('main',run,'CPU_OPERATOR_PROFILES.json'),('context',ctx,'CONTEXT_OPERATOR_PROFILES.json')]:
+        for z in read(folder/file):
+            ops=z['operators'];profile.append(dict(source=name,group=z['group'],mode=z['mode'],batch=z['batch'],context=z.get('context','II'),mkldnn_convolution_calls=sum(v['count'] for v in ops if v['key']=='aten::mkldnn_convolution'),native_MHA_calls=sum(v['count'] for v in ops if v['key']=='aten::_native_multi_head_attention'),qkv_bmm_32x50x48_calls=sum(v['count'] for v in ops if v['key']=='aten::bmm' and v['input_shapes']==[[32,50,48],[32,48,144]]),qkv_mm_1600x48_calls=sum(v['count'] for v in ops if v['key']=='aten::mm' and v['input_shapes']==[[1600,48],[48,144]])))
+    table(HERE/'OPERATOR_ROUTE_SUMMARY.csv',profile)
+    conclusions=[dict(question='input identity',level='L2 Calibration verified',evidence='32 inputs SHA match frozen P37 and per-window hashes;float32 50x8;16Day18 exposures',limit='Day22 not reopened'),dict(question='state / interface',level='L2 exact within same context',evidence='source-equivalent inference loop/P37/P38/reload exact;states unchanged',limit='actual P35 no_grad context differs from inference;do not collapse contexts'),dict(question='reference serialization',level='L1 static + current roundtrip',evidence='source tolist/json.dumps;five sealed vectors exactly representfloat32;288 current output sets roundtrip exact',limit='full historical Test CSV and row join not reopened;not full-CSV proof'),dict(question='batch shape',level='L3 controlled Calibration/synthetic',evidence='different batch/position with same frozen state/input causes nonzero differences;all within original tolerance',limit='old five threshold breaches not reproduced with allowed inputs'),dict(question='MKLDNN backend',level='L3 controlled flag + B0 profiler',evidence='same-batch output changes on isolated flag;first b1/b32 difference moves from tcn1.conv.pointwise to self_attn:0 when disabled',limit='does not establish a backend bug or sole Day22 cause'),dict(question='MHA context interaction',level='L3 controlled Calibration',evidence='FF=IF and FI=II;b32 FF vsII differs at self_attn:0;MHA-off removes context difference;B0 profiler bmm versusmm route',limit='specific internal operator rounding not separately intervened;profile onlyB0'),dict(question='historical Day22 full root',level='L1 compatible mechanism;not confirmed',evidence='sealed 5 events exceed original tolerance,old no_grad batch128 differs from single inference execution',limit='no Test access or new forward;cannot assert full causal explanation')]
+    write(HERE/'ROOT_CAUSE_CONFIDENCE.json',conclusions)
+    write(HERE/'PROPOSED_PC_CONTRACT.json',dict(contract_id='PC-F32-CPU-SINGLE-v0-PROPOSED',status='PROPOSED_FOR_INDEPENDENT_REVIEW_NOT_PRODUCTION_APPROVAL',models='unchanged all B0-B5 endpoints and P37 frozen SVR heads',signal='strict float32 (50,8);71D separate frozen features;no fit',canonical_classifier_execution='CPU batch1,model.eval,torch.inference_mode,threads1',mkldnn_enabled=read(run/'ENVIRONMENT.json')['mkldnn_enabled'],mha_fastpath_enabled=read(run/'ENVIRONMENT.json')['mha_fastpath_enabled'],environment_reference='run1/ENVIRONMENT.json + PROCESS_OBSERVATION.json',atol=1e-4,rtol=1e-5,reload='same-contract samebatch float32 byte equality',reference='new separately versioned Calibration golden only;no replacement of old batch128 Test reference',legacy_cross_batch_gate='original Phase3.8 remains BLOCKED;any contract change requires explicit review,never relabel prior failures',weights_scaler_changes=False,backend_selection='original production values retained;not select lower-error diagnostic mode',allowed_for_Test=False,Day22_attempt2_authorized=False,Pi_authorized=False))
+    orig=[z for z in summary if z['mode']=='original'];t='|模型|跨形态最大logits绝对差|最大阈值比|最小Top1/2间隔|原容差窗通过率|\n|---|---:|---:|---:|---:|\n'+'\n'.join(f"|{z['group']}|{z['max_abs']:.9g}|{z['max_threshold_ratio']:.6f}|{z['minimum_top1_top2_margin']:.6f}|100%|" for z in orig)
+    md('README.md',f'''# Phase3.8R 分类数值诊断与PC验收决策
+
+依据Phase3.8固定提交`4dbf732df9ed693c88cb6486099930a428acc90b`，原Phase3.7容差不变。**Calibration诊断完成；历史Phase3.8严格验收仍BLOCKED，PC生产合同尚待独立批准，Day22 attempt2未授权。**
+
+主诊断3020/3200次真实模型forward；预先独立登记的上下文补充304/400次；合计3324次，全为Calibration/合成推理，无训练/refit/回归调用/Pi或Test输入。Calibration只有16暴露32窗；batch128是同32窗重复4次，不是128独立暴露。
+
+原后端、六种batch/排列相对同模式batch1的Calibration结果：
+
+{t}
+
+主矩阵288行（六模型×两输入域×四后端×六形态）全部通过原逐分量容差与argmax检查；逐字节并不全相同。重复位置3072行全部在容差内，其中141行非逐字节相同，最大差2.86102295e-6。所有负的逐字节一致性证据保留。
+
+定位到两类差异：原后端跨batch首次出现在`tcn1.conv.pointwise`；关闭MKLDNN后首次出现在`self_attn:0`。相同batch32切换no_grad/inference_mode，首差在Attention；仅改变输入张量创建上下文不改变结果，关闭MHA fastpath后上下文差异消失。B0 profiler记录Attention内部bmm/mm路径变化。不能据此将某层称为故障，也未证明Day22五次超容差的唯一根因。
+
+阅读：[batch诊断](BATCH_DIAGNOSIS.md) → [接口/序列化](INTERFACE_AND_SERIALIZATION.md) → [后端/逐层](BACKEND_AND_LAYER_EVIDENCE.md) → [根因等级](ROOT_CAUSE_CONFIDENCE.json) → [PC合同提案](PC_CONTRACT_PROPOSAL.md) → [继续/停止](NEXT_DECISION.md)。运行与证据限制见[执行审计](EXECUTION_AUDIT.md)。完整Calibration/合成logits、层比较与权重留本地，公开精简矩阵、哈希和代码文本。
+''')
+    md('BATCH_DIAGNOSIS.md',f'''# Batch形态、位置与原容差
+
+固定原32个float32信号，无裁样。b1=32次单窗；b16=2批；b32=原序；b32_roll7=索引7..31,0..6；b128_tile=0..31重复四遍；b128_repeat=每窗连续重复四次。模型.eval和inference_mode，CPU线程1。每行相对该模式同一输入的batch1输出；重复位置另与同批首次出现比较。
+
+{t}
+
+全部288行逐分量/整窗通过率100%、argmax一致率100%。`BATCH_MATRIX.csv`含每行最大绝对/相对差、阈值比、Top1/2间隔；`CALIBRATION_NUMERIC_SUMMARY.csv`给四后端24行摘要。相对差分母max(abs(reference),1e-12)只作描述，原gate分母不使用这个floor，仍为1e-4+1e-5*abs(reference)。Top1/2是logit间隔，不是校准置信概率，不用于阈值选择。
+
+原Calibration六模型最大差2.6702880859375e-5，所有模式/输入域最大值相同。主288行仅48行逐字节一致（b1自参照），不可宣称跨batch严格相同。3072条重复位置比较中141条非逐字节一致，最大绝对差2.86102294921875e-6；都通过原gate。roll/tile/repeat无例外删除。完整sample位置和差异存本地REPEATED_POSITION_MATRIX.csv。
+
+本轮没有在允许输入上重现五条旧超容差。32Calibration窗包含目标训练所用数据，适用于数值接口验证，不是独立泛化证据；合成输入也不是独立气体采集。不能用本次100%通过替代历史Day22结果或声称所有未来输入通过。
+''')
+    md('INTERFACE_AND_SERIALIZATION.md','''# 原始实现、适配器、上下文及序列化
+
+Phase3.5原推理位于main内部，main会访问Test，因此不调用。静态核验原forward表达式`m(torch.from_numpy(x[i:i+128]))[0].cpu().numpy()`及`json.dumps(z[i].tolist())`，在新诊断中按固定形态来源等价执行。P37 ClassifierAdapter和P38 ObservedClassifier原API只接受window，真实32次单窗对照；较大batch的诊断shim不是旧adapter新能力。
+
+原后端下，保持inference_mode一致的来源等价forward、P37/P38实际单窗、batch诊断shim及strict reload均逐字节一致。输入/输出float32，所有模块eval，state SHA相同。主INTERFACE_MATRIX240行中仅六条P35_no_grad_only_control与inference模式非逐字节一致，最大1.0967254638671875e-5，但仍通过原容差；不能把“同上下文一致”误写成原P35真实上下文完全相同。
+
+补充诊断在运行前另立CONTEXT_REGISTRATION，固定六模型×四后端×batch1首窗/batch32×四种创建/执行上下文：FF=普通tensor+no_grad执行；FI=普通tensor+inference执行；IF=inference tensor+no_grad执行；II=inference tensor+inference执行。304次forward，无新搜索。原后端batch32 FF=IF、FI=II逐字节相同；FI/II与FF的六模型输出不同、最大1.0967254638671875e-5。batch1首窗四组合相同。关闭MHA fastpath后，batch32四组合逐字节相同；单独关闭MKLDNN仍保留上下文差异，最大4.291534423828125e-6。全部288条context/去hook比较仍在原容差内。
+
+原保存代码没有对logits设置小数位；Python float列表→JSON保留这些float32值。五条封存故障摘要两端logits均可精确转float32再回float64，无数值截断证据；当前288组输出JSON往返float32逐字节相同。仅静态读取这五条差异和公开摘要，没有打开完整历史Test CSV/1376条记录，不能把局部往返证明说成完整CSV行顺序/匹配再次核验。Phase3.8原身份检查结论保留其历史来源。
+''')
+    md('BACKEND_AND_LAYER_EVIDENCE.md','''# 计算环境、后端干预与逐层定位
+
+Windows11，Intel Core i5-8400 CPU @2.80GHz，Python3.12.4、PyTorch2.5.1、numpy1.26.4；float32 CPU、torch线程1、interop线程和MKL/OpenMP配置见ENVIRONMENT。原MKLDNN及MHA fastpath均开启。四模式预先固定：original、仅关MKLDNN、仅关MHA fastpath、两者关；原始结果保留，各模式后最终恢复原开关，固定b32恢复数值逐字节一致。
+
+基于同模型、同输入、同batch的216条backend对比，关闭MKLDNN最大logits差3.2901763916015625e-5；仅关MHA最大3.814697265625e-6；全部仍在原tol内。这是后端开关对数值有因果作用的受控证据，不证明某后端有bug，不构成生产模式优化选择。
+
+只读hook记录实际执行顺序/输出，所有输入在batch轴对齐。原后端六模型、两域b1/b32首个非逐字节差均为tcn1.conv.pointwise；关MKLDNN后均移至self_attn:0，即Attention输出。关闭MHA不能消除MKLDNN开启时TCN先出现的差异；两者关闭仍有Attention的跨batch舍入差异。主b32各层未越描述性阈值，隐藏层阈值不是新增科学性能门禁。
+
+同batch32上下文FF对II的首个差异，原后端六模型均在self_attn:0。输入创建因素不改变这一点，执行上下文因素改变；MHA fastpath关闭后消失，支持Attention fastpath与执行上下文的交互。B0 profiler两上下文都显示_native_multi_head_attention，但FF内部出现bmm([32,50,48],[32,48,144])，II出现mm([1600,48],[48,144])及clone/copy路径差异。维度对应Attention的QKV投影这一解释属于结合模型代码的推断；没有单独干预ATen内部每个矩阵操作，不能宣称已唯一证明某个kernel的错误。
+
+B0主profiler原batch1/32的MKLDNN convolution计数3/8，关闭MKLDNN时消失；原native MHA两者1/1，关闭fastpath时消失。只对B0做算子profile，不能冒称六模型各自都profile。其余模型的层输出及控制独立检查。完整operator条目留本地，公开OPERATOR_ROUTE_SUMMARY给路由计数。
+
+主诊断96个新增去hook控制（每域/每模式/模型的batch32和batch1首窗）逐字节一致；original Calibration的来源等价/重新加载还覆盖全部形态。context补充96个batch32去hook控制也一致。没有把hook首差解释成训练故障、物理老化或气体特性。
+''')
+    md('PC_CONTRACT_PROPOSAL.md','''# PC数值合同提案：独立审阅前不得启用
+
+PROPOSED_PC_CONTRACT.json为v0提案，生产批准=false、Day22=false、Pi=false。保持现有六模型、四回归头、scaler与科学算法；沿用原单窗口部署任务，CPU float32、固定batch1、eval/inference_mode、线程1、锁定本机软件及原后端开关。这里保留原模式，不因诊断中某模式差异更小而换后端。
+
+同合同数值验收继续原atol1e-4/rtol1e-5；同batch保存恢复要求dtype/shape/字节完全一致，原raw有限值、气体路由、71D schema及支持裁剪门禁照旧。需要单独冻结Calibration golden、模型/输入/layout/后端指纹、fail-closed读取审计、异常恢复和运行版本；跨硬件不能默认字节一致。现有Calibration证据可作为审阅材料，但不是生产部署批准或Pi一致性证明。
+
+必须区分两个问题：原P38要求新单窗与旧no_grad/batch128参考通过，现仍失败；若继续这一合同，当前没有理由批准Day22 attempt2。另一种可能是经明确审阅后，将canonical单窗执行建立独立版本参考，旧跨执行形态差异单列为legacy comparison，不改变/重命名旧失败，不用argmax替代原logit标准。后者改变的是比较合同，必须显式审批，不能当成原门禁已经修复。
+
+下一轮PC验收建议先只用合成和Calibration，独立日志记录全部文件打开/真实调用、同合同restore、边界输入/UNAVAILABLE。不能只凭这32窗保证Day22；若将来允许attempt2，必须新的授权/输出、六端点固定、历史已观察Test属性、全部先锁定再评分；原P38失败证据和参考永不覆盖。此处不给Day22可执行入口或有效授权。
+''')
+    md('NEXT_DECISION.md','''# 继续／停止
+
+已完成本轮Calibration/合成诊断，未改训练模型/参数/scaler。允许输入全部在原tol内，但历史五次超容差未被复现，原Phase3.8严格验收保持BLOCKED。确认的是batch、后端开关、执行上下文对数值路径有作用；不是Day22完整根因已确认。
+
+继续：独立审阅PC单窗执行合同提案，明确原跨batch验收与新canonical参考的关系，再制定无Test的PC验收。若坚持原旧batch128参考逐窗logits门禁，当前应停止attempt2申请，避免相同失败再次消费授权。不能用关闭后端、放宽容差、argmax一致或Calibration通过自动解除旧门禁。
+
+当前不释放Day22，不生成attempt2授权，不重跑Phase3.8、不联合评分、不部署Pi。Pi实际硬件/依赖/数值/延迟/恢复验收仍待后续独立合同与授权。本轮无性能排名或科学算法增益结论。
+''')
+    md('EXECUTION_AUDIT.md','''# 执行、权限与证据限制
+
+沿用外部管理的独立worktree，新增Phase3.8R目录。REGISTRATION_LOCKED为主诊断唯一实际读取的注册；此前metadata均未执行、保留并supersede。运行前先RED/GREEN四项；独立审查指出np.array_equal不能区分正负零，补一项signed-zero RED→GREEN后五项通过，core用dtype+tobytes精确比较，仍是预执行修改。启动与独立预审报告写入有时间交叠，报告明确不是事前批准，不能倒写审批记录。
+
+主运行3020/3200模型forward；新发现同batch no_grad/inference非byte后另立CONTEXT_REGISTRATION，补充304/400，总3324，不能合称总数小于3200。两份完整账本、console、输入/版本/模型SHA及输出保留。均固定六端点，没有额外训练种子、scaler拟合、回归推理或权重变化；原后端开关恢复，原Phase3.8run1及授权消费未动。
+
+读取范围：新guard在open前禁止所有P35 evaluation、旧P38run1完整记录及未知numeric包；原P37 Calibration白名单同时生效。原始Day22数据及完整历史Test预测未打开。只静态读P38公开NUMERIC_CONSISTENCY和封存五事件；P38 artifact manifest仅作为身份锚，不重新逐文件哈希完整1376记录。原P37 Calibration输入SHA和每窗SHA完全一致。
+
+权限证据限制：主run1保存ACCESS_LOG；补充context进程没有持久化自己的文件访问日志，COMPLETE中的Test=0是程序声明，不能声称另有完整access trace独立证明。补充仍安装同一guard、只沿锁定Calibration路径、signal SHA匹配、未调用Test入口，代码/身份与完成记录支持其范围。保留这个日志缺口，不为补日志重新推理；未来PC验收合同必须要求完整open审计。
+
+PROCESS_OBSERVATION成功记录CPU型号，未取得进程峰值内存或完整墙钟，因此本轮不是运行性能基准。算子profile只用于路径描述，cpu_time不作为部署延迟。完整模型权重、原始Calibration、逐窗logits、全部层矩阵仅本地；公开摘要/差异/来源SHA。原P38全量旧文件不为本轮再读，保护现场的验证是已许可锚/摘要SHA不变，不冒称本轮重新hash其所有payload。
+''')
+    gates=[dict(item='six frozen models/input/schema',status='PASS_CALIBRATION_SCOPE'),dict(item='original tolerance on Calibration/synthetic batch matrix',status='PASS_288_ROWS'),dict(item='same-context actual adapters/reload',status='PASS_BYTE_EQUAL'),dict(item='actual no_grad vs inference samebatch byte equality',status='FAIL_BYTE_EQUAL_BUT_PASS_ORIGINAL_TOLERANCE'),dict(item='context open trace completeness',status='LIMITED_MISSING_PERSISTED_TRACE'),dict(item='historical P38 strict acceptance',status='BLOCKED_UNCHANGED'),dict(item='new PC contract',status='PROPOSED_NEEDS_INDEPENDENT_APPROVAL'),dict(item='Day22 attempt2',status='NOT_AUTHORIZED_STOP'),dict(item='Pi deployment',status='NOT_AUTHORIZED_BLOCKED')]
+    table(HERE/'PASS_BLOCKED_MATRIX.csv',gates)
+    print('SAVED_RESULTS_ANALYZED_NO_NEW_INFERENCE')
+if __name__=='__main__':main()

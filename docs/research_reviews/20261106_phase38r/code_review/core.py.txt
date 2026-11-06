@@ -1,0 +1,16 @@
+import numpy as np
+def regimes():
+    return {'b1':(list(range(32)),1),'b16':(list(range(32)),16),'b32':(list(range(32)),32),'b32_roll7':(list(range(7,32))+list(range(7)),32),'b128_tile':(list(range(32))*4,128),'b128_repeat':([i for i in range(32) for _ in range(4)],128)}
+def compare(a,r,logits=True):
+    a=np.asarray(a);r=np.asarray(r)
+    if a.shape!=r.shape or a.ndim<2 or not np.isfinite(a).all() or not np.isfinite(r).all() or (logits and a.shape[1:]!=(4,)):raise ValueError('finite matching shape required')
+    d=abs(a.astype('f8')-r.astype('f8'));threshold=1e-4+1e-5*abs(r.astype('f8'));ok=d<=threshold
+    z=dict(windows=len(a),components=int(a.size),bitwise_equal=bool(a.dtype==r.dtype and a.tobytes()==r.tobytes()),max_abs=float(d.max()),mean_abs=float(d.mean()),max_relative=float((d/np.maximum(abs(r),1e-12)).max()),relative_floor=1e-12,max_threshold_ratio=float((d/threshold).max()),component_pass_rate=float(ok.mean()),window_pass_rate=float(ok.reshape(len(a),-1).all(1).mean()),failed_components=int((~ok).sum()),failed_windows=int((~ok.reshape(len(a),-1).all(1)).sum()),output_dtype=str(a.dtype))
+    if logits:
+        margin=lambda x:np.sort(x.astype('f8'),axis=1)[:,-1]-np.sort(x.astype('f8'),axis=1)[:,-2]
+        ma=margin(a);mr=margin(r);z.update(argmax_agreement=float((a.argmax(1)==r.argmax(1)).mean()),margin_min=float(ma.min()),margin_median=float(np.median(ma)),margin_max=float(ma.max()),reference_margin_min=float(mr.min()),reference_margin_median=float(np.median(mr)),reference_margin_max=float(mr.max()))
+    return z
+def forbidden_numeric_path(s,allowed):
+    q=str(s).replace('\\','/').lower();allowed={str(v).replace('\\','/').lower() for v in allowed}
+    if q in allowed:return False
+    return '/dataset/data1/' in q or q.endswith(('.npz','.npy')) or '/fedongas_phase35_20261105/evaluation/' in q or '/fedongas_phase38_20261106/run1/' in q or '/private_observed1376_window_results' in q

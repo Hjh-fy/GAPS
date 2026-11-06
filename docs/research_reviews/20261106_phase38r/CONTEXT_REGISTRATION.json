@@ -1,0 +1,51 @@
+{
+  "experiment_id": "P38R-CONTEXT-PROBE-v1",
+  "purpose": "Calibration-only tensor-creation and execution-context isolation",
+  "approved_by": "explicit user Phase3.8R numeric diagnosis authorization",
+  "trigger": "6 same-batch P35 no_grad controls not byte-identical, within locked tolerance;run1 retained",
+  "parent_run_complete_sha256": "9968df4bca19711301dfbf5a315a33733faf879ccace8ec38dfcf00cbdcbf177",
+  "parent_interface_sha256": "22fac531cb11ffe560d30c50d3301fff232d5562f992f0499f9cc82b53582238",
+  "source_registration_sha256": "110bc53b6a14d87536ceef37df998bbf49e0ad452f77e9825dbcc220055c6498",
+  "max_forward_calls": 400,
+  "planned_forward_calls": 304,
+  "groups": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "batch": [
+    1,
+    32
+  ],
+  "creation_inference": [
+    false,
+    true
+  ],
+  "execution_inference": [
+    false,
+    true
+  ],
+  "backend_modes": [
+    "original",
+    "mkldnn_off",
+    "mha_off",
+    "both_off"
+  ],
+  "data": {
+    "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\data\\target\\client_5\\train_features.npy": "5299fa38904353316c20c5a9b4ce2cb50b3c0812ec7c78c6354bea2befb9425c",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_cal_A4_metadata.json": "32782f42bf9da23271626ccff9cae860c2aaa65b6fe4860d1faaa75b7a903d4c"
+  },
+  "code_sha256": {
+    "research\\fedongas_phase38r_20261106\\context_probe.py": "de3b3afc6c7b1c12788c081f0dddc478215c9010c9fdbdeb19f5b44e463f3a7a",
+    "research\\fedongas_phase38r_20261106\\diagnose.py": "d4425f11f7e14f9f2f83b1db0c31ae5d9201fecc8bb576909513d97d0148c9bc",
+    "research\\fedongas_phase38r_20261106\\core.py": "4d6cd8f0e0dccb62bd13f097134f25ebe9634c86e7eac9cde65441b0a0691686",
+    "research\\fedongas_phase38r_20261106\\p38r_common.py": "32ff040aa5b1a22943d1660d48fd75dc0433108a593f75aba3ee644003cd638b"
+  },
+  "output": "research\\fedongas_phase38r_20261106\\run_context",
+  "Test": false,
+  "training": false,
+  "Pi": false
+}

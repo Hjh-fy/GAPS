@@ -1,0 +1,20 @@
+import sys,json,csv,hashlib,datetime,os
+from pathlib import Path
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];P37=HERE.parent/'fedongas_phase37_20261106';P38=HERE.parent/'fedongas_phase38_20261106';P35=HERE.parent/'fedongas_phase35_20261105';GROUPS=['B0','B1','B2','B3','B4','B5'];PURPOSE='P38R_CALIBRATION_SYNTHETIC_NUMERIC_DIAGNOSIS'
+def read(p):return json.loads(Path(p).read_text(encoding='utf-8-sig'))
+def sha(p):
+    h=hashlib.sha256()
+    with Path(p).open('rb') as f:
+        for x in iter(lambda:f.read(1048576),b''):h.update(x)
+    return h.hexdigest()
+def write(p,x):
+    p=Path(p);p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('x',encoding='utf-8',newline='\n') as f:json.dump(x,f,ensure_ascii=False,indent=2,allow_nan=False)
+def table(p,x):
+    assert x;p=Path(p);p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('x',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(dict.fromkeys(k for z in x for k in z)));w.writeheader();w.writerows(x)
+def rows(p):
+    with Path(p).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
+def now():return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
