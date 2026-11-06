@@ -1,0 +1,118 @@
+{
+  "status": "PASS_SCOPED_DESCRIPTIVE_REVIEW",
+  "reviewer": "phase32_review",
+  "reviewed_utc": "2026-11-06T03:52:55.354403+00:00",
+  "source_anchor": {
+    "Phase35_commit": "df2e61878a8902cb1fae95431013bbf3514798f7",
+    "source_manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+    "manifest_anchor_independently_verified": true
+  },
+  "review_scope": [
+    "analyze.py and preserved schema-reader failure",
+    "CO final transitions, class compensation and concentration exposures",
+    "75-round receipt/encoder/return chains and weighted loss diagnostics",
+    "online Calibration training-metric scope",
+    "old protocol metadata and unknown source dates",
+    "classifier/71D regressor identity metadata and pending numeric bridge",
+    "seven interpretation and future-plan documents",
+    "MODEL_WEIGHT_TRAJECTORY normalized full-model field"
+  ],
+  "independent_recomputations": {
+    "method": "Python standard-library counts from sealed final prediction CSV and saved JSON/CSV receipts; no model/evaluator execution",
+    "final_prediction_transition_rows_checked": 38,
+    "gas_compensation_rows_checked": 12,
+    "CO_concentration_exposures_checked": 30,
+    "round_receipt_SHA_identity_chains_checked": 75,
+    "client_prototype_encoder_records_checked": 150,
+    "next_broadcast_links_checked": 72,
+    "maximum_compensation_and_CO_table_difference": 0.0,
+    "maximum_Calibration_table_difference": 0.0,
+    "maximum_weight_formula_difference": 5.551115123125783e-17,
+    "maximum_weight_sum_difference": 1.1102230246251565e-16,
+    "maximum_mean_total_loss_minus_sourceCE_targetCE": 4.954636096954346e-07,
+    "loss_composition_tolerance": 3e-05,
+    "auxiliary_weighted_losses_nonzero": 0,
+    "C5_B4_minus_B3_correct_window_changes": {
+      "Ethanol": 70,
+      "CO": -111,
+      "Ethylene": 28,
+      "Methane": 0,
+      "total": -13
+    },
+    "B5_active_rounds": 22,
+    "B5_C1_weight_absolute_deviation_max": 0.0002027160305233533,
+    "B5_C1_weight_absolute_deviation_mean": 6.081470920536357e-05
+  },
+  "reported_tables_unchanged": {
+    "FINAL_METRICS_REPORTED.csv": {
+      "records": 20,
+      "original_fields_unchanged": true
+    },
+    "PAIRED_CI_REPORTED.csv": {
+      "records": 6,
+      "original_fields_unchanged": true
+    },
+    "SOURCE_RETENTION_REPORTED.csv": {
+      "records": 12,
+      "original_fields_unchanged": true
+    }
+  },
+  "naming_resolution": {
+    "normalized_table": "MODEL_WEIGHT_TRAJECTORY.csv",
+    "normalized_rows": 75,
+    "all_values_preserved": true,
+    "original_misnamed_field": "classification_head_state_changed",
+    "correct_semantics": "complete model-state SHA comparison; no classifier-head-specific evidence",
+    "published_field": "full_model_state_changed",
+    "source_model_change_max_semantics": "maximum parameter change over the full adapted checkpoint, not classifier-head-only change or source-retention performance"
+  },
+  "routing_metadata_review": {
+    "calibration_window_identity_matches": 32,
+    "saved_Test_window_metadata_identity_matches": 840,
+    "metadata_join_total": 872,
+    "regressor_heads_with_file_SHA_and_training_identity_checked": 4,
+    "head_training_windows_each": 8,
+    "head_training_exposures_each": 4,
+    "feature_metadata_dim": 71,
+    "encoder64_does_not_replace_feature71": true,
+    "model_binary_handling": "four SVR artifacts hashed as bytes only; never deserialized",
+    "numeric_feature_scaler_bridge": "PENDING_NOT_EXECUTED",
+    "new_routed_predictions": 0
+  },
+  "interpretation_boundaries_confirmed": {
+    "Calibration_accuracy_and_CE": "average of 100 online optimization minibatches; not heldout or round-endpoint evaluation",
+    "source_val_loss": "CE on the legal source training pool, not Development",
+    "CO_concentration_slices": "one exposure per concentration; descriptive, no concentration-specific independent CI",
+    "old_source_dates": "unknown in inspected metadata; strict19 R1-R3 cohort not substituted",
+    "old_feedback_positive_final_result": "M0/J0 97.35294117647059%, M1 93.89705882352941%; protocols differ, not a direct replication",
+    "future_seeds43_44": "fixed source-pretraining seed42 Sstar; update randomness only; hardcoded42 implementation requires separate approved extension",
+    "future_C3": "current client5/data bindings block direct execution; cannot impersonate C3 as client5",
+    "future_candidates": "NOT_AUTHORIZED; no executable new training commands",
+    "contribution_claims": "controlled implementation and empirical boundaries; no unsupported algorithmic novelty or universal mechanism gain"
+  },
+  "reviewed_documents": [
+    "FIXED_RESULTS_AND_COST.md",
+    "CO_DIAGNOSIS.md",
+    "FEEDBACK_PROTOTYPE_AUDIT.md",
+    "OLD_NEW_PROTOCOL_COMPARISON.md",
+    "EXPERIMENT_PLAN.md",
+    "ROUTING_COMPATIBILITY.md",
+    "CONTRIBUTION_REVISION.md"
+  ],
+  "critical_findings": [],
+  "important_findings": [],
+  "minor_clarifications": [
+    "Explicitly label source_model_change_max as full-checkpoint maximum change if discussed.",
+    "The four pairwise comparisons are designated for this retrospective analysis; wording should not imply pre-training confirmatory registration."
+  ],
+  "assessment": "No blocking computation or scope defect found; ready for scoped descriptive publication, with stated naming and evidence qualifications.",
+  "attempt1_schema_failure_preserved": true,
+  "raw_acquisition_reads": 0,
+  "historical_round_Test_curves_opened": false,
+  "model_deserializations": 0,
+  "model_inference_calls": 0,
+  "training_calls": 0,
+  "new_Test_predictions": 0,
+  "historical_files_modified": false,
+  "only_new_review_file_written": "INDEPENDENT_REVIEW.json"
+}

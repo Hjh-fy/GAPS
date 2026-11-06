@@ -1,0 +1,9 @@
+{
+  "failure": "verifier assumed all prior stages use ARTIFACT_SHA256.csv; Phase0.5 actually uses MANIFEST_SHA256.csv",
+  "failed_code_sha256": "0ce655914d8c31acb10ebdbbdb68a6a5ee6db52f8ad489e048533d5d8b8cae03",
+  "failed_code_preserved": "attempt1/verify_and_seal_failed.py",
+  "resolution": "verify actual immutable Phase0.5 manifest; no missing-provenance waiver",
+  "old_assets_modified": false,
+  "numeric_results_modified": false,
+  "training_or_inference": false
+}

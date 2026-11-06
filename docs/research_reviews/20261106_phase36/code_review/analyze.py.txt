@@ -1,0 +1,139 @@
+"""Standard-library-only analysis of sealed final predictions and receipts."""
+import csv,json,hashlib,math,statistics,collections,sys,os,shutil,io
+from pathlib import Path
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];P=HERE.parent/'fedongas_phase35_20261105';P1=HERE.parent/'fedongas_phase1_20261102';P15=HERE.parent/'fedongas_phase15_20261102';P3=HERE.parent/'fedongas_phase3_20261104';P31=HERE.parent/'fedongas_phase31_20261105'
+V=Path('FROZEN_BASELINE_V5')
+GROUPS=['B0','B1','B2','B3','B4','B5'];GAS=['Ethanol','CO','Ethylene','Methane'];INPUTS={};ACCESS=[]
+def sha(p):
+    p=Path(p);h=hashlib.sha256()
+    with p.open('rb') as f:
+        for b in iter(lambda:f.read(1048576),b''):h.update(b)
+    return h.hexdigest()
+def note(p):
+    p=Path(p);INPUTS[str(p)]=dict(path=str(p),sha256=sha(p),bytes=p.stat().st_size);return p
+def read(p):return json.loads(note(p).read_text(encoding='utf-8-sig'))
+def rows(p):
+    with note(p).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
+def write(name,obj):
+    p=HERE/name;p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('x',encoding='utf-8',newline='\n') as f:json.dump(obj,f,ensure_ascii=False,indent=2,allow_nan=False)
+def table(name,rs):
+    assert rs;p=HERE/name;p.parent.mkdir(parents=True,exist_ok=True)
+    if p.exists():
+        f=io.StringIO(newline='');w=csv.DictWriter(f,fieldnames=list(dict.fromkeys(k for r in rs for k in r)));w.writeheader();w.writerows(rs)
+        assert p.read_bytes()==f.getvalue().encode('utf-8-sig'),'existing analysis output differs;never overwrite'
+        return
+    with p.open('x',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(dict.fromkeys(k for r in rs for k in r)));w.writeheader();w.writerows(rs)
+def key(x):return x['filename'],round(float(x['start_s']),6),round(float(x['end_s']),6)
+def guard(event,args):
+    if event=='open' and isinstance(args[0],(str,bytes,os.PathLike)) and '/dataset/data1/' in str(args[0]).replace('\\','/').lower():raise PermissionError('Phase36 never opens raw acquisition inputs')
+sys.addaudithook(guard)
+def verify_manifest(folder,expected=None):
+    if expected:assert sha(folder/'ARTIFACT_SHA256.csv')==expected
+    rr=rows(folder/'ARTIFACT_SHA256.csv')
+    for x in rr:assert sha(folder/x['path'])==x['sha256'],folder/x['path']
+    return dict(files=len(rr),manifest_sha256=sha(folder/'ARTIFACT_SHA256.csv'),binary_access='SHA bytes only;no decoding/model loading')
+def main():
+    before=verify_manifest(P,'dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514')
+    assert read(HERE.parent/'review_publication_phase35_20261105/RECEIPT.json')['commit']=='df2e61878a8902cb1fae95431013bbf3514798f7'
+    assert read(P/'FINAL_VERIFICATION.json')['status']=='PASS_SIX_TRAIN_AND_EVAL'
+    assert read(P/'ALL_SIX_ENDPOINTS_LOCKED.json')['status']=='PASS_ALL_SIX_LOCKED'
+    metrics=rows(P/'evaluation/METRICS.csv');pred=rows(P/'evaluation/PRIVATE_WINDOW_PREDICTIONS.csv');exposures=rows(P/'evaluation/EXPOSURE_ERRORS.csv');meta=rows(P/'evaluation/WINDOW_IDENTITIES.csv');costs=rows(P/'COMPUTE_AND_COMMUNICATION.csv');conf=read(P/'evaluation/CONFUSIONS.json');ci=rows(P/'evaluation/PAIRED_EXPOSURE_UNCERTAINTY.csv')
+    idx={(x['group'],x['domain']):x for x in metrics};cm={(x['group'],x['domain']):x['matrix_true_rows_pred_columns'] for x in conf};mm={key(x):x for x in meta};pp=collections.defaultdict(dict)
+    for x in pred:pp[x['group'],x['domain']][key(x)]=x
+    maxerr=0.;recomputed=[]
+    for pair,rr in pp.items():
+        matrix=[[0]*4 for _ in range(4)];by=collections.defaultdict(list)
+        for x in rr.values():
+            y,q=int(x['gas_id']),int(x['prediction']);assert int(x['error'])==int(y!=q);assert max(range(4),key=lambda i:json.loads(x['logits'])[i])==q;matrix[y][q]+=1;by[x['filename']].append(float(y!=q))
+        assert matrix==cm[pair];n=sum(map(sum,matrix));correct=sum(matrix[i][i] for i in range(4));rec=[matrix[i][i]/sum(matrix[i]) for i in range(4)];f1=[2*matrix[i][i]/(sum(matrix[i])+sum(matrix[j][i] for j in range(4))) for i in range(4)]
+        values=dict(Accuracy=correct/n,MacroF1=statistics.mean(f1),window_error=1-correct/n,exposure_equal_error=statistics.mean(statistics.mean(v) for v in by.values()),**{f'Recall_{g}':rec[i] for i,g in enumerate(GAS)})
+        for k,v in values.items():maxerr=max(maxerr,abs(v-float(idx[pair][k])))
+        recomputed.append(dict(group=pair[0],domain=pair[1],n_windows=n,n_exposures=len(by),**values,calculation_status='recomputed_integrity_only'))
+    assert maxerr<1e-12 and len(pred)==16800
+    table('FINAL_METRICS_REPORTED.csv',[dict(x,calculation_status='reported',source='Phase35/evaluation/METRICS.csv') for x in metrics]);table('METRIC_RECOMPUTATION_QA.csv',recomputed);table('PAIRED_CI_REPORTED.csv',[dict(x,calculation_status='reported_unchanged_not_rebootstrapped') for x in ci]);table('SOURCE_RETENTION_REPORTED.csv',[dict(x,calculation_status='reported') for x in rows(P/'evaluation/SOURCE_RETENTION_CHANGE.csv')])
+    modelidx={x['path']:x for x in rows(P/'MODEL_VERSION_INDEX.csv')};overview=[];payload={}
+    for b in GROUPS:
+        lock=read(P/'locks'/f'{b}.json');co=next(x for x in costs if x['group']==b);path=Path(lock['endpoint']);assert sha(path)==lock['endpoint_file_sha256'];mi=modelidx[path.relative_to(P).as_posix()];assert mi['state_sha256']==lock['endpoint_state_sha256']
+        receipts=[] if b=='B1' else [read(P/'runs'/b/'server'/f'phase32_receipt_{i:03}.json') for i in range(1,26)]
+        states=0 if b=='B1' else int(receipts[0]['state_payload_up'])//len(receipts[0]['clients']);payload[b]=states
+        overview.append(dict(group=b,C5_Accuracy=float(idx[b,'C5']['Accuracy']),C5_MacroF1=float(idx[b,'C5']['MacroF1']),C5_exposure_error=float(idx[b,'C5']['exposure_equal_error']),C1_Accuracy=float(idx[b,'C1']['Accuracy']),C2_Accuracy=float(idx[b,'C2']['Accuracy']),**{k:v for k,v in co.items() if k!='group'},CE_label_presentations=int(co['target_presentations'])+int(co['local_source_CE_presentations'])+int(co['server_source_CE_presentations']),state_bytes_per_transmission=states,endpoint_file_bytes=int(mi['bytes']),endpoint_state_sha256=mi['state_sha256'],calculation_status='reported metrics andcost;recomputed CE sum/payload'))
+    table('TARGET_SOURCE_COST.csv',overview)
+    comparisons=[]
+    for old,new in [('B1','B3'),('B3','B4'),('B4','B5'),('B0','B2')]:
+        a=next(x for x in overview if x['group']==old);z=next(x for x in overview if x['group']==new)
+        for d in ['C1','C2','C5']:
+            fields=['Accuracy','MacroF1','exposure_equal_error']+[f'Recall_{g}' for g in GAS]
+            comparisons.append(dict(contrast=new+'-'+old,domain=d,**{k+'_difference':float(idx[new,d][k])-float(idx[old,d][k]) for k in fields},wall_seconds_difference=float(z['wall_seconds'])-float(a['wall_seconds']),wall_ratio=float(z['wall_seconds'])/float(a['wall_seconds']),CE_label_presentations_difference=z['CE_label_presentations']-a['CE_label_presentations'],matched_single_factor=new+'-'+old in ['B4-B3','B5-B4'],CI_source='PAIRED_CI_REPORTED.csv' if new+'-'+old in ['B4-B3','B5-B4'] else 'not_registered;no new interval',calculation_status='recomputed differences;no combinedscore'))
+    table('PAIRWISE_CONTRASTS.csv',comparisons)
+    transitions=[];compensation=[];coexp=[]
+    for domain in ['C1','C2','C5']:
+        aa,bb=pp['B3',domain],pp['B4',domain];assert set(aa)==set(bb)
+        for g in range(4):
+            cnt=collections.Counter((int(aa[k]['prediction']),int(bb[k]['prediction'])) for k in aa if int(aa[k]['gas_id'])==g)
+            for (a,b),n in sorted(cnt.items()):transitions.append(dict(domain=domain,true_gas=GAS[g],B3_prediction=GAS[a],B4_prediction=GAS[b],windows=n,calculation_status='recomputed_final_predictions'))
+            n=sum(cnt.values());old=sum(v for (a,b),v in cnt.items() if a==g);new=sum(v for (a,b),v in cnt.items() if b==g)
+            compensation.append(dict(domain=domain,gas=GAS[g],windows=n,B3_correct=old,B4_correct=new,net_correct_change=new-old,Recall_change=(new-old)/n,fixed25_only=True))
+        filenames=sorted({k[0] for k in aa if int(aa[k]['gas_id'])==1},key=lambda f:float(next(x['concentration'] for x in meta if x['filename']==f)))
+        for f in filenames:
+            ks=[k for k in aa if k[0]==f];m=mm[ks[0]];row=dict(domain=domain,filename=f,concentration_ppm=float(m['concentration']),independent_exposures=1,windows=len(ks),inferential_unit='one exposure per concentration;no concentration-specific CI')
+            for b in GROUPS:
+                counts=collections.Counter(int(pp[b,domain][k]['prediction']) for k in ks);row[b+'_CO_error']=sum(n for j,n in counts.items() if j!=1)/len(ks)
+                if b in ['B3','B4']:row[b+'_predicted_counts']=json.dumps({GAS[i]:counts[i] for i in range(4)})
+            coexp.append(row)
+    table('FINAL_PREDICTION_TRANSITIONS.csv',transitions);table('GAS_COMPENSATION.csv',compensation);table('CO_CONCENTRATION_EXPOSURES.csv',coexp)
+    chain=[];diagrows=[];weighted=[];weightrows=[];proto=[]
+    auxiliary=['weighted_coral_loss','weighted_mmd_global','weighted_mmd_class','weighted_adv_loss','weighted_proto_anchor','weighted_proto_loss','weighted_consist_loss','weighted_residual_loss','weighted_mmd_proto_loss','weighted_stage_mmd_loss','weighted_align_reg_legacy_loss']
+    for b in ['B3','B4','B5']:
+        native=[read(P/'runs'/b/'server'/f'phase32_receipt_{i:03}.json') for i in range(1,26)];wr=rows(P/'audit'/b/'FEEDBACK_AND_WEIGHTS.csv');prev=read(P/'locks'/f'{b}.json')['initial_state_sha256']
+        for i,(rc,w) in enumerate(zip(native,wr),1):
+            assert rc['received']==prev and rc['returned']==(w['aggregated_state'] if b=='B3' else w['adapted_state']);assert rc['returned']==w['returned'];assert rc['entry_sha256']==read(P/'registrations'/f'{b}.json')['runtime_sha256']
+            for j,cid in enumerate([1,2]):
+                cr=read(P/'runs'/b/f'client_{cid}'/f'receipt_{i:03}.json');assert cr['received']==prev and cr['uploaded']==rc['uploads'][j] and cr['prototype_encoder']==rc['prototype_encoder'][j]==cr['encoder']
+            next_received=native[i]['received'] if i<25 else 'terminal_no_next_round';assert i==25 or next_received==rc['returned'];prev=rc['returned']
+            chain.append(dict(group=b,round=i,received=rc['received'],aggregated=w['aggregated_state'],adapted=w['adapted_state'],returned=rc['returned'],next_received=next_received,all_client_upload_encoder_receipts_match=True))
+            d=read(P/'runs'/b/'server'/f'domain_adapt_round_{i:03}.json');assert all(float(d[x])==0 for x in auxiliary);assert all(math.isfinite(v) for v in d.values() if isinstance(v,(float,int)))
+            assert d['lambda_target_ce']==1 and d['num_steps']==100 and all(d[k]==0 for k in ['lambda_coral','lambda_global_mmd','lambda_class_mmd','lambda_proto_anchor','lambda_adv','lambda_proto','lambda_consistency','lambda_residual','lambda_proto_mmd','lambda_stage_mmd'])
+            diagrows.append(dict(group=b,round=i,Calibration_online_batch_accuracy=d['target_ce_acc'],Calibration_online_CE=d['target_ce_loss'],source_training_CE_named_val_loss=d['val_loss'],raw_proto_diagnostic=d['proto_loss'],raw_consistency_diagnostic=d['consist_loss'],weighted_auxiliary_total=sum(float(d[x]) for x in auxiliary),total_loss=d['total_loss'],source_model_change_max=d['checkpoint_max_abs_delta'],metric_scope='training minibatches averaged during100 updates;NOT heldout/roundendpoint',test_metrics_accessed=False))
+            active=w['active']=='True';assert active==(b=='B5' and i>3);w1=float(w['client1_weight']);w2=float(w['client2_weight']);assert abs(w1+w2-1)<1e-12
+            weightrows.append(dict(group=b,round=i,active=active,client1_weight=w1,client2_weight=w2,client1_deviation_from_FedAvg=w1-1/3,client2_deviation_from_FedAvg=w2-2/3,prototype_similarity=w['prototype_similarity'],classification_head_state_changed=w['adapted_state']!=w['aggregated_state'],calibration_online_CE=d['target_ce_loss']))
+            stats=read(P/'runs'/b/'server'/f'client_stats_round_{i:03}.json')
+            for st in stats['clients']:
+                cid=int(st['client_id']);assert st['num_examples']=={1:840,2:1680}[cid];assert st['class_phase_counts']=={f'{g},0':{1:210,2:420}[cid] for g in range(4)}
+                assert st['use_align']==st['use_replay_distill']==0
+                proto.append(dict(group=b,round=i,client_id=cid,per_class_count={1:210,2:420}[cid],prototype_count=st['prototype_count'],phase='neutral_class_key0',encoder_sha=rc['prototype_encoder'][cid-1]))
+        for role in ['server','client_1','client_2']:
+            process=read(P/'observer'/b/(role+'_process.json'));assert not process['denied']
+        for i in range(1,26):
+            ob=read(P/'observer'/b/f'server_DA_round_{i:03}.json');assert ob['optimizer_steps']==100 and ob['ce_rows']['target_ce']==1600 and ob['ce_batches']['source_ce']==1000
+    table('ROUND_VERSION_CHAIN.csv',chain);table('CALIBRATION_TRAINING_TRAJECTORY.csv',diagrows);table('PROTOTYPE_WEIGHT_TRAJECTORY.csv',weightrows);table('PROTOTYPE_COUNT_AND_ENCODER.csv',proto)
+    b5=[x for x in weightrows if x['group']=='B5' and x['active']];diff=[x['client1_deviation_from_FedAvg'] for x in b5]
+    write('MECHANISM_QA.json',dict(status='PASS_NO_OBSERVED_VERSION_OR_LOSS_ANOMALY',server_rounds=75,client_receipts=150,next_receive_links=72,prototype_records=len(proto),auxiliary_weighted_nonzero=0,nonfinite_observed=0,gradient_evidence='Phase35 hashed observer checks before EVERY Adam step;process exit0 and25round gate PASS;not a new gradient replay',B5_active_rounds=[x['round'] for x in b5],B5_active_fraction_all=22/25,B5_active_fraction_after_warmup=1.,B5_C1_weight_min=min(x['client1_weight'] for x in b5),B5_C1_weight_max=max(x['client1_weight'] for x in b5),B5_abs_weight_delta_max=max(map(abs,diff)),B5_abs_weight_delta_mean=statistics.mean(map(abs,diff)),Calibration_endpoints={b:[x for x in diagrows if x['group']==b][-1] for b in ['B3','B4','B5']},causal_attribution='unknown;no gradients/physicalaging causal analysis;no Test trajectory'))
+    # Old feedback protocol: verified metadata only, no old Test curve access.
+    oldindex={x['archive_relative_path']:x for x in rows(V/'manifests/SOURCE_INVENTORY.csv')};v5rows=rows(P3/'evidence/V5_ASSET_PROVENANCE.csv');old=V/next(x['path'] for x in v5rows if x['path'].endswith('RESULT_INTERPRETATION.md') and 'C5_5pct_20261025' in x['path']);old=old.parent
+    def oldfile(rel,typ='json'):
+        p=old/rel;assert sha(p)==oldindex[p.relative_to(V).as_posix()]['sha256']
+        return read(p) if typ=='json' else rows(p) if typ=='csv' else note(p).read_text(encoding='utf-8-sig')
+    oldfiles={rel:oldfile(rel,typ) for rel,typ in [('DATA_QA.json','json'),('RESULT_INTERPRETATION.md','text'),('EXPERIMENT_REGISTRY_COMPLETED.csv','csv'),('runs/FONG-FV25-C5-M1-B05-S42/remote_server/effective_config.json','json'),('runs/FONG-FV25-C5-M1-B05-S42/TRAINING_QA.json','json')]}
+    write('OLD_PROTOCOL_METADATA.json',dict(effective_config=oldfiles['runs/FONG-FV25-C5-M1-B05-S42/remote_server/effective_config.json'],data_QA=oldfiles['DATA_QA.json'],training_QA=oldfiles['runs/FONG-FV25-C5-M1-B05-S42/TRAINING_QA.json'],source_dates='unknown in inspected archived role/effective metadata;do not substitute strict19 R1-R3 cohort',old_comparison_not_direct_repetition=True,old_Test_curves_opened=False))
+    # Classifier/71D regressor identity audit; no feature generation or joblib loading.
+    cmta=read(P1/'run_v2/data/C5_cal_A4_metadata.json');tmta=read(P1/'run_v2/data/C5_test_metadata.json');cls_cal=[x for x in rows(P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv') if x['client_id']=='5'];cls_test=[x for x in meta if x['client_id']=='5']
+    def ident(x):return (*key(x),x['raw_sha256'],int(x['gas_id']))
+    assert {ident(x) for x in cmta}=={ident(x) for x in cls_cal} and {ident(x) for x in tmta}=={ident(x) for x in cls_test};assert not {x['filename'] for x in cmta}&{x['filename'] for x in tmta}
+    mi=read(P15/'run/A_MODEL_INDEX.json');heads=[x for x in mi if x['target']=='C5' and x['budget']==4 and x['rule']=='F' and x['family']=='SVR'];assert len(heads)==4
+    headrows=[]
+    for h in heads:
+        p=P15/'run'/h['path'];assert sha(p)==h['sha256'];g=h['gas_id'];selected=[x for x in cmta if x['gas_id']==g];assert h['training_n']==8 and h['calibration_files']==sorted({x['filename'] for x in selected})
+        assert hashlib.sha256('\n'.join(x['physical_identity'] for x in selected).encode()).hexdigest()==h['training_identity_sha256']
+        headrows.append(dict(gas_id=g,gas=GAS[g],experiment_id=h['experiment_id'],path=str(p),sha256=h['sha256'],bytes=h['bytes'],training_windows=8,training_exposures=4,clip_min_ppm=min(x['truth_ppm'] for x in selected),clip_max_ppm=max(x['truth_ppm'] for x in selected),training_identity_sha256=h['training_identity_sha256'],params=json.dumps(h['params']),scaler='gas-specific Calibration8 rows;verified priorPhase15;no reloadthisphase'))
+    fc=read(HERE.parent/'fedongas_phase05_20261102/results_v2/FEATURE_CONTRACT.json');assert fc['dim']==71 and len(fc['names'])==71;read(P15/'run/A_FROZEN_PARAMETERS.json');read(P15/'run/FINAL_VERIFICATION.json');note(P1/'phase1_common.py');note(P15/'phase15_common.py');note(P/'evaluate.py');note(P/'p35_common.py')
+    table('ROUTING_REGRESSOR_HEADS.csv',headrows)
+    table('ROUTING_WINDOW_IDENTITY_JOIN.csv',[dict(filename=x['filename'],gas_id=x['gas_id'],start_s=x['start_s'],end_s=x['end_s'],raw_sha256=x['raw_sha256'],role='calibration' if i==0 else 'test_metadata_only',class_and_regression_identity_match=True) for i,z in enumerate([cmta,tmta]) for x in z])
+    write('ROUTING_COMPATIBILITY_QA.json',dict(status='PASS_METADATA_CONTRACT;NUMERIC_BRIDGE_AND_ROUTE_NOT_EXECUTED',calibration_windows=32,calibration_exposures=16,test_windows_metadata_join=840,test_exposures=40,shared_gas_map=GAS,class_input=[50,8],regression_input=71,encoder64_is_not_feature71=True,feature_contract_sha256=sha(HERE.parent/'fedongas_phase05_20261102/results_v2/FEATURE_CONTRACT.json'),feature_names_sha256=hashlib.sha256(json.dumps(fc['names'],ensure_ascii=False).encode()).hexdigest(),regressor_heads=4,all_head_file_SHA=True,scaler_load_executed=False,classifier_endpoint_selection='not made;all6 remain distinct;future must register set before run',runtime_bridge_pending=True,new_routed_predictions=0,new_inference_calls=0,training_calls=0))
+    after=verify_manifest(P,before['manifest_sha256']);assert after==before
+    write('FIXED_RESULT_AUDIT.json',dict(status='PASS_SCOPED_DESCRIPTIVE_EVIDENCE',audit_status='approved',prediction_rows=len(pred),metric_group_domains=20,exposure_rows=len(exposures),max_metric_absolute_difference=maxerr,source_manifest_before=before,source_manifest_after=after,critical_failures=[],limits=['seed42/C5A4 retrospective','two matched mechanism pairs only;B1/B3 sourcecompute differs','CO slice is posthoc descriptive','no independent replicate by concentration','oldsource dates unknown','routing metadata pass is not runtime parity']))
+    table('INPUT_PROVENANCE.csv',list(INPUTS.values()));write('ANALYSIS_COMPLETE.json',dict(status='PASS',training_calls=0,inference_calls=0,new_Test_predictions=0,Test_round_selection=False,raw_acquisition_reads=0,numeric_array_decodes=0,model_deserializations=0,binary_SHA_only=True,confidence_intervals='copied unchanged',retrospective=True))
+    print(json.dumps(dict(status='ANALYSIS_PASS',predictions=len(pred),CO=next(x for x in compensation if x['domain']=='C5' and x['gas']=='CO'),B5_weight_delta_max=max(map(abs,diff)),inputs=len(INPUTS)),ensure_ascii=False))
+if __name__=='__main__':main()

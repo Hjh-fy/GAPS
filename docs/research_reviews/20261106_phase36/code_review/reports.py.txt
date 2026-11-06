@@ -1,0 +1,206 @@
+"""Research synthesis from audited metadata; never executes model code."""
+from analyze import *
+def md(name,s):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(s)
+def main():
+    assert read(HERE/'FIXED_RESULT_AUDIT.json')['audit_status']=='approved'
+    qa=read(HERE/'MECHANISM_QA.json');metric=rows(HERE/'FINAL_METRICS_REPORTED.csv');cost=rows(HERE/'TARGET_SOURCE_COST.csv');co=rows(HERE/'CO_CONCENTRATION_EXPOSURES.csv');pairs=rows(HERE/'PAIRWISE_CONTRASTS.csv');ci=rows(HERE/'PAIRED_CI_REPORTED.csv')
+    idx={(x['group'],x['domain']):x for x in metric}
+    def pct(v):return f'{100*float(v):.2f}%'
+    tab='|组|C5 Accuracy|Macro-F1|暴露等权错误率|C1 Acc|C2 Acc|墙钟s|CE标签呈现|Fit消息字节|\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n'
+    for x in cost:tab+=f"|{x['group']}|{pct(x['C5_Accuracy'])}|{float(x['C5_MacroF1']):.4f}|{pct(x['C5_exposure_error'])}|{pct(x['C1_Accuracy'])}|{pct(x['C2_Accuracy'])}|{float(x['wall_seconds']):.2f}|{x['CE_label_presentations']}|{int(x['protobuf_fit_up_bytes'])+int(x['protobuf_fit_down_bytes'])}|\n"
+    exposuretable='|CO ppm|B3错误窗/21|B4错误窗/21|B4预测：CO/Ethylene/Methane|\n|---|---:|---:|---|\n'
+    for x in co:
+        if x['domain']!='C5':continue
+        p=json.loads(x['B4_predicted_counts']);exposuretable+=f"|{float(x['concentration_ppm']):g}|{round(float(x['B3_CO_error'])*21)}|{round(float(x['B4_CO_error'])*21)}|{p['CO']}/{p['Ethylene']}/{p['Methane']}|\n"
+    # Correct a draft column label without overwriting any existing analysis table.
+    trajectory=[]
+    for r in rows(HERE/'PROTOTYPE_WEIGHT_TRAJECTORY.csv'):
+        r['full_model_state_changed']=r.pop('classification_head_state_changed');trajectory.append(r)
+    table('MODEL_WEIGHT_TRAJECTORY.csv',trajectory)
+    md('README.md',f'''# FedOnGas Phase3.6 联邦机制诊断与贡献收敛
+
+依据Phase3.5固定df2e61878a8902cb1fae95431013bbf3514798f7。本轮只分析封存预测/元数据，训练0、模型加载/推理0、历史轮Test评价0、新端到端结果0。独立worktree继续使用，Phase35完整2275制品在分析前后逐字节SHA一致；不改v5或任何历史结果。
+
+结论：CO下降是明确的最终预测转移，而非已发现的反馈版本故障。B3→B4在C5 CO少判对111窗，Ethanol/Ethylene分别补回70/28窗，最终净少13窗。B5权重实际激活22轮，但偏离FedAvg很小；现有证据不支持其目标或源优势。旧反馈正向结果与本协议存在多项条件差异，不能合并或解释为单一原因。
+
+{tab}
+
+源Sstar基线：C1={pct(idx['Sstar','C1']['Accuracy'])}，C2={pct(idx['Sstar','C2']['Accuracy'])}。本表不构造加权总分、不选部署赢家。训练共同Sstar成本未重复计入每组；Fit字节不是完整TCP/gRPC链路流量，B1的0表示无联邦传输，不表示无模型。
+
+阅读顺序：[固定结果与成本](FIXED_RESULTS_AND_COST.md) → [CO诊断](CO_DIAGNOSIS.md) → [机制审计](FEEDBACK_PROTOTYPE_AUDIT.md) → [旧新协议](OLD_NEW_PROTOCOL_COMPARISON.md) → [论文贡献](CONTRIBUTION_REVISION.md) → [路由兼容性](ROUTING_COMPATIBILITY.md) → [下一步](NEXT_DECISION.md)。执行证据见ANALYSIS_COMPLETE、FIXED_RESULT_AUDIT、INPUT_PROVENANCE和ARTIFACT_SHA256。原配对区间保留在PAIRED_CI_REPORTED，不重抽样。
+
+限制：单seed42、单C5A4、回顾性分析。每类10独立暴露、每浓度1暴露；21窗不是21独立暴露。训练诊断不当作留出性能；SHA确认版本路径，不证明具体优化/物理因果。
+''')
+    md('FIXED_RESULTS_AND_COST.md',f'''# 固定结果与目标—源—成本
+
+{tab}
+
+Accuracy、Macro-F1、逐类Recall和暴露等权错误率：FINAL_METRICS_REPORTED（reported）；16,800预测重算仅作一致性检查，最大差<1e-12，见METRIC_RECOMPUTATION_QA。40暴露×21有效窗使本次单窗错误率与暴露等权错误率数值相同，不是可推广的恒等式。Sstar相对变化完整保留SOURCE_RETENTION_REPORTED。全部固定25端点，B3–B5评价adapted25。
+
+本轮分析指定比较（不称为新的训练前确认性预注册）：
+
+- B1→B3：目标Accuracy下降1.905pp，Macro-F1下降约0.01734；C1/C2分别提高28.095/24.762pp。B1源Ethylene Recall均0，B3 C1/C2恢复为90.00%/99.05%。B3墙钟约为B1的8.26倍，CE标签呈现501800 vs40000。不能将恢复仅归于单一机制：源客户端更新和服务器SourceCE都增加，位置/算力不同。
+- B3→B4：C5 Accuracy−1.548pp、Macro-F1−0.03199；C1+2.976pp、C2不变。仅模型反馈开关不同。目标错误率差+1.548pp，原95%配对区间[-4.289,+6.905]pp，不能称目标显著改善/损害。
+- B4→B5：C5 Accuracy−0.476pp、Macro-F1−0.00647；C1−5.833pp、C2−0.833pp。仅选择性参数加权不同。目标错误率差区间[-0.476,+1.310]pp；C1错误率差原区间[+1.548,+10.595]pp，是该单次训练下按暴露抽样的限定证据，不是跨seed结论。
+- B0→B2：C5 Accuracy−1.905pp、C1−4.643pp、C2不变，CO Recall仍0。目标作为普通第三客户端实际权重32/2552≈1.254%，并未因40000次重复呈现膨胀。该设置下没有目标收益；不能推出所有Target-as-Client无效，也不能根据Test修改聚合权重。
+
+每组B1–B5目标2500更新/40000窗口呈现、独立标定16暴露/32窗。B0无目标监督。源客户端各源epoch累计63000呈现；B3–B5另有服务器SourceCE398800、源额外forward40000、统计no_grad forward126000。CE标签呈现列只统计CE，不把全部forward冒充梯度步骤或独立标签数。
+
+完整state数组载荷为144692字节/每客户端每次传输；checkpoint容器大小另列TARGET_SOURCE_COST，可能因容器和共享storage不同而不同。B1无Fit传输，模型checkpoint110498字节；其0传输载荷不是“零体积模型”。FitIns/FitRes字节包含参数/配置/统计、不含握手及物理帧。墙钟是单次宿主CPU实测，含进程启动、不含独立审计，共同Sstar预训练另记在Phase34。
+
+不新增组合分数、阈值、赢家、p值或配对区间。未注册B1/B3和B0/B2置信区间，此处只报告差值。未来多目标协议应事先按目标/各源/每类指标分别报告，若需约束或权重须来自任务要求及合法Source/Calibration，不能回看本Test反求。
+''')
+    md('CO_DIAGNOSIS.md',f'''# CO最终预测变化（回顾性描述）
+
+C5 CO共10暴露210窗。B3正确190、Ethylene18、Methane2；B4正确79、Ethylene61、Methane70，无CO→Ethanol。190个原正确窗中79仍正确，50转Ethylene、61转Methane；原错误没有转回正确。另7个原Ethylene错误转Methane，不增加正确数。
+
+{exposuretable}
+
+25/50/75ppm的B4错误为16/17/19窗，高于对应B3的1/2/2；150和250ppm也明显较差。不能把现象限定高浓度，也不能凭每档一个暴露区分浓度效应与暴露差异。完整三设备、六组逐档结果见CO_CONCENTRATION_EXPOSURES，每档独立暴露数=1，不给虚构浓度档区间。
+
+补偿：Ethanol119→189（+70，Recall+33.333pp），Ethylene169→197（+28，+13.333pp），Methane210→210。CO−111与其他+98合计−13/840。不能只看整体约1.55pp下降而忽略CO Recall−52.857pp，也不能用其他类别改善宣称CO安全性没有变化。
+
+源设备CO：C1 B3 188/210=89.52%→B4 194/210=92.38%，C2均210/210=100%。同类下降并非同时发生在所有源设备。观察可支持“该配置的目标类别关系发生重新分配”，不能确定物理老化、传感器损坏、原型失效、梯度冲突或某个响应时间段为原因。没有本轮梯度、物理干预或跨日因果试验。
+
+FINAL_PREDICTION_TRANSITIONS、GAS_COMPENSATION只连接固定最终窗；无任何round1–24 Test曲线或最佳轮选择。当前细分是看到结果后的描述，不用于改训练参数。
+''')
+    md('FEEDBACK_PROTOTYPE_AUDIT.md',f'''# 反馈、原型与训练轨迹
+
+75服务器轮、150客户端收据、72个下一轮接收链接重新核对：B3 returned=aggregated，B4/B5 returned=adapted；每轮客户端收到上一轮returned，prototype encoder SHA与本地上传encoder一致。全部三组仍执行相同100步服务器适配，最终端点均adapted25。未发现版本错配；来源为ROUND_VERSION_CHAIN及Phase35原始native receipt。
+
+每源每类phase0计数固定210/420，4类64D，phase0只是中性统计键。B3/B4/B5上传规则、EMA.8、warmup3、初始空原型一致。参数原型加权、EMA统计维护与原型损失不能混称一种机制。选择性相似度来自源客户端原型相对EMA参考；不宣称直接用目标原型加权。
+
+B5：round4–25均激活，22/25=88%，warmup后100%。C1权重范围[{qa['B5_C1_weight_min']:.9f},{qa['B5_C1_weight_max']:.9f}]，基准1/3；最大绝对偏移{qa['B5_abs_weight_delta_max']:.9f}（约0.02027个百分点），均值约0.00608个百分点。非“没有启用”，但权重非常接近普通样本权重。原型相似度约接近1，不等于已证明目标映射可信。
+
+同源Sstar下B4/B5前三轮状态完全相同，round4加权后轨迹开始分开（Phase35 PAIRED_MECHANISM_PREFIX_PARITY及本轮SHA链）。后续Calibration在线批指标在B4/B5趋近100%；这与最终Test无优势并存，不足以归因为原型失效或梯度冲突。所有轨迹只含训练/Calibration诊断，不与每轮Test作相关或择轮。
+
+Calibration_online_batch_accuracy是每轮100个优化步骤中批准确率的平均，非训练结束后对32窗独立评估，更非Development。round25 B3约74.625%、B4/B5均100%；TargetCE分别约2.893、6.63e-9、5.36e-9。标定批拟合饱和不能替代独立暴露泛化证据。
+
+raw proto_loss/consist_loss可非零，但所有加权辅助项和相关lambda均0；TargetCE lambda1，SourceCE保留，未发现非预期损失。梯度有限性依据Phase35在每次Adam前检查及成功进程/25轮门禁，本轮不重新回放梯度。日志里val_loss是服务器合法源训练池CE，不是独立验证集。
+
+规范轨迹见MODEL_WEIGHT_TRAJECTORY。早期派生PROTOTYPE_WEIGHT_TRAJECTORY中classification_head_state_changed一列实际只比较完整state SHA，不能支持分类头单独变化；规范表重命名为full_model_state_changed，原中间文件保留且不作为发布主表。CALIBRATION表source_model_change_max也指完整checkpoint的最大参数变化，不是分类头变化，也不是源保持性能变化。没有据此作头级因果解释。
+''')
+    md('OLD_NEW_PROTOCOL_COMPARISON.md','''# 旧反馈正向证据与新协议负结果
+
+旧资料经v5 SOURCE_INVENTORY的SHA核对，仅打开最终解释及合同元数据，未读旧Test逐轮曲线。旧M0=有反馈J0、M1=关闭反馈，原报告固定25轮C5为97.353% vs93.897%（+3.456pp）；本轮B4−B3为−1.548pp。两者都须保留，不能挑选一个口径作普遍结论。
+
+|项|旧20261025 M0/M1|新Phase35 B4/B3|
+|---|---|---|
+|源队列|C1/C2各2360训练窗；origin指向fedongas_mmd_only_20261019，完整暴露/日期身份在已检索role/effective资料中unknown|C1Day4 840窗、C2Day1/7 1680窗；120独立暴露，源截至Day7|
+|初始化|effective_config initial SHA97cc719d...；TRAINING_QA initial_fingerprint297af6fa...口径不同，未当同一SHA；无法证明等于新Sstar或合法Day7祖先|合法Sstar全state431fa41e...，完整25轮源祖先，六组相同|
+|目标标定|C5名义5%，80窗；独立暴露预算/与Test互斥未由该window合同闭合|C5Day18 A4，16互斥暴露32窗；60/150s；无Dev/Test训练|
+|Test|C5 1360窗，源C1/C2各680；原窗口协议，暴露重叠风险未排除|C5Day22 40暴露840窗，源C1Day21/C2Day16各40暴露840窗|
+|损失|SourceCE+TargetCE+Class-MMD2 weight.5，normalized64D，原型加权开启|SourceCE+TargetCE，其他加权损失0，B3/B4参数原型加权关闭|
+|客户端更新|25轮、local1epoch、batch_size字段32；源实际梯度/呈现完整账本未本轮重建|25轮、batch16、每源1epoch，实际3950源客户端更新/63000呈现|
+|服务器|100steps/round；source reference640窗；effective batch_size32不能单独证明真实DA目标batch/呈现次数|100优化步/轮，Source10批+Target16窗，实际目标2500步40000呈现；source池2520|
+|反馈与评价|M1无反馈仍适配，下一轮aggregated，评价adapted25；M0返回adapted|同语义，对应B3/B4|
+|选择与独立性|旧Test历史已观察，解释还列后5轮均值，不能当5独立seed|只固定最终端点；本轮不读任何Test逐轮值；单seed回顾性|
+
+旧严格20261020的R1–R3队列是另一套实验，不能因同名C5把它补到此M0/M1源日期。旧日期/暴露祖先缺口保持unknown；不是在本轮证明泄漏。批字段、目标窗口80、优化步2500不能推断旧目标呈现恰等于新40000。
+
+损失、源/目标队列、起点、样本粒度、客户端预算及目标统计同时变化，不能把符号变化单独归因“严格划分”“取消MMD”“源模型变弱”或某一机制。只可说旧条件下正向观察未在新条件复制，当前不存在反馈普遍有效证据。
+''')
+    claims=[
+      dict(claim_id='P36-C01',claim='合法同起点、标签预算与版本链的联邦更新公平比较可执行且可恢复',evidence_id='P36-E01',support='direct',kind='实验方法与工程',scope='C5A4/seed42/固定25',sources='FIXED_RESULT_AUDIT;ROUND_VERSION_CHAIN;Phase35locks',limitation='不是隐私保护、算法首创或普遍性能优势'),
+      dict(claim_id='P36-C02',claim='源监督适配与目标独立微调呈目标效果/源保持/成本权衡',evidence_id='P36-E02',support='qualified',kind='经验发现',scope='B1/B3此配置',sources='PAIRWISE_CONTRASTS;TARGET_SOURCE_COST',limitation='源更新/位置/算力同时不同，不能单因素因果归于SourceCE'),
+      dict(claim_id='P36-C03',claim='跨轮反馈普遍提高新目标性能',evidence_id='P36-E03',support='contradictory',kind='停止优势主张',scope='B4/B3新协议无目标增益',sources='PAIRED_CI_REPORTED;CO_DIAGNOSIS;OLD_NEW_PROTOCOL_COMPARISON',limitation='单seed区间含0；也不能声称普遍有害'),
+      dict(claim_id='P36-C04',claim='原型选择性参数加权提供独立性能增益',evidence_id='P36-E04',support='contradictory',kind='停止优势主张',scope='B5/B4激活22轮仍无目标或源优势',sources='MODEL_WEIGHT_TRAJECTORY;PAIRWISE_CONTRASTS',limitation='权重幅度小；不能据此证明所有原型方法无效'),
+      dict(claim_id='P36-C05',claim='少样本历史浓度迁移存在合法复用和负迁移边界',evidence_id='P36-E05',support='qualified',kind='既有回归章收敛',scope='Phase1–2B原严格/回顾性协议',sources='Phase3/REGRESSION_FREEZE;Phase2B固定报告',limitation='本轮未重算/批准新回归结论；Oracle与预测路由分开'),
+      dict(claim_id='P36-C06',claim='分类/71D回归在C5共享合法窗口身份，可准备预测路由',evidence_id='P36-E06',support='qualified',kind='接口合同',scope='32Calibration/840Test元数据、四F-SVR头SHA',sources='ROUTING_COMPATIBILITY_QA;ROUTING_REGRESSOR_HEADS',limitation='数值桥接/错误类别调用/异常回退/端到端均pending'),
+      dict(claim_id='P36-C07',claim='新组合已达到云边端实时、稳定部署',evidence_id='P36-E07',support='missing',kind='系统验证待完成',scope='71D新分类回归组合',sources='Phase3/PI_ACCEPTANCE_CONTRACT',limitation='旧ONNX/Pi案例与0.413ms不能替代新组合PC/Pi及长时验证')]
+    table('CONTRIBUTION_REVISION_MATRIX.csv',[dict(x,audit_status='approved_scoped' if x['evidence_id'] not in ['P36-E05','P36-E07'] else 'prior_stage_only_or_missing') for x in claims])
+    md('CONTRIBUTION_REVISION.md','''# 毕业论文贡献修订
+
+贡献证据矩阵见CONTRIBUTION_REVISION_MATRIX。应将“反馈/原型必然提高性能”改为“目标感知更新的公平机制验证及适用边界”，保留跨协议符号变化、CO类别迁移和源保持成本。负结果有研究价值，但不会自动变成新的高性能算法创新。
+
+可以落地的章节：①严格少标定回归强基线、合法历史知识及负迁移边界（沿用Phase1–2B）；②联邦目标更新的同起点/目标预算/版本链、公平对照与类别权衡（Phase35/36）；③任务分离维护与云边端工程（已有模块，必须补新组合数值、成本和恢复实测才能升级为系统性能贡献）。
+
+已完成的是可追溯实验流程与现有成熟模块的受控实现，不将FedAvg、监督校准、EMA、原型通信或残差SVR本身声明首创。真正可继续研究的问题是“在有限标定信息下如何界定目标适应与既有类别保持的冲突边界”，目前只确认现象，尚无可靠新算法解法证据。
+
+不为满足毕业叙事发明联合总分、删负结果或事后选择赢家；不保证学校毕业条件已满足。需要导师认可经验边界/系统证据作为论文工作量，算法创新若为硬要求仍有缺口。
+''')
+    md('ROUTING_COMPATIBILITY.md','''# C5分类—71D回归兼容性
+
+门禁结论：身份/模型来源与静态合同PASS，数值桥接、运行路由和端到端性能NOT_EXECUTED，不把metadata通过称为部署通过。
+
+|项|本轮核对|状态|
+|---|---|---|
+|共同输入身份|Phase35分类与Phase1/1.5回归的C5Day18A4相同16暴露32窗；Day22相同40暴露840窗；文件rawSHA、gas、start/end逐项完全连接；cal/test互斥|PASS metadata|
+|源与祖先|分类合法Day7 Sstar及25轮新目标更新；F-SVR源侧选参仅合法源、目标头仅Calibration；模型文件与训练身份SHA固定|PASS archived evidence|
+|原始预处理|同v5 strict process_raw：排序、时间重复合并，20–50s原始电导g0，5Hz分箱/孤立缺失插补，响应(1/R−g0)/g0，crop60–170，有效10s50×8窗、stride5s|同代码来源；本轮未生成特征|
+|模型输入|分类float32[N,50,8]、logits[N,4]；回归是同窗抽71D、固定71名字/顺序；encoder64D不可替换71D|PASS schema|
+|标准化|分类原合同不额外fit全局Test scaler；回归每气体8个Calibration窗的scaler已封装，推理只transform|静态/既有回放PASS；本轮不loadjoblib|
+|类别/输出|0Ethanol、1CO、2Ethylene、3Methane；F-SVR四头FONG-P15-C5-A4-F-SVR-20261102，文件及身份SHA核对|PASS metadata|
+|物理支持|Ethanol/Ethylene12.5–125ppm，CO/Methane25–250ppm，来自各头Calibration浓度；裁剪支持依预测gas所选头|PASS declared support|
+|runtime桥接|Calibration同窗浮点/特征SHA、模型加载、错类也调用相应完整头、NaN/非法class保护、单窗回放|PENDING future approval|
+
+ROUTING_REGRESSOR_HEADS含四个模型的SHA、训练身份、超参和支持。SOURCE model不能因Source-only结果好而事后替换F-SVR。四头不接受分类encoder、不使用真实类别帮忙选头。以真实gas路由是Oracle，只能保留独立诊断。
+
+下一阶段最小路由计划：先仅用已授权Calibration固定fixture连接50×8→71D及冻结头，要求与既有保存特征/预测合同一致；固定模型/特征/scaler/SHA，非法类别或非有限值返回不可用，不Oracle补救，不让clip吞掉Inf。其后若单独批准离线结果，使用同一F-SVR71银行配全部六组已锁分类端点（可复用最终分类CSV及SHA），共6种固定路由840窗，不基于已有Test挑一个分类器。错误类别必须调用预测头；不能只保留分类正确子集。原始与裁剪浓度分开，gas错误与正确类别下浓度误差分开。
+
+主报告同时呈现类别指标、每预测gas的有效/不可用率、分类正确条件下浓度诊断和全部流量错分类方向；若要气体—浓度联合成功率，容差须由应用要求/合法Source/Calibration事先固定，不能本Test反求。跨气体ppm数值不是同一化学任务，不能用单个混合NRMSE掩盖错分成本。高代价错类须先有任务成本依据，本轮不凭频数发明风险权重。
+
+此方案不训练，不作Pi部署，也不在本轮执行任何新预测。该历史Test已看过，未来路由结果同样只能称回顾性系统描述，不能替代独立确认性数据。
+''')
+    # Candidate-only future registrations; hardcoded runtime is an explicit blocker.
+    matrix=[]
+    for seed in [43,44]:
+        for b in ['B3','B4','B5']:matrix.append(dict(candidate_id=f'P36-PROP-C5A4-{b}-UPDSEED{seed}',target='C5',budget='A4',group=b,source_checkpoint='same accepted Sstar pretrainedseed42',update_seed=seed,endpoint='adapted25',target_steps=2500,target_presentations=40000,target_sampler='keep original P35 fixed table across branches/seeds',status='NOT_AUTHORIZED_BLOCKED_SEED_ENTRY',purpose='update_randomness only;not full pretrainingseedvariance',expected_wall_minutes=8.4))
+    for b in ['B3','B4']:matrix.append(dict(candidate_id=f'P36-PROP-C3A4-{b}-S42',target='C3',budget='A4',group=b,source_checkpoint='legal Day7 Sstar;NEVER C5Day18 adapted',update_seed=42,endpoint='adapted25',target_steps=2500,target_presentations=40000,target_sampler='new C3 identity-bound table to preregister',status='NOT_AUTHORIZED_BLOCKED_TARGET_ID_BINDING',purpose='new target protocol scope;not independent confirmation',expected_wall_minutes=8.4))
+    table('NEXT_CANDIDATE_MATRIX.csv',matrix)
+    md('EXPERIMENT_PLAN.md','''# 未来实验候选合同（未授权、不可直接运行）
+
+H36-R：同一合法Sstar和数据/样本预算下，B3/B4/B5的目标/源差异是否对更新随机性敏感？若论文需要稳定性证据，可限seed43/44六组补充；不是为挽救负结果。固定源预训练seed42的Sstar，仅改pilot更新seed，保持同一目标消费索引表及每seed各组一致的Source shuffle/dropout初始化规则。不能叫端到端全流程seed43/44，因为未重训Sstar。
+
+资源参考本次每DA组约8.3分钟，六组约50分钟CPU、38700总优化步、15000目标承载更新/240000次目标呈现。只是同宿主实测外推，I/O/审核另计；保存全部25轮与同样版本链，失败不重跑。
+
+明确阻塞：Phase33R spec/config、PhaseClient.seed、source_loader(42+round)、共同target schedule等写死42；现有entry没有真实可用seed43/44开关。必须先另行批准薄入口/合同扩展及无Test预检，并锁新代码/配置/采样合同；不能伪造CLI或只改日志seed。当前无可执行新训练命令，所有candidate NOT_AUTHORIZED。
+
+分析预定：保留已有seed42及两个更新seed，按每seed配对B4−B3/B5−B4报告C5/C1/C2的Accuracy、MacroF1、逐类Recall、暴露错误率和成本，三点mean/SD只衡量更新随机性；不把40暴露与3seed相乘做独立n，不以n3声称稳健显著。无目标Test逐轮callback，只固定25。方向混合则明确不稳定；新两次均无改善则停止继续为该机制做增益验证；新两次改善但seed42负仍不能宣称普遍优势。任何结果均不触发调参/追加seed/重训Sstar。
+
+H36-T：C3 A4若单独批准，先只比较B3/B4以检验反馈条件迁移；C3Day8Calibration、Day17Test、源截至Day7，独立Dev不参与选择。Sstar只能源Day7，不能用C5Day18模型初始化。C3 Test历史已被回归研究观察，不是新盲测。当前data validator只认target5、PhaseClient/B1/DA target binding硬编码5，必须先解决真实C3身份合同，不能把C3冒名client5。B5不是默认扩展分支。
+
+先批准哪个需依据论文问题及资源，不能按C5Test最优值决定跨设备策略。优先低成本的C5更新随机性诊断，C3列后；也可以在不需要稳定性主张时直接停止训练、完成论文边界与系统合同。本轮不执行任何候选。
+''')
+    md('ABLATION_PLAN.md','''# 未来消融边界
+
+C5补充：B3/B4只改adapted反馈，B4/B5只改原型参数加权，所有源/目标身份、Calibration消费、SourceCE、EMA/上传、损失及固定端点不变。seed是成对更新随机性区组，不新增模块，不据Test选择策略。
+
+C3候选：仅B3/B4，同Day7Sstar和C3A4；与C5结果分表，源保持日期明确。任何法律时间/身份/预算/隐式loss或版本链失败即停止对应分支；不删B0/B1/B2历史基线。
+
+预期证据是机制差异稳定性或其边界，允许负结果。无多目标总分、无新浓度/损失/门控超参。完整矩阵、72分支、Pi及端到端推理不属于本计划默认授权。
+''')
+    md('NEXT_DECISION.md','''# 继续/停止
+
+停止：本配置的“反馈提高C5目标性能”和“原型加权带来独立收益”优势主张；不加权重/损失/门控来挽救。没有观测到版本故障、非有限梯度或辅助loss误开，不能把负结果改写为实现失败。
+
+条件继续：若论文需要解释更新随机性，先提交seed-capable薄入口预检，再另行批准固定Sstar、seed43/44的B3/B4/B5六组，约50分钟CPU；仅支持同一历史Test上的更新随机性分析。若资源不值得，现有边界报告即可收敛，不必须重训。
+
+C3 A4列为次优先候选，仅B3/B4，先闭合真实client3绑定及Calibration合同；不能用C5后接模型或声称新的独立盲测。原型分支不自动扩展。
+
+路由：身份/静态模型合同已闭合到32标定/840测试窗及四F-SVR头SHA；运行数值桥和端到端结果仍未完成。下一次可独立批准Calibration桥接预检，再决定是否固定全部六分类端点做回顾性路由描述。本轮没有新端到端数值或Pi发布。
+
+毕业论文按“严格浓度与负迁移边界—联邦更新公平机制验证—系统一致性/维护”组织，区分实验方法与工程贡献、限定经验发现、尚缺的算法或系统性能证据。当前不作学位达标保证，不以新综合分数宣布赢家。
+''')
+    records=[]
+    for b in GROUPS:
+        r=read(P/'registrations'/f'{b}.json');l=read(P/'locks'/f'{b}.json');records.append(dict(experiment_id=r['experiment_id'],source_clients='none' if b=='B1' else 'C1Day4;C2Day1/7',target_clients='none' if b=='B0' else 'C5Day18',split_protocol='Phase05A4 exposure_disjoint;targetTestDay22',model='TCN-Attention50x8/4classes/encoder64',checkpoint=l['endpoint'],checkpoint_state_SHA=l['endpoint_state_sha256'],DA='serverSourceCE+TargetCE' if b in ['B3','B4','B5'] else 'targetonlyCE' if b=='B1' else 'none',calibration='A4' if b!='B0' else 'none',QC='frozenstrictvalidwindowmask',seed=42,status='approved_scoped',result_path=str(P/'evaluation'),provenance='Phase35fixeddf2e618;locks+registrations;Phase36FIXED_RESULT_AUDIT'))
+    table('EXPERIMENT_REGISTRY_LINKS.csv',records)
+    metricrecords=[]
+    for x in metric:
+        b=x['group'];eid=f'P35-C5-A4-{b}-S42' if b!='Sstar' else 'P33R-SOURCE-DAY7-S42-ATTEMPT2'
+        for name in ['Accuracy','MacroF1','window_error','exposure_equal_error']+[f'Recall_{g}' for g in GAS]:
+            metricrecords.append(dict(metric_id=f'P36-M-{b}-{x["domain"]}-{name}',experiment_id=eid,metric_name=name,value=x[name],unit='fraction',direction='lower' if 'error' in name else 'higher',sample_scope='840windows/40exposures;21windows_perexposure',client_scope=x['domain'],gas_scope=name.removeprefix('Recall_') if name.startswith('Recall_') else 'all4',aggregation='exposure_equal' if name=='exposure_equal_error' else 'macro4classes' if name=='MacroF1' else 'window',seed_set='42',uncertainty='individualmetricCI unknown;only originalpairederrorCI retained',source_path='Phase35/evaluation/METRICS.csv',calculation_status='reported'))
+    table('METRIC_RECORDS.csv',metricrecords)
+    write('SKILL_HANDOFF.json',dict(chain=['experiment-registry→experiment-audit','result-analysis→experiment-audit','experiment-audit→claim-evidence','experiment-planner→candidate registry'],completed=['20fixedmetricrows/16800predictionintegrity','4pairedcomparisons','COdecomposition','75roundmechanism audit','oldcontractSHA','shared32/840identities+4headSHA'],unknown=['oldrawsource dates/fullancestry','numericroutebridge','newseed-capable entry','client3 binding','crossseed/devicegenerality'],readonly=['v5','Phase0–35','rawdata','allmodels'],training_authorized=False))
+    md('RECOVERY.md','''# 复核与恢复
+
+环境：PYTHON_EXECUTABLE（现有环境）；analysis/synthesis只用Python标准库，无torch/sklearn导入、无joblib解码。analyze.py主入口从P35封存CSV/JSON与v5元数据重新派生；reports.py输出文档及候选矩阵。代码/输入/输出SHA见INPUT_PROVENANCE及ARTIFACT_SHA256。
+
+已有输出全部exclusive create，重复运行会拒绝已有JSON/报告；少量首次schema读取失败前的CSV只在字节完全一致时复用，没有覆盖。第一次失败代码与ANALYSIS_ISSUES保留。复核应在新的输出目录复制脚本并固定其来源路径，或直接只读比对现有SHA，不能删除标记后覆盖本目录。
+
+本地INPUT_PROVENANCE保存原来源路径及SHA；GitHub仅脱敏路径、文件身份/指标/代码文本，不上传模型、输入数组或原型向量。公开代码依赖本地既有阶段，公开包不能独立重新训练或推理。全文PRIMARY表为MODEL_WEIGHT_TRAJECTORY，旧中间列名不作头级解释。
+''')
+    print('PHASE36_REPORTS_COMPLETE;NO_TRAINING/INFERENCE',flush=True)
+if __name__=='__main__':main()

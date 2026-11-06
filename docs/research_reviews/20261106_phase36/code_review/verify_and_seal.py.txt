@@ -1,0 +1,33 @@
+"""Final read-only checks and one-time seal; no model dependencies."""
+from analyze import *
+import ast
+def main():
+    assert not(HERE/'ARTIFACT_SHA256.csv').exists()
+    review=read(HERE/'INDEPENDENT_REVIEW.json');assert review['status']=='PASS_SCOPED_DESCRIPTIVE_REVIEW',review
+    source=verify_manifest(P,'dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514')
+    prov=rows(HERE/'INPUT_PROVENANCE.csv')
+    for x in prov:assert sha(Path(x['path']))==x['sha256'],x['path']
+    # Verify used regression metadata and model-byte identities against frozen
+    # stage manifests as well, not only internally consistent local indexes.
+    checked=[]
+    for folder in [P1,P15,HERE.parent/'fedongas_phase05_20261102',P31,P3]:
+        manifest_name='MANIFEST_SHA256.csv' if folder.name=='fedongas_phase05_20261102' else 'ARTIFACT_SHA256.csv'
+        manifest={x['path']:x for x in rows(folder/manifest_name)}
+        for x in prov:
+            p=Path(x['path'])
+            try:rel=p.relative_to(folder).as_posix()
+            except ValueError:continue
+            assert rel in manifest and x['sha256']==manifest[rel]['sha256'],(folder.name,rel)
+            checked.append(dict(stage=folder.name,path=rel,sha256=x['sha256']))
+    for h in rows(HERE/'ROUTING_REGRESSOR_HEADS.csv'):assert sha(Path(h['path']))==h['sha256']
+    for p in HERE.glob('*.py'):ast.parse(p.read_text(encoding='utf-8-sig'))
+    # Four decisive scientific decompositions and unchanged interval values.
+    comp=rows(HERE/'GAS_COMPENSATION.csv');v={x['gas']:int(x['net_correct_change']) for x in comp if x['domain']=='C5'};assert v==dict(Ethanol=70,CO=-111,Ethylene=28,Methane=0) and sum(v.values())==-13
+    original=rows(P/'evaluation/PAIRED_EXPOSURE_UNCERTAINTY.csv');retained=rows(HERE/'PAIRED_CI_REPORTED.csv');assert [{k:x[k] for k in original[0]} for x in retained]==original
+    identity=read(HERE/'ROUTING_COMPATIBILITY_QA.json');assert identity['calibration_windows']==32 and identity['test_windows_metadata_join']==840 and identity['new_inference_calls']==0
+    assert read(HERE/'MECHANISM_QA.json')['B5_active_rounds']==list(range(4,26))
+    write('FINAL_VERIFICATION.json',dict(status='PASS_READONLY_ANALYSIS_AND_REVIEW',Phase35_source_verified=source,provenance_files_rehashed=len(prov),previous_stage_selected_manifest_matches=len(checked),independent_review='PASS',numeric_QA='maxerror<1e-12 and independent replay',model_deserializations=0,training_calls=0,inference_calls=0,raw_acquisition_reads=0,old_Test_round_curves_read=0,end_to_end_predictions=0,original_CIs_unchanged=True,routing_status=identity['status'],future_training_authorized=False,analysis_attempt1_preserved=True))
+    table('SELECTED_PRIOR_ASSET_SHA_VERIFICATION.csv',checked)
+    payload=[dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)) for p in sorted(HERE.rglob('*')) if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv'];table('ARTIFACT_SHA256.csv',payload)
+    print(json.dumps(dict(status='PHASE36_SEALED_PASS',files=len(payload),bytes=sum(x['bytes'] for x in payload),manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'))),flush=True)
+if __name__=='__main__':main()

@@ -1,0 +1,7 @@
+# 复核与恢复
+
+环境：PYTHON_EXECUTABLE（现有环境）；analysis/synthesis只用Python标准库，无torch/sklearn导入、无joblib解码。analyze.py主入口从P35封存CSV/JSON与v5元数据重新派生；reports.py输出文档及候选矩阵。代码/输入/输出SHA见INPUT_PROVENANCE及ARTIFACT_SHA256。
+
+已有输出全部exclusive create，重复运行会拒绝已有JSON/报告；少量首次schema读取失败前的CSV只在字节完全一致时复用，没有覆盖。第一次失败代码与ANALYSIS_ISSUES保留。复核应在新的输出目录复制脚本并固定其来源路径，或直接只读比对现有SHA，不能删除标记后覆盖本目录。
+
+本地INPUT_PROVENANCE保存原来源路径及SHA；GitHub仅脱敏路径、文件身份/指标/代码文本，不上传模型、输入数组或原型向量。公开代码依赖本地既有阶段，公开包不能独立重新训练或推理。全文PRIMARY表为MODEL_WEIGHT_TRAJECTORY，旧中间列名不作头级解释。

@@ -1,0 +1,22 @@
+{
+  "status": "PASS_READONLY_ANALYSIS_AND_REVIEW",
+  "Phase35_source_verified": {
+    "files": 2275,
+    "manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+    "binary_access": "SHA bytes only;no decoding/model loading"
+  },
+  "provenance_files_rehashed": 552,
+  "previous_stage_selected_manifest_matches": 10,
+  "independent_review": "PASS",
+  "numeric_QA": "maxerror<1e-12 and independent replay",
+  "model_deserializations": 0,
+  "training_calls": 0,
+  "inference_calls": 0,
+  "raw_acquisition_reads": 0,
+  "old_Test_round_curves_read": 0,
+  "end_to_end_predictions": 0,
+  "original_CIs_unchanged": true,
+  "routing_status": "PASS_METADATA_CONTRACT;NUMERIC_BRIDGE_AND_ROUTE_NOT_EXECUTED",
+  "future_training_authorized": false,
+  "analysis_attempt1_preserved": true
+}

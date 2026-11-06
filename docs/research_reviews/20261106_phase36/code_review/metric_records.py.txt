@@ -1,0 +1,10 @@
+"""Materialize metric-schema metadata only, reusing copied frozen values."""
+from analyze import *
+def main():
+    out=[]
+    for x in rows(HERE/'FINAL_METRICS_REPORTED.csv'):
+        b=x['group'];eid=f'P35-C5-A4-{b}-S42' if b!='Sstar' else 'P33R-SOURCE-DAY7-S42-ATTEMPT2'
+        for name in ['Accuracy','MacroF1','window_error','exposure_equal_error']+[f'Recall_{g}' for g in GAS]:
+            out.append(dict(metric_id=f'P36-M-{b}-{x["domain"]}-{name}',experiment_id=eid,metric_name=name,value=x[name],unit='fraction',direction='lower' if 'error' in name else 'higher',sample_scope='840windows/40exposures;21windows_perexposure',client_scope=x['domain'],gas_scope=name.removeprefix('Recall_') if name.startswith('Recall_') else 'all4',aggregation='exposure_equal' if name=='exposure_equal_error' else 'macro4classes' if name=='MacroF1' else 'window',seed_set='42',uncertainty='individualmetricCI unknown;only originalpairederrorCI retained',source_path='Phase35/evaluation/METRICS.csv',calculation_status='reported'))
+    table('METRIC_RECORDS.csv',out);print('METRIC_RECORDS',len(out))
+if __name__=='__main__':main()

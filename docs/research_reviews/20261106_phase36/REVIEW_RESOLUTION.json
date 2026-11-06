@@ -1,0 +1,10 @@
+{
+  "independent_review": "PASS_SCOPED_DESCRIPTIVE_REVIEW",
+  "minor_clarifications_applied_before_seal": [
+    "Specified comparisons are current Phase36 analysis comparisons, not newly claimed prospective preregistered training comparisons",
+    "source_model_change_max refers to full checkpoint maximum parameter change, not classifier-head or source-retention performance"
+  ],
+  "numeric_results_changed": false,
+  "frozen_sources_changed": false,
+  "new_training_or_inference": false
+}

@@ -1,0 +1,8 @@
+claim_id,claim,evidence_id,support,kind,scope,sources,limitation,audit_status
+P36-C01,合法同起点、标签预算与版本链的联邦更新公平比较可执行且可恢复,P36-E01,direct,实验方法与工程,C5A4/seed42/固定25,FIXED_RESULT_AUDIT;ROUND_VERSION_CHAIN;Phase35locks,不是隐私保护、算法首创或普遍性能优势,approved_scoped
+P36-C02,源监督适配与目标独立微调呈目标效果/源保持/成本权衡,P36-E02,qualified,经验发现,B1/B3此配置,PAIRWISE_CONTRASTS;TARGET_SOURCE_COST,源更新/位置/算力同时不同，不能单因素因果归于SourceCE,approved_scoped
+P36-C03,跨轮反馈普遍提高新目标性能,P36-E03,contradictory,停止优势主张,B4/B3新协议无目标增益,PAIRED_CI_REPORTED;CO_DIAGNOSIS;OLD_NEW_PROTOCOL_COMPARISON,单seed区间含0；也不能声称普遍有害,approved_scoped
+P36-C04,原型选择性参数加权提供独立性能增益,P36-E04,contradictory,停止优势主张,B5/B4激活22轮仍无目标或源优势,MODEL_WEIGHT_TRAJECTORY;PAIRWISE_CONTRASTS,权重幅度小；不能据此证明所有原型方法无效,approved_scoped
+P36-C05,少样本历史浓度迁移存在合法复用和负迁移边界,P36-E05,qualified,既有回归章收敛,Phase1–2B原严格/回顾性协议,Phase3/REGRESSION_FREEZE;Phase2B固定报告,本轮未重算/批准新回归结论；Oracle与预测路由分开,prior_stage_only_or_missing
+P36-C06,分类/71D回归在C5共享合法窗口身份，可准备预测路由,P36-E06,qualified,接口合同,32Calibration/840Test元数据、四F-SVR头SHA,ROUTING_COMPATIBILITY_QA;ROUTING_REGRESSOR_HEADS,数值桥接/错误类别调用/异常回退/端到端均pending,approved_scoped
+P36-C07,新组合已达到云边端实时、稳定部署,P36-E07,missing,系统验证待完成,71D新分类回归组合,Phase3/PI_ACCEPTANCE_CONTRACT,旧ONNX/Pi案例与0.413ms不能替代新组合PC/Pi及长时验证,prior_stage_only_or_missing

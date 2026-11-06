@@ -1,0 +1,29 @@
+{
+  "status": "PASS_METADATA_CONTRACT;NUMERIC_BRIDGE_AND_ROUTE_NOT_EXECUTED",
+  "calibration_windows": 32,
+  "calibration_exposures": 16,
+  "test_windows_metadata_join": 840,
+  "test_exposures": 40,
+  "shared_gas_map": [
+    "Ethanol",
+    "CO",
+    "Ethylene",
+    "Methane"
+  ],
+  "class_input": [
+    50,
+    8
+  ],
+  "regression_input": 71,
+  "encoder64_is_not_feature71": true,
+  "feature_contract_sha256": "523d28a0241105f9ea38e9cd88da648b64a1a02d438c7d348c5c0da515a90604",
+  "feature_names_sha256": "7055402e2defb72c4eb692fd07820f2b0493c6afb4a8eabb69b323bf08f63a56",
+  "regressor_heads": 4,
+  "all_head_file_SHA": true,
+  "scaler_load_executed": false,
+  "classifier_endpoint_selection": "not made;all6 remain distinct;future must register set before run",
+  "runtime_bridge_pending": true,
+  "new_routed_predictions": 0,
+  "new_inference_calls": 0,
+  "training_calls": 0
+}

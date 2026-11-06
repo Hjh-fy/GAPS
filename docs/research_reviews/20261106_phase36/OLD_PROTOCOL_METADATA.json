@@ -1,0 +1,105 @@
+{
+  "effective_config": {
+    "experiment_id": "FONG-FV25-C5-M1-B05-S42",
+    "variant": "M1",
+    "target": "C5",
+    "seed": 42,
+    "budget_pct": 5,
+    "source_clients": [
+      "C1",
+      "C2"
+    ],
+    "selective": true,
+    "ema_alpha": 0.8,
+    "selective_warmup": 3,
+    "selective_min_scale": 0.3,
+    "source_ce": true,
+    "target_ce": true,
+    "mmd": "class",
+    "mmd_weight": 0.5,
+    "target_x_n": 80,
+    "target_y_n": 80,
+    "server_steps": 100,
+    "rounds": 25,
+    "blocks": 0,
+    "updates": 2500,
+    "batch_size": 32,
+    "lr": 0.0005,
+    "local_epochs": 1,
+    "mmd_objective": "mmd2",
+    "feature_space": "normalized_64D",
+    "prototype_scope": "ordinary_class",
+    "forbidden_losses": [
+      "coral",
+      "adversarial",
+      "gradient_penalty",
+      "proto_anchor",
+      "proto_loss",
+      "consistency",
+      "stage_mmd",
+      "proto_mmd",
+      "residual",
+      "replay"
+    ],
+    "test_selection": false,
+    "checkpoint_selection": "fixed_25_or_update2500",
+    "feedback": false,
+    "maintain_prototypes": true,
+    "initial_sha256": "97cc719ddc931376844c8d803e84c21bad570915f17fcee1ef48039b31ea37c6",
+    "data_root": "__ROLE_DATA_ROOT__"
+  },
+  "data_QA": {
+    "status": "PASS",
+    "source_roles": [
+      {
+        "client_id": 1,
+        "canonical_origin": "USER_HOME\\.codex\\worktrees\\fedongas-mmd-only\\TRAE SOLO\\results\\fedongas_mmd_only_20261019\\inputs\\client_1",
+        "windows": 2360,
+        "class_counts": [
+          590,
+          590,
+          590,
+          590
+        ],
+        "files": {
+          "features.npy": "c5a616009eb95c8b213ddf117190233c830939488736c036169d9d3e9c889956",
+          "labels.npy": "9d3cced8c0d83be897ea8fc82fb48966184b47c32b945a4e88da8be781ba86b6"
+        }
+      },
+      {
+        "client_id": 2,
+        "canonical_origin": "USER_HOME\\.codex\\worktrees\\fedongas-mmd-only\\TRAE SOLO\\results\\fedongas_mmd_only_20261019\\inputs\\client_2",
+        "windows": 2360,
+        "class_counts": [
+          590,
+          590,
+          590,
+          590
+        ],
+        "files": {
+          "features.npy": "57ed2fdf56558c03c13e3195c7657b89c15b98ca8779b1ab65e306157ad7d9d5",
+          "labels.npy": "9d3cced8c0d83be897ea8fc82fb48966184b47c32b945a4e88da8be781ba86b6"
+        }
+      }
+    ],
+    "source_population_unchanged": true,
+    "target_windows": 80,
+    "target_features_sha256": "d876d77f88a7a6857d7bce5d82ba15d5bf4e44f79e50f811148adba245eb335e",
+    "target_labels_sha256": "57814046472cc00432ffd3a8959e00abfcd93c9864d264cc8d0a848623be8c8f",
+    "source_reference_windows": 640
+  },
+  "training_QA": {
+    "status": "PASS",
+    "initial_fingerprint": "297af6fa38338d767bca33009ba37d6f765b68a9b9c0f86c95c9efd5e72eb564",
+    "rounds": 25,
+    "steps": 2500,
+    "receipts_checked": 50,
+    "exact_broadcast_chain": true,
+    "prototype_count": 4,
+    "server_evaluation_state": "adapted",
+    "feedback": false
+  },
+  "source_dates": "unknown in inspected archived role/effective metadata;do not substitute strict19 R1-R3 cohort",
+  "old_comparison_not_direct_repetition": true,
+  "old_Test_curves_opened": false
+}

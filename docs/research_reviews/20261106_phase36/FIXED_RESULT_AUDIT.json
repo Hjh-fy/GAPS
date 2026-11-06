@@ -1,0 +1,27 @@
+{
+  "status": "PASS_SCOPED_DESCRIPTIVE_EVIDENCE",
+  "audit_status": "approved",
+  "prediction_rows": 16800,
+  "metric_group_domains": 20,
+  "exposure_rows": 800,
+  "max_metric_absolute_difference": 1.1102230246251565e-16,
+  "source_manifest_before": {
+    "files": 2275,
+    "manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+    "binary_access": "SHA bytes only;no decoding/model loading"
+  },
+  "source_manifest_after": {
+    "files": 2275,
+    "manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+    "binary_access": "SHA bytes only;no decoding/model loading"
+  },
+  "critical_failures": [],
+  "limits": [
+    "seed42/C5A4 retrospective",
+    "two matched mechanism pairs only;B1/B3 sourcecompute differs",
+    "CO slice is posthoc descriptive",
+    "no independent replicate by concentration",
+    "oldsource dates unknown",
+    "routing metadata pass is not runtime parity"
+  ]
+}

@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.5 C5A4六组pilot](docs/research_reviews/20261105_phase35/README.md) · [实际预算/成本](docs/research_reviews/20261105_phase35/TRAINING_EVIDENCE.md) · [结果与边界](docs/research_reviews/20261105_phase35/RESULT_ANALYSIS.md) · [继续/停止](docs/research_reviews/20261105_phase35/NEXT_DECISION.md)。
+最新：[Phase3.6机制诊断与贡献收敛](docs/research_reviews/20261106_phase36/README.md) · [CO诊断](docs/research_reviews/20261106_phase36/CO_DIAGNOSIS.md) · [机制审计](docs/research_reviews/20261106_phase36/FEEDBACK_PROTOTYPE_AUDIT.md) · [贡献矩阵](docs/research_reviews/20261106_phase36/CONTRIBUTION_REVISION.md) · [路由合同](docs/research_reviews/20261106_phase36/ROUTING_COMPATIBILITY.md) · [继续/停止](docs/research_reviews/20261106_phase36/NEXT_DECISION.md)。
+
+本轮训练/推理0；复用最终预测定位CO−111窗与其他类+98窗的权衡。反馈/原型优势未获支持；身份/71D静态合同通过，数值路由未执行。所有新候选须另行授权。
+
+上阶段：[Phase3.5 C5A4六组pilot](docs/research_reviews/20261105_phase35/README.md) · [实际预算/成本](docs/research_reviews/20261105_phase35/TRAINING_EVIDENCE.md) · [结果与边界](docs/research_reviews/20261105_phase35/RESULT_ANALYSIS.md) · [继续/停止](docs/research_reviews/20261105_phase35/NEXT_DECISION.md)。
 
 训练锁定6/6；评价完成=True。固定Sstar、seed42/C5A4、25轮；不扩实验、不调参。完整权重/输入仅本地。
 

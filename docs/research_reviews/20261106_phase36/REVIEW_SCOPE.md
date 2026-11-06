@@ -1,0 +1,11 @@
+# 外部审阅范围
+
+本包只有Phase3.6无训练研究分析。固定基于Phase35 df2e618，保留全部六组固定最终结果与原配对置信区间，增加CO逐浓度/预测转移、Source/目标/计算成本、75轮反馈链和Calibration训练诊断、旧新协议差异、论文主张矩阵及候选计划。
+
+所有CSV字段reported/recomputed有来源区分。16,800旧最终预测仅复算审计，不执行模型；没有历史轮Test新评价/择轮、训练、端到端路由或Pi。输入数组/模型只读字节SHA，不反序列化。ROUTING_WINDOW_IDENTITY_JOIN是身份元数据，不是新系统预测。
+
+MODEL_WEIGHT_TRAJECTORY是规范主表，full_model_state_changed不能解读为classifier-head变化。旧误名中间CSV保留本地，不公开为结果主表；ARTIFACT_SHA256仍含其来源哈希。Calibration准确率为优化过程内批均值，Source val_loss实为源训练CE。raw proto/consistency诊断非零但weighted项零，不代表loss误开。
+
+原始采集、输入特征、权重及原型向量均不上传；来源路径脱敏为别名。PUBLICATION_MANIFEST保留脱敏前后独立SHA。新代码依赖本地历史资产，外部agent可以审阅，不能只凭此包训练/推理。旧源日期未知、numericroute/seed入口/client3绑定未通过的状态不能自动补成PASS。
+
+未来candidate全部未授权；seed43/44建议限定固定seed42 Sstar后的更新随机性，历史Test重复不是独立确认；C3也不是新盲测。不得用本结果加权合成总分或按Test选策略。

@@ -1,0 +1,10 @@
+{
+  "analysis_attempt1": "stopped with KeyError weighted_mmd_proto; actual frozen schema is weighted_mmd_proto_loss (also stage/legacy fields use loss suffix)",
+  "failed_code_sha256": "365956d389e896203136880ce3b6974dfb52af1a39a323bcf3d58dd998051080",
+  "failed_code_preserved": "attempt1/analyze_failed.py",
+  "resolution": "new analysis reader uses actual frozen field names; never changes original losses/logs/models",
+  "earlier_partial_tables": "reused only after exact byte comparison; never overwritten",
+  "training_calls": 0,
+  "inference_calls": 0,
+  "old_source_modified": false
+}
