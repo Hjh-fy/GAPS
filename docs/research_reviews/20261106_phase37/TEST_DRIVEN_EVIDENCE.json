@@ -1,0 +1,23 @@
+{
+  "initial_red": {
+    "test": "test_api_available_and_no_oracle_argument",
+    "failed": 1,
+    "expected_reason": "Missing calibrated inference bridge"
+  },
+  "initial_green": {
+    "synthetic_tests_passed": 26
+  },
+  "review_regression_red": {
+    "unknown_version_cases": 9,
+    "failed": 7,
+    "passed": 2,
+    "finding": "None/empty expected version must not match unknown actual version"
+  },
+  "final_green": {
+    "synthetic_tests_passed": 35,
+    "failed": 0
+  },
+  "test_scope": "New interface/fault suite plus explicitly authorizedCalibration numeric acceptance;do not run old suites that can fit models or load Test",
+  "real_training_in_tests": 0,
+  "Day22_Test_in_tests": 0
+}

@@ -1,0 +1,11 @@
+{
+  "purpose": "Repeat only authorized Calibration numerical acceptance after new validator journal bug",
+  "attempt1": "Preserved VALIDATION_STARTED.json, VALIDATION_BLOCKED.json, attempt1/validate_failed.py",
+  "root_cause": "dict(classifier_group=b, **out) supplied classifier_group twice; no numerical comparison failure",
+  "output_directory": "calibration_attempt2",
+  "change": "remove redundant journal field; use fresh output directory; production bridge/assets unchanged",
+  "training_calls": 0,
+  "Day22_authorized": false,
+  "tolerances_widened": false,
+  "same_tolerance_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c"
+}

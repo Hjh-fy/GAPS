@@ -1,0 +1,266 @@
+{
+  "status": "BLOCKED_NO_TOLERANCE_RELAXATION",
+  "error": "Traceback (most recent call last):\n  File \"RESEARCH_WORKTREE\\research\\fedongas_phase37_20261106\\validate.py\", line 95, in <module>\n    try:main()\n        ^^^^^^\n  File \"RESEARCH_WORKTREE\\research\\fedongas_phase37_20261106\\validate.py\", line 48, in main\n    predictions.append(dict(classifier_group=b,calibration_row=i,filename=cal[i]['filename'],start_s=cal[i]['start_s'],**out))\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: dict() got multiple values for keyword argument 'classifier_group'\n",
+  "numeric_access": [
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_cal_A4.npz",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\data\\target\\client_5\\train_features.npy",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase32_20261105\\data\\target\\client_5\\train_features.npy",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_cal_A4.npz",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GCO_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEa_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GEy_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F010_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F040_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F070_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    },
+    {
+      "path": "ORIGINAL_WORKSPACE\\dataset\\data1\\B5_GMe_F100_R1.txt",
+      "allowed": true,
+      "purpose": "CALIBRATION_NUMERIC"
+    }
+  ]
+}

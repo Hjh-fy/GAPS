@@ -1,0 +1,123 @@
+{
+  "status": "PASS_CALIBRATION_ONLY_NUMERIC_BRIDGE_REVIEW",
+  "reviewer": "phase32_review",
+  "reviewed_utc": "2026-11-06T04:27:10.828606+00:00",
+  "critical_findings": [],
+  "important_findings": [],
+  "resolved_findings": [
+    {
+      "issue": "Unregistered expected regressor version and head.version=None could compare equal and return OK",
+      "location": "bridge.py expected-version checks",
+      "resolution": "Nonempty registered classifier/feature/head version strings now required before equality; independent synthetic parameterized tests35/35 PASS"
+    },
+    {
+      "issue": "Validator record assembly supplied classifier_group twice",
+      "resolution": "Failure preserved; independent fresh attempt/final directories; final record assembly fixed without numerical-kernel or tolerance changes"
+    },
+    {
+      "issue": "Logging/scope ambiguity",
+      "resolution": "Saved single-window logits named native_adapter_single;192 described as routed records rather than total model-forward count; historical4 CO references distinguished from128 current head/window comparisons"
+    }
+  ],
+  "code_review": {
+    "production_API": "one float32[50,8] preprocessed signal window; no gas/truth/Oracle arguments",
+    "routing": "finite logits validated; predicted integer argmax uniquely selects head; no correct-class-only filtering or Oracle fallback",
+    "feature_bridge": "frozen extract_canonical_features.sensor83[original71indices]; independent of classifier64D encoder",
+    "regression": "original frozen predict_head(...clip=False); finite raw checked before selected-head support clipping",
+    "source_and_schema": "file/state/feature contracts,71 names/order/dtype/finite,gas/scaler/support/params checked",
+    "failure_policy": "UNAVAILABLE for invalid input/class/features,missing/versioned head and nonfinite raw; no clipping rescue",
+    "numeric_kernel_changes": false,
+    "tolerances_widened": false
+  },
+  "independent_synthetic_tests": {
+    "cases": 35,
+    "passed": 35,
+    "real_asset_imports": false,
+    "real_model_calls": 0,
+    "files_written": false
+  },
+  "independent_saved_Calibration_checks": {
+    "routed_records": 192,
+    "six_classifier_by32_cases": true,
+    "classifier_logit_records_checked": 192,
+    "maximum_native_single_vs_batch_logit_difference": 2.6226043701171875e-05,
+    "all_pointwise_errors_within_original_tolerance": true,
+    "same_argmax_all": true,
+    "same_batch_reload_exact_all6": true,
+    "selected_head_version_and_support_checks": 192,
+    "finite_raw_and_clipping_checks": 192,
+    "same_window_selected_head_raw_output_max_difference_across_classifiers": 0.0,
+    "wrong_class_records_still_using_predicted_head": 46,
+    "historical_CO_Calibration_reference_route_overlaps_checked": 16,
+    "historical_reference_raw_and_clip_max_abs_difference_ppm": 0.0,
+    "actual_adapter_fault_results_checked": 8,
+    "fault_results_all_UNAVAILABLE_and_no_clipped_concentration": true,
+    "unique_successful_Calibration_numeric_input_paths_in_validation_log": 18,
+    "unique_raw_Calibration_exposures_in_validation": 16,
+    "saved_Calibration_cache_files": 2,
+    "expected_Test_open_selftests_denied_before_access": 3,
+    "unexpected_successful_numeric_inputs": 0
+  },
+  "reported_validation_not_reinferred_by_review": {
+    "signal32_and_feature71_bitwise_parity": "PASS reported by locked final validator; reviewer did not rebuild raw signals/features",
+    "native_wrapper_adapter_and_batch_single_SVR_comparisons": 128,
+    "reported_SVR_comparison_max_abs_difference_ppm": 0.0,
+    "saved_historical_Calibration_reference_records": 4,
+    "saved_historical_reference_coverage": "CO low/high concentration,60/150s only",
+    "historical_classifier32_logits_available": false,
+    "all_scalers_and_models_unchanged": "verified by final validator; no fitting or inference repeated by reviewer"
+  },
+  "independent_metadata_ancestry": {
+    "source_round_receipts_checked": 25,
+    "classifier_round_blocks_checked": 150,
+    "classifier_endpoints_share_source_state": "431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673",
+    "classifier_selected_endpoint_semantics": "B0/B2 aggregate25;B1target2500;B3/B4/B5adapted25",
+    "regressor_training_identity_audit": "ANCESTRY_AUDIT PASS;four frozenF-SVR heads,8windows/4Calibration exposures each",
+    "model_state_handling": "existing recorded full-state SHA and receipt/index joins only; no model deserialization"
+  },
+  "documents_reviewed": [
+    "README.md",
+    "API_CONTRACT.md",
+    "NUMERIC_ACCEPTANCE.md",
+    "MODEL_PROVENANCE.md",
+    "FUTURE_OFFLINE_EVALUATION_CONTRACT.md",
+    "NEXT_DECISION.md"
+  ],
+  "evidence_boundaries": [
+    "Calibration numeric bridge acceptance is not Day22 performance or Pi/deployment acceptance.",
+    "192 denotes six-by32 routing records; parity/reload/fault checks add model-forward calls.",
+    "Four historical CO references are a subset of current128 head/window checks, not a full all-gas historical golden bank.",
+    "Classifier single/batch parity compares current frozen implementation and exact checkpoint reload, not unavailable historical32-window logits.",
+    "SHA_ONLY artifact checks read bytes only and are distinct from Test numeric decoding/evaluation.",
+    "Concentration is ppm of the predicted gas; wrong-class ppm is not scored as true-gas concentration."
+  ],
+  "future_evaluation": {
+    "template_is_authorization": false,
+    "separate_approval_required": true,
+    "current_Day22_access_guard": "Calibration-only loader still rejects Day22",
+    "fixed_views": 6,
+    "physical_independent_exposures": 40,
+    "no_Test_classifier_selection": true,
+    "joint_success_and_mixed_gas_overall_NRMSE": "not enabled"
+  },
+  "review_raw_acquisition_reads": 0,
+  "review_Day22_numeric_reads": 0,
+  "review_model_deserializations": 0,
+  "review_real_model_inference_calls": 0,
+  "review_training_calls": 0,
+  "historical_files_modified": false,
+  "only_new_review_file_written": "INDEPENDENT_REVIEW.json",
+  "input_identity_hashes": {
+    "bridge.py": "c92aa6065d0884f1e68b53790d858b75b2cc6283c5dc7ce6bf87b902265cd626",
+    "assets.py": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+    "validate.py": "3d634b25a591d89258396e7f361e3a7929210b424385acc88bb2e219c39240c0",
+    "MODEL_SOURCE_LOCK.json": "0e297578c6b55c02e3b7ae7a3dc3a67ea68ed5a97de76b509c8304839a03ca02",
+    "TOLERANCE_LOCK.json": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+    "calibration_final/VALIDATION_STARTED.json": "7d7a4cb931026a5d4f3a278b44a8848e3d51219be5faa48d0ed0593e81a5a8db",
+    "calibration_final/CALIBRATION_ACCEPTANCE.json": "211e262b48b2dfe25d5856d4992bd407925856ba8ae1c2899268165a27ccb81d",
+    "calibration_final/PRIVATE_CALIBRATION_ROUTED_OUTPUTS.json": "03257e036db6d1c7920ef3c76c37b0eba0756f0cbb97085043ee7b32b9c65246",
+    "calibration_final/PRIVATE_CALIBRATION_LOGITS.json": "728797e0df6aa7dea2c71a214b0f476d6557407a8b89c6c173816f091b51c04d",
+    "ANCESTRY_AUDIT.json": "3376fb758430f09c88d9bb1a848b596d29033a337f2c9f5697eb535b4e8c070a"
+  },
+  "assessment": "No remaining blocking issue found after version guard and validator fixes; ready for Calibration-only scoped publication. No future Test execution is authorized by this review."
+}

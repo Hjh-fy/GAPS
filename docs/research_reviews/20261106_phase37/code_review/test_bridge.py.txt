@@ -1,0 +1,64 @@
+import importlib,inspect
+from pathlib import Path
+import numpy as np
+import pytest
+HERE=Path(__file__).resolve().parent
+
+def api():
+    assert (HERE/'bridge.py').is_file(),'Missing calibrated inference bridge'
+    return importlib.import_module('bridge')
+
+class Classifier:
+    version='cls-v1';group='synthetic';state_version='state-v1'
+    def __init__(self,g=2):self.g=g;self.calls=0
+    def classify(self,x):
+        self.calls+=1;l=np.zeros(4);l[2]=1
+        if type(self.g) is int and 0<=self.g<4:l[:]=0;l[self.g]=1
+        return dict(logits=l,predicted_class=self.g,version=self.version)
+class Features:
+    version='feature-v1';names=tuple('f'+str(i) for i in range(71))
+    def extract(self,x):return dict(values=np.arange(71,dtype=np.float64),names=self.names,version=self.version)
+class Head:
+    def __init__(self,g):self.gas_id=g;self.version='reg-v'+str(g);self.support=(10.,100.);self.calls=0;self.value=125.
+    def predict_raw(self,x):self.calls+=1;assert x.shape==(1,71);return np.array([self.value])
+def fixture(g=2):
+    a=api();c=Classifier(g);f=Features();heads={i:Head(i) for i in range(4)};expected=dict(classifier=c.version,feature=f.version,regressors={i:h.version for i,h in heads.items()});return a.JointBridge(c,f,heads,expected),c,f,heads,np.ones((50,8),dtype=np.float32)
+
+def test_api_available_and_no_oracle_argument():
+    b=api();assert not any(k in inspect.signature(b.JointBridge.predict_window).parameters for k in ['gas','true_gas','truth','oracle_class'])
+def test_predicted_head_only_and_raw_then_clip():
+    b,c,f,h,x=fixture(3);r=b.predict_window(x);assert r['status']=='OK' and r['predicted_gas_id']==3;assert r['concentration_raw_ppm']==125. and r['concentration_clipped_ppm']==100.;assert r['unit']=='ppm' and r['support_ppm']==[10.,100.];assert [h[i].calls for i in range(4)]==[0,0,0,1]
+@pytest.mark.parametrize('g',[-1,4,1.0,True,None])
+def test_illegal_class_never_falls_back(g):
+    b,c,f,h,x=fixture(g);r=b.predict_window(x);assert r['status']=='UNAVAILABLE' and r['reason']=='CLASSIFICATION_INVALID';assert sum(z.calls for z in h.values())==0
+@pytest.mark.parametrize('v',[np.nan,np.inf,-np.inf])
+def test_raw_nonfinite_rejected_before_clip(v):
+    b,c,f,h,x=fixture();h[2].value=v;r=b.predict_window(x);assert r['status']=='UNAVAILABLE' and r['reason']=='REGRESSION_NONFINITE';assert r['concentration_clipped_ppm'] is None
+@pytest.mark.parametrize('v',[np.nan,np.inf,-np.inf])
+def test_logits_nonfinite_no_regression(v):
+    b,c,f,h,x=fixture();c.classify=lambda x:dict(logits=np.array([0.,v,1.,0.]),predicted_class=2,version=c.version);r=b.predict_window(x);assert r['reason']=='CLASSIFICATION_INVALID' and sum(z.calls for z in h.values())==0
+def test_missing_predicted_head_unavailable():
+    b,c,f,h,x=fixture();del h[2];assert b.predict_window(x)['reason']=='REGRESSOR_MISSING'
+def test_feature_names_order_mismatch():
+    b,c,f,h,x=fixture();f.names=tuple(reversed(f.names));assert b.predict_window(x)['reason']=='FEATURE_SCHEMA_MISMATCH'
+def test_encoder64_cannot_substitute_feature71():
+    b,c,f,h,x=fixture();f.extract=lambda x:dict(values=np.zeros(64),names=f.names,version=f.version);assert b.predict_window(x)['reason']=='FEATURE_SCHEMA_MISMATCH'
+@pytest.mark.parametrize('v',[np.nan,np.inf])
+def test_bad_features_not_sent_to_head(v):
+    b,c,f,h,x=fixture();f.extract=lambda x:dict(values=np.full(71,v),names=f.names,version=f.version);assert b.predict_window(x)['reason']=='FEATURE_SCHEMA_MISMATCH' and sum(z.calls for z in h.values())==0
+@pytest.mark.parametrize('which',['classifier','regressor','feature'])
+def test_version_mismatch_fail_closed(which):
+    b,c,f,h,x=fixture();obj={'classifier':c,'regressor':h[2],'feature':f}[which];obj.version='unregistered';assert b.predict_window(x)['reason']=='MODEL_VERSION_MISMATCH'
+@pytest.mark.parametrize('kind',['shape','dtype','nan','inf'])
+def test_invalid_signal_rejected(kind):
+    b,c,f,h,x=fixture();x=x[:49] if kind=='shape' else x.astype('float64') if kind=='dtype' else np.full_like(x,np.nan if kind=='nan' else np.inf);assert b.predict_window(x)['reason']=='SIGNAL_INVALID';assert c.calls==0
+def test_wrong_head_identity_rejected():
+    b,c,f,h,x=fixture();h[2].gas_id=1;assert b.predict_window(x)['reason']=='MODEL_VERSION_MISMATCH'
+@pytest.mark.parametrize('which',['classifier','feature','regressor'])
+@pytest.mark.parametrize('bad',[None,'','   '])
+def test_unknown_version_cannot_match_unknown_expected(which,bad):
+    b,c,f,h,x=fixture()
+    if which=='classifier':b.expected['classifier']=bad;c.version=bad
+    elif which=='feature':b.expected['feature']=bad;f.version=bad
+    else:b.expected['regressors'].pop(2);h[2].version=bad
+    assert b.predict_window(x)['reason']=='MODEL_VERSION_MISMATCH'

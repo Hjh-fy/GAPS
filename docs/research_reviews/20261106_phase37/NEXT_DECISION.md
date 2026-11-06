@@ -1,0 +1,7 @@
+# 继续/停止
+
+Calibration数值桥接PASS：可提出下一轮全部六组的固定Day22离线联合评价独立授权。仅提出，当前未释放Test、未创建执行授权、未部署Pi、未新增训练。
+
+下一轮按FUTURE_OFFLINE_EVALUATION_CONTRACT和PROPOSED_AUTHORIZATION_TEMPLATE锁定同四F-SVR头、六个固定分类端点、单窗任务、完整不可用/错误路由与各气体条件误差。不得按已有Test选分类器、替换Source-only头或回看结果选阈值。
+
+不发布跨不同真实气体统一化学意义的总NRMSE。不计算业务定义和容差尚未锁定的联合成功率。任何版本/身份/数值异常都保留并停止相应视图，不扩容差补救。旧分类32窗历史logits缺失、SVR旧Calibrationgolden仅4条的限制继续披露；当前通过是原冻结实现与当前标定数值桥接，并非新泛化或部署性能证据。

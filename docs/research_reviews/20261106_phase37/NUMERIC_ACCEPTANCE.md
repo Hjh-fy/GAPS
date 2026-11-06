@@ -1,0 +1,17 @@
+# Calibration数值验收与参考覆盖
+
+容差在任何数值比较前锁定，SHA=6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c。窗口与71D均atol/rtol0且要求逐位相同；SVR atol1e-10ppm、rtol1e-12；分类single/batch atol1e-4、rtol1e-5且argmax相同；同batch checkpoint重载逐位相同。没有失败后放宽容差。
+
+32窗来自16个C5Day18A4暴露、原60/150s身份；原strict完成原始电阻→20–50s电导g0→5Hz分箱/短缺失插补→60–170s响应裁剪→同mask/50×8。只对固定32窗提71D和推理；process_raw内部构造其他窗口不把它们加入验收或标定预算。
+
+signal SHA=6dced457c36780940d4eb0920032788f091826a54f16e2a8224849283a508c5f，feature SHA=8bafed35805b721e331facba6cc6e6412b69ce5cd72bc804487e7d68afda69ff，使用dtype/shape+连续数组字节散列。保存缓存分别为Phase32 target/client5/train_features.npy及Phase1/run_v2/data/C5_cal_A4.npz。各窗身份与SHA见calibration_final/CALIBRATION_IDENTITIES.csv。
+
+SVR128检查：原冻结wrapper与适配器逐点maxdiff0；batch/single maxdiff0；四头scaler前后SHA相同，未生成新scaler。支持12.5/125及25/250分别核对。真实头可能产生负raw，保留后仅按所选头支持裁剪，非有限值另行拒绝。
+
+旧数值golden范围仅4条CO低/高浓度×两窗，取Phase15 ENDPOINT_ERROR_DECOMPOSITION的Calibration投影，Test列不参与比较/输出；raw/clip差均0。没有四个气体全部32窗旧golden，因此不虚报。分类历史32logits亦未保存；本轮在接受的完整stateSHA上做原model直接batch、适配器single及独立重载batch检查。最大logit差2.62260437e-05，argmax一致；reload逐位一致。
+
+真实路由：六组×32=192记录，每条回归输出与预测gas对应冻结头直接输出一致；真实gas只在验证参考身份/支持时出现，不传入生产API。192是路由记录数，不是总forward调用数；native/reload/single及故障验证有额外Calibration forward，不算新标定标签或训练更新。
+
+故障测试：合成35项，真实模型适配器代理8项；见TEST_DRIVEN_EVIDENCE、test_bridge.py及FAULT_INJECTION_RESULTS。未知版本审查补强后最终重跑Calibration，未改学习算法。首次日志组装异常保留VALIDATION_BLOCKED；第二次成功记录在calibration_attempt2；最终记录在calibration_final。
+
+访问保护对未授权.npy/.npz和raw路径读取前拒绝，明确验证Day22npz/旧最终TestCSV/Day22raw三个拒绝案例。SHA_ONLY日志允许原冻结资产字节哈希以核对不变，不解码Test数组或读Test数值进行评价；没有Day22推理。

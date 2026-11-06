@@ -1,0 +1,100 @@
+{
+  "schema": "P37_PROPOSED_DAY22_SIX_VIEW_CONTRACT_v1",
+  "status": "REGISTERED_PENDING_SEPARATE_APPROVAL",
+  "current_authorization": false,
+  "training_authorized": false,
+  "Pi_authorized": false,
+  "groups": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "views": 6,
+  "windows_per_view": 840,
+  "independent_exposures_per_view": 40,
+  "unique_target_exposures_across_views": 40,
+  "not_240_independent_exposures": true,
+  "classification_endpoints": {
+    "B0": {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B0\\server\\server_round_025.pth",
+      "file_sha256": "07e879fa627992d9f1465e9db909feb911a3d34fee289ecf7a16f251ada99af9",
+      "state_sha256": "90f1034f67c9e8b1aaa1a04ec148029a9196e29bf5caa9c35751ce5132aae4f5",
+      "endpoint_kind": "aggregated25"
+    },
+    "B1": {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B1\\target\\target_update_2500.pth",
+      "file_sha256": "b1b7c72b9778a483b1bb2774583ff773367083fd5f0ee38757b1c466d32032bc",
+      "state_sha256": "0eb106b43495392d5ee2983fa90492444b4131f0abd44a29279075e122d01c05",
+      "endpoint_kind": "target_update2500"
+    },
+    "B2": {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B2\\server\\server_round_025.pth",
+      "file_sha256": "56c6d4cd1f657d9d3122e3809d77ee2274c1f58b2043fdf729945866804fc82c",
+      "state_sha256": "8ac38b0b9c51379c96e503e81fda8439a325a6747ce8568122b547195715bb07",
+      "endpoint_kind": "aggregated25"
+    },
+    "B3": {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B3\\server\\server_round_025_adapted.pth",
+      "file_sha256": "ad890776743c3929ec9c2b087193a755bacadb2dd86579832d555eefe5367c42",
+      "state_sha256": "e51ed053a687136cff37eb91eb20bfb57709dd9d3a1cc3418be8a772610538bc",
+      "endpoint_kind": "adapted25"
+    },
+    "B4": {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B4\\server\\server_round_025_adapted.pth",
+      "file_sha256": "aa9f8a23eed467304d7d745773c196ce749e06d2511fb1031c170a24b9696d90",
+      "state_sha256": "a1da1916bf6b0e42895ca64dd526d49edd780c14f291f1891d110254623be1fa",
+      "endpoint_kind": "adapted25"
+    },
+    "B5": {
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B5\\server\\server_round_025_adapted.pth",
+      "file_sha256": "27e02b54e2b4b3a7ca120ed7bd4787d8a60dacd413b799e6a0769d4ace445ced",
+      "state_sha256": "84eb2289c6bd65f6fcf65ee4c1442c0896d8c2cd84660b00f9d5d57c48457b9a",
+      "endpoint_kind": "adapted25"
+    }
+  },
+  "regressor_policy": "same four C5 A4 F-SVR71 heads for all6;no sourceonly replacement",
+  "regressors": [
+    {
+      "gas_id": 0,
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g0.joblib",
+      "sha256": "defe7875017ca115a2f487717dd30b5ecaf53b11525c4a7cf4ba5fdd25d390e5"
+    },
+    {
+      "gas_id": 1,
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g1.joblib",
+      "sha256": "026f10778722ed314397260738635cc1b275e800ebfeb3f70e075260db6c15dd"
+    },
+    {
+      "gas_id": 2,
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g2.joblib",
+      "sha256": "9052c2611b649e13928e477052b531a17b5a3164ed13547042313b9837ec674a"
+    },
+    {
+      "gas_id": 3,
+      "path": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\models\\FONG-P15-C5-A4-F-SVR-20261102_g3.joblib",
+      "sha256": "0da681770b778187f17ce45d7eb14dcb92ffb3bc5981a5a39daf5bb6ae121ed7"
+    }
+  ],
+  "model_source_lock_sha256": "0e297578c6b55c02e3b7ae7a3dc3a67ea68ed5a97de76b509c8304839a03ca02",
+  "tolerance_lock_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+  "feature_contract_sha256": "523d28a0241105f9ea38e9cd88da648b64a1a02d438c7d348c5c0da515a90604",
+  "code_versions": {
+    "bridge.py": "c92aa6065d0884f1e68b53790d858b75b2cc6283c5dc7ce6bf87b902265cd626",
+    "assets.py": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+    "validate.py": "3d634b25a591d89258396e7f361e3a7929210b424385acc88bb2e219c39240c0",
+    "test_bridge.py": "7be96d14ba18be0ada2d75f9c0713d3b8d3398f0ee8d275e1f14444f128b87fb"
+  },
+  "input_identity_reference": "Phase36 ROUTING_WINDOW_IDENTITY_JOIN metadata;C5Day22 rows only;currently unopened numerically",
+  "input_identity_reference_sha256": "f9a83e595cfdc493dbb49e0f2e09c8bdc37c9ef8d675b76006a07e23bbb7fc87",
+  "prediction_task": "singlewindow;no exposuremean fusion",
+  "routing_decision": "predicted integer argmax only",
+  "output_views_must_all_finish_before_joint_result_reporting": true,
+  "joint_success_enabled": false,
+  "business_joint_tolerance": null,
+  "mixed_true_gas_overall_NRMSE_forbidden": true,
+  "checkpoint_or_policy_selection_by_Test": false,
+  "retrospective": true
+}

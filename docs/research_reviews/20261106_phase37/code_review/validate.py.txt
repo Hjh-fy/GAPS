@@ -1,0 +1,102 @@
+"""Calibration-only numeric acceptance. No fitting, Test scoring or selection."""
+import sys,json,csv,hashlib,traceback,time
+from pathlib import Path
+import numpy as np
+from prepare import HERE,ROOT,P35,P36,P15,P1,P31,R,read,rows,sha,write
+from assets import FrozenAssets,ACCESS,hash_only
+if sys.argv[1:] not in ([],['--final']):raise ValueError('Only Calibration validation is implemented')
+RUN=HERE/('calibration_final' if sys.argv[1:]==['--final'] else 'calibration_attempt2')
+
+def write(name,obj):
+    with (RUN/name).open('x',encoding='utf-8',newline='\n') as f:json.dump(obj,f,ensure_ascii=False,indent=2,allow_nan=False)
+
+def digest(x):
+    x=np.ascontiguousarray(x);return hashlib.sha256(str(x.dtype).encode()+str(x.shape).encode()+x.tobytes()).hexdigest()
+def table(name,data):
+    with (RUN/name).open('x',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(dict.fromkeys(k for x in data for k in x)));w.writeheader();w.writerows(data)
+def assert_close(a,b,contract):np.testing.assert_allclose(a,b,atol=contract['atol'],rtol=contract['rtol'])
+def main():
+    tic=time.perf_counter();RUN.mkdir(exist_ok=False)
+    write('VALIDATION_STARTED.json',dict(code_sha256=sha(Path(__file__)),bridge_sha256=sha(HERE/'bridge.py'),assets_sha256=sha(HERE/'assets.py'),model_source_sha256=sha(HERE/'MODEL_SOURCE_LOCK.json'),tolerance_sha256=sha(HERE/'TOLERANCE_LOCK.json'),numeric_data='C5Day18A4 only',training_authorized=False,Test_authorized=False))
+    a=FrozenAssets();tol=read(HERE/'TOLERANCE_LOCK.json');lock=a.lock;cal=read(lock['calibration_metadata_path']);assert sha(lock['calibration_pack'])==lock['calibration_pack_sha256'] and sha(lock['classification_calibration_pack'])==lock['classification_calibration_pack_sha256']
+    savedx=np.load(lock['classification_calibration_pack'],allow_pickle=False)
+    with np.load(lock['calibration_pack'],allow_pickle=False) as f:saved71=f['x71'].copy()
+    assert savedx.shape==(32,50,8) and savedx.dtype==np.float32 and saved71.shape==(32,71) and saved71.dtype==np.float64
+    cache={};xx=[];ff=[];identity=[]
+    for m in cal:
+        path=next(Path(p) for p in lock['raw_Calibration_allowlist'] if Path(p).name==m['filename']);assert sha(path)==m['raw_sha256']
+        if path.name not in cache:cache[path.name]=a.v.strict.process_raw(path)
+        parsed=cache[path.name];i=next(i for i,q in enumerate(parsed['metadata']) if abs(q['start_s']-m['start_s'])<1e-6 and abs(q['end_s']-m['end_s'])<1e-6);assert parsed['metadata'][i]['valid']
+        window=parsed['x'][i];xx.append(window);vec=a.extractor.extract(window)['values'];ff.append(vec)
+        identity.append(dict(filename=m['filename'],start_s=m['start_s'],end_s=m['end_s'],raw_sha256=m['raw_sha256'],gas_id=m['gas_id'],day=18,signal_sha256=digest(window),feature71_sha256=digest(vec)))
+    x=np.asarray(xx);features=np.asarray(ff);assert np.array_equal(x,savedx) and x.dtype==savedx.dtype;assert np.array_equal(features,saved71) and features.dtype==saved71.dtype
+    before_scaler={g:h.scaler_sha() for g,h in a.heads.items()};baseline={};headrows=[]
+    for g,h in a.heads.items():
+        # Calls the original saved wrapper, independently of production routing.
+        native=a.previous.c.prior.p1.predict(a.v,h.h,saved71,False);adapter=h.predict_raw(features);singles=np.array([h.predict_raw(f[None,:])[0] for f in features]);assert_close(native,adapter,tol['SVR_ppm']);assert_close(native,singles,tol['SVR_ppm']);assert np.isfinite(native).all();baseline[g]=native
+        clipped=np.clip(native,*h.support)
+        headrows.append(dict(gas_id=g,version=h.version,windows_checked=32,source_wrapper_vs_adapter_max_abs_ppm=float(np.max(abs(native-adapter))),batch_vs_single_max_abs_ppm=float(np.max(abs(native-singles))),raw_min_ppm=float(native.min()),raw_max_ppm=float(native.max()),clip_min_ppm=h.support[0],clip_max_ppm=h.support[1],scaler_sha256=before_scaler[g],raw_finite=True,clip_matches_selected_head_support=True))
+    saved=read(HERE/'SAVED_CALIBRATION_REFERENCE.json')['records'];golden=[]
+    for z in saved:
+        i=next(i for i,m in enumerate(cal) if m['filename']==z['cal_filename'] and float(m['start_s'])==float(z['start_s']));g=int(z['gas_id']);raw=baseline[g][i];clip=float(np.clip(raw,*a.heads[g].support));want=float(z['truth_ppm'])+float(z['calibration_error_raw_ppm']);wc=float(z['truth_ppm'])+float(z['calibration_error_clipped_ppm']);assert_close(raw,want,tol['SVR_ppm']);assert_close(clip,wc,tol['SVR_ppm']);golden.append(dict(filename=z['cal_filename'],start_s=z['start_s'],gas_id=g,raw_abs_difference_ppm=abs(float(raw)-want),clipped_abs_difference_ppm=abs(clip-wc),reference='saved Phase15 Calibration projection;Test columns not used'))
+    assert len(cache)==16 and len(golden)==4
+    predictions=[];classrows=[];private_logits={}
+    for b,c in a.classifiers.items():
+        bridge=a.bridge(b);state_before=a.previous.c.digest(a.r.arrays(c.model));ck=a.r.torch.load(lock['classifiers'][b]['endpoint'],map_location='cpu',weights_only=True);restored=a.r.model();a.r.validate_state(restored,ck['model_state']);restored.load_state_dict(ck['model_state'],strict=True);restored.eval()
+        with a.r.torch.inference_mode():batch=c.model(a.r.torch.from_numpy(savedx))[0].cpu().numpy();reload_batch=restored(a.r.torch.from_numpy(savedx))[0].cpu().numpy()
+        assert np.array_equal(batch,reload_batch)
+        logits=[];call_counts={g:0 for g in range(4)}
+        for i,(window,f) in enumerate(zip(x,features)):
+            one=c.classify(window);logits.append(one['logits']);out=bridge.predict_window(window);g=int(batch[i].argmax());assert out['status']=='OK' and out['predicted_gas_id']==g and out['regressor_version']==a.heads[g].version
+            assert_close(out['concentration_raw_ppm'],baseline[g][i],tol['SVR_ppm']);assert_close(out['concentration_clipped_ppm'],np.clip(baseline[g][i],*a.heads[g].support),tol['SVR_ppm']);call_counts[g]+=1
+            predictions.append(dict(calibration_row=i,filename=cal[i]['filename'],start_s=cal[i]['start_s'],**out))
+        logits=np.asarray(logits);assert_close(logits,batch,tol['classifier_logits_single_vs_batch']);assert np.array_equal(logits.argmax(1),batch.argmax(1));assert a.previous.c.digest(a.r.arrays(c.model))==state_before==lock['classifiers'][b]['endpoint_state_sha256']
+        private_logits[b]=dict(native_batch=batch.tolist(),native_adapter_single=logits.tolist(),restore_batch=reload_batch.tolist());classrows.append(dict(group=b,state_sha256=state_before,Calibration_windows=32,batch_vs_single_logits_max_abs=float(np.max(abs(batch-logits))),reload_exact=True,same_argmax=True,selected_head_counts=json.dumps(call_counts),historical32logits_reference='not saved;current native/reload parity only'))
+    assert len(predictions)==192 and all(h.scaler_sha()==before_scaler[g] for g,h in a.heads.items())
+    # Real-loaded adapters exercised through the same failure interface; no truth
+    # gas enters production calls. All changes are proxy outputs, never weights.
+    from bridge import JointBridge
+    class ProxyClassifier:
+        def __init__(self,base,mode):self.base=base;self.mode=mode;self.version=base.version;self.state_version=base.state_version;self.group=base.group
+        def classify(self,w):
+            z=self.base.classify(w)
+            if self.mode=='illegal_class':z['predicted_class']=4
+            else:z['logits']=np.full(4,np.nan if self.mode=='NaN_logits' else np.inf)
+            return z
+    class ProxyHead:
+        def __init__(self,base,value):self.version=base.version;self.gas_id=base.gas_id;self.support=base.support;self.value=value
+        def predict_raw(self,f):return np.array([self.value])
+    faults=[];base=a.classifiers['B4'];window=x[0];expected=a.bridge('B4').expected
+    for mode in ['illegal_class','NaN_logits','Inf_logits']:
+        result=JointBridge(ProxyClassifier(base,mode),a.extractor,a.heads,expected).predict_window(window);assert result['status']=='UNAVAILABLE' and result['predicted_gas_id'] is None;faults.append(dict(injection=mode,**result))
+    g=base.classify(window)['predicted_class']
+    for mode in ['missing_head','wrong_version','NaN_raw','Inf_raw','negative_Inf_raw']:
+        heads=dict(a.heads)
+        if mode=='missing_head':del heads[g]
+        else:
+            heads[g]=ProxyHead(a.heads[g],np.nan if mode=='NaN_raw' else np.inf if mode=='Inf_raw' else -np.inf)
+            if mode=='wrong_version':heads[g].version='unregistered'
+        result=JointBridge(base,a.extractor,heads,expected).predict_window(window);assert result['status']=='UNAVAILABLE' and result['concentration_clipped_ppm'] is None;faults.append(dict(injection=mode,**result))
+    # Access selftest: attempts are denied before opening these Test paths.
+    blocked=[]
+    for path in [P1/'run_v2/data/C5_test.npz',P35/'evaluation/PRIVATE_WINDOW_PREDICTIONS.csv',Path('ORIGINAL_WORKSPACE/dataset/data1/B5_GCO_F010_R2.txt')]:
+        try:path.open('rb')
+        except PermissionError:blocked.append(str(path))
+        else:raise AssertionError('Test access guard bypass')
+    assert len(blocked)==3
+    # Rehash original artifacts as bytes only, distinctly from numerical access.
+    original={}
+    for folder,manifest in [(P35,'ARTIFACT_SHA256.csv'),(P36,'ARTIFACT_SHA256.csv'),(P15,'ARTIFACT_SHA256.csv')]:
+        allrows=rows(folder/manifest)
+        for z in allrows:assert hash_only(folder/z['path'])==z['sha256']
+        original[folder.name]=dict(files=len(allrows),manifest_sha256=sha(folder/manifest),unchanged=True)
+    table('CALIBRATION_IDENTITIES.csv',identity);table('REGRESSOR_NUMERIC_QA.csv',headrows);table('SAVED_CALIBRATION_GOLDEN_QA.csv',golden);table('CLASSIFIER_NUMERIC_QA.csv',classrows)
+    write('PRIVATE_CALIBRATION_ROUTED_OUTPUTS.json',predictions);write('PRIVATE_CALIBRATION_LOGITS.json',private_logits);write('FAULT_INJECTION_RESULTS.json',faults)
+    write('NUMERIC_ACCESS_LOG.json',dict(access=ACCESS,expected_denied_Test_selftests=blocked,unexpected_Test_opens=0,hash_only_is_not_numeric_decode=True))
+    write('CALIBRATION_ACCEPTANCE.json',dict(status='PASS_CALIBRATION_NUMERIC_BRIDGE',raw_exposures=16,windows=32,signal_exact=True,feature71_exact=True,signal_array_sha256=digest(x),feature_array_sha256=digest(features),head_count=4,allhead_Calibration_checks=128,stored_Calibration_numeric_references=4,stored_reference_coverage='CO low/high two windows;not allgas historical logits',new_classifier_windows=192,routed_outputs=192,all6_classifiers=True,no_Oracle_parameter=True,all_scalers_unchanged=True,all_models_unchanged=True,original_assets=original,tolerance_lock_sha256=sha(HERE/'TOLERANCE_LOCK.json'),tolerances_widened=False,synthetic_and_real_fault_checks=True,Test_denied_selftests=3,Test_evaluation_calls=0,training_calls=0,scaler_fit_calls=0,Pi_deployments=0,seconds=time.perf_counter()-tic))
+    print('CALIBRATION_BRIDGE_PASS;16exposures/32windows/6classifiers/4SVR;NO_TEST/NO_TRAINING',flush=True)
+if __name__=='__main__':
+    try:main()
+    except BaseException:
+        write('VALIDATION_BLOCKED.json',dict(status='BLOCKED_NO_TOLERANCE_RELAXATION',error=traceback.format_exc(),numeric_access=ACCESS));raise

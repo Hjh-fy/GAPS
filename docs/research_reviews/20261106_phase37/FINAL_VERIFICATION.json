@@ -1,0 +1,50 @@
+{
+  "status": "PASS_CALIBRATION_BRIDGE_ONLY",
+  "Calibration_exposures": 16,
+  "Calibration_windows": 32,
+  "routed_records": 192,
+  "regressor_head_window_checks": 128,
+  "signal_exact": true,
+  "feature71_exact": true,
+  "saved_Calibration_golden_checks": 4,
+  "historical_classifier32logits": "notavailable;notclaimed",
+  "all6_classifiers": true,
+  "classifiers_reload_exact": true,
+  "all_argmax_single_batch_equal": true,
+  "synthetic_fault_tests": 35,
+  "real_loaded_adapter_proxy_faults": 8,
+  "no_Oracle_route": true,
+  "unknown_versions_rejected": true,
+  "scalers_unchanged": true,
+  "tolerances_widened": false,
+  "old_assets": {
+    "fedongas_phase35_20261105": {
+      "files": 2275,
+      "manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+      "unchanged": true
+    },
+    "fedongas_phase36_20261106": {
+      "files": 51,
+      "manifest_sha256": "368943019daf5867b4d5d91896cff70e877a1b9f3d3b1e93399b8e393cdca33d",
+      "unchanged": true
+    },
+    "fedongas_phase15_20261102": {
+      "files": 185,
+      "manifest_sha256": "7c679f21b50b7d3c5af7567885d8252f74abc3c0014e423f7ddf9109a72fcdc8",
+      "unchanged": true
+    }
+  },
+  "ancestry": "SOURCE25+classifier150blocks+4regressoridentity PASS",
+  "independent_review": "PASS_CALIBRATION_ONLY_NUMERIC_BRIDGE_REVIEW",
+  "training_calls": 0,
+  "scaler_fit_calls": 0,
+  "Day22_Test_evaluation_calls": 0,
+  "Pi_deployments": 0,
+  "future_offline_approval": "required;template isnot authorization",
+  "final_code_versions": {
+    "bridge.py": "c92aa6065d0884f1e68b53790d858b75b2cc6283c5dc7ce6bf87b902265cd626",
+    "assets.py": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+    "validate.py": "3d634b25a591d89258396e7f361e3a7929210b424385acc88bb2e219c39240c0",
+    "test_bridge.py": "7be96d14ba18be0ada2d75f9c0713d3b8d3398f0ee8d275e1f14444f128b87fb"
+  }
+}

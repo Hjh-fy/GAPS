@@ -1,0 +1,20 @@
+{
+  "experiment_id": "P37-C5-A4-NUMERIC-BRIDGE-20261106",
+  "status": "REGISTERED_NO_TRAINING_CALIBRATION_ONLY",
+  "source_lock_sha256": "0e297578c6b55c02e3b7ae7a3dc3a67ea68ed5a97de76b509c8304839a03ca02",
+  "tolerance_lock_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+  "calibration_windows": 32,
+  "calibration_exposures": 16,
+  "classifier_groups": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "regressor_heads": 4,
+  "reference_calibration_records": 4,
+  "expected_saved_classification32logits": false,
+  "Day22_released": false
+}

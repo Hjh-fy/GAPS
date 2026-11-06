@@ -1,0 +1,31 @@
+{
+  "registered_before_numeric_comparison": true,
+  "signal_window": {
+    "atol": 0.0,
+    "rtol": 0.0,
+    "require_bitwise_equal": true
+  },
+  "feature71": {
+    "atol": 0.0,
+    "rtol": 0.0,
+    "require_bitwise_equal": true
+  },
+  "SVR_ppm": {
+    "atol": 1e-10,
+    "rtol": 1e-12
+  },
+  "classifier_logits_single_vs_batch": {
+    "atol": 0.0001,
+    "rtol": 1e-05,
+    "require_same_argmax": true
+  },
+  "classifier_same_window_reload": {
+    "atol": 0.0,
+    "rtol": 0.0,
+    "require_bitwise_equal": true
+  },
+  "model_state_sha": "exact",
+  "scaler_before_after_sha": "exact",
+  "failure_policy": "BLOCKED;never widen tolerances",
+  "historical_classifier32logits": "not saved in Phase35;use native frozen implementation + exact checkpointreload/currentCalibration fixture,not historical replay"
+}

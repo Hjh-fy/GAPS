@@ -1,0 +1,45 @@
+"""Single-window predictive routing; no labels, training, fitting or file reads."""
+import numpy as np
+GASES=('Ethanol','CO','Ethylene','Methane')
+def valid_version(value):return isinstance(value,str) and bool(value.strip())
+
+class JointBridge:
+    def __init__(self,classifier,extractor,heads,expected_versions):
+        self.classifier=classifier;self.extractor=extractor;self.heads=heads
+        self.names=tuple(extractor.names)
+        self.expected=dict(classifier=expected_versions['classifier'],feature=expected_versions['feature'],regressors=dict(expected_versions['regressors']))
+        if len(self.names)!=71 or len(set(self.names))!=71:raise ValueError('71 unique feature names required')
+
+    def predict_window(self,window):
+        result=dict(status='UNAVAILABLE',reason=None,predicted_gas_id=None,predicted_gas=None,concentration_raw_ppm=None,concentration_clipped_ppm=None,unit='ppm',support_ppm=None,classifier_group=self.classifier.group,classifier_version=self.expected['classifier'],classifier_state_version=getattr(self.classifier,'state_version',None),regressor_version=None,feature_version=self.expected['feature'])
+        def fail(reason):result['reason']=reason;return result
+        if not isinstance(window,np.ndarray) or window.shape!=(50,8) or window.dtype!=np.float32 or not np.isfinite(window).all():return fail('SIGNAL_INVALID')
+        if not valid_version(self.expected['classifier']) or not valid_version(self.expected['feature']) or getattr(self.classifier,'version',None)!=self.expected['classifier'] or getattr(self.extractor,'version',None)!=self.expected['feature']:return fail('MODEL_VERSION_MISMATCH')
+        try:classification=self.classifier.classify(window)
+        except Exception:return fail('CLASSIFICATION_FAILED')
+        try:
+            logits=np.asarray(classification['logits']);g=classification['predicted_class']
+            if classification['version']!=self.expected['classifier']:return fail('MODEL_VERSION_MISMATCH')
+            if isinstance(g,(bool,np.bool_)) or not isinstance(g,(int,np.integer)) or int(g) not in range(4) or logits.shape!=(4,) or not np.isfinite(logits).all() or int(g)!=int(np.argmax(logits)):return fail('CLASSIFICATION_INVALID')
+        except (KeyError,TypeError,ValueError):return fail('CLASSIFICATION_INVALID')
+        g=int(g);result.update(predicted_gas_id=g,predicted_gas=GASES[g])
+        head=self.heads.get(g)
+        if head is None:return fail('REGRESSOR_MISSING')
+        expected_head_version=self.expected['regressors'].get(g)
+        if not valid_version(expected_head_version) or getattr(head,'version',None)!=expected_head_version or head.gas_id!=g:return fail('MODEL_VERSION_MISMATCH')
+        result['regressor_version']=head.version
+        try:
+            support=np.asarray(head.support,dtype=np.float64)
+            if support.shape!=(2,) or not np.isfinite(support).all() or support[0]>=support[1]:return fail('MODEL_VERSION_MISMATCH')
+            result['support_ppm']=support.tolist()
+            feat=self.extractor.extract(window);values=np.asarray(feat['values'])
+            if feat['version']!=self.expected['feature']:return fail('MODEL_VERSION_MISMATCH')
+            if tuple(feat['names'])!=self.names or values.shape!=(71,) or values.dtype!=np.float64 or not np.isfinite(values).all():return fail('FEATURE_SCHEMA_MISMATCH')
+        except Exception:return fail('FEATURE_SCHEMA_MISMATCH')
+        try:prediction=np.asarray(head.predict_raw(values[None,:]),dtype=np.float64)
+        except Exception:return fail('REGRESSION_FAILED')
+        if prediction.shape!=(1,):return fail('REGRESSION_INVALID')
+        # The finite check must precede clipping: np.clip(Inf) is finite.
+        if not np.isfinite(prediction).all():return fail('REGRESSION_NONFINITE')
+        raw=float(prediction[0]);clipped=float(np.clip(raw,support[0],support[1]));result.update(status='OK',reason=None,concentration_raw_ppm=raw,concentration_clipped_ppm=clipped)
+        return result

@@ -1,0 +1,12 @@
+{
+  "purpose": "Final Calibration acceptance of stricter version fail-closed guard",
+  "previous_success": "calibration_attempt2;all real numeric comparisons passed before version-boundary review",
+  "review_finding": "Unknown expected and actual versions could both be None and compare equal in generic bridge",
+  "correction": "Require nonempty registered version strings before comparison; no numeric kernel changed",
+  "test_evidence": "New unknown-version cases first showed7 failures;retest after correction required",
+  "output_directory": "calibration_final",
+  "training_authorized": false,
+  "Test_authorized": false,
+  "same_tolerance_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+  "tolerances_widened": false
+}

@@ -1,0 +1,30 @@
+"""Receipt/index metadata audit only; no model inference or raw data reads."""
+from prepare import *
+def main():
+    lock=read(HERE/'MODEL_SOURCE_LOCK.json');index={x['path']:x for x in rows(P35/'MODEL_VERSION_INDEX.csv')};source=read(R/'source_attempt2/server/SSTAR_LOCKED.json');sstar=lock['source_Sstar_state'];assert source['round_receipts'][-1]['returned']==sstar
+    clsids=rows(P31/'evidence/TRAINING_WINDOW_IDENTITIES.csv');cal=[x for x in clsids if x['client_id']=='5'];regcal=read(lock['calibration_metadata_path'])
+    def key(x):return x['filename'],round(float(x['start_s']),6),round(float(x['end_s']),6),x['raw_sha256'],int(x['gas_id'])
+    assert {key(x) for x in cal}=={key(x) for x in regcal} and len(cal)==32 and len({x['filename'] for x in cal})==16
+    src=[x for x in clsids if x['client_id'] in ['1','2']];assert len(src)==2520 and len({x['filename'] for x in src})==120 and {(int(x['client_id']),int(x['day'])) for x in src}=={(1,4),(2,1),(2,7)}
+    chain=[]
+    for b,l in lock['classifiers'].items():
+        reg=read(P35/'registrations'/f'{b}.json');assert sha(P35/'registrations'/f'{b}.json')==l['configuration_sha256'];assert reg['Sstar_state_sha256']==sstar and reg['runtime_sha256']==lock['runtime_sha256'];assert sha(P35/'specs'/f'{b}.json')==reg['spec_sha256']
+        assert read(P35/'runs'/b/('target' if b=='B1' else 'server')/'effective_config.json')['initial_state_sha256']==sstar
+        previous=sstar
+        for rnd in range(1,26):
+            if b=='B1':
+                r=read(P35/'runs/B1/target'/f'receipt_{rnd:03}.json');assert r['received']==previous and r['num_examples']==32;trained=index[f'observer/B1/target_trained_round_{rnd:03}.pth'];assert trained['state_sha256']==r['uploaded'];returned=r['uploaded'];aggregate=returned;adapted=returned
+            else:
+                r=read(P35/'runs'/b/'server'/f'phase32_receipt_{rnd:03}.json');assert r['received']==previous and r['clients']==([1,2,5] if b=='B2' else [1,2]) and r['samples']==([840,1680,32] if b=='B2' else [840,1680]);assert r['entry_sha256']==lock['runtime_sha256'] and r['contract_sha256']==lock['contract_sha256']
+                ag=index[f'runs/{b}/server/server_round_{rnd:03}.pth'];assert ag['sha256']==r['checkpoint_sha256'];aggregate=ag['state_sha256'];adapted=index[f'runs/{b}/server/server_round_{rnd:03}_adapted.pth']['state_sha256'] if b in ['B3','B4','B5'] else aggregate;returned=r['returned'];assert returned==(adapted if b in ['B4','B5'] else aggregate)
+                for j,cid in enumerate(r['clients']):
+                    cl=read(P35/'runs'/b/f'client_{cid}'/f'receipt_{rnd:03}.json');assert cl['received']==previous and cl['uploaded']==r['uploads'][j];assert index[f'observer/{b}/client_{cid}_trained_round_{rnd:03}.pth']['state_sha256']==cl['uploaded']
+            chain.append(dict(group=b,round=rnd,received=previous,aggregated=aggregate,adapted=adapted,returned=returned,receipt_sha256=sha(P35/'runs'/b/('target' if b=='B1' else 'server')/(f'receipt_{rnd:03}.json' if b=='B1' else f'phase32_receipt_{rnd:03}.json'))));previous=returned
+        assert l['endpoint_state_sha256']==(adapted if b in ['B3','B4','B5'] else previous)
+    for h in lock['regressors']:
+        selected=[x for x in regcal if x['gas_id']==h['gas_id']];assert len(selected)==8 and sorted({x['filename'] for x in selected})==h['calibration_files'];assert hashlib.sha256('\n'.join(x['physical_identity'] for x in selected).encode()).hexdigest()==h['training_identity_sha256'];assert sha(h['absolute_path'])==h['sha256']
+    with (HERE/'MODEL_ANCESTRY_RECEIPTS.csv').open('x',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=list(chain[0]));w.writeheader();w.writerows(chain)
+    write('ANCESTRY_AUDIT.json',dict(status='PASS',source_Sstar_state_sha256=sstar,source_Sstar_native_rounds=25,classifier_round_blocks=150,classification_source_exposures=120,classification_source_windows=2520,classification_target_calibration_exposures=16,classification_target_calibration_windows=32,regressor_heads=4,regressor_training_identity_SHA_checked=True,class_and_regression_calibration_identity_exact=True,no_Test_used_for_model_selection='inherited auditedPhase15/35 contracts;this audit rechecks identities/ancestry only',source_hyperparameter_protocol='Phase15 frozen legal C1Day4/C2Day1/7 sourcefewshot;no new selection',new_inference=0,new_training=0))
+    print('ANCESTRY150_BLOCKS+SSTAR25+4HEAD_IDENTITIES PASS;METADATA_ONLY',flush=True)
+if __name__=='__main__':main()

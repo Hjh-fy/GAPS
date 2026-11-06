@@ -1,0 +1,17 @@
+{
+  "is_authorization": false,
+  "status": "APPROVAL_REQUIRED",
+  "purpose": "OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS",
+  "future_contract_sha256": "570211d62a22b6691bc634a5ba2e3ecec181783741823732a50e0712dc94c1f8",
+  "code_versions": {
+    "bridge.py": "c92aa6065d0884f1e68b53790d858b75b2cc6283c5dc7ce6bf87b902265cd626",
+    "assets.py": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+    "validate.py": "3d634b25a591d89258396e7f361e3a7929210b424385acc88bb2e219c39240c0",
+    "test_bridge.py": "7be96d14ba18be0ada2d75f9c0713d3b8d3398f0ee8d275e1f14444f128b87fb"
+  },
+  "max_runs": 1,
+  "training": false,
+  "Pi": false,
+  "outputs": "new independent next-phase directory;must be registered before release",
+  "scope": "all6fixedviews only;no extra seeds/head policies/jointsuccess thresholds"
+}

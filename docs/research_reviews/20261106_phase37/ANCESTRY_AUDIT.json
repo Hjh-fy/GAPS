@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "source_Sstar_state_sha256": "431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673",
+  "source_Sstar_native_rounds": 25,
+  "classifier_round_blocks": 150,
+  "classification_source_exposures": 120,
+  "classification_source_windows": 2520,
+  "classification_target_calibration_exposures": 16,
+  "classification_target_calibration_windows": 32,
+  "regressor_heads": 4,
+  "regressor_training_identity_SHA_checked": true,
+  "class_and_regression_calibration_identity_exact": true,
+  "no_Test_used_for_model_selection": "inherited auditedPhase15/35 contracts;this audit rechecks identities/ancestry only",
+  "source_hyperparameter_protocol": "Phase15 frozen legal C1Day4/C2Day1/7 sourcefewshot;no new selection",
+  "new_inference": 0,
+  "new_training": 0
+}

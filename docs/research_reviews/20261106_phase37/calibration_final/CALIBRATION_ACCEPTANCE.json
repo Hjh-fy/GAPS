@@ -1,0 +1,45 @@
+{
+  "status": "PASS_CALIBRATION_NUMERIC_BRIDGE",
+  "raw_exposures": 16,
+  "windows": 32,
+  "signal_exact": true,
+  "feature71_exact": true,
+  "signal_array_sha256": "6dced457c36780940d4eb0920032788f091826a54f16e2a8224849283a508c5f",
+  "feature_array_sha256": "8bafed35805b721e331facba6cc6e6412b69ce5cd72bc804487e7d68afda69ff",
+  "head_count": 4,
+  "allhead_Calibration_checks": 128,
+  "stored_Calibration_numeric_references": 4,
+  "stored_reference_coverage": "CO low/high two windows;not allgas historical logits",
+  "new_classifier_windows": 192,
+  "routed_outputs": 192,
+  "all6_classifiers": true,
+  "no_Oracle_parameter": true,
+  "all_scalers_unchanged": true,
+  "all_models_unchanged": true,
+  "original_assets": {
+    "fedongas_phase35_20261105": {
+      "files": 2275,
+      "manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+      "unchanged": true
+    },
+    "fedongas_phase36_20261106": {
+      "files": 51,
+      "manifest_sha256": "368943019daf5867b4d5d91896cff70e877a1b9f3d3b1e93399b8e393cdca33d",
+      "unchanged": true
+    },
+    "fedongas_phase15_20261102": {
+      "files": 185,
+      "manifest_sha256": "7c679f21b50b7d3c5af7567885d8252f74abc3c0014e423f7ddf9109a72fcdc8",
+      "unchanged": true
+    }
+  },
+  "tolerance_lock_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+  "tolerances_widened": false,
+  "synthetic_and_real_fault_checks": true,
+  "Test_denied_selftests": 3,
+  "Test_evaluation_calls": 0,
+  "training_calls": 0,
+  "scaler_fit_calls": 0,
+  "Pi_deployments": 0,
+  "seconds": 16.367618799995398
+}

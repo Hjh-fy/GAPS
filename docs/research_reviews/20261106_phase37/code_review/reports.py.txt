@@ -1,0 +1,117 @@
+"""Publishable contracts and reports from completed Calibration acceptance."""
+from prepare import *
+RUN=HERE/'calibration_final'
+def md(name,text):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(text)
+def main():
+    acc=read(RUN/'CALIBRATION_ACCEPTANCE.json');assert acc['status']=='PASS_CALIBRATION_NUMERIC_BRIDGE'
+    cls=rows(RUN/'CLASSIFIER_NUMERIC_QA.csv');reg=rows(RUN/'REGRESSOR_NUMERIC_QA.csv');lock=read(HERE/'MODEL_SOURCE_LOCK.json');tol=read(HERE/'TOLERANCE_LOCK.json')
+    assert sha(HERE/'bridge.py')==read(RUN/'VALIDATION_STARTED.json')['bridge_sha256'] and sha(HERE/'assets.py')==read(RUN/'VALIDATION_STARTED.json')['assets_sha256']
+    maxlogit=max(float(x['batch_vs_single_logits_max_abs']) for x in cls)
+    md('README.md',f'''# FedOnGas Phase3.7 严格分类—回归数值桥接
+
+依据Phase3.6固定4bf929fbbaa456e0a21599ad39fd01e8145a0406，复用Phase3.5六个合法固定分类端点和Phase1.5 C5 A4四个F-SVR71头。最终Calibration门禁：**PASS**。本轮未训练、未refit scaler、未执行Day22 Test或Pi。
+
+- 16个Day18独立标定暴露、32个固定窗口：重新按原strict流程生成的float32[50,8]与保存输入逐位一致，71D与保存特征逐位一致。
+- 四个回归头各核对全部32窗（128个head/window对），原wrapper/适配器、批量/单窗raw输出最大差均0ppm。4条既有CO低/高端Calibration参考的raw/clip差均0。
+- 六分类端点各32窗，批量/单窗logits最大差{maxlogit:.9g}，满足预锁float32容差；argmax全部相同，同batch重新加载输出逐位相同。形成192条标定路由记录，不等于所有额外parity/故障推理调用总数。
+- 35项合成接口测试通过，加载真实模型适配器的8项故障代理测试通过；非法类别、非有限输入/特征/logits/raw、缺头、版本及schema异常返回UNAVAILABLE，不Oracle补救，raw先有限检查再clip。
+
+边界：历史并无32窗分类logits；本次分类输出验收是冻结state/原实现/当前Calibration重载一致性，不能冒称完整历史logits回放。全部128个当前head/window对与原冻结实现对照，其中4条另有历史CO Calibration golden；不把新生成值称旧golden。
+
+主要入口：[bridge.py](bridge.py)的JointBridge.predict_window；真实冻结适配器为[assets.py](assets.py)。来源锁MODEL_SOURCE_LOCK、容差锁TOLERANCE_LOCK；数值表在calibration_final。API_CONTRACT与FUTURE_OFFLINE_EVALUATION_CONTRACT定义运行/评价边界。FINAL_VERIFICATION明确下一阶段门禁。
+
+B0名称仅表示分类器Source-only；其联合系统与其他五组共用目标标定F-SVR71头及支持，不能称整体无目标标定。
+
+先前两个运行现场保留：attempt1为记录构造重复字段异常；attempt2数值通过后，独立审查补强未知版本None/空值拒绝，最终实现再通过calibration_final。原模型/数值函数/容差始终未改，未覆盖旧结果。
+''')
+    md('API_CONTRACT.md','''# 运行接口合同
+
+`FrozenAssets().bridge('B0'...'B5').predict_window(window)`。当前assets加载器仅允许C5Day18A4文件，当前入口只有Calibration验证，无Day22运行开关。核心JointBridge不读取文件或任何真实gas，不接收gas/truth/oracle参数。
+
+输入：有限float32 numpy[50,8]、原strict10秒5Hz、8通道电导响应窗；预处理不在核心路由器里隐式重做。ExtractorAdapter独立调用原canonical83的固定71索引，metadata={}、phase=-1、client=unknown；不是分类encoder64D。
+
+正常顺序：模型/特征版本检查→原TCN logits→有限4logits与有效整数argmax→按预测gas查头→固定71名/序/shape/dtype/finite检查→原SVR.predict_head(clip=False)→raw finite→选中头Calibration支持clip一次。不softmax重调、不学习门控、不附加loss、不fit。
+
+输出为JSON可序列化字段：status、reason、predicted_gas_id、predicted_gas、concentration_raw_ppm、concentration_clipped_ppm、unit='ppm'、support_ppm、classifier_group、classifier_version（文件SHA）、classifier_state_version、regressor_version（文件SHA）、feature_version（合同SHA）。浓度表示“预测气体的ppm”；错分时不能当作真实气体浓度。
+
+异常：SIGNAL_INVALID、CLASSIFICATION_FAILED/INVALID、FEATURE_SCHEMA_MISMATCH、REGRESSOR_MISSING、MODEL_VERSION_MISMATCH、REGRESSION_FAILED/INVALID/NONFINITE。全部status=UNAVAILABLE、浓度字段null；分类失败时预测gas亦null，不借真实gas补救。若气体已预测而回归失败，可保留预测gas并明确浓度不可用。冻结SVR内部也会先拒绝nonfinite，适配器异常被转为REGRESSION_FAILED；核心收到非有限raw则REGRESSION_NONFINITE，均不clip挽救。
+
+版本必须是已登记非空字符串；None/空白不能因相等而获准。真实loader先校验模型字节SHA、完整state schema/finite及stateSHA、gas/scaler/support/参数；同一加载实例推理前后state/scalerSHA不变。字段身份按加载时锁定，不宣称抵抗恶意内存篡改或OS级隔离。切换模型须重新经hash验证加载，不能手工改version字符串进行热切换。
+
+支持：Ethanol/Ethylene12.5–125ppm；CO/Methane25–250ppm；由所选气体冻结头提供，不按真实气体改支持。raw允许超支持和负值，保留诊断，有限后再clip。
+''')
+    md('NUMERIC_ACCEPTANCE.md',f'''# Calibration数值验收与参考覆盖
+
+容差在任何数值比较前锁定，SHA={sha(HERE/'TOLERANCE_LOCK.json')}。窗口与71D均atol/rtol0且要求逐位相同；SVR atol1e-10ppm、rtol1e-12；分类single/batch atol1e-4、rtol1e-5且argmax相同；同batch checkpoint重载逐位相同。没有失败后放宽容差。
+
+32窗来自16个C5Day18A4暴露、原60/150s身份；原strict完成原始电阻→20–50s电导g0→5Hz分箱/短缺失插补→60–170s响应裁剪→同mask/50×8。只对固定32窗提71D和推理；process_raw内部构造其他窗口不把它们加入验收或标定预算。
+
+signal SHA={acc['signal_array_sha256']}，feature SHA={acc['feature_array_sha256']}，使用dtype/shape+连续数组字节散列。保存缓存分别为Phase32 target/client5/train_features.npy及Phase1/run_v2/data/C5_cal_A4.npz。各窗身份与SHA见calibration_final/CALIBRATION_IDENTITIES.csv。
+
+SVR128检查：原冻结wrapper与适配器逐点maxdiff0；batch/single maxdiff0；四头scaler前后SHA相同，未生成新scaler。支持12.5/125及25/250分别核对。真实头可能产生负raw，保留后仅按所选头支持裁剪，非有限值另行拒绝。
+
+旧数值golden范围仅4条CO低/高浓度×两窗，取Phase15 ENDPOINT_ERROR_DECOMPOSITION的Calibration投影，Test列不参与比较/输出；raw/clip差均0。没有四个气体全部32窗旧golden，因此不虚报。分类历史32logits亦未保存；本轮在接受的完整stateSHA上做原model直接batch、适配器single及独立重载batch检查。最大logit差{maxlogit:.9g}，argmax一致；reload逐位一致。
+
+真实路由：六组×32=192记录，每条回归输出与预测gas对应冻结头直接输出一致；真实gas只在验证参考身份/支持时出现，不传入生产API。192是路由记录数，不是总forward调用数；native/reload/single及故障验证有额外Calibration forward，不算新标定标签或训练更新。
+
+故障测试：合成35项，真实模型适配器代理8项；见TEST_DRIVEN_EVIDENCE、test_bridge.py及FAULT_INJECTION_RESULTS。未知版本审查补强后最终重跑Calibration，未改学习算法。首次日志组装异常保留VALIDATION_BLOCKED；第二次成功记录在calibration_attempt2；最终记录在calibration_final。
+
+访问保护对未授权.npy/.npz和raw路径读取前拒绝，明确验证Day22npz/旧最终TestCSV/Day22raw三个拒绝案例。SHA_ONLY日志允许原冻结资产字节哈希以核对不变，不解码Test数组或读Test数值进行评价；没有Day22推理。
+''')
+    code_versions={p:sha(HERE/p) for p in ['bridge.py','assets.py','validate.py','test_bridge.py']}
+    future=dict(schema='P37_PROPOSED_DAY22_SIX_VIEW_CONTRACT_v1',status='REGISTERED_PENDING_SEPARATE_APPROVAL',current_authorization=False,training_authorized=False,Pi_authorized=False,groups=list(lock['classifiers']),views=6,windows_per_view=840,independent_exposures_per_view=40,unique_target_exposures_across_views=40,not_240_independent_exposures=True,classification_endpoints={b:{'path':x['endpoint'],'file_sha256':x['endpoint_file_sha256'],'state_sha256':x['endpoint_state_sha256'],'endpoint_kind':'adapted25' if b in ['B3','B4','B5'] else 'target_update2500' if b=='B1' else 'aggregated25'} for b,x in lock['classifiers'].items()},regressor_policy='same four C5 A4 F-SVR71 heads for all6;no sourceonly replacement',regressors=[{'gas_id':x['gas_id'],'path':x['absolute_path'],'sha256':x['sha256']} for x in lock['regressors']],model_source_lock_sha256=sha(HERE/'MODEL_SOURCE_LOCK.json'),tolerance_lock_sha256=sha(HERE/'TOLERANCE_LOCK.json'),feature_contract_sha256=lock['feature_contract_sha256'],code_versions=code_versions,input_identity_reference='Phase36 ROUTING_WINDOW_IDENTITY_JOIN metadata;C5Day22 rows only;currently unopened numerically',input_identity_reference_sha256=sha(P36/'ROUTING_WINDOW_IDENTITY_JOIN.csv'),prediction_task='singlewindow;no exposuremean fusion',routing_decision='predicted integer argmax only',output_views_must_all_finish_before_joint_result_reporting=True,joint_success_enabled=False,business_joint_tolerance=None,mixed_true_gas_overall_NRMSE_forbidden=True,checkpoint_or_policy_selection_by_Test=False,retrospective=True)
+    write('FUTURE_OFFLINE_EVALUATION_CONTRACT.json',future)
+    md('FUTURE_OFFLINE_EVALUATION_CONTRACT.md','''# 下一轮六组离线联合评价合同（未授权）
+
+JSON固定B0–B5全部参与，固定原25轮端点，其中B3也用adapted25；四个同一C5A4 F-SVR71头与同一71D/支持/标准化，不事后挑分类器、Source-only或残差替换头。每组840窗、40独立暴露，六组5040固定视图记录，物理独立样本仍40暴露而非240。
+
+B0只在分类训练上无目标监督；联合系统使用目标标定回归头及支持，不能称无需目标标定。六组联合视图均保留同一目标浓度标定依赖。
+
+下一轮需独立执行授权：purpose=OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS，绑定本合同、桥接代码、全部分类/回归模型、特征及输入身份SHA和新输出目录，max_runs1，training/Pi均false。本轮不创建授权令牌、不提供可运行Test CLI；现有assets访问guard仍拒绝Day22，需要获准后新建独立加载/评价入口，并保留全部冻结桥接与历史制品。
+
+固定任务：单窗float32[50,8]按本API预测类别并选择头，真实gas仅在离线评分/分组函数中使用。与既有保存分类结果如有数值/argmax差异，逐窗记录并标记NUMERIC_CLASSIFICATION_DRIFT，不根据Test重新选择batch或改回某种输出；不得用真实gas修复。严格数据身份/有效mask/数量不符时停止对应视图，不随机混窗/删差例。
+
+必须输出：
+
+1. 全部5040逐窗gas预测、raw/clip、支持、status/reason及版本；全流量分类Accuracy/MacroF1/逐类Recall、4×4有效类别混淆矩阵、按真实类别列出的分类不可用数。分类失败作为全流量错误，不从分母丢失。
+2. 每个预测gas的请求数、实际回归调用数、有效/不可用率；无预测类另列。列清每种异常及总体可用率，分母始终可追溯。
+3. 分类正确且回归有效条件下的每气体raw/clipped MAE、RMSE、暴露等权误差与浓度/暴露分组。并报告该子集覆盖率和“类别正确但回归不可用”的数量，不当作全流量系统精度。
+4. 错气体路由的true→pred方向、窗口数、受影响独立暴露和浓度分布；一个暴露可含多个方向，方向暴露数不可简单相加当独立n。错误gas输出的ppm属于预测化学物，不与真实化学物浓度直接混算总NRMSE。
+5. 按gas、浓度、原始暴露分组，raw/clip分列；同一独立暴露中的窗不当独立样本；不使用任何Test逐轮择优。
+
+没有气体—浓度联合成功率：业务定义及容差尚未提供。若需要，必须在查看新联合结果前另锁业务含义、容差、类别错误/不可用处理及合法Source/Calibration来源；不能Test反求阈值、补一个总分或综合排名。
+
+全部六视图先锁定逐窗结果再汇总；缺视图/失败保留不完整状态，不以剩余组挑赢家、不自动重跑。该历史Test已在分类/Oracle回归研究观察，联合结果只能回顾性描述，不能重新称盲测。
+''')
+    write('PROPOSED_AUTHORIZATION_TEMPLATE.json',dict(is_authorization=False,status='APPROVAL_REQUIRED',purpose='OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS',future_contract_sha256=sha(HERE/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json'),code_versions=code_versions,max_runs=1,training=False,Pi=False,outputs='new independent next-phase directory;must be registered before release',scope='all6fixedviews only;no extra seeds/head policies/jointsuccess thresholds'))
+    md('MODEL_PROVENANCE.md','''# 模型来源与冻结范围
+
+分类：Phase35六个锁定端点，继承Source attempt2的合法Day7 Sstar（C1Day4/C2Day1/7，120源暴露2520窗）。loader调用原Source checkpoint祖先验证，确认25轮源receipt/参数、初始state及源身份；六端点核对文件SHA、完整state schema/finite、stateSHA并strictload。本轮Calibration不参与训练或选端点。
+
+回归：Phase1.5 FONG-P15-C5-A4-F-SVR-20261102 g0–g3，合法源fewshot选参、每气体4暴露8Calibration窗，原冻结数值代码、scaler、C/gamma/epsilon和量程。MODEL_SOURCE_LOCK保留原模型index条目、路径/SHA/训练文件/身份SHA；与Phase36已确认的32标定身份一致。头文件SHA及gas/scaler/support/参数在load时再检查；不fit、不替换成Source-only。
+
+特征：FEATURE_CONTRACT完整71名/顺序/索引及extractor/rich formula路径，原函数由v5库存逐文件SHA校验后加载。分类64D是内部encoder，与71D独立；生产接口没有真实类别或文件名输入。
+
+冻结核验：成功验收逐文件重哈希Phase35的2275制品、Phase36的51制品和Phase15的185制品，不覆盖模型、日志或指标；字节SHA检查不等于Test数值读取/评价。完整v5原文件不写入，本轮只读原数值函数和16标定原始文件。
+''')
+    md('RECOVERY.md','''# 运行、复核与恢复
+
+当前环境沿用Phase33R ENVIRONMENT_LOCK，Python及依赖版本记录在MODEL_SOURCE_LOCK。先将本阶段目录加入Python sys.path（或以该目录为工作目录），本地加载冻结资产后：`from assets import FrozenAssets; bundle=FrozenAssets(); engine=bundle.bridge('B4'); out=engine.predict_window(window)`；window必须由原strict预处理生成的float32[50,8]。不能把任意8通道串口片段或64Dencoder向量直接传入。
+
+生产桥接代码bridge.py不读文件，assets.py负责冻结模型/特征适配及当前Calibration白名单。所有源码/权重/输入需要本地归档；公开审阅包没有原始信号、特征值、scaler数组或权重，因此不能仅凭GitHub包独立运行模型。
+
+新接口测试命令：`python -m pytest research/fedongas_phase37_20261106/test_bridge.py -q -p no:cacheprovider`。只有合成模型与异常，不训练、不加载Test。数值验收脚本`validate.py --final`已执行并封存，不可再次在同目录覆盖；复核应先核对SHA。若要重新运行，另建有登记的输出目录并维持同模型/输入/容差，不删除既有目录。
+
+Calibraton_final为最终验收，calibration_attempt2为版本边界补强前成功数值记录，根VALIDATION_BLOCKED与attempt1源码保留日志构造失败。没有训练attempt或Test重跑。最终部署/Pi和Day22入口不在当前授权中。
+''')
+    md('NEXT_DECISION.md','''# 继续/停止
+
+Calibration数值桥接PASS：可提出下一轮全部六组的固定Day22离线联合评价独立授权。仅提出，当前未释放Test、未创建执行授权、未部署Pi、未新增训练。
+
+下一轮按FUTURE_OFFLINE_EVALUATION_CONTRACT和PROPOSED_AUTHORIZATION_TEMPLATE锁定同四F-SVR头、六个固定分类端点、单窗任务、完整不可用/错误路由与各气体条件误差。不得按已有Test选分类器、替换Source-only头或回看结果选阈值。
+
+不发布跨不同真实气体统一化学意义的总NRMSE。不计算业务定义和容差尚未锁定的联合成功率。任何版本/身份/数值异常都保留并停止相应视图，不扩容差补救。旧分类32窗历史logits缺失、SVR旧Calibrationgolden仅4条的限制继续披露；当前通过是原冻结实现与当前标定数值桥接，并非新泛化或部署性能证据。
+''')
+    print('P37_CONTRACTS_REPORTED;FUTURE_DAY22_NOT_AUTHORIZED',flush=True)
+if __name__=='__main__':main()

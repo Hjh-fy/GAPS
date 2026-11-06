@@ -1,0 +1,11 @@
+# 外部agent审阅范围
+
+本包是Phase3.7 Calibration数值桥接，不是Day22端到端评价。全部192路由记录只对应6分类端点×32Day18固定窗；原始输入/71D值/模型权重/scaler数组及完整Calibration logits/路由数值留本地，不上传。MODEL_SOURCE_LOCK包含特征名字/参数/来源/身份SHA，不含学习参数数组。
+
+重点核查：同窗口原TCN和独立71D，预测gas唯一选头，raw finite先于clip，classifier失败不Oracle回退，版本None/空不能匹配，所有回归scaler不fit，35合成测试+8真实适配器故障代理，128head/window数值比较及4条旧Calibrationgolden范围。历史32分类logits未保存，不冒称历史回放；192路由记录不等于所有parity推理调用数。
+
+原Source祖先25轮、6端点150轮/块receipt和四SVR训练身份/文件SHA均通过。本地保留首次日志构造失败、第二次数值成功、审查补强版本边界后的最终Calibration通过，容差未扩大。完整原模型/日志/指标只读。
+
+NUMERIC_ACCESS_LOG中SHA_ONLY是原冻结制品字节哈希，不是解码Test输入或Test评价；三个Test读取测试在打开前拒绝。公开路径是脱敏别名。公开脚本依赖既有本地资产，不能凭此包独立推理/训练。
+
+未来六组840窗合同仅预注册，PROPOSED_AUTHORIZATION_TEMPLATE明确is_authorization=false。当前无Test运行入口、无Pi、无新seed。B0只分类器Source-only，整套系统仍需目标浓度标定。跨气体总NRMSE和业务容差未锁定的联合成功率均禁止。

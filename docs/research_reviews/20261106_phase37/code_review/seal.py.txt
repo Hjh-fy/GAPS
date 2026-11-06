@@ -1,0 +1,28 @@
+"""Final evidence gate and source seal; hashes only, no new model inference."""
+from prepare import *
+import ast
+RUN=HERE/'calibration_final'
+def main():
+    assert not(HERE/'ARTIFACT_SHA256.csv').exists()
+    review=read(HERE/'INDEPENDENT_REVIEW.json');assert review['status'].startswith('PASS')
+    acc=read(RUN/'CALIBRATION_ACCEPTANCE.json');assert acc['status']=='PASS_CALIBRATION_NUMERIC_BRIDGE' and acc['routed_outputs']==192 and acc['training_calls']==0 and acc['Test_evaluation_calls']==0
+    start=read(RUN/'VALIDATION_STARTED.json');assert all(sha(HERE/p)==start[k] for p,k in [('bridge.py','bridge_sha256'),('assets.py','assets_sha256'),('validate.py','code_sha256')])
+    reg=read(HERE/'REGISTRATION.json');assert sha(HERE/'MODEL_SOURCE_LOCK.json')==reg['source_lock_sha256'] and sha(HERE/'TOLERANCE_LOCK.json')==reg['tolerance_lock_sha256']==acc['tolerance_lock_sha256']
+    assert read(HERE/'ANCESTRY_AUDIT.json')['status']=='PASS';lock=read(HERE/'MODEL_SOURCE_LOCK.json')
+    checked={}
+    for p in [P35,P36,P15]:
+        r=rows(p/'ARTIFACT_SHA256.csv')
+        for x in r:assert sha(p/x['path'])==x['sha256']
+        checked[p.name]=dict(files=len(r),manifest_sha256=sha(p/'ARTIFACT_SHA256.csv'),unchanged=True)
+    for x in lock['classifiers'].values():assert sha(x['endpoint'])==x['endpoint_file_sha256']
+    for x in lock['regressors']:assert sha(x['absolute_path'])==x['sha256']
+    for p in HERE.glob('*.py'):ast.parse(p.read_text(encoding='utf-8-sig'))
+    future=read(HERE/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json');proposal=read(HERE/'PROPOSED_AUTHORIZATION_TEMPLATE.json');assert not future['current_authorization'] and not future['joint_success_enabled'] and proposal['is_authorization'] is False and proposal['future_contract_sha256']==sha(HERE/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json')
+    assert future['groups']==['B0','B1','B2','B3','B4','B5'] and future['windows_per_view']==840
+    for p,h in future['code_versions'].items():assert sha(HERE/p)==h
+    write('FINAL_VERIFICATION.json',dict(status='PASS_CALIBRATION_BRIDGE_ONLY',Calibration_exposures=16,Calibration_windows=32,routed_records=192,regressor_head_window_checks=128,signal_exact=True,feature71_exact=True,saved_Calibration_golden_checks=4,historical_classifier32logits='notavailable;notclaimed',all6_classifiers=True,classifiers_reload_exact=True,all_argmax_single_batch_equal=True,synthetic_fault_tests=35,real_loaded_adapter_proxy_faults=8,no_Oracle_route=True,unknown_versions_rejected=True,scalers_unchanged=True,tolerances_widened=False,old_assets=checked,ancestry='SOURCE25+classifier150blocks+4regressoridentity PASS',independent_review=review['status'],training_calls=0,scaler_fit_calls=0,Day22_Test_evaluation_calls=0,Pi_deployments=0,future_offline_approval='required;template isnot authorization',final_code_versions=future['code_versions']))
+    payload=[dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)) for p in sorted(HERE.rglob('*')) if p.is_file() and '__pycache__' not in p.parts and p.name!='ARTIFACT_SHA256.csv']
+    with (HERE/'ARTIFACT_SHA256.csv').open('x',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=['path','bytes','sha256']);w.writeheader();w.writerows(payload)
+    print(json.dumps(dict(status='P37_SEALED_PASS',files=len(payload),bytes=sum(x['bytes'] for x in payload),source_manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'))),flush=True)
+if __name__=='__main__':main()

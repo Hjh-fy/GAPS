@@ -1,0 +1,32 @@
+"""Metadata-only source and tolerance registration, before numerical validation."""
+import csv,json,hashlib,sys,platform,importlib.metadata
+from pathlib import Path
+sys.dont_write_bytecode=True
+HERE=Path(__file__).resolve().parent;ROOT=HERE.parents[1];P35=HERE.parent/'fedongas_phase35_20261105';P36=HERE.parent/'fedongas_phase36_20261106';P15=HERE.parent/'fedongas_phase15_20261102';P1=HERE.parent/'fedongas_phase1_20261102';P31=HERE.parent/'fedongas_phase31_20261105';R=HERE.parent/'fedongas_phase33r_20261105';P32=HERE.parent/'fedongas_phase32_20261105'
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def read(p):return json.loads(Path(p).read_text(encoding='utf-8-sig'))
+def rows(p):
+    with Path(p).open(encoding='utf-8-sig',newline='') as f:return list(csv.DictReader(f))
+def write(name,obj):
+    p=HERE/name;p.parent.mkdir(parents=True,exist_ok=True)
+    with p.open('x',encoding='utf-8',newline='\n') as f:json.dump(obj,f,ensure_ascii=False,indent=2,allow_nan=False)
+def main():
+    assert sha(P36/'ARTIFACT_SHA256.csv')=='368943019daf5867b4d5d91896cff70e877a1b9f3d3b1e93399b8e393cdca33d'
+    assert sha(P35/'ARTIFACT_SHA256.csv')=='dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514'
+    cal=read(P1/'run_v2/data/C5_cal_A4_metadata.json');assert len(cal)==32 and len({x['filename'] for x in cal})==16 and {x['day'] for x in cal}=={18}
+    heads=[x for x in read(P15/'run/A_MODEL_INDEX.json') if x['target']=='C5' and x['budget']==4 and x['rule']=='F' and x['family']=='SVR'];assert len(heads)==4
+    for x in heads:x['absolute_path']=str(P15/'run'/x['path']);assert sha(x['absolute_path'])==x['sha256']
+    classes={b:read(P35/'locks'/f'{b}.json') for b in ['B0','B1','B2','B3','B4','B5']}
+    for x in classes.values():assert x['status']=='PASS_ENDPOINT_LOCKED' and sha(x['endpoint'])==x['endpoint_file_sha256']
+    fcpath=HERE.parent/'fedongas_phase05_20261102/results_v2/FEATURE_CONTRACT.json';fc=read(fcpath);assert fc['dim']==71 and len(fc['names'])==71
+    rawroot=Path('ORIGINAL_WORKSPACE/dataset/data1');raw={str(rawroot/x['filename']):x['raw_sha256'] for x in cal}
+    # Metadata projection of historical diagnostic: only Calibration columns
+    # are retained; no Test value is compared, evaluated or exported here.
+    mixed=P15/'run/diagnostics/ENDPOINT_ERROR_DECOMPOSITION.csv';fields=['gas_id','concentration_code','start_s','truth_ppm','calibration_error_raw_ppm','calibration_error_clipped_ppm','cal_filename'];reference=[{k:x[k] for k in fields} for x in rows(mixed) if x['target']=='C5' and x['budget']=='4' and x['rule']=='F' and x['family']=='SVR']
+    write('SAVED_CALIBRATION_REFERENCE.json',dict(source=str(mixed),source_sha256=sha(mixed),projection_columns=fields,records=reference,test_columns_used=False,coverage='saved endpoint Calibration windows only;not fabricated allhead/allwindow history'))
+    write('TOLERANCE_LOCK.json',dict(registered_before_numeric_comparison=True,signal_window=dict(atol=0.,rtol=0.,require_bitwise_equal=True),feature71=dict(atol=0.,rtol=0.,require_bitwise_equal=True),SVR_ppm=dict(atol=1e-10,rtol=1e-12),classifier_logits_single_vs_batch=dict(atol=1e-4,rtol=1e-5,require_same_argmax=True),classifier_same_window_reload=dict(atol=0.,rtol=0.,require_bitwise_equal=True),model_state_sha='exact',scaler_before_after_sha='exact',failure_policy='BLOCKED;never widen tolerances',historical_classifier32logits='not saved in Phase35;use native frozen implementation + exact checkpointreload/currentCalibration fixture,not historical replay'))
+    deps=read(R/'ENVIRONMENT_LOCK.json');assert sha(sys.executable)==deps['python_binary_sha256']
+    for k,v in deps['packages'].items():assert importlib.metadata.version(k)==v
+    locks=dict(schema='P37_CALIBRATION_BRIDGE_v1',phase36_commit='4bf929fbbaa456e0a21599ad39fd01e8145a0406',phase35_commit='df2e61878a8902cb1fae95431013bbf3514798f7',classifiers=classes,regressors=heads,feature_contract=fc,feature_contract_path=str(fcpath),feature_contract_sha256=sha(fcpath),gas_map=['Ethanol','CO','Ethylene','Methane'],source_Sstar_state='431fa41ecc0f86d948286f12374a3b12a00eee58c97ae358000ac7199e5cc673',runtime_path=str(R/'runtime.py'),runtime_sha256=sha(R/'runtime.py'),contract_path=str(R/'contract.py'),contract_sha256=sha(R/'contract.py'),calibration_metadata_path=str(P1/'run_v2/data/C5_cal_A4_metadata.json'),calibration_metadata_sha256=sha(P1/'run_v2/data/C5_cal_A4_metadata.json'),calibration_pack=str(P1/'run_v2/data/C5_cal_A4.npz'),calibration_pack_sha256=sha(P1/'run_v2/data/C5_cal_A4.npz'),classification_calibration_pack=str(P32/'data/target/client_5/train_features.npy'),classification_calibration_pack_sha256=sha(P32/'data/target/client_5/train_features.npy'),raw_Calibration_allowlist=raw,environment_sha256=sha(R/'ENVIRONMENT_LOCK.json'),python=sys.executable,packages=deps['packages'],training_authorized=False,Day22_evaluation_authorized=False,tolerance_lock_sha256=sha(HERE/'TOLERANCE_LOCK.json'))
+    write('MODEL_SOURCE_LOCK.json',locks);write('REGISTRATION.json',dict(experiment_id='P37-C5-A4-NUMERIC-BRIDGE-20261106',status='REGISTERED_NO_TRAINING_CALIBRATION_ONLY',source_lock_sha256=sha(HERE/'MODEL_SOURCE_LOCK.json'),tolerance_lock_sha256=sha(HERE/'TOLERANCE_LOCK.json'),calibration_windows=32,calibration_exposures=16,classifier_groups=list(classes),regressor_heads=4,reference_calibration_records=len(reference),expected_saved_classification32logits=False,Day22_released=False));print('SOURCE+TOLERANCES_LOCKED;NO_NUMERIC_COMPARISON',flush=True)
+if __name__=='__main__':main()

@@ -1,0 +1,77 @@
+"""Adapters call frozen numeric functions, with Calibration-only file guard."""
+import sys,os,json,hashlib,csv
+from pathlib import Path
+import numpy as np
+from prepare import HERE,ROOT,P35,P36,P15,P1,P31,P32,R,sha,read,rows
+ACCESS=[];HASH_ONLY=[False];GUARD_INSTALLED=False
+
+def install_guard(lock):
+    global GUARD_INSTALLED
+    if GUARD_INSTALLED:return
+    raw={str(Path(p).resolve()).lower() for p in lock['raw_Calibration_allowlist']}
+    arrays={str(Path(p).resolve()).lower() for p in [lock['calibration_pack'],lock['classification_calibration_pack']]}
+    def guard(event,args):
+        if event!='open' or not isinstance(args[0],(str,bytes,os.PathLike)):return
+        p=Path(os.fsdecode(args[0]));s=str(p.resolve()).lower();normalized=s.replace('\\','/')
+        if '/dataset/data1/' in normalized or p.suffix.lower() in ['.npy','.npz']:
+            allowed=s in raw or s in arrays or HASH_ONLY[0]
+            ACCESS.append(dict(path=str(p),allowed=allowed,purpose='SHA_ONLY' if HASH_ONLY[0] else 'CALIBRATION_NUMERIC'))
+            if not allowed:raise PermissionError('P37 blocks all non-Calibration numeric input BEFORE OPEN: '+str(p))
+        if '/fedongas_phase35_20261105/evaluation/' in normalized and not HASH_ONLY[0]:raise PermissionError('P37 excludes Phase35 Test output consumption')
+    sys.addaudithook(guard);GUARD_INSTALLED=True
+
+def hash_only(p):
+    HASH_ONLY[0]=True
+    try:return sha(p)
+    finally:HASH_ONLY[0]=False
+
+class ClassifierAdapter:
+    def __init__(self,group,model,r,version,state_version):self.group=group;self.model=model;self.r=r;self.version=version;self.state_version=state_version
+    def classify(self,window):
+        with self.r.torch.inference_mode():logits=self.model(self.r.torch.from_numpy(window[None,:]))[0][0].cpu().numpy()
+        return dict(logits=logits,predicted_class=int(np.argmax(logits)),version=self.version)
+
+class ExtractorAdapter:
+    def __init__(self,v,lock):self.v=v;self.names=tuple(lock['feature_contract']['names']);self.version=lock['feature_contract_sha256']
+    def extract(self,window):
+        # EXACT archived phase1 formula. Metadata and physical gas are absent.
+        vector=self.v.features.extract_canonical_features(window,phase=-1,metadata={},client='unknown',split='strict_phase1',sample_index=0).sensor83[self.v.idx]
+        return dict(values=vector,names=self.names,version=self.version)
+
+class SVRAdapter:
+    def __init__(self,h,v,version):self.h=h;self.v=v;self.version=version;self.gas_id=h['gas'];self.support=(float(h['clip_min']),float(h['clip_max']))
+    def predict_raw(self,x):return self.v.svr.predict_head(self.h['numerical'],x,clip=False)
+    def scaler_sha(self):return hashlib.sha256(np.ascontiguousarray(self.h['numerical']['mean']).tobytes()+np.ascontiguousarray(self.h['numerical']['scale']).tobytes()).hexdigest()
+
+class FrozenAssets:
+    def __init__(self):
+        self.lock=read(HERE/'MODEL_SOURCE_LOCK.json');reg=read(HERE/'REGISTRATION.json')
+        if sha(HERE/'MODEL_SOURCE_LOCK.json')!=reg['source_lock_sha256'] or sha(HERE/'TOLERANCE_LOCK.json')!=reg['tolerance_lock_sha256']:raise ValueError('source/tolerance lock mismatch')
+        install_guard(self.lock)
+        for key,path in [('runtime_sha256',self.lock['runtime_path']),('contract_sha256',self.lock['contract_path']),('feature_contract_sha256',self.lock['feature_contract_path']),('calibration_metadata_sha256',self.lock['calibration_metadata_path'])]:
+            if sha(path)!=self.lock[key]:raise ValueError('source metadata/code changed')
+        sys.path.insert(0,str(P35));import p35_common as previous
+        self.previous=previous;self.r=previous.r;self.r.torch.set_num_threads(1);self.v=previous.c.prior.p1.frozen()
+        # Block every real optimization/fitting path even if accidentally invoked.
+        def forbidden(*a,**k):raise PermissionError('P37 NO TRAINING / SCALER REFIT')
+        import sklearn.svm,sklearn.preprocessing
+        sklearn.svm.SVR.fit=forbidden;sklearn.preprocessing.StandardScaler.fit=forbidden;self.r.torch.optim.Adam.step=forbidden
+        previous.load_model() # Provenance of accepted Sstar + all25 SOURCE ancestors.
+        self.extractor=ExtractorAdapter(self.v,self.lock);self.heads={};self.classifiers={}
+        import joblib
+        for item in self.lock['regressors']:
+            path=Path(item['absolute_path'])
+            if sha(path)!=item['sha256']:raise ValueError('regressor fileversion mismatch')
+            h=joblib.load(path);g=item['gas_id'];n=h['numerical']
+            if h['kind']!='TargetSVR71' or h['gas']!=g or n['gas']!=g or np.asarray(n['mean']).shape!=(71,) or np.asarray(n['scale']).shape!=(71,) or not np.isfinite(n['mean']).all() or not np.isfinite(n['scale']).all() or (np.asarray(n['scale'])<=0).any():raise ValueError('regressor gas/scaler identity')
+            expected=[(12.5,125.),(25.,250.),(12.5,125.),(25.,250.)][g]
+            if (h['clip_min'],h['clip_max'])!=expected or (n['clip_min'],n['clip_max'])!=expected or n['params']!=item['params']:raise ValueError('regressor parameters/support identity')
+            self.heads[g]=SVRAdapter(h,self.v,item['sha256'])
+        for b,item in self.lock['classifiers'].items():
+            if sha(item['endpoint'])!=item['endpoint_file_sha256']:raise ValueError('classifier fileversion mismatch')
+            m=self.r.model();ck=self.r.torch.load(item['endpoint'],map_location='cpu',weights_only=True);self.r.validate_state(m,ck['model_state']);m.load_state_dict(ck['model_state'],strict=True);m.eval()
+            if previous.c.digest(self.r.arrays(m))!=item['endpoint_state_sha256']:raise ValueError('classifier stateversion mismatch')
+            self.classifiers[b]=ClassifierAdapter(b,m,self.r,item['endpoint_file_sha256'],item['endpoint_state_sha256'])
+    def bridge(self,group):
+        from bridge import JointBridge
+        return JointBridge(self.classifiers[group],self.extractor,self.heads,dict(classifier=self.lock['classifiers'][group]['endpoint_file_sha256'],feature=self.lock['feature_contract_sha256'],regressors={x['gas_id']:x['sha256'] for x in self.lock['regressors']}))

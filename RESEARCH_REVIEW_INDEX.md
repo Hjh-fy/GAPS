@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.6机制诊断与贡献收敛](docs/research_reviews/20261106_phase36/README.md) · [CO诊断](docs/research_reviews/20261106_phase36/CO_DIAGNOSIS.md) · [机制审计](docs/research_reviews/20261106_phase36/FEEDBACK_PROTOTYPE_AUDIT.md) · [贡献矩阵](docs/research_reviews/20261106_phase36/CONTRIBUTION_REVISION.md) · [路由合同](docs/research_reviews/20261106_phase36/ROUTING_COMPATIBILITY.md) · [继续/停止](docs/research_reviews/20261106_phase36/NEXT_DECISION.md)。
+最新：[Phase3.7严格数值桥接](docs/research_reviews/20261106_phase37/README.md) · [接口](docs/research_reviews/20261106_phase37/API_CONTRACT.md) · [数值验收](docs/research_reviews/20261106_phase37/NUMERIC_ACCEPTANCE.md) · [未来六视图合同](docs/research_reviews/20261106_phase37/FUTURE_OFFLINE_EVALUATION_CONTRACT.md) · [下一步](docs/research_reviews/20261106_phase37/NEXT_DECISION.md)。
+
+16Day18暴露/32窗Calibration桥接PASS，信号/71D逐位一致，四SVR与原实现差0，六分类argmax一致，35项异常测试通过。训练0、Day22评价0、Pi0；下一轮必须独立授权。
+
+上阶段：[Phase3.6机制诊断与贡献收敛](docs/research_reviews/20261106_phase36/README.md) · [CO诊断](docs/research_reviews/20261106_phase36/CO_DIAGNOSIS.md) · [机制审计](docs/research_reviews/20261106_phase36/FEEDBACK_PROTOTYPE_AUDIT.md) · [贡献矩阵](docs/research_reviews/20261106_phase36/CONTRIBUTION_REVISION.md) · [路由合同](docs/research_reviews/20261106_phase36/ROUTING_COMPATIBILITY.md) · [继续/停止](docs/research_reviews/20261106_phase36/NEXT_DECISION.md)。
 
 本轮训练/推理0；复用最终预测定位CO−111窗与其他类+98窗的权衡。反馈/原型优势未获支持；身份/71D静态合同通过，数值路由未执行。所有新候选须另行授权。
 

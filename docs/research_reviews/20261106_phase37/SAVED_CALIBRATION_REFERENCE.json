@@ -1,0 +1,53 @@
+{
+  "source": "RESEARCH_WORKTREE\\research\\fedongas_phase15_20261102\\run\\diagnostics\\ENDPOINT_ERROR_DECOMPOSITION.csv",
+  "source_sha256": "79400d76912160ffc11dbacb03cebbe0c61a88bb47fbabe57db88c77d047ad33",
+  "projection_columns": [
+    "gas_id",
+    "concentration_code",
+    "start_s",
+    "truth_ppm",
+    "calibration_error_raw_ppm",
+    "calibration_error_clipped_ppm",
+    "cal_filename"
+  ],
+  "records": [
+    {
+      "gas_id": "1",
+      "concentration_code": "10",
+      "start_s": "60.0",
+      "truth_ppm": "25.0",
+      "calibration_error_raw_ppm": "7.510976521755872",
+      "calibration_error_clipped_ppm": "7.510976521755872",
+      "cal_filename": "B5_GCO_F010_R1.txt"
+    },
+    {
+      "gas_id": "1",
+      "concentration_code": "10",
+      "start_s": "150.0",
+      "truth_ppm": "25.0",
+      "calibration_error_raw_ppm": "17.128444164553436",
+      "calibration_error_clipped_ppm": "17.128444164553436",
+      "cal_filename": "B5_GCO_F010_R1.txt"
+    },
+    {
+      "gas_id": "1",
+      "concentration_code": "100",
+      "start_s": "60.0",
+      "truth_ppm": "250.0",
+      "calibration_error_raw_ppm": "-47.83042733070087",
+      "calibration_error_clipped_ppm": "-47.83042733070087",
+      "cal_filename": "B5_GCO_F100_R1.txt"
+    },
+    {
+      "gas_id": "1",
+      "concentration_code": "100",
+      "start_s": "150.0",
+      "truth_ppm": "250.0",
+      "calibration_error_raw_ppm": "-2.2777879931630025",
+      "calibration_error_clipped_ppm": "-2.2777879931630025",
+      "cal_filename": "B5_GCO_F100_R1.txt"
+    }
+  ],
+  "test_columns_used": false,
+  "coverage": "saved endpoint Calibration windows only;not fabricated allhead/allwindow history"
+}
