@@ -1,0 +1,25 @@
+"""Register the independently user-approved one-shot offline evaluation."""
+from p38_common import *
+def main():
+    assert not(HERE/'run1').exists() and not(AUTHORIZATION_FILE).exists()
+    p37manifest='a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732';assert sha(P37/'ARTIFACT_SHA256.csv')==p37manifest
+    for x in rows(P37/'ARTIFACT_SHA256.csv'):assert sha(P37/x['path'])==x['sha256']
+    old=read(P37/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json');template=read(P37/'PROPOSED_AUTHORIZATION_TEMPLATE.json');assert sha(P37/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json')==template['future_contract_sha256'] and template['is_authorization'] is False
+    assert old['groups']==GROUPS and old['windows_per_view']==840 and not old['joint_success_enabled'];models=read(P37/'MODEL_SOURCE_LOCK.json')
+    for p,h in old['code_versions'].items():assert sha(P37/p)==h
+    for x in models['classifiers'].values():assert sha(x['endpoint'])==x['endpoint_file_sha256']
+    for x in models['regressors']:assert sha(x['absolute_path'])==x['sha256']
+    meta=read(P1/'run_v2/data/C5_test_metadata.json');ids=[x for x in rows(P36/'ROUTING_WINDOW_IDENTITY_JOIN.csv') if x['role']=='test_metadata_only'];assert len(meta)==len(ids)==840 and {key(x) for x in meta}=={key(x) for x in ids};assert {x['day'] for x in meta}=={22} and len({x['filename'] for x in meta})==40
+    rawroot=Path('ORIGINAL_WORKSPACE/dataset/data1');raw={str(rawroot/x['filename']):x['raw_sha256'] for x in meta}
+    paths=[P1/'run_v2/data/C5_test_metadata.json',P1/'run_v2/data/C5_test.npz',P35/'evaluation/C5_PRIVATE_INPUTS.npz',P35/'evaluation/WINDOW_IDENTITIES.csv',P35/'evaluation/PRIVATE_WINDOW_PREDICTIONS.csv',P36/'ROUTING_WINDOW_IDENTITY_JOIN.csv'];files={str(p):sha(p) for p in paths}
+    codefiles=[HERE/p for p in ['p38_common.py','metrics.py','inference.py','authorized_assets.py','execute.py','score.py','test_metrics.py','test_inference_audit.py']]+[P37/p for p in ['bridge.py','assets.py']];code={p.relative_to(ROOT).as_posix():sha(p) for p in codefiles}
+    auth=dict(is_authorization=True,experiment_id='P38-C5-DAY22-SIX-FIXED-VIEWS-20261106',purpose=PURPOSE,approved_by='explicit user Phase3.8 independent execution authorization',max_runs=1,old_template_reused_as_authorization=False,contract_sha256=sha(P37/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json'),model_source_lock_sha256=sha(P37/'MODEL_SOURCE_LOCK.json'),tolerance_lock_sha256=sha(P37/'TOLERANCE_LOCK.json'),code_sha256=code,input_files_sha256=files,groups=GROUPS,output=str(HERE/'run1'),training=False,scaler_refit=False,Pi=False)
+    reg=dict(status='REGISTERED_USER_APPROVED_NOT_STARTED',authorization=auth,phase37_fixed_commit='ba7a143677404155e93083d0c43e15e9e72b4658',Phase37_manifest_sha256=p37manifest,code_sha256=code,input_files=files,raw_day22_allowlist=raw,array_allowlist=[str(P1/'run_v2/data/C5_test.npz'),str(P35/'evaluation/C5_PRIVATE_INPUTS.npz')],model_sources=models,permission_binding='Only new Day22 whitelist registration callback temporarily replaces frozen assets.install_guard during FrozenAssets construction,then restored;numerical classes unchanged',entry_argv=['PYTHON_EXECUTABLE',str(HERE/'execute.py')],evaluation_semantics='metrics.py and frozen P37 contract;empty correctclass subsets undefined;classificationunavailable counts as error;no mixedgasNRMSE or jointsuccess',seed=42,retrospective=True)
+    old_auth=HERE/'EXECUTION_AUTHORIZATION.json'
+    if old_auth.exists():
+        auth['supersedes_unconsumed_authorization_sha256']=sha(old_auth)
+        write(HERE/'AUTHORIZATION_SUPERSESSION.json',dict(status='OLD_PRE_EXECUTION_AUTH_SUPERSEDED_UNCONSUMED',old_sha256=sha(old_auth),new_file=str(AUTHORIZATION_FILE),reason='tighten invalid-logit consistency gate before any real inference;scientific models/data/tolerances unchanged',user_execution_allowance_total=1,old_authorization_usable_by_current_entry=False))
+    write(REGISTRATION_FILE,reg);write(AUTHORIZATION_FILE,auth)
+    write(HERE/'PERMISSION_BINDING_FINAL.json',dict(purpose=PURPOSE,authorized_raw_exposures=40,authorized_windows=840,allowed_arrays=reg['array_allowlist'],old_P37_asset_file_unchanged=True,temporary_callback='install_p38_guard',new_permission_code_sha256=sha(HERE/'authorized_assets.py'),numeric_algorithms_changed=False,scope='logical Python access guard;not OS isolation'))
+    print('INDEPENDENT_P38_AUTHORIZATION_LOCKED;MAX_RUNS1;NOT_STARTED',flush=True)
+if __name__=='__main__':main()

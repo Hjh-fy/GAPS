@@ -1,0 +1,14 @@
+{
+  "purpose": "OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS",
+  "authorized_raw_exposures": 40,
+  "authorized_windows": 840,
+  "allowed_arrays": [
+    "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_test.npz",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\C5_PRIVATE_INPUTS.npz"
+  ],
+  "old_P37_asset_file_unchanged": true,
+  "temporary_callback": "install_p38_guard",
+  "new_permission_code_sha256": "90965bdd0d5456ebff104753e487084eba09ce7f09077203a368d7279ad55f4f",
+  "numeric_algorithms_changed": false,
+  "scope": "logical Python access guard;not OS isolation"
+}

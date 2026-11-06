@@ -1,0 +1,219 @@
+{
+  "tolerance": {
+    "atol": 0.0001,
+    "rtol": 1e-05,
+    "require_same_argmax": true
+  },
+  "source": "saved records only;no new model call",
+  "events": [
+    {
+      "group": "B0",
+      "row": 0,
+      "filename": "B5_GCO_F010_R2.txt",
+      "start_s": 60.0,
+      "end_s": 70.0,
+      "raw_sha256": "5f3dcf66670050abd9ae7e4601120ec321c1f50d3cf8e6f763aa130219594779",
+      "signal_sha256": "05fa594bef0dbaeb11495fa708dc77dfcaad532b360850bf9998aaa90be47f75",
+      "feature71_sha256": "4b78b57a09151c4ade0ed9739b6503a51e13e2e96b6b18927e9decd177becda8",
+      "status": "NUMERIC_LOGIT_DRIFT",
+      "single_logits": [
+        -5.832027912139893,
+        -0.323861688375473,
+        0.573062539100647,
+        6.4775390625
+      ],
+      "reference_logits": [
+        -5.831955909729004,
+        -0.32374247908592224,
+        0.5731991529464722,
+        6.477103233337402
+      ],
+      "absolute_differences": [
+        7.200241088867188e-05,
+        0.00011920928955078125,
+        0.0001366138458251953,
+        0.00043582916259765625
+      ],
+      "component_thresholds": [
+        0.00015831955909729006,
+        0.00010323742479085923,
+        0.00010573199152946473,
+        0.00016477103233337401
+      ],
+      "failed_components": [
+        1,
+        2,
+        3
+      ],
+      "argmax_unchanged": true,
+      "predicted_gas_id": 3,
+      "max_abs": 0.00043582916259765625
+    },
+    {
+      "group": "B1",
+      "row": 12,
+      "filename": "B5_GCO_F010_R2.txt",
+      "start_s": 120.0,
+      "end_s": 130.0,
+      "raw_sha256": "5f3dcf66670050abd9ae7e4601120ec321c1f50d3cf8e6f763aa130219594779",
+      "signal_sha256": "ec361cf7e6689ac12b696fd17b58a08d8b7a22cf69cf5fa22df86f7b9c86cebe",
+      "feature71_sha256": "da46bd597e3a74cfb12cdbb0ba5bac06d5ac4053106999e5cc8e520b8ef75725",
+      "status": "NUMERIC_LOGIT_DRIFT",
+      "single_logits": [
+        -4.727621078491211,
+        4.62622594833374,
+        8.38047981262207,
+        -10.17405891418457
+      ],
+      "reference_logits": [
+        -4.72752046585083,
+        4.625802516937256,
+        8.3808012008667,
+        -10.174013137817383
+      ],
+      "absolute_differences": [
+        0.00010061264038085938,
+        0.000423431396484375,
+        0.00032138824462890625,
+        4.57763671875e-05
+      ],
+      "component_thresholds": [
+        0.0001472752046585083,
+        0.00014625802516937258,
+        0.000183808012008667,
+        0.00020174013137817386
+      ],
+      "failed_components": [
+        1,
+        2
+      ],
+      "argmax_unchanged": true,
+      "predicted_gas_id": 2,
+      "max_abs": 0.000423431396484375
+    },
+    {
+      "group": "B3",
+      "row": 506,
+      "filename": "B5_GEy_F050_R2.txt",
+      "start_s": 70.0,
+      "end_s": 80.00000000000001,
+      "raw_sha256": "1415d39280b421973545cc85be582bba636cb9af589c2fe45af44e9e09dddcb8",
+      "signal_sha256": "5a3f7b08b954f781059d2d06556424c702f1a33b6bc386b437559895e5eaa9b2",
+      "feature71_sha256": "82f47ff4c6513785059dd2035495f61310145c14bc0fe3715a8dd0d8c8029400",
+      "status": "NUMERIC_LOGIT_DRIFT",
+      "single_logits": [
+        -5.253294944763184,
+        9.209543228149414,
+        2.217393636703491,
+        -8.635876655578613
+      ],
+      "reference_logits": [
+        -5.253317832946777,
+        9.209460258483887,
+        2.2175374031066895,
+        -8.635890007019043
+      ],
+      "absolute_differences": [
+        2.288818359375e-05,
+        8.296966552734375e-05,
+        0.0001437664031982422,
+        1.33514404296875e-05
+      ],
+      "component_thresholds": [
+        0.00015253317832946778,
+        0.00019209460258483887,
+        0.0001221753740310669,
+        0.00018635890007019044
+      ],
+      "failed_components": [
+        2
+      ],
+      "argmax_unchanged": true,
+      "predicted_gas_id": 1,
+      "max_abs": 0.0001437664031982422
+    },
+    {
+      "group": "B4",
+      "row": 8,
+      "filename": "B5_GCO_F010_R2.txt",
+      "start_s": 100.0,
+      "end_s": 110.00000000000001,
+      "raw_sha256": "5f3dcf66670050abd9ae7e4601120ec321c1f50d3cf8e6f763aa130219594779",
+      "signal_sha256": "edb400ad8b5e7c204ec5e05af1104221d2351b6e3746c54be75d43edef9b86fd",
+      "feature71_sha256": "038591639463e510decd8d73d76755aa23353dd5cb6ed37a8c7d945af16bd21b",
+      "status": "NUMERIC_LOGIT_DRIFT",
+      "single_logits": [
+        -5.355790138244629,
+        -5.954355239868164,
+        -0.3369705080986023,
+        14.603195190429688
+      ],
+      "reference_logits": [
+        -5.355650901794434,
+        -5.954058647155762,
+        -0.3375987708568573,
+        14.603425979614258
+      ],
+      "absolute_differences": [
+        0.0001392364501953125,
+        0.00029659271240234375,
+        0.0006282627582550049,
+        0.0002307891845703125
+      ],
+      "component_thresholds": [
+        0.00015355650901794434,
+        0.00015954058647155763,
+        0.00010337598770856857,
+        0.0002460342597961426
+      ],
+      "failed_components": [
+        1,
+        2
+      ],
+      "argmax_unchanged": true,
+      "predicted_gas_id": 3,
+      "max_abs": 0.0006282627582550049
+    },
+    {
+      "group": "B5",
+      "row": 5,
+      "filename": "B5_GCO_F010_R2.txt",
+      "start_s": 85.0,
+      "end_s": 95.00000000000001,
+      "raw_sha256": "5f3dcf66670050abd9ae7e4601120ec321c1f50d3cf8e6f763aa130219594779",
+      "signal_sha256": "5c227300c33b276eb79c4bee74c180dbec7686bdb4790fc046f3a020d6b5db1f",
+      "feature71_sha256": "09c3fad58a31e7a19d0d676500634db1504c4eb30dd6cba371342e3b853fad18",
+      "status": "NUMERIC_LOGIT_DRIFT",
+      "single_logits": [
+        -5.391897201538086,
+        -6.190168857574463,
+        -0.3728865385055542,
+        14.636163711547852
+      ],
+      "reference_logits": [
+        -5.391933917999268,
+        -6.190221786499023,
+        -0.3727573752403259,
+        14.63612174987793
+      ],
+      "absolute_differences": [
+        3.6716461181640625e-05,
+        5.2928924560546875e-05,
+        0.00012916326522827148,
+        4.1961669921875e-05
+      ],
+      "component_thresholds": [
+        0.0001539193391799927,
+        0.00016190221786499025,
+        0.00010372757375240326,
+        0.0002463612174987793
+      ],
+      "failed_components": [
+        2
+      ],
+      "argmax_unchanged": true,
+      "predicted_gas_id": 3,
+      "max_abs": 0.00012916326522827148
+    }
+  ]
+}

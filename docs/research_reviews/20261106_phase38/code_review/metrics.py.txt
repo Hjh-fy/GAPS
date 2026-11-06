@@ -1,0 +1,26 @@
+"""Pure record scoring. No model calls; no mixed-gas concentration metric."""
+import math,statistics,collections
+GASES=['Ethanol','CO','Ethylene','Methane'];SPAN=[112.5,225.,112.5,225.]
+def valid_class(x):return isinstance(x,int) and not isinstance(x,bool) and x in range(4)
+def classification(records):
+    matrix=[[0]*4 for _ in range(4)];unavailable=[0]*4;by=collections.defaultdict(list)
+    for x in records:
+        g=x['true_gas_id'];p=x['predicted_gas_id'];error=not valid_class(p) or p!=g;by[x['filename']].append(int(error))
+        if valid_class(p):matrix[g][p]+=1
+        else:unavailable[g]+=1
+    n=len(records);correct=sum(matrix[i][i] for i in range(4));recall=[];f1=[]
+    for g in range(4):
+        truth=sum(matrix[g])+unavailable[g];pred=sum(matrix[j][g] for j in range(4));recall.append(matrix[g][g]/truth if truth else 0.);f1.append(2*matrix[g][g]/(truth+pred) if truth+pred else 0.)
+    return dict(windows=n,exposures=len(by),Accuracy=correct/n,MacroF1=statistics.mean(f1),window_error=1-correct/n,exposure_equal_error=statistics.mean(statistics.mean(x) for x in by.values()),recall=recall,confusion_true_rows_pred_columns=matrix,class_unavailable_by_truegas=unavailable,classification_unavailable=sum(unavailable))
+def conditional(records,gas):
+    total=[x for x in records if x['true_gas_id']==gas];correct=[x for x in total if x['predicted_gas_id']==gas];kept=[x for x in correct if x['status']=='OK' and x['concentration_raw_ppm'] is not None and x['concentration_clipped_ppm'] is not None]
+    result=dict(true_gas_id=gas,total_windows=len(total),total_exposures=len({x['filename'] for x in total}),classification_correct_windows=len(correct),correct_class_regression_unavailable=len(correct)-len(kept),conditional_windows=len(kept),conditional_exposures=len({x['filename'] for x in kept}),window_coverage=len(kept)/len(total) if total else 0.,exposure_coverage=len({x['filename'] for x in kept})/len({x['filename'] for x in total}) if total else 0.,normalization_span_ppm=SPAN[gas],scope='correctclass AND validregression;subset differs across classifiers')
+    for mode,field in [('raw','concentration_raw_ppm'),('clipped','concentration_clipped_ppm')]:
+        er=[x[field]-x['truth_ppm'] for x in kept];by=collections.defaultdict(list)
+        for x,e in zip(kept,er):by[x['filename']].append(e)
+        mse=statistics.mean(statistics.mean(e*e for e in z) for z in by.values()) if by else None;mae=statistics.mean(statistics.mean(abs(e) for e in z) for z in by.values()) if by else None
+        result.update({mode+'_window_MAE_ppm':statistics.mean(map(abs,er)) if er else None,mode+'_window_RMSE_ppm':math.sqrt(statistics.mean(e*e for e in er)) if er else None,mode+'_exposure_equal_MAE_ppm':mae,mode+'_exposure_equal_RMSE_ppm':math.sqrt(mse) if mse is not None else None,mode+'_exposure_equal_NRMSE_percent':100*math.sqrt(mse)/SPAN[gas] if mse is not None else None})
+    return result
+def availability(records,pred):
+    rr=[x for x in records if x['predicted_gas_id']==pred];calls=sum(x['regression_calls'] for x in rr);valid=sum(x['status']=='OK' for x in rr)
+    return dict(predicted_gas_id=pred,requests=len(rr),regression_calls=calls,valid_outputs=valid,unavailable_outputs=len(rr)-valid,valid_rate=valid/len(rr) if rr else None,unavailable_rate=(len(rr)-valid)/len(rr) if rr else None)

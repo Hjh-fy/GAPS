@@ -1,0 +1,33 @@
+"""Final byte-level verification and source sealing;no real inference."""
+from p38_common import *
+import subprocess
+
+def main():
+    assert not (HERE/'ARTIFACT_SHA256.csv').exists()
+    reg=read(REGISTRATION_FILE);con=read(HERE/'AUTHORIZATION_CONSUMED.json')
+    assert sha(REGISTRATION_FILE)==con['registration_sha256'] and sha(AUTHORIZATION_FILE)==con['authorization_sha256']
+    for p,h in reg['code_sha256'].items():assert sha(p)==h
+    for p,h in reg['input_files'].items():assert sha(p)==h
+    review=read(HERE/'INDEPENDENT_REVIEW.json');assert 'PASS' in review['status']
+    assert not (HERE/'evaluation').exists() and not (HERE/'run1/ALL_SIX_VIEWS_LOCKED.json').exists()
+    old={}
+    expected={P37:'a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732',P35:'dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514',P36:'368943019daf5867b4d5d91896cff70e877a1b9f3d3b1e93399b8e393cdca33d',P15:'7c679f21b50b7d3c5af7567885d8252f74abc3c0014e423f7ddf9109a72fcdc8'}
+    for folder,h in expected.items():
+        manifest=folder/'ARTIFACT_SHA256.csv';assert sha(manifest)==h
+        rr=rows(manifest);size=0
+        for z in rr:
+            p=folder/z['path'];assert sha(p)==z['sha256'],str(p);size+=p.stat().st_size
+        old[folder.name]=dict(files=len(rr),bytes=size,manifest_sha256=h,all_payload_hashes_match=True)
+    write(HERE/'OLD_ASSET_HASH_VERIFICATION.json',dict(status='PASS_ALL_FOUR_FROZEN_MANIFESTS_AND_PAYLOADS',checked_at=now(),old_assets=old,raw_or_model_decoding=0,new_inference=0,note='v5 not written;full v5 rehash not repeated;P1 direct input bytes verified against historical manifest by INPUT_CONTRACT_GATE_FINAL'))
+    result=subprocess.run([sys.executable,'-m','unittest','test_metrics','test_inference_audit','-v'],cwd=HERE,capture_output=True,text=True,encoding='utf-8')
+    assert result.returncode==0,result.stderr
+    write(HERE/'FINAL_SYNTHETIC_TESTS.json',dict(status='PASS',command=[sys.executable,'-m','unittest','test_metrics','test_inference_audit','-v'],returncode=result.returncode,stdout=result.stdout,stderr=result.stderr,scope='14 fake-object/pure metric tests;no real models or raw Test',new_real_inference=0))
+    a=read(HERE/'SAVED_RESULT_AUDIT.json')
+    write(HERE/'FINAL_VERIFICATION.json',dict(status='BLOCKED_INCOMPLETE_NO_SCORING',audit_status='PASS_PRESERVED_BLOCKED_EXECUTION',purpose=PURPOSE,base_phase37_commit=reg['phase37_fixed_commit'],executions=1,authorization_consumed=True,planned_view_windows=5040,observed_view_windows=1376,unexecuted_view_windows=3664,unique_physical_test_exposures=40,complete_views=['B2'],blocked_views=['B0','B1','B3','B4','B5'],numeric_logit_drift_events=5,argmax_drift_observed=0,observed_bridge_OK=1376,observed_bridge_UNAVAILABLE=0,formal_scoring_executed=False,scalers_refit=0,training=0,Pi=0,automatic_retries=0,tolerances_widened=False,signal840_exact=True,feature71_840_exact=True,states_scalers_unchanged=True,registered_code_unchanged=True,independent_review_sha256=sha(HERE/'INDEPENDENT_REVIEW.json'),old_asset_verification_sha256=sha(HERE/'OLD_ASSET_HASH_VERIFICATION.json'),PC_numeric_acceptance='BLOCKED',Pi_actual_deployment='BLOCKED',readiness='separate no-Test numerical diagnosis may be proposed;no new execution authorized'))
+    rr=[]
+    for p in sorted(HERE.rglob('*')):
+        if not p.is_file() or '__pycache__' in p.parts:continue
+        rr.append(dict(path=p.relative_to(HERE).as_posix(),bytes=p.stat().st_size,sha256=sha(p)))
+    table(HERE/'ARTIFACT_SHA256.csv',rr)
+    print(json.dumps(dict(status='SEALED_BLOCKED_EXECUTION',files=len(rr),bytes=sum(x['bytes'] for x in rr),manifest_sha256=sha(HERE/'ARTIFACT_SHA256.csv'),old_assets={k:v['files'] for k,v in old.items()})))
+if __name__=='__main__':main()

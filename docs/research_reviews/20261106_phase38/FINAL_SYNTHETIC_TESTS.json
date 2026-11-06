@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "command": [
+    "PYTHON_ENV\\python.exe",
+    "-m",
+    "pytest",
+    "test_metrics.py",
+    "test_inference_audit.py",
+    "-q",
+    "-p",
+    "no:cacheprovider"
+  ],
+  "returncode": 0,
+  "stdout": "..............                                                           [100%]\n14 passed in 0.30s\n",
+  "stderr": "",
+  "scope": "14 fake-object/pure metric tests;no real models or raw Test",
+  "new_real_inference": 0
+}

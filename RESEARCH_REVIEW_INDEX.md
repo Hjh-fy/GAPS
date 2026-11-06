@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.7严格数值桥接](docs/research_reviews/20261106_phase37/README.md) · [接口](docs/research_reviews/20261106_phase37/API_CONTRACT.md) · [数值验收](docs/research_reviews/20261106_phase37/NUMERIC_ACCEPTANCE.md) · [未来六视图合同](docs/research_reviews/20261106_phase37/FUTURE_OFFLINE_EVALUATION_CONTRACT.md) · [下一步](docs/research_reviews/20261106_phase37/NEXT_DECISION.md)。
+最新：[Phase3.8联合离线评价：BLOCKED](docs/research_reviews/20261106_phase38/README.md) · [执行审计](docs/research_reviews/20261106_phase38/EXECUTION_AUDIT.md) · [数值一致性](docs/research_reviews/20261106_phase38/NUMERIC_CONSISTENCY.md) · [继续/停止](docs/research_reviews/20261106_phase38/NEXT_DECISION.md)。
+
+唯一执行已消费，1376/5040条；B2完成840，其他五组logits超锁定容差停止，已处理argmax均与P35一致。全矩阵未锁，不评分、不挑赢家、不重试。训练0、refit0、Pi0，先审计数值来源。
+
+上阶段：[Phase3.7严格数值桥接](docs/research_reviews/20261106_phase37/README.md) · [接口](docs/research_reviews/20261106_phase37/API_CONTRACT.md) · [数值验收](docs/research_reviews/20261106_phase37/NUMERIC_ACCEPTANCE.md) · [未来六视图合同](docs/research_reviews/20261106_phase37/FUTURE_OFFLINE_EVALUATION_CONTRACT.md) · [下一步](docs/research_reviews/20261106_phase37/NEXT_DECISION.md)。
 
 16Day18暴露/32窗Calibration桥接PASS，信号/71D逐位一致，四SVR与原实现差0，六分类argmax一致，35项异常测试通过。训练0、Day22评价0、Pi0；下一轮必须独立授权。
 

@@ -1,0 +1,33 @@
+{
+  "status": "PASS_ALL_FOUR_FROZEN_MANIFESTS_AND_PAYLOADS",
+  "checked_at": "2026-11-06T18:20:48.780745+08:00",
+  "old_assets": {
+    "fedongas_phase37_20261106": {
+      "files": 55,
+      "bytes": 709228,
+      "manifest_sha256": "a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732",
+      "all_payload_hashes_match": true
+    },
+    "fedongas_phase35_20261105": {
+      "files": 2275,
+      "bytes": 108911726,
+      "manifest_sha256": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+      "all_payload_hashes_match": true
+    },
+    "fedongas_phase36_20261106": {
+      "files": 51,
+      "bytes": 503700,
+      "manifest_sha256": "368943019daf5867b4d5d91896cff70e877a1b9f3d3b1e93399b8e393cdca33d",
+      "all_payload_hashes_match": true
+    },
+    "fedongas_phase15_20261102": {
+      "files": 185,
+      "bytes": 14934947,
+      "manifest_sha256": "7c679f21b50b7d3c5af7567885d8252f74abc3c0014e423f7ddf9109a72fcdc8",
+      "all_payload_hashes_match": true
+    }
+  },
+  "raw_or_model_decoding": 0,
+  "new_inference": 0,
+  "note": "v5 not written;full v5 rehash not repeated;P1 direct input bytes verified against historical manifest by INPUT_CONTRACT_GATE_FINAL"
+}

@@ -1,0 +1,29 @@
+import importlib
+from pathlib import Path
+import numpy as np
+import pytest
+def test_inference_audit_exists():
+    assert (Path(__file__).parent/'inference.py').is_file(),'Missing one-window consistency audit'
+def core():return importlib.import_module('inference')
+class C:
+    group='fake';version='v';state_version='s'
+    def __init__(self):self.last=None
+class B:
+    def __init__(self,c,p=1):self.c=c;self.p=p
+    def predict_window(self,x):self.c.last=dict(logits=np.array([0.,1.,0.,0.]),predicted_class=1);return dict(status='OK',reason=None,predicted_gas_id=self.p,concentration_raw_ppm=30.,concentration_clipped_ppm=30.)
+def test_class_drift_stops_without_using_truth():
+    m=core();c=C();r=m.infer_window(B(c),c,np.zeros((50,8),np.float32),dict(logits=[1.,0.,0.,0.],prediction=0),dict(atol=1e-4,rtol=1e-5));assert r['consistency_status']=='NUMERIC_CLASSIFICATION_DRIFT' and r['stop_view']
+def test_matching_argmax_but_logit_outside_tolerance_blocks():
+    m=core();c=C();r=m.infer_window(B(c),c,np.zeros((50,8),np.float32),dict(logits=[0.,2.,0.,0.],prediction=1),dict(atol=1e-4,rtol=1e-5));assert r['consistency_status']=='NUMERIC_LOGIT_DRIFT' and r['stop_view']
+def test_matching_reference_no_extra_classifier_call():
+    m=core();c=C();r=m.infer_window(B(c),c,np.zeros((50,8),np.float32),dict(logits=[0.,1.,0.,0.],prediction=1),dict(atol=1e-4,rtol=1e-5));assert r['consistency_status']=='MATCH' and not r['stop_view']
+@pytest.mark.parametrize('logits',[[0.,float('nan'),0.,0.],[0.,float('inf'),0.,0.],[0.,1.,0.]])
+def test_invalid_actual_logits_cannot_complete_a_view(logits):
+    m=core();c=C()
+    class Bad:
+        def predict_window(self,x):c.last=dict(logits=np.asarray(logits),predicted_class=None);return dict(status='UNAVAILABLE',reason='CLASSIFICATION_INVALID',predicted_gas_id=None,concentration_raw_ppm=None,concentration_clipped_ppm=None)
+    r=m.infer_window(Bad(),c,np.zeros((50,8),np.float32),dict(logits=[0.,1.,0.,0.],prediction=1),dict(atol=1e-4,rtol=1e-5));assert r['stop_view'] and r['consistency_status']=='NUMERIC_LOGIT_DRIFT' and r['single_logits'] is None
+def test_invalid_reference_rejected_before_joint_call():
+    m=core();c=C()
+    with pytest.raises(ValueError):m.infer_window(B(c),c,np.zeros((50,8),np.float32),dict(logits=[1.,0.],prediction=0),dict(atol=1e-4,rtol=1e-5))
+    assert c.last is None

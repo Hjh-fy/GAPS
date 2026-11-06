@@ -1,0 +1,27 @@
+"""Transparent call receipts plus frozen single-window consistency comparison."""
+import numpy as np
+class ObservedClassifier:
+    def __init__(self,base):self.base=base;self.group=base.group;self.version=base.version;self.state_version=base.state_version;self.last=None;self.calls=0
+    def classify(self,window):
+        self.calls+=1;self.last=self.base.classify(window);return self.last
+class ObservedHead:
+    def __init__(self,base):self.base=base;self.version=base.version;self.gas_id=base.gas_id;self.support=base.support;self.calls=0
+    def predict_raw(self,x):self.calls+=1;return self.base.predict_raw(x)
+class ObservedExtractor:
+    def __init__(self,base):self.base=base;self.version=base.version;self.names=base.names;self.expected=None;self.last=None;self.calls=0
+    def extract(self,window):
+        self.calls+=1;self.last=self.base.extract(window)
+        if self.expected is None or not np.array_equal(self.last['values'],self.expected):raise ValueError('Feature differs from preflight canonical71 input')
+        return self.last
+def infer_window(bridge,classifier,window,reference,tolerance):
+    ref=np.asarray(reference['logits'],dtype=np.float64);rp=reference['prediction']
+    if ref.shape!=(4,) or not np.isfinite(ref).all() or type(rp) is not int or rp not in range(4) or int(np.argmax(ref))!=rp:raise ValueError('Invalid frozen reference schema')
+    classifier.last=None;out=bridge.predict_window(window);last=classifier.last;status='NUMERIC_LOGIT_DRIFT';maxabs=None;single=None
+    if last is not None:
+        z=np.asarray(last.get('logits',[]))
+        if z.shape==(4,) and np.isfinite(z).all():
+            single=z.tolist();maxabs=float(np.max(np.abs(z-ref)))
+            if out['predicted_gas_id']!=int(reference['prediction']):status='NUMERIC_CLASSIFICATION_DRIFT'
+            elif not np.allclose(z,ref,atol=tolerance['atol'],rtol=tolerance['rtol']):status='NUMERIC_LOGIT_DRIFT'
+            else:status='MATCH'
+    return dict(**out,consistency_status=status,stop_view=status in ['NUMERIC_CLASSIFICATION_DRIFT','NUMERIC_LOGIT_DRIFT'] or out.get('reason') in ['MODEL_VERSION_MISMATCH','FEATURE_SCHEMA_MISMATCH','SIGNAL_INVALID'],single_logits=single,Phase35_batch_logits=reference['logits'],Phase35_prediction=int(reference['prediction']),single_batch_logits_max_abs=maxabs)

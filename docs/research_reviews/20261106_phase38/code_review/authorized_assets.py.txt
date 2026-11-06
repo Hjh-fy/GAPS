@@ -1,0 +1,35 @@
+"""New Day22 permission boundary; original P37 numerical classes stay intact."""
+import sys,os
+from p38_common import *
+ACCESS=[];HASH_ONLY=[False];INSTALLED=False
+def hash_only(p):
+    HASH_ONLY[0]=True
+    try:return sha(p)
+    finally:HASH_ONLY[0]=False
+def install_p38_guard(_unused_P37_Calibration_lock):
+    global INSTALLED
+    if INSTALLED:return
+    reg=read(REGISTRATION_FILE);auth=read(AUTHORIZATION_FILE)
+    if auth!=reg['authorization'] or auth['purpose']!=PURPOSE or auth['max_runs']!=1:raise PermissionError('No matching independent P38 authorization')
+    raw={str(Path(p).resolve()).lower() for p in reg['raw_day22_allowlist']};arrays={str(Path(p).resolve()).lower() for p in reg['array_allowlist']}
+    allowed_reference={str((P35/'evaluation'/name).resolve()).lower() for name in ['PRIVATE_WINDOW_PREDICTIONS.csv','WINDOW_IDENTITIES.csv']}
+    def audit(event,args):
+        if event!='open' or not isinstance(args[0],(str,bytes,os.PathLike)):return
+        p=Path(os.fsdecode(args[0]));s=str(p.resolve()).lower();n=s.replace('\\','/')
+        if '/dataset/data1/' in n or p.suffix.lower() in ['.npy','.npz']:
+            allowed=HASH_ONLY[0] or s in raw or s in arrays;ACCESS.append(dict(path=str(p),allowed=allowed,purpose='SHA_ONLY' if HASH_ONLY[0] else PURPOSE))
+            if not allowed:raise PermissionError('P38 rejects non-Day22 numeric input')
+        if '/fedongas_phase35_20261105/evaluation/' in n and s not in allowed_reference and s not in arrays and not HASH_ONLY[0]:raise PermissionError('P38 allows only frozen identity/prediction reference;no old metric selection')
+    sys.addaudithook(audit);INSTALLED=True
+def load_assets():
+    reg=read(REGISTRATION_FILE)
+    for p,h in reg['code_sha256'].items():
+        if sha(ROOT/p)!=h:raise ValueError('registered code changed: '+p)
+    sys.path.insert(0,str(P37));import assets as frozen
+    if Path(frozen.__file__).resolve()!=P37/'assets.py':raise ValueError('unexpected assets import')
+    original=frozen.install_guard
+    frozen.install_guard=install_p38_guard
+    try:bundle=frozen.FrozenAssets()
+    finally:frozen.install_guard=original
+    # Permission registration only: no replacements of model/predict/extract code.
+    return bundle

@@ -1,0 +1,72 @@
+"""One approved Day22 inference pass; scores are a separate post-lock program."""
+from p38_common import *
+import time,traceback,inspect
+RUN=HERE/'run1'
+def array_sha(np,x):
+    x=np.ascontiguousarray(x);return __import__('hashlib').sha256(str(x.dtype).encode()+str(x.shape).encode()+x.tobytes()).hexdigest()
+def preflight(bundle,reg):
+    import numpy as np
+    a=reg['input_files']
+    for p,h in a.items():assert sha(p)==h,('inputSHA',p)
+    meta=read(P1/'run_v2/data/C5_test_metadata.json');m35=[x for x in rows(P35/'evaluation/WINDOW_IDENTITIES.csv') if x['client_id']=='5'];join=[x for x in rows(P36/'ROUTING_WINDOW_IDENTITY_JOIN.csv') if x['role']=='test_metadata_only']
+    def ident(m):return (*key(m),m['raw_sha256'],int(m['gas_id']))
+    assert len(meta)==len(m35)==len(join)==840 and {ident(x) for x in meta}=={ident(x) for x in m35}=={ident(x) for x in join}
+    assert len({x['filename'] for x in meta})==40 and {x['day'] for x in meta}=={22}
+    with np.load(P35/'evaluation/C5_PRIVATE_INPUTS.npz',allow_pickle=False) as f:oldsignals=f['x'].copy()
+    with np.load(P1/'run_v2/data/C5_test.npz',allow_pickle=False) as f:oldfeatures=f['x71'].copy();truth=f['y'].copy();gas=f['gas'].copy()
+    oldx={key(m):x for m,x in zip(m35,oldsignals)};cache={};xx=[];features=[];identities=[];qc=[]
+    for i,m in enumerate(meta):
+        p=next(Path(p) for p in reg['raw_day22_allowlist'] if Path(p).name==m['filename'])
+        if p.name not in cache:
+            assert sha(p)==m['raw_sha256'];parsed=bundle.v.strict.parse_raw_name(p.name);assert parsed['client_id']==5 and parsed['day']==22
+            cache[p.name]=bundle.v.strict.process_raw(p);valid=[q for q in cache[p.name]['metadata'] if q['valid']]
+            assert len(valid)==21;qc.append(dict(filename=p.name,raw_sha256=sha(p),day=22,valid_windows=len(valid),raw_rows=cache[p.name]['raw_rows']))
+        d=cache[p.name];j=next(j for j,q in enumerate(d['metadata']) if abs(q['start_s']-m['start_s'])<1e-6 and abs(q['end_s']-m['end_s'])<1e-6);assert d['metadata'][j]['valid'];x=d['x'][j];f=bundle.extractor.extract(x)['values']
+        assert np.array_equal(x,oldx[key(m)]) and np.array_equal(f,oldfeatures[i]);assert gas[i]==m['gas_id'] and truth[i]==m['truth_ppm']
+        xx.append(x);features.append(f);identities.append(dict(m,row=i,signal_sha256=array_sha(np,x),feature71_sha256=array_sha(np,f)))
+    x=np.asarray(xx);f=np.asarray(features);assert x.shape==(840,50,8) and x.dtype==np.float32 and f.shape==(840,71) and f.dtype==np.float64 and np.isfinite(x).all() and np.isfinite(f).all()
+    prior=rows(P35/'evaluation/PRIVATE_WINDOW_PREDICTIONS.csv');ref={}
+    for b in GROUPS:
+        rr=[z for z in prior if z['group']==b and z['domain']=='C5'];assert len(rr)==840;by={key(z):z for z in rr};assert set(by)=={key(z) for z in meta};ref[b]=[]
+        for m in meta:
+            z=by[key(m)];logits=json.loads(z['logits']);assert len(logits)==4 and np.isfinite(logits).all() and int(np.argmax(logits))==int(z['prediction']);ref[b].append(dict(logits=logits,prediction=int(z['prediction'])))
+    expected_scaler={int(z['gas_id']):z['scaler_sha256'] for z in rows(P37/'calibration_final/REGRESSOR_NUMERIC_QA.csv')}
+    assert {g:h.scaler_sha() for g,h in bundle.heads.items()}==expected_scaler
+    assert list(inspect.signature(__import__('bridge').JointBridge.predict_window).parameters)==['self','window']
+    table(RUN/'INPUT_WINDOW_IDENTITIES.csv',identities);table(RUN/'RAW_DATA_QC.csv',qc)
+    write(RUN/'PREFLIGHT_PASS.json',dict(status='PASS_BEFORE_FIRST_JOINT_CALL',exposures=40,windows=840,signal_exact=True,feature71_exact=True,signal_array_sha256=array_sha(np,x),feature71_array_sha256=array_sha(np,f),input_files_sha256=a,scaler_sha256=expected_scaler,classifier_file_state_SHA='checked by unchanged P37 loader',routing_signature='window only;truth appended after call',single_vs_historical_batch_tolerance=read(P37/'TOLERANCE_LOCK.json')['classifier_logits_single_vs_batch']))
+    return x,f,identities,ref,expected_scaler
+def main():
+    if RUN.exists() or (HERE/'AUTHORIZATION_CONSUMED.json').exists():raise FileExistsError('one-shot already consumed;never overwrite/retry')
+    reg=read(REGISTRATION_FILE);assert read(AUTHORIZATION_FILE)==reg['authorization'];assert reg['authorization']['purpose']==PURPOSE
+    RUN.mkdir();write(HERE/'AUTHORIZATION_CONSUMED.json',dict(purpose=PURPOSE,time=now(),registration_sha256=sha(REGISTRATION_FILE),authorization_sha256=sha(AUTHORIZATION_FILE),max_runs=1,output=str(RUN),auto_retry=False))
+    tic=time.perf_counter()
+    try:
+        from authorized_assets import load_assets,ACCESS
+        from inference import ObservedClassifier,ObservedHead,ObservedExtractor,infer_window
+        bundle=load_assets();x,features,identities,refs,scalers=preflight(bundle,reg)
+        from bridge import JointBridge
+        assert Path(inspect.getfile(JointBridge)).resolve()==P37/'bridge.py','Unexpected bridge import'
+        tolerance=read(P37/'TOLERANCE_LOCK.json')['classifier_logits_single_vs_batch'];matrix=[];locks={}
+        for b in GROUPS:
+            outdir=RUN/b;outdir.mkdir();t=time.perf_counter();c=ObservedClassifier(bundle.classifiers[b]);e=ObservedExtractor(bundle.extractor);heads={g:ObservedHead(h) for g,h in bundle.heads.items()};base=bundle.bridge(b);engine=JointBridge(c,e,heads,base.expected);records=[];events=[];stopped=False
+            state_before=bundle.previous.c.digest(bundle.r.arrays(c.base.model));assert state_before==reg['model_sources']['classifiers'][b]['endpoint_state_sha256']
+            for i,window in enumerate(x):
+                counts={g:h.calls for g,h in heads.items()};e.expected=features[i];e.last=None
+                z=infer_window(engine,c,window,refs[b][i],tolerance);m=identities[i];calls={g:h.calls-counts[g] for g,h in heads.items()};actual=[g for g,n in calls.items() if n];assert sum(calls.values())<=1
+                if actual:assert actual==[z['predicted_gas_id']]
+                if z['status']=='OK':assert sum(calls.values())==1 and e.last is not None
+                if z['status']!='OK' or z['consistency_status']!='MATCH':events.append(dict(row=i,filename=m['filename'],reason=z['reason'],consistency_status=z['consistency_status'],stop_view=z['stop_view']))
+                record=dict(group=b,row=i,filename=m['filename'],client_id=5,day=22,start_s=m['start_s'],end_s=m['end_s'],raw_sha256=m['raw_sha256'],signal_sha256=m['signal_sha256'],feature71_sha256=m['feature71_sha256'],true_gas_id=int(m['gas_id']),truth_ppm=float(m['truth_ppm']),concentration_code=int(m['concentration_code']),**z,regression_calls=sum(calls.values()),called_head_gas=actual[0] if actual else None,regression_available=z['status']=='OK',wrong_route=z['predicted_gas_id'] is not None and z['predicted_gas_id']!=int(m['gas_id']))
+                records.append(record)
+                if z['stop_view']:stopped=True;break
+            state_after=bundle.previous.c.digest(bundle.r.arrays(c.base.model));assert state_after==state_before and {g:h.scaler_sha() for g,h in bundle.heads.items()}==scalers
+            result_path=outdir/'PRIVATE_WINDOW_RESULTS.json';write(result_path,records);write(outdir/'EVENTS.json',events)
+            receipt=dict(group=b,status='BLOCKED_NUMERIC_CONSISTENCY' if stopped else 'PASS_COMPLETE_FIXED_VIEW',complete=not stopped and len(records)==840,windows=len(records),result_sha256=sha(result_path),classifier_state_before=state_before,classifier_state_after=state_after,scaler_sha256=scalers,classifier_calls=c.calls,extractor_calls=e.calls,regressor_calls={g:h.calls for g,h in heads.items()},seconds=time.perf_counter()-t,events=len(events),retrospective=True)
+            write(outdir/'VIEW_LOCK.json',receipt);matrix.append(receipt);locks[b]=sha(outdir/'VIEW_LOCK.json');print(b+' '+receipt['status']+' '+str(len(records)),flush=True)
+        write(RUN/'EXECUTION_MATRIX.json',matrix);write(RUN/'ACCESS_LOG.json',ACCESS)
+        if all(r['complete'] for r in matrix):write(RUN/'ALL_SIX_VIEWS_LOCKED.json',dict(status='PASS_ALL_SIX_LOCKED_BEFORE_SCORING',views=6,windows=5040,unique_exposures=40,view_locks=locks,seconds=time.perf_counter()-tic,training=0,scaler_refits=0,Pi=0));print('ALL6_LOCKED;NO_SCORES_YET',flush=True)
+        else:write(RUN/'MATRIX_BLOCKED.json',dict(status='BLOCKED_INCOMPLETE_NO_SCORING',view_statuses=matrix,auto_retry=False));print('INCOMPLETE_NO_SCORING_NO_RETRY',flush=True)
+    except BaseException:
+        write(RUN/'EXECUTION_FAILED.json',dict(status='BLOCKED_NO_AUTOMATIC_RETRY',error=traceback.format_exc(),seconds=time.perf_counter()-tic));raise
+if __name__=='__main__':main()

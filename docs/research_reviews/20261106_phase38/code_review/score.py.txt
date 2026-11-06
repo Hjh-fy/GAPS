@@ -1,0 +1,40 @@
+"""Score saved joint results only after all six fixed views are locked."""
+from p38_common import *
+from metrics import classification,conditional,availability
+from collections import Counter,defaultdict
+RUN=HERE/'run1';OUT=HERE/'evaluation'
+def main():
+    locked=read(RUN/'ALL_SIX_VIEWS_LOCKED.json');assert locked['status']=='PASS_ALL_SIX_LOCKED_BEFORE_SCORING'
+    allviews={}
+    for b in GROUPS:
+        p=RUN/b/'VIEW_LOCK.json';assert sha(p)==locked['view_locks'][b];receipt=read(p);assert receipt['complete'] and receipt['windows']==840;assert sha(RUN/b/'PRIVATE_WINDOW_RESULTS.json')==receipt['result_sha256'];rr=read(RUN/b/'PRIVATE_WINDOW_RESULTS.json');assert len(rr)==840 and len({x['filename'] for x in rr})==40 and all(x['consistency_status']=='MATCH' for x in rr);allviews[b]=rr
+    OUT.mkdir(exist_ok=False);classrows=[];conf=[];gasrows=[];calls=[];concentration=[];exposure=[];wrong=[];statuses=[];events=[];allrows=[];class_exposures=[]
+    for b,records in allviews.items():
+        c=classification(records);conf.append(dict(group=b,labels=GASES,matrix=c.pop('confusion_true_rows_pred_columns'),class_unavailable_by_truegas=c.pop('class_unavailable_by_truegas')));recalls=c.pop('recall');classrows.append(dict(group=b,**c,**{f'Recall_{g}':recalls[i] for i,g in enumerate(GASES)},calculation_status='recomputed from frozen joint results',seed=42,retrospective=True))
+        calls.extend(dict(group=b,**availability(records,g)) for g in list(range(4))+[None]);counts=Counter((x['status'],x['reason']) for x in records)
+        statuses.extend(dict(group=b,status=s,reason=r,windows=n,rate=n/840) for (s,r),n in counts.items())
+        for x in records:
+            if x['status']!='OK':events.append(dict(group=b,row=x['row'],filename=x['filename'],status=x['status'],reason=x['reason'],predicted_gas_id=x['predicted_gas_id']))
+            allrows.append(x)
+        for g in range(4):
+            gasrows.append(dict(group=b,gas=GASES[g],**conditional(records,g)))
+            gr=[x for x in records if x['true_gas_id']==g]
+            for ppm in sorted({x['truth_ppm'] for x in gr}):
+                sr=[x for x in gr if x['truth_ppm']==ppm];concentration.append(dict(group=b,gas=GASES[g],concentration_ppm=ppm,**conditional(sr,g)))
+            for f in sorted({x['filename'] for x in gr}):
+                er=[x for x in gr if x['filename']==f];exposure.append(dict(group=b,gas=GASES[g],filename=f,concentration_ppm=er[0]['truth_ppm'],**conditional(er,g)))
+        for f in sorted({x['filename'] for x in records}):
+            rr=[x for x in records if x['filename']==f];correct=sum(x['predicted_gas_id']==x['true_gas_id'] for x in rr);class_exposures.append(dict(group=b,filename=f,true_gas_id=rr[0]['true_gas_id'],concentration_ppm=rr[0]['truth_ppm'],windows=len(rr),correct_windows=correct,classification_error=1-correct/len(rr),valid_concentration_windows=sum(x['status']=='OK' for x in rr)))
+        for true in range(4):
+            for pred in list(range(4))+[None]:
+                if true==pred:continue
+                rr=[x for x in records if x['true_gas_id']==true and x['predicted_gas_id']==pred]
+                wrong.append(dict(group=b,true_gas_id=true,true_gas=GASES[true],predicted_gas_id=pred,predicted_gas=GASES[pred] if pred is not None else 'UNAVAILABLE_CLASS',windows=len(rr),affected_exposures=len({x['filename'] for x in rr}),concentration_ppm_counts=json.dumps(dict(sorted(Counter(x['truth_ppm'] for x in rr).items()))),exposure_window_counts=json.dumps(dict(sorted(Counter(x['filename'] for x in rr).items()))),exposure_note='one exposure may appear in multiple wrong directions;not additive'))
+    table(OUT/'CLASSIFICATION_METRICS.csv',classrows);write(OUT/'CONFUSION_MATRICES.json',conf);table(OUT/'PREDICTED_GAS_CALLS_AND_AVAILABILITY.csv',calls);table(OUT/'CONDITIONAL_REGRESSION_BY_GAS.csv',gasrows);table(OUT/'CONDITIONAL_REGRESSION_BY_CONCENTRATION.csv',concentration);table(OUT/'CONDITIONAL_REGRESSION_BY_EXPOSURE.csv',exposure);table(OUT/'WRONG_ROUTING_DIRECTIONS.csv',wrong);table(OUT/'STATUS_COUNTS.csv',statuses);table(OUT/'CLASSIFICATION_EXPOSURE_ERRORS.csv',class_exposures);write(OUT/'ANOMALY_EVENTS.json',events)
+    # CSV is a local full-flow artifact; JSON native records remain authoritative.
+    serialized=[]
+    for x in allrows:serialized.append({k:json.dumps(v,ensure_ascii=False) if isinstance(v,(list,dict)) else v for k,v in x.items()})
+    table(OUT/'PRIVATE_ALL5040_WINDOW_RESULTS.csv',serialized)
+    write(OUT/'EVALUATION_COMPLETE.json',dict(status='PASS_ALL_SIX_FIXED_JOINT_VIEWS_SCORED',views=6,records=len(allrows),unique_physical_exposures=40,windows_per_view=840,classification_metric_rows=len(classrows),conditional_gas_rows=len(gasrows),conditional_concentration_rows=len(concentration),conditional_exposure_rows=len(exposure),all_results_locked_before_scoring=True,mixed_truegas_NRMSE_computed=False,joint_success_computed=False,overall_winner_selected=False,training_calls=0,scaler_fit_calls=0,Pi=0,retrospective=True))
+    print('SCORED6_FIXED_VIEWS;NO_GLOBAL_CHEMICAL_NRMSE/JOINTSUCCESS/RANKING',flush=True)
+if __name__=='__main__':main()

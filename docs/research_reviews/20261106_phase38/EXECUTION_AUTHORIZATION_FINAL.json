@@ -1,0 +1,44 @@
+{
+  "is_authorization": true,
+  "experiment_id": "P38-C5-DAY22-SIX-FIXED-VIEWS-20261106",
+  "purpose": "OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS",
+  "approved_by": "explicit user Phase3.8 independent execution authorization",
+  "max_runs": 1,
+  "old_template_reused_as_authorization": false,
+  "contract_sha256": "570211d62a22b6691bc634a5ba2e3ecec181783741823732a50e0712dc94c1f8",
+  "model_source_lock_sha256": "0e297578c6b55c02e3b7ae7a3dc3a67ea68ed5a97de76b509c8304839a03ca02",
+  "tolerance_lock_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+  "code_sha256": {
+    "research/fedongas_phase38_20261106/p38_common.py": "1fa75e45259e78443dffa4f8d15513ee2d39de9f5c673ea2899063a9eed4288d",
+    "research/fedongas_phase38_20261106/metrics.py": "31b4fe74ec62752b71f3d9a6fec90f915dd74142605045fb6879b792a8c297d3",
+    "research/fedongas_phase38_20261106/inference.py": "190b8c7358293b59b5097676e670fdf4e93d5e297fd56b1b9f6ed8aab5c0f621",
+    "research/fedongas_phase38_20261106/authorized_assets.py": "c9647e46307b2da16ce1073282c8f688aaecd14a52e42724dbbb1492ba87d350",
+    "research/fedongas_phase38_20261106/execute.py": "33ac9b166589224d8cfec3e295c3c4472ec1baaf96a1004cd0b6a4741b667973",
+    "research/fedongas_phase38_20261106/score.py": "c2692da6f9639bb9715c6eb2f0662ec4a4f1e87c3f7c75d5764dee1bcd74a0aa",
+    "research/fedongas_phase38_20261106/test_metrics.py": "084b8d7a5cf7e1562385b981d01c7886d3a485c29222ebe2a631759a91118352",
+    "research/fedongas_phase38_20261106/test_inference_audit.py": "03059186df506c149e6fd5db45368dda157096f3bc22cfe35e82ff358113fabf",
+    "research/fedongas_phase37_20261106/bridge.py": "c92aa6065d0884f1e68b53790d858b75b2cc6283c5dc7ce6bf87b902265cd626",
+    "research/fedongas_phase37_20261106/assets.py": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5"
+  },
+  "input_files_sha256": {
+    "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_test_metadata.json": "9525e76fb81671aeb9b3ed8bdaa88c47106a489088c7c3243bfe19b175de6a1a",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_test.npz": "1cada1d99a45c27000e3fb76907ad790b168b4b556413d0ff97a0bd54918b224",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\C5_PRIVATE_INPUTS.npz": "28f1991d72b9c1beccee68119fbc358f5445738b26d51a36ef466be9f27e828b",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\WINDOW_IDENTITIES.csv": "a28a78aa7f952152e61aacdeaf3a81809786413537048270fd1819bc91b017a1",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\PRIVATE_WINDOW_PREDICTIONS.csv": "07f0f130d09e33ab2c96d459811a6543e087baa61894fbabd90f5a08f9cc385b",
+    "RESEARCH_WORKTREE\\research\\fedongas_phase36_20261106\\ROUTING_WINDOW_IDENTITY_JOIN.csv": "f9a83e595cfdc493dbb49e0f2e09c8bdc37c9ef8d675b76006a07e23bbb7fc87"
+  },
+  "groups": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "output": "RESEARCH_WORKTREE\\research\\fedongas_phase38_20261106\\run1",
+  "training": false,
+  "scaler_refit": false,
+  "Pi": false,
+  "supersedes_unconsumed_authorization_sha256": "c519c21c14e4c0db5694dcdf20f8dc52362f18a8895bea12691859d310198ec7"
+}

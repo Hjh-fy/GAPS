@@ -1,0 +1,190 @@
+{
+  "status": "PASS_INDEPENDENT_AUDIT_OF_BLOCKED_MATRIX",
+  "execution_outcome": "BLOCKED_INCOMPLETE_NO_SCORING",
+  "joint_acceptance_passed": false,
+  "reviewer": "phase32_review",
+  "reviewed_utc": "2026-11-06T10:18:34.709309+00:00",
+  "processed_window_records": 1376,
+  "target_full_matrix_records_if_complete": 5040,
+  "processed_records_within_registered_logit_tolerance": 1371,
+  "NUMERIC_LOGIT_DRIFT_events": 5,
+  "processed_argmax_mismatches_vs_Phase35": 0,
+  "nonfinite_saved_logit_records": 0,
+  "maximum_absolute_logit_difference_over_processed_records": 0.0006282627582550049,
+  "maximum_normalized_tolerance_ratio_over_processed_records": 6.0774534994158005,
+  "tolerance": {
+    "atol": 0.0001,
+    "rtol": 1e-05,
+    "require_same_argmax": true
+  },
+  "tolerance_sha256": "6eb949f063424bfe5311918ccb97b0e825d559beb04996f6fd97314f7a68f61c",
+  "tolerance_widened": false,
+  "view_outcomes": [
+    {
+      "group": "B0",
+      "processed_windows": 1,
+      "complete": false,
+      "saved_result_sha256": "75b305c775ca13446f3c1f4c1caa4eeed2f8717652ab459ed48dcb7faa14940e",
+      "stopping_events": [
+        {
+          "row": 0,
+          "filename": "B5_GCO_F010_R2.txt",
+          "start_s": 60.0,
+          "consistency_status": "NUMERIC_LOGIT_DRIFT",
+          "single_argmax_equals_reference": true,
+          "maximum_absolute_logit_difference": 0.00043582916259765625,
+          "worst_normalized_component": 3,
+          "worst_component_absolute_difference": 0.00043582916259765625,
+          "registered_allowed_difference_for_worst_component": 0.00016477103233337401,
+          "threshold_ratio": 2.645059367691902
+        }
+      ],
+      "classifier_calls": 1,
+      "regressor_calls_total": 1
+    },
+    {
+      "group": "B1",
+      "processed_windows": 13,
+      "complete": false,
+      "saved_result_sha256": "59f4ae665482fe8ebf34d0d3a0266869e1b156363dcd69492463a936c8c0c50f",
+      "stopping_events": [
+        {
+          "row": 12,
+          "filename": "B5_GCO_F010_R2.txt",
+          "start_s": 120.0,
+          "consistency_status": "NUMERIC_LOGIT_DRIFT",
+          "single_argmax_equals_reference": true,
+          "maximum_absolute_logit_difference": 0.000423431396484375,
+          "worst_normalized_component": 1,
+          "worst_component_absolute_difference": 0.000423431396484375,
+          "registered_allowed_difference_for_worst_component": 0.00014625802516937258,
+          "threshold_ratio": 2.8950985492524235
+        }
+      ],
+      "classifier_calls": 13,
+      "regressor_calls_total": 13
+    },
+    {
+      "group": "B2",
+      "processed_windows": 840,
+      "complete": true,
+      "saved_result_sha256": "6c1cee1924a13e9b26c9d7d2ecd9c0b907e3ace9c952f3210b5e9ab249e420bf",
+      "stopping_events": [],
+      "classifier_calls": 840,
+      "regressor_calls_total": 840
+    },
+    {
+      "group": "B3",
+      "processed_windows": 507,
+      "complete": false,
+      "saved_result_sha256": "c1412a7488ef85ba37251887482326d78f62bb8c92ccf79659e5c376c2091c70",
+      "stopping_events": [
+        {
+          "row": 506,
+          "filename": "B5_GEy_F050_R2.txt",
+          "start_s": 70.0,
+          "consistency_status": "NUMERIC_LOGIT_DRIFT",
+          "single_argmax_equals_reference": true,
+          "maximum_absolute_logit_difference": 0.0001437664031982422,
+          "worst_normalized_component": 2,
+          "worst_component_absolute_difference": 0.0001437664031982422,
+          "registered_allowed_difference_for_worst_component": 0.0001221753740310669,
+          "threshold_ratio": 1.1767216129961273
+        }
+      ],
+      "classifier_calls": 507,
+      "regressor_calls_total": 507
+    },
+    {
+      "group": "B4",
+      "processed_windows": 9,
+      "complete": false,
+      "saved_result_sha256": "622acc6211871c16f2debbf695121b8194ace3a3bcea47e63e689bfa1b012d72",
+      "stopping_events": [
+        {
+          "row": 8,
+          "filename": "B5_GCO_F010_R2.txt",
+          "start_s": 100.0,
+          "consistency_status": "NUMERIC_LOGIT_DRIFT",
+          "single_argmax_equals_reference": true,
+          "maximum_absolute_logit_difference": 0.0006282627582550049,
+          "worst_normalized_component": 2,
+          "worst_component_absolute_difference": 0.0006282627582550049,
+          "registered_allowed_difference_for_worst_component": 0.00010337598770856857,
+          "threshold_ratio": 6.0774534994158005
+        }
+      ],
+      "classifier_calls": 9,
+      "regressor_calls_total": 9
+    },
+    {
+      "group": "B5",
+      "processed_windows": 6,
+      "complete": false,
+      "saved_result_sha256": "8774685b2eb798f480b5e694db9fdf5dcf0251d4a03c89af692ab3d69b873717",
+      "stopping_events": [
+        {
+          "row": 5,
+          "filename": "B5_GCO_F010_R2.txt",
+          "start_s": 85.0,
+          "consistency_status": "NUMERIC_LOGIT_DRIFT",
+          "single_argmax_equals_reference": true,
+          "maximum_absolute_logit_difference": 0.00012916326522827148,
+          "worst_normalized_component": 2,
+          "worst_component_absolute_difference": 0.00012916326522827148,
+          "registered_allowed_difference_for_worst_component": 0.00010372757375240326,
+          "threshold_ratio": 1.2452162964553957
+        }
+      ],
+      "classifier_calls": 6,
+      "regressor_calls_total": 6
+    }
+  ],
+  "adapter_status_counts_over_processed_records": {
+    "OK": 1376
+  },
+  "adapter_reason_counts_over_processed_records": {
+    "None": 1376
+  },
+  "other_saved_routing_version_call_or_clipping_anomalies": [],
+  "authorization": {
+    "exact_FINAL_registration_and_authorization_hashes_match_consumed_receipt": true,
+    "authorization_total_runs": 1,
+    "old_pre_execution_authorization_superseded": true,
+    "auto_retry": false,
+    "current_registered_code_SHA_files_verified": 10
+  },
+  "input_and_state": {
+    "preflight40_exposures840_signal_and_feature_windows_pass_reported": true,
+    "saved_input_identities_and_hashes_match_all_processed_records": true,
+    "embedded_Phase35_reference_matches_frozen_saved_prediction_CSV": true,
+    "classifier_before_after_state_SHA_matches_registered_endpoints_all6": true,
+    "scaler_SHA_matches_preflight_and_P37_all6": true,
+    "all_recorded_numeric_access_within_new_authorized_paths": true
+  },
+  "no_partial_scoring": {
+    "ALL_SIX_VIEWS_LOCKED_marker_absent": true,
+    "evaluation_directory_absent": true,
+    "score_program_invoked_by_review": false,
+    "metrics_computed_by_review": false,
+    "complete_B2_not_scored_or_ranked": true,
+    "partial_accuracy_MAE_RMSE_NRMSE_or_joint_success_computed": false
+  },
+  "interpretation": "Five views stopped at their first finite-logit pointwise threshold violation; all1376 processed argmax predictions match the saved reference. This does not establish argmax parity for unprocessed windows or permit partial/new joint performance claims. Cause of single-window/batch logit differences is not diagnosed by this audit. Preserve blocked run; no tolerance relaxation, output substitution or automatic repeat.",
+  "failures": [],
+  "review_raw_Test_reads": 0,
+  "review_model_deserializations": 0,
+  "review_model_inference_calls": 0,
+  "review_training_calls": 0,
+  "registered_execution_files_modified": false,
+  "only_new_review_file_written": "INDEPENDENT_REVIEW.json",
+  "evidence_sha256": {
+    "EXECUTION_REGISTRATION_FINAL.json": "a05cfae0fe6a9c83491beb37b130b4bd77c45f06c83a50ad7f46e27533f4d204",
+    "EXECUTION_AUTHORIZATION_FINAL.json": "5c4fc455ccc08a1e7457e0e80a2af507c460731c3c2c577aaba2172b7aeb542c",
+    "AUTHORIZATION_CONSUMED.json": "ca568a572d2b7b04c34e57df1e8485f05201c5de2dcf58570531e556cadfb1a0",
+    "run1/PREFLIGHT_PASS.json": "d4e912fdef3155f31fcf8f8964cb92de33204f69829d4dfb1fa3d41088b6139c",
+    "run1/EXECUTION_MATRIX.json": "5b366eaa916678807db9eba4272c1228fbbb4cd25f25d558df252dc477ceb7ff",
+    "run1/MATRIX_BLOCKED.json": "ba398315a078e433e72502eb492aa9f26796b4354f754430f6c0eebac7b593b0",
+    "run1/ACCESS_LOG.json": "5d583d5560167d6186161ba51948f72b7dd00451f1b42180af9ef06c4addd456"
+  }
+}

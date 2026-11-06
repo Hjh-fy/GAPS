@@ -1,0 +1,110 @@
+"""Describe the frozen incomplete execution;never call inference or score."""
+from p38_common import *
+
+def md(name,text):
+    with (HERE/name).open('x',encoding='utf-8',newline='\n') as f:f.write(text.strip()+'\n')
+
+def main():
+    s=read(HERE/'SAVED_RESULT_AUDIT.json');rr=rows(HERE/'EXECUTION_PASS_BLOCKED_MATRIX.csv');e=read(HERE/'NUMERIC_DRIFT_EVIDENCE.json')['events']
+    matrix='|视图|已执行/计划窗|状态|首次超容差row（0起）|\n|---|---:|---|---:|\n'+'\n'.join(f"|{x['group']}|{x['executed_windows']}/840|{'视图PASS，整体BLOCKED' if x['group']=='B2' else 'BLOCKED：logits漂移'}|{next((z['row'] for z in e if z['group']==x['group']),'—')}|" for x in rr)
+    md('README.md',f'''# Phase3.8 六组冻结分类器联合离线评价：BLOCKED
+
+依据Phase3.7固定版本 `ba7a143677404155e93083d0c43e15e9e72b4658`。用户批准的唯一一次 `OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS` 已消费并执行，没有重试。
+
+计划5040视图窗（6×840，同40次物理暴露）；实际1376条记录。B2完成840窗，其余五组在首次logits超容差时停止，剩余3664次未运行。六组没有全部锁定，因此**未执行评分程序，不发布部分组联合性能或赢家**。
+
+{matrix}
+
+840窗strict信号及71D特征与历史缓存逐位一致；六分类端点、四F-SVR71头及scaler身份核验通过，运行前后state/scaler不变。已观察1376窗argmax与Phase3.5全部一致；五条事件是 `NUMERIC_LOGIT_DRIFT`，不是已观察到的类别变化。不能外推未运行窗口。
+
+已观察1376次原桥接均返回OK，raw/clip有限、预测类别唯一选头、每窗一次回归调用；这不表示五个失败视图通过验收。未运行窗口不能伪记为UNAVAILABLE，完整流量不可用率和条件回归覆盖率尚未获得。
+
+阅读顺序：[执行审计](EXECUTION_AUDIT.md) → [数值证据](NUMERIC_CONSISTENCY.md) → [评价交付状态](JOINT_EVALUATION_REPORT.md) → [部署前条件](PC_PI_READINESS.md) → [下一步](NEXT_DECISION.md)。
+
+代码：[唯一入口](execute.py)、[透明调用观测](inference.py)、[权限绑定](authorized_assets.py)、[保存结果审计](audit_saved_results.py)、[尚未运行的评分程序](score.py)。原Phase3.7 bridge/assets数值实现未改；新授权仅扩展本次Day22读取范围。
+
+完整1376条逐窗结果、六组部分/完整JSON和原始模型均留本地。公开包只含审计、哈希、五条漂移logits及接口代码文本，不含原始信号、71D数值、完整逐窗输出或权重。训练0、scaler拟合0、Pi0。本轮是历史已观察Test的回顾性系统验收，未形成完整联合性能结论。
+''')
+    md('EXECUTION_AUDIT.md',f'''# 唯一执行审计
+
+FINAL注册/授权绑定Phase3.7合同、容差、模型来源、10个数值/执行代码SHA、6个输入文件SHA、40个raw白名单及独立run1。原授权模板不是执行授权；预执行审查修复无效logits停止条件后，旧未消费注册被显式supersede，最终授权只消费一次。旧文件保留，`execute.py`只读取FINAL路径。
+
+`AUTHORIZATION_CONSUMED.json`在首次资产加载前以独占写入创建；`run1`和消费标志任一存在即拒绝再运行。消费时间及授权/注册SHA均保存。权限扩展通过新回调绑定原loader，原P37文件内容未改；这是应用层审计白名单，不是OS安全或隐私隔离证明。
+
+预检先完成40次Day22原始暴露、840有效窗、50×8 float32信号、71D float64特征、原始SHA、时间/标签/ppm和三份身份索引对齐；与历史输入缓存逐位一致，scaler匹配原Calibration证据。真实gas不进入`predict_window(window)`，只在调用后加入记录用于评分。
+
+{matrix}
+
+实际分类1376次、71D提取1376次、回归1376次；独立特征预检还提取840次，不混为联合预测记录。每条预测的head等于预测gas，错误路由也不调用Oracle补救。部分记录包括状态、raw/clip、单位、支持、模型/数据SHA及Phase3.5对照logits。已保存的五条漂移均为各视图末条，随后停止该视图，其他预定视图按相同合同执行。
+
+`run1/MATRIX_BLOCKED.json`已写入，无`ALL_SIX_VIEWS_LOCKED.json`，无evaluation目录，未运行score。B2完整不解除全矩阵评分门禁。总计1371条logits MATCH、5条NUMERIC_LOGIT_DRIFT，类别argmax漂移0；1376条推理OK、UNAVAILABLE 0，范围仅限已执行前缀。
+
+六视图计时合计{s['sum_view_wall_seconds']:.6f}秒，含视图调用/记录、部分加载首次开销；不含完整raw预检/导入和总进程墙钟，不能解释为单窗部署延迟。总进程墙钟与峰值内存未形成独立receipt，控制台输出未完整归档；结构化逐窗、事件及锁均在。没有训练、额外模型前向验证或Pi测试。
+
+后续仅对保存的JSON/哈希做审计，无新模型调用；14项纯假对象测试在执行前通过。最终独立检查及历史制品哈希复核另列。冻结v5与旧Phase资产没有被写入。
+''')
+    evtable='|组|首条漂移row|该窗最大logit绝对差|类别argmax|\n|---|---:|---:|---|\n'+'\n'.join(f"|{z['group']}|{z['row']}|{z['max_abs']:.12g}|保持一致|" for z in e)
+    md('NUMERIC_CONSISTENCY.md',f'''# 数值一致性失败证据与结论边界
+
+锁定标准逐分量为 `abs(single-reference) <= 1e-4 + 1e-5*abs(reference)`，并要求argmax相同。阈值来自Phase3.7 TOLERANCE_LOCK，未放宽。原单窗适配器与Phase3.5历史batch128输出比较；本次没有调整batch或重新生成参考值。
+
+{evtable}
+
+`NUMERIC_DRIFT_EVIDENCE.json`保存五条完整4维single/reference logits、逐分量差值/阈值、超限分量、窗口/模型来源关联；完整逐窗数据留本地。B2所有840窗通过分量容差，其最大绝对差约1.64032e-4仍可能通过，因为阈值还含相对项；不能仅用全向量最大差与1e-4比较。
+
+事实：840信号/71D输入与旧缓存逐位一致；六分类器schema/state来源一致且运行前后不变；1376条argmax一致；五个单窗logits超过既定阈值。失败位置在“单窗原分类适配器输出 → 历史批量分类数值验收”边界。未观察到NaN/Inf、非法类别或缺头；回归raw有限不能补救分类数值门禁。
+
+**底层成因尚未确认。** 单窗与历史批量运算形态不同是已知执行差异，但不能据此认定具体CPU内核、浮点累积、后端或模型层就是原因。没有改变后端、线程、batch、预处理或阈值做试验。分类器均eval，两个路径都固定CPU和torch线程1（静态代码核对），这仍不足以证明后端完全相同。
+
+没有对完整Test重新复现或补全：唯一执行已消费。本轮只分析保存输出。后续如研究数值来源，应另行注册、先用合成/Calibration固定输入隔离差异、固定原容差、不使用Test误差选择实现；任何再次Day22推理必须另行授权。
+''')
+    md('JOINT_EVALUATION_REPORT.md','''# 分类—浓度联合评价交付状态
+
+总体BLOCKED：六固定视图未全部完成和锁定，不能执行正式评分。用户要求的Accuracy、Macro-F1、逐类Recall、4×4混淆、完整流量不可用率、条件浓度误差/覆盖率、错误路由分布均暂不生成。B2完整与其他组按数值失败截断的前缀不能作为公平的六组联合比较。
+
+已交付六组逐窗JSON（1/13/840/507/9/6条），本地合并`PRIVATE_OBSERVED1376_WINDOW_RESULTS.csv`。包括窗口/暴露身份，真实气体仅作记录，预测气体、实际head、raw/clip ppm、支持、版本及运行状态。剩余3664条从未执行，不造空预测、不记UNAVAILABLE、不补Oracle。
+
+`OBSERVED_PREFIX_CALLS.csv`只记录已观察前缀各预测gas的实际请求/调用/有效数，0请求的比率为null；它不是840窗完整流量报告。五条logits漂移的bridge状态仍为OK，但视图验收失败，独立保留数值事件，不将其吞为普通正确预测。
+
+`EVALUATION_DELIVERY_STATUS.json`逐项标明WITHHELD/NOT_CREATED。现有score.py保留预定实现和SHA，需全部六组锁且逐窗MATCH才可运行。本轮没有评分调用，也不拿已知Phase3.5准确率替代桥接评价。
+
+未来条件回归只在分类正确且回归有效子集按真实gas计算，raw/clip并列，分母和独立暴露数一并给出；NRMSE归一化为对应冻结Calibration支持宽度（Ethanol/Ethylene112.5ppm，CO/Methane225ppm）。暴露等权误差在该子集内统计，浓度/暴露分组单列。不同分类器正确子集不同，不能据条件NRMSE给整体排名。空子集必须undefined，不能0误差。跨错分气体混合NRMSE和未定义业务容差的联合成功率均不计算。
+
+本轮不说明B2优于其他算法，也不据失败位置推断某种气体、机制或物理老化。完整联合评价尚未获得。B0只表示分类器Source-only，整个联合系统仍依赖C5 A4回归训练和Calibration输出支持，不是无需标定系统。
+''')
+    md('PC_PI_READINESS.md','''# PC/Pi部署前兼容性与门禁
+
+当前不能宣称PC数值验收通过，也不具备直接进入Pi5正式部署验证的完整证据。Phase3.7 Calibration桥接PASS仍有效；Phase3.8额外证明Day22严格输入/特征可重建，但六分类端点的历史数值重放门禁未闭合。
+
+可继续的独立准备工作是：归档本轮故障、静态整理模型bundle/依赖/版本清单、制定不读Test的PC数值诊断协议。下一阶段数值诊断及任何模型推理应按单独范围注册；本轮没有执行部署、ONNX导出或再推理。
+
+PC验收仍需隔离单窗与固定批量路径差异，在合成/合法Calibration输入验证同模型state、输入、后端及保存恢复。容差继续保持既定值；不能用放宽阈值或挑Test表现消除失败。PC主机上的本次计时不是分段基准，未提供完整信号处理→分类→71D→SVR→上位机延迟。
+
+Pi5仍待ARM64依赖固定与兼容性、分类ONNX/原PyTorch与SVR/joblib打包路径、PC↔Pi逐窗raw/clip/状态一致性、真实硬件分段延迟/峰值内存、原子版本切换、异常恢复及长时间运行。不同气体ppm必须绑定预测gas和head支持；错路由产生的数值有限不代表浓度化学含义正确。保留UNAVAILABLE逻辑，分类失败不可Oracle补救，非有限raw在clip前拒绝。
+
+旧0.413ms与本轮SVR/桥接整机性能无等价关系。本轮Pi执行次数0，不能据Python桌面运行或Calibration通过宣称Pi部署完成。
+''')
+    md('NEXT_DECISION.md','''# 下一阶段继续/停止决定
+
+停止本轮联合性能评分与任何部署模型选择；一次授权已消费，不自动补跑。B2完整证据保留但不单独作为赢家。五组失败及全部负证据保留。
+
+建议下一阶段仅做数值来源诊断，先固定合成/Calibration输入，审查相同模型、strict预处理、单窗/批量数学路径和环境后端；不训练、不改参数、不读取Day22、不根据Test决定容差。应先明确要验证的数值假设与通过/停止标准，再另行授权。根因未确认前不提出具体代码修复，原容差不得为了通过而扩大。
+
+诊断通过且独立审核闭合后，才可另行申请新的固定六视图Day22重放（必须显式标注attempt2和已观察Test，独立输出/授权，不覆盖run1）。该重放不在本轮授权范围内，当前无attempt2执行命令或有效授权。
+
+PC数值验收未通过；Pi实际部署继续BLOCKED。没有扩展seed/模型、端到端综合排名或追加训练的依据。冻结v5、旧模型、scaler、Phase3.5/3.6预测和Phase3.7桥接继续保持原SHA。
+''')
+    md('RECOVERY.md','''# 恢复与读取说明
+
+先读README及EXECUTION_PASS_BLOCKED_MATRIX.csv。FINAL注册、FINAL授权、消费标志、run1逐组VIEW_LOCK/结果SHA、数值事件和输入门禁一起构成一次执行记录。
+
+本次不是可重入任务：不要再次执行execute.py。run1与AUTHORIZATION_CONSUMED存在会拒绝重复，不得删除它们来重跑。旧未消费授权已被AUTHORIZATION_SUPERSESSION废止，不能拿来追加次数；旧Phase3.7模板也不是授权。
+
+检查本地SHA只需标准库csv/hashlib读取ARTIFACT_SHA256.csv，不加载模型、不训练、不推理。audit_saved_results.py与write_reports.py也只读保存记录，但采用独占写入，已有输出时不应重新调用覆盖。score.py未执行，因为全六视图锁缺失；不能绕过该检查评分部分组。
+
+所有原始模型/信号/71D缓存保留在既有研究目录，来源见FINAL注册的model_sources和input_files。公开审阅包不含它们，不能据公开代码文本独立推理。公开脱敏路径与原SHA分别记录；PUBLICATION_MANIFEST标明源文件SHA及发布内容SHA。
+
+本地完整观测数据位于run1/B*/PRIVATE_WINDOW_RESULTS.json和PRIVATE_OBSERVED1376_WINDOW_RESULTS.csv，缺失3664条不是文件遗失而是协议要求停止。五条漂移证据可直接用保存logits重算逐分量阈值，无需再次调用分类器。控制台完整转录及总进程墙钟未归档，不声称其可恢复。
+''')
+    print('REPORTS_CREATED_NO_INFERENCE')
+if __name__=='__main__':main()

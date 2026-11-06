@@ -1,0 +1,85 @@
+{
+  "status": "PASS_AUDIT_OF_BLOCKED_EXECUTION",
+  "purpose": "OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS",
+  "unique_execution": 1,
+  "executed_views": 6,
+  "complete_views": [
+    "B2"
+  ],
+  "planned_calls": 5040,
+  "observed_classifier_calls": 1376,
+  "observed_regressor_calls": 1376,
+  "unexecuted_calls": 3664,
+  "observed_status_counts": {
+    "OK": 1376
+  },
+  "observed_consistency_counts": {
+    "NUMERIC_LOGIT_DRIFT": 5,
+    "MATCH": 1371
+  },
+  "argmax_drift_observed": 0,
+  "all_observed_raw_finite": true,
+  "all_observed_routes_predicted_only": true,
+  "states_scalers_unchanged": true,
+  "all_six_locked": false,
+  "scoring_executed": false,
+  "training": 0,
+  "scaler_fit": 0,
+  "Pi": 0,
+  "audit_new_inference": 0,
+  "sum_view_wall_seconds": 4.505804300075397,
+  "total_process_wall_seconds": "not persisted;view sum excludes full preflight/import",
+  "code": [
+    {
+      "path": "research/fedongas_phase38_20261106/p38_common.py",
+      "sha256": "1fa75e45259e78443dffa4f8d15513ee2d39de9f5c673ea2899063a9eed4288d",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/metrics.py",
+      "sha256": "31b4fe74ec62752b71f3d9a6fec90f915dd74142605045fb6879b792a8c297d3",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/inference.py",
+      "sha256": "190b8c7358293b59b5097676e670fdf4e93d5e297fd56b1b9f6ed8aab5c0f621",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/authorized_assets.py",
+      "sha256": "c9647e46307b2da16ce1073282c8f688aaecd14a52e42724dbbb1492ba87d350",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/execute.py",
+      "sha256": "33ac9b166589224d8cfec3e295c3c4472ec1baaf96a1004cd0b6a4741b667973",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/score.py",
+      "sha256": "c2692da6f9639bb9715c6eb2f0662ec4a4f1e87c3f7c75d5764dee1bcd74a0aa",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/test_metrics.py",
+      "sha256": "084b8d7a5cf7e1562385b981d01c7886d3a485c29222ebe2a631759a91118352",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase38_20261106/test_inference_audit.py",
+      "sha256": "03059186df506c149e6fd5db45368dda157096f3bc22cfe35e82ff358113fabf",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase37_20261106/bridge.py",
+      "sha256": "c92aa6065d0884f1e68b53790d858b75b2cc6283c5dc7ce6bf87b902265cd626",
+      "unchanged": true
+    },
+    {
+      "path": "research/fedongas_phase37_20261106/assets.py",
+      "sha256": "c2c5c7a1bd35b5c466128748efbaa209169b1f7515721609199c509a619fcee5",
+      "unchanged": true
+    }
+  ],
+  "authorization_consumed_sha256": "ca568a572d2b7b04c34e57df1e8485f05201c5de2dcf58570531e556cadfb1a0"
+}

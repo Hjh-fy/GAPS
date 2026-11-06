@@ -1,0 +1,11 @@
+# 恢复与读取说明
+
+先读README及EXECUTION_PASS_BLOCKED_MATRIX.csv。FINAL注册、FINAL授权、消费标志、run1逐组VIEW_LOCK/结果SHA、数值事件和输入门禁一起构成一次执行记录。
+
+本次不是可重入任务：不要再次执行execute.py。run1与AUTHORIZATION_CONSUMED存在会拒绝重复，不得删除它们来重跑。旧未消费授权已被AUTHORIZATION_SUPERSESSION废止，不能拿来追加次数；旧Phase3.7模板也不是授权。
+
+检查本地SHA只需标准库csv/hashlib读取ARTIFACT_SHA256.csv，不加载模型、不训练、不推理。audit_saved_results.py与write_reports.py也只读保存记录，但采用独占写入，已有输出时不应重新调用覆盖。score.py未执行，因为全六视图锁缺失；不能绕过该检查评分部分组。
+
+所有原始模型/信号/71D缓存保留在既有研究目录，来源见FINAL注册的model_sources和input_files。公开审阅包不含它们，不能据公开代码文本独立推理。公开脱敏路径与原SHA分别记录；PUBLICATION_MANIFEST标明源文件SHA及发布内容SHA。
+
+本地完整观测数据位于run1/B*/PRIVATE_WINDOW_RESULTS.json和PRIVATE_OBSERVED1376_WINDOW_RESULTS.csv，缺失3664条不是文件遗失而是协议要求停止。五条漂移证据可直接用保存logits重算逐分量阈值，无需再次调用分类器。控制台完整转录及总进程墙钟未归档，不声称其可恢复。

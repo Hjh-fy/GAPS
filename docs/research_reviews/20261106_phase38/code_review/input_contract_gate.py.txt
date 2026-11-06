@@ -1,0 +1,21 @@
+"""Additional provenance gate: current input SHA must match prior frozen SHA."""
+from p38_common import *
+def main():
+    f=read(P37/'FINAL_VERIFICATION.json');stage_indexes={}
+    for folder in [P35,P36,P15]:
+        expected=f['old_assets'][folder.name]['manifest_sha256'];assert sha(folder/'ARTIFACT_SHA256.csv')==expected
+        stage_indexes[folder.name]={x['path']:x['sha256'] for x in rows(folder/'ARTIFACT_SHA256.csv')}
+    p=P15/'run/PRE_RUN_CONTRACT.json';assert sha(p)==stage_indexes[P15.name]['run/PRE_RUN_CONTRACT.json'];p15=read(p)
+    assert sha(P1/'ARTIFACT_SHA256.csv')==p15['phase1_manifest_sha256'];p1={x['path']:x['sha256'] for x in rows(P1/'ARTIFACT_SHA256.csv')}
+    reg=read(REGISTRATION_FILE);checks=[]
+    for name,current in reg['input_files'].items():
+        p=Path(name)
+        if p.is_relative_to(P35):old=stage_indexes[P35.name][p.relative_to(P35).as_posix()]
+        elif p.is_relative_to(P36):old=stage_indexes[P36.name][p.relative_to(P36).as_posix()]
+        elif p.is_relative_to(P1):old=p1[p.relative_to(P1).as_posix()]
+        else:raise ValueError('unregistered source input')
+        assert current==old==sha(p),(name,current,old);checks.append(dict(path=name,sha256=old))
+    contract=read(P37/'FUTURE_OFFLINE_EVALUATION_CONTRACT.json');assert sha(P36/'ROUTING_WINDOW_IDENTITY_JOIN.csv')==contract['input_identity_reference_sha256']
+    write(HERE/'INPUT_CONTRACT_GATE_FINAL.json',dict(status='PASS_BEFORE_EXECUTION',frozen_reference_checks=checks,phase37_contract_identity_reference_matches=True,registration_sha256=sha(REGISTRATION_FILE),new_inference=0,gate_code_sha256=sha(Path(__file__))))
+    print('CURRENT_INPUT_SHA_MATCHES_FROZEN_PRIOR_CONTRACTS',flush=True)
+if __name__=='__main__':main()

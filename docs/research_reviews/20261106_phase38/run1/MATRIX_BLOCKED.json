@@ -1,0 +1,162 @@
+{
+  "status": "BLOCKED_INCOMPLETE_NO_SCORING",
+  "view_statuses": [
+    {
+      "group": "B0",
+      "status": "BLOCKED_NUMERIC_CONSISTENCY",
+      "complete": false,
+      "windows": 1,
+      "result_sha256": "75b305c775ca13446f3c1f4c1caa4eeed2f8717652ab459ed48dcb7faa14940e",
+      "classifier_state_before": "90f1034f67c9e8b1aaa1a04ec148029a9196e29bf5caa9c35751ce5132aae4f5",
+      "classifier_state_after": "90f1034f67c9e8b1aaa1a04ec148029a9196e29bf5caa9c35751ce5132aae4f5",
+      "scaler_sha256": {
+        "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+        "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+        "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+        "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+      },
+      "classifier_calls": 1,
+      "extractor_calls": 1,
+      "regressor_calls": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 1
+      },
+      "seconds": 1.0697086000000127,
+      "events": 1,
+      "retrospective": true
+    },
+    {
+      "group": "B1",
+      "status": "BLOCKED_NUMERIC_CONSISTENCY",
+      "complete": false,
+      "windows": 13,
+      "result_sha256": "59f4ae665482fe8ebf34d0d3a0266869e1b156363dcd69492463a936c8c0c50f",
+      "classifier_state_before": "0eb106b43495392d5ee2983fa90492444b4131f0abd44a29279075e122d01c05",
+      "classifier_state_after": "0eb106b43495392d5ee2983fa90492444b4131f0abd44a29279075e122d01c05",
+      "scaler_sha256": {
+        "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+        "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+        "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+        "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+      },
+      "classifier_calls": 13,
+      "extractor_calls": 13,
+      "regressor_calls": {
+        "0": 0,
+        "1": 7,
+        "2": 6,
+        "3": 0
+      },
+      "seconds": 0.06635000003734604,
+      "events": 1,
+      "retrospective": true
+    },
+    {
+      "group": "B2",
+      "status": "PASS_COMPLETE_FIXED_VIEW",
+      "complete": true,
+      "windows": 840,
+      "result_sha256": "6c1cee1924a13e9b26c9d7d2ecd9c0b907e3ace9c952f3210b5e9ab249e420bf",
+      "classifier_state_before": "8ac38b0b9c51379c96e503e81fda8439a325a6747ce8568122b547195715bb07",
+      "classifier_state_after": "8ac38b0b9c51379c96e503e81fda8439a325a6747ce8568122b547195715bb07",
+      "scaler_sha256": {
+        "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+        "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+        "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+        "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+      },
+      "classifier_calls": 840,
+      "extractor_calls": 840,
+      "regressor_calls": {
+        "0": 39,
+        "1": 7,
+        "2": 195,
+        "3": 599
+      },
+      "seconds": 2.0747592000407167,
+      "events": 0,
+      "retrospective": true
+    },
+    {
+      "group": "B3",
+      "status": "BLOCKED_NUMERIC_CONSISTENCY",
+      "complete": false,
+      "windows": 507,
+      "result_sha256": "c1412a7488ef85ba37251887482326d78f62bb8c92ccf79659e5c376c2091c70",
+      "classifier_state_before": "e51ed053a687136cff37eb91eb20bfb57709dd9d3a1cc3418be8a772610538bc",
+      "classifier_state_after": "e51ed053a687136cff37eb91eb20bfb57709dd9d3a1cc3418be8a772610538bc",
+      "scaler_sha256": {
+        "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+        "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+        "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+        "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+      },
+      "classifier_calls": 507,
+      "extractor_calls": 507,
+      "regressor_calls": {
+        "0": 119,
+        "1": 232,
+        "2": 146,
+        "3": 10
+      },
+      "seconds": 1.2218795000226237,
+      "events": 1,
+      "retrospective": true
+    },
+    {
+      "group": "B4",
+      "status": "BLOCKED_NUMERIC_CONSISTENCY",
+      "complete": false,
+      "windows": 9,
+      "result_sha256": "622acc6211871c16f2debbf695121b8194ace3a3bcea47e63e689bfa1b012d72",
+      "classifier_state_before": "a1da1916bf6b0e42895ca64dd526d49edd780c14f291f1891d110254623be1fa",
+      "classifier_state_after": "a1da1916bf6b0e42895ca64dd526d49edd780c14f291f1891d110254623be1fa",
+      "scaler_sha256": {
+        "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+        "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+        "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+        "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+      },
+      "classifier_calls": 9,
+      "extractor_calls": 9,
+      "regressor_calls": {
+        "0": 0,
+        "1": 1,
+        "2": 2,
+        "3": 6
+      },
+      "seconds": 0.041980699985288084,
+      "events": 1,
+      "retrospective": true
+    },
+    {
+      "group": "B5",
+      "status": "BLOCKED_NUMERIC_CONSISTENCY",
+      "complete": false,
+      "windows": 6,
+      "result_sha256": "8774685b2eb798f480b5e694db9fdf5dcf0251d4a03c89af692ab3d69b873717",
+      "classifier_state_before": "84eb2289c6bd65f6fcf65ee4c1442c0896d8c2cd84660b00f9d5d57c48457b9a",
+      "classifier_state_after": "84eb2289c6bd65f6fcf65ee4c1442c0896d8c2cd84660b00f9d5d57c48457b9a",
+      "scaler_sha256": {
+        "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+        "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+        "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+        "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+      },
+      "classifier_calls": 6,
+      "extractor_calls": 6,
+      "regressor_calls": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 5
+      },
+      "seconds": 0.031126299989409745,
+      "events": 1,
+      "retrospective": true
+    }
+  ],
+  "auto_retry": false
+}

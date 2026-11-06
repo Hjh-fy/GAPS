@@ -1,0 +1,8 @@
+{
+  "finding": "captured NaN/Inf/wrong-shape classification logits must block consistency gate,not merely become an unavailable complete view",
+  "synthetic_red": "4 failing new tests reproduced actual gap,including invalid reference consuming a call before rejection",
+  "fix": "validate saved reference before call;invalid actual logits set NUMERIC_LOGIT_DRIFT,stop corresponding view;no numeric NaN serialized",
+  "unchanged": "P37 bridge/assets,all classifiers/regressors/scalers,data protocol,tolerances",
+  "execution_attempts_before_fix": 0,
+  "authorization_change": "new final registration/code hash;old pre-execution authorization superseded unconsumed,not an additional run allowance"
+}

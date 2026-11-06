@@ -1,0 +1,41 @@
+{
+  "status": "BLOCKED_INCOMPLETE_NO_SCORING",
+  "audit_status": "PASS_PRESERVED_BLOCKED_EXECUTION",
+  "purpose": "OFFLINE_JOINT_EVAL_C5_DAY22_SIX_FIXED_VIEWS",
+  "base_phase37_commit": "ba7a143677404155e93083d0c43e15e9e72b4658",
+  "executions": 1,
+  "authorization_consumed": true,
+  "planned_view_windows": 5040,
+  "observed_view_windows": 1376,
+  "unexecuted_view_windows": 3664,
+  "unique_physical_test_exposures": 40,
+  "complete_views": [
+    "B2"
+  ],
+  "blocked_views": [
+    "B0",
+    "B1",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "numeric_logit_drift_events": 5,
+  "argmax_drift_observed": 0,
+  "observed_bridge_OK": 1376,
+  "observed_bridge_UNAVAILABLE": 0,
+  "formal_scoring_executed": false,
+  "scalers_refit": 0,
+  "training": 0,
+  "Pi": 0,
+  "automatic_retries": 0,
+  "tolerances_widened": false,
+  "signal840_exact": true,
+  "feature71_840_exact": true,
+  "states_scalers_unchanged": true,
+  "registered_code_unchanged": true,
+  "independent_review_sha256": "e072318e39f9b5df7d74b9167f3a0df4de3c4a56069291cd1d788f08681f425c",
+  "old_asset_verification_sha256": "5e966d2f99664d12bf085baa6397e06efa14381408d17249236aa338b7b23dfd",
+  "PC_numeric_acceptance": "BLOCKED",
+  "Pi_actual_deployment": "BLOCKED",
+  "readiness": "separate no-Test numerical diagnosis may be proposed;no new execution authorized"
+}

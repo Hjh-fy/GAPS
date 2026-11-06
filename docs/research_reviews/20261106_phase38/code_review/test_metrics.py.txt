@@ -1,0 +1,15 @@
+import pytest
+from metrics import classification,conditional,availability
+def record(g=1,p=1,status='OK',raw=30.,clip=30.,truth=25.,file='e1',calls=1):return dict(true_gas_id=g,predicted_gas_id=p,status=status,concentration_raw_ppm=raw,concentration_clipped_ppm=clip,truth_ppm=truth,filename=file,regression_calls=calls)
+def test_unavailable_counts_as_fullflow_class_error():
+    r=[record(),record(p=None,status='UNAVAILABLE',raw=None,clip=None,calls=0)];m=classification(r);assert m['Accuracy']==.5 and m['recall'][1]==.5 and m['classification_unavailable']==1;assert m['MacroF1']==pytest.approx((2/3)/4)
+def test_zero_conditional_subset_is_undefined_not_zero_error():
+    r=[record(p=2)];x=conditional(r,1);assert x['conditional_windows']==0 and x['window_coverage']==0 and x['raw_exposure_equal_NRMSE_percent'] is None
+def test_wrong_route_never_contributes_chemical_error():
+    r=[record(raw=30.),record(p=2,raw=100000.)];x=conditional(r,1);assert x['conditional_windows']==1 and x['raw_exposure_equal_MAE_ppm']==5 and x['window_coverage']==.5
+def test_exposures_equal_despite_different_retained_window_counts():
+    r=[record(raw=25.,file='a'),record(raw=25.,file='a'),record(raw=125.,file='b')];x=conditional(r,1);assert x['raw_exposure_equal_MAE_ppm']==50 and x['raw_window_MAE_ppm']==pytest.approx(100/3)
+def test_correct_class_unavailable_is_reported():
+    r=[record(status='UNAVAILABLE',raw=None,clip=None)];x=conditional(r,1);assert x['correct_class_regression_unavailable']==1 and x['conditional_windows']==0
+def test_availability_denominators_and_no_request():
+    r=[record(),record(status='UNAVAILABLE',raw=None,clip=None)];a=availability(r,1);assert a['requests']==2 and a['regression_calls']==2 and a['unavailable_rate']==.5;assert availability(r,3)['valid_rate'] is None

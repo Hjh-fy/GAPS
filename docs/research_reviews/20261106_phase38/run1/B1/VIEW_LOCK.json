@@ -1,0 +1,26 @@
+{
+  "group": "B1",
+  "status": "BLOCKED_NUMERIC_CONSISTENCY",
+  "complete": false,
+  "windows": 13,
+  "result_sha256": "59f4ae665482fe8ebf34d0d3a0266869e1b156363dcd69492463a936c8c0c50f",
+  "classifier_state_before": "0eb106b43495392d5ee2983fa90492444b4131f0abd44a29279075e122d01c05",
+  "classifier_state_after": "0eb106b43495392d5ee2983fa90492444b4131f0abd44a29279075e122d01c05",
+  "scaler_sha256": {
+    "0": "d8d092c51729789d7e4e911245f73433f76afc6ed912fd7aae54d1ced20a6f76",
+    "1": "402be068de76813cec2f8c1c5a97ca09835c550dcf76aeffb8b843ba34521b2d",
+    "2": "e4a54c9df5a24260bcebf28745d6e8ae613485c7d40fe1b0af34fe72c213b9b0",
+    "3": "8b7c83e406bbc358c67de24fdecc0d436d45e8e5ccc83e79a25930b5d544ff74"
+  },
+  "classifier_calls": 13,
+  "extractor_calls": 13,
+  "regressor_calls": {
+    "0": 0,
+    "1": 7,
+    "2": 6,
+    "3": 0
+  },
+  "seconds": 0.06635000003734604,
+  "events": 1,
+  "retrospective": true
+}

@@ -1,0 +1,46 @@
+"""Post-execution receipt audit only. No model/input imports or inference."""
+from p38_common import *
+import math, collections, platform, importlib.metadata
+
+def main():
+    reg=read(REGISTRATION_FILE);auth=read(AUTHORIZATION_FILE);used=read(HERE/'AUTHORIZATION_CONSUMED.json')
+    assert auth==reg['authorization'] and used['registration_sha256']==sha(REGISTRATION_FILE) and used['authorization_sha256']==sha(AUTHORIZATION_FILE)
+    assert auth['max_runs']==1 and not (HERE/'evaluation').exists() and not (HERE/'run1/ALL_SIX_VIEWS_LOCKED.json').exists()
+    code=[]
+    for p,h in reg['code_sha256'].items():
+        assert sha(p)==h;code.append(dict(path=p,sha256=h,unchanged=True))
+    tol=read(P37/'TOLERANCE_LOCK.json')['classifier_logits_single_vs_batch'];summary=[];drifts=[];calls=[];allrecords=[]
+    for b in GROUPS:
+        d=HERE/'run1'/b;lock=read(d/'VIEW_LOCK.json');a=read(d/'PRIVATE_WINDOW_RESULTS.json');events=read(d/'EVENTS.json')
+        assert sha(d/'PRIVATE_WINDOW_RESULTS.json')==lock['result_sha256'] and len(a)==lock['windows']==lock['classifier_calls']==lock['extractor_calls']
+        assert lock['classifier_state_before']==lock['classifier_state_after']==reg['model_sources']['classifiers'][b]['endpoint_state_sha256']
+        assert [x['row'] for x in a]==list(range(len(a)))
+        bad=[];n=collections.Counter();request=collections.Counter()
+        for z in a:
+            assert z['group']==b and z['status']=='OK' and z['reason'] is None
+            assert z['regression_available'] and z['regression_calls']==1 and z['called_head_gas']==z['predicted_gas_id']
+            assert all(math.isfinite(z[k]) for k in ['concentration_raw_ppm','concentration_clipped_ppm'])
+            assert z['support_ppm'][0]<=z['concentration_clipped_ppm']<=z['support_ppm'][1]
+            assert z['concentration_clipped_ppm']==min(max(z['concentration_raw_ppm'],z['support_ppm'][0]),z['support_ppm'][1])
+            s=z['single_logits'];r=z['Phase35_batch_logits'];assert len(s)==len(r)==4 and all(math.isfinite(v) for v in s+r)
+            assert max(range(4),key=s.__getitem__)==max(range(4),key=r.__getitem__)==z['predicted_gas_id']==z['Phase35_prediction']
+            dif=[abs(x-y) for x,y in zip(s,r)];threshold=[tol['atol']+tol['rtol']*abs(y) for y in r];failed=[i for i in range(4) if dif[i]>threshold[i]]
+            assert z['consistency_status']==('NUMERIC_LOGIT_DRIFT' if failed else 'MATCH') and z['stop_view']==bool(failed)
+            assert max(dif)==z['single_batch_logits_max_abs']
+            if failed:
+                bad.append(z['row']);drifts.append(dict(group=b,row=z['row'],filename=z['filename'],start_s=z['start_s'],end_s=z['end_s'],raw_sha256=z['raw_sha256'],signal_sha256=z['signal_sha256'],feature71_sha256=z['feature71_sha256'],status=z['consistency_status'],single_logits=s,reference_logits=r,absolute_differences=dif,component_thresholds=threshold,failed_components=failed,argmax_unchanged=True,predicted_gas_id=z['predicted_gas_id'],max_abs=max(dif)))
+            n[z['called_head_gas']]+=1;request[z['predicted_gas_id']]+=1
+        assert dict(n)=={int(g):v for g,v in lock['regressor_calls'].items() if v} and len(events)==len(bad)
+        if lock['complete']:assert len(a)==840 and not bad and lock['status']=='PASS_COMPLETE_FIXED_VIEW'
+        else:assert bad==[len(a)-1] and lock['status']=='BLOCKED_NUMERIC_CONSISTENCY'
+        summary.append(dict(group=b,status='PASS_VIEW_ONLY_MATRIX_BLOCKED' if lock['complete'] else 'BLOCKED_NUMERIC_LOGIT_DRIFT',planned_windows=840,executed_windows=len(a),not_executed_windows=840-len(a),independent_exposures_observed=len({z['filename'] for z in a}),logit_drift_events=len(bad),argmax_drift_observed=0,inference_unavailable_observed=0,max_abs_logit_difference_observed=max(z['single_batch_logits_max_abs'] for z in a),classifier_calls=lock['classifier_calls'],extractor_calls=lock['extractor_calls'],regression_calls=sum(n.values()),view_wall_seconds=lock['seconds'],view_lock_sha256=sha(d/'VIEW_LOCK.json'),results_sha256=lock['result_sha256'],formal_scoring='WITHHELD_ALL_SIX_NOT_LOCKED'))
+        for g in range(4):calls.append(dict(group=b,predicted_gas_id=g,predicted_gas=GASES[g],scope='OBSERVED_PREFIX_OPERATIONAL_ONLY_NOT_FULL_FLOW',planned_view_windows=840,observed_view_windows=len(a),requests=request[g],actual_regression_calls=n[g],valid=n[g],unavailable=0,valid_rate=n[g]/request[g] if request[g] else None,unavailable_rate=0 if request[g] else None,unobserved_windows=840-len(a)))
+        allrecords.extend(a)
+    assert sum(x['executed_windows'] for x in summary)==1376 and len(drifts)==5
+    table(HERE/'EXECUTION_PASS_BLOCKED_MATRIX.csv',summary);table(HERE/'OBSERVED_PREFIX_CALLS.csv',calls);write(HERE/'NUMERIC_DRIFT_EVIDENCE.json',dict(tolerance=tol,source='saved records only;no new model call',events=drifts))
+    table(HERE/'PRIVATE_OBSERVED1376_WINDOW_RESULTS.csv',allrecords)
+    write(HERE/'SAVED_RESULT_AUDIT.json',dict(status='PASS_AUDIT_OF_BLOCKED_EXECUTION',purpose=PURPOSE,unique_execution=1,executed_views=6,complete_views=['B2'],planned_calls=5040,observed_classifier_calls=1376,observed_regressor_calls=1376,unexecuted_calls=3664,observed_status_counts=dict(collections.Counter(z['status'] for z in allrecords)),observed_consistency_counts=dict(collections.Counter(z['consistency_status'] for z in allrecords)),argmax_drift_observed=0,all_observed_raw_finite=True,all_observed_routes_predicted_only=True,states_scalers_unchanged=True,all_six_locked=False,scoring_executed=False,training=0,scaler_fit=0,Pi=0,audit_new_inference=0,sum_view_wall_seconds=sum(x['view_wall_seconds'] for x in summary),total_process_wall_seconds='not persisted;view sum excludes full preflight/import',code=code,authorization_consumed_sha256=sha(HERE/'AUTHORIZATION_CONSUMED.json')))
+    write(HERE/'EVALUATION_DELIVERY_STATUS.json',dict(status='BLOCKED_INCOMPLETE_NO_SCORING',classification_metrics='WITHHELD;all six views not locked',conditional_regression_metrics_and_coverage='WITHHELD;all six views not locked',wrong_route_matrix='WITHHELD;all six views not locked',full_5040_window_results='NOT_CREATED;1376 observed records preserved',availability='observed prefixes operational counts only;3664 not run are not UNAVAILABLE',joint_success='NOT_DEFINED_NOT_COMPUTED',cross_gas_NRMSE='NOT_COMPUTED',ranking='NOT_COMPUTED',retry='NOT_AUTHORIZED_NOT_EXECUTED'))
+    write(HERE/'POST_EXECUTION_ENVIRONMENT.json',dict(collected_at=now(),scope='post-execution same interpreter;not an independent hardware benchmark',python=platform.python_version(),executable=sys.executable,platform=platform.platform(),packages={k:importlib.metadata.version(k) for k in ['torch','numpy','scikit-learn','scipy','flwr']},training=0,inference=0))
+    print(json.dumps(dict(status='AUDIT_PASS_MATRIX_BLOCKED',records=len(allrecords),drifts=len(drifts),view_seconds=sum(x['view_wall_seconds'] for x in summary))))
+if __name__=='__main__':main()
