@@ -1,0 +1,73 @@
+"""Verify saved acceptance evidence and seal the Phase3.9 archive."""
+import collections
+import csv
+from pathlib import Path
+
+from pc39_worker import HERE, read, require, sha, write
+from run_acceptance import lines, validate_worker
+
+
+def main():
+    lock_path = HERE / "PC_CONTRACT_R5.json"
+    lock = read(lock_path)
+    digest = sha(lock_path)
+    review = read(HERE / "INDEPENDENT_REVIEW.json")
+    require(review["status"].startswith("PASS"), "Independent review")
+    gate = read(HERE / "attempt5/GATE.json")
+    require(gate["contract_sha256"] == digest, "Final registered contract identity")
+    require(gate["legacy_phase38"] == "BLOCKED_UNCHANGED", "Legacy decision")
+    for role in ["golden", "verify"]:
+        directory = HERE / "attempt5" / role
+        require(validate_worker(directory, role, lock, digest) == gate["workers"][role], "Saved gate replay")
+        result = read(directory / "RESULT.json")
+        for snapshot in result["integrity"].values():
+            require(snapshot["classifier_state_sha256"] == lock["classifier_states"]
+                    and snapshot["scaler_sha256"] == lock["scalers"], "Snapshot version")
+    seal = read(HERE / "attempt5/golden/GOLDEN_SEAL.json")
+    for file, expected in seal["files"].items():
+        require(sha(HERE / "attempt5/golden" / file) == expected, f"Sealed golden file {file}")
+    for file, expected in lock["files"].items():
+        require(sha(file) == expected, f"Registered asset changed: {file}")
+    historical = {
+        "fedongas_phase35_20261105": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+        "fedongas_phase37_20261106": "a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732",
+        "fedongas_phase38_20261106": "70c6761e1e45c77f31a834f098f92bfcd52083ca6f60369df510d3970ca76f88",
+        "fedongas_phase38r_20261106": "a867fb5b376c45ad43d74f0ec644a357bbd471279505fadee0c2ee54cbc3d685",
+    }
+    for name, expected in historical.items():
+        require(sha(HERE.parent / name / "ARTIFACT_SHA256.csv") == expected, "Historical manifest drift")
+    prior = []
+    for index, expected in enumerate([0, 0, 216, 216], start=1):
+        base = HERE / f"attempt{index}"
+        source = base / "golden/MODEL_CALLS.jsonl"
+        counts = dict(collections.Counter(row["kind"] for row in lines(source)))
+        require(counts.get("classifier", 0) == expected and read(base / "BLOCKED.json")["status"] == "BLOCKED"
+                and not (base / "verify").exists() and not (base / "golden/GOLDEN_SEAL.json").exists(),
+                "Preserve prior BLOCKED evidence")
+        prior.append(dict(attempt=index, status="BLOCKED", calls=counts,
+                          open_log_sha256=sha(base / "golden/FILE_OPEN.jsonl"), ledger_sha256=sha(source)))
+    write(HERE / "FINAL_VERIFICATION.json", dict(
+        status="PASS_PC_F32_CPU_SINGLE_V1_CALIBRATION_SYNTHETIC",
+        effective_registration="PC_CONTRACT_R5.json", contract_sha256=digest,
+        legacy_phase38_batch128="BLOCKED_UNCHANGED", day22_attempt2="ELIGIBLE_TO_APPLY_UNDER_NEW_CONTRACT",
+        day22_authorized=False, pi_authorized=False, calibration_windows=32,
+        calibration_exposures=16, synthetic_windows=4, worker_gate_sha256=sha(HERE / "attempt5/GATE.json"),
+        golden_seal_sha256=sha(HERE / "attempt5/golden/GOLDEN_SEAL.json"),
+        independent_review_sha256=sha(HERE / "INDEPENDENT_REVIEW.json"),
+        locked_files_rehashed=len(lock["files"]), historical_manifest_anchors=historical,
+        historical_authorization_consumption_rehashed=True,
+        historical_full_payload_rehash=False, prior_attempts=prior,
+        audit_scope="Python open events and wrapped outcomes after hook installation",
+        recorded_successful_attempt_calls={role: gate["workers"][role]["counts"] for role in gate["workers"]}))
+    files = sorted(file for file in HERE.rglob("*") if file.is_file() and "__pycache__" not in file.parts)
+    with (HERE / "ARTIFACT_SHA256.csv").open("x", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=["path", "bytes", "sha256"])
+        writer.writeheader()
+        for file in files:
+            writer.writerow(dict(path=file.relative_to(HERE).as_posix(), bytes=file.stat().st_size,
+                                 sha256=sha(file)))
+    print("PC39 sealed", len(files), sha(HERE / "ARTIFACT_SHA256.csv"))
+
+
+if __name__ == "__main__":
+    main()

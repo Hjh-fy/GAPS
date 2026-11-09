@@ -1,0 +1,75 @@
+{
+  "status": "PASS_PC_F32_CPU_SINGLE_V1_CALIBRATION_SYNTHETIC",
+  "effective_registration": "PC_CONTRACT_R5.json",
+  "contract_sha256": "e2c2fe930ec1d7e45dd563aec50ba00f22ef1e7570ac7e201397e9b8e8d74774",
+  "legacy_phase38_batch128": "BLOCKED_UNCHANGED",
+  "day22_attempt2": "ELIGIBLE_TO_APPLY_UNDER_NEW_CONTRACT",
+  "day22_authorized": false,
+  "pi_authorized": false,
+  "calibration_windows": 32,
+  "calibration_exposures": 16,
+  "synthetic_windows": 4,
+  "worker_gate_sha256": "d6f93d9e05c19ba4d7374f1b62af93e68d8b78ae3f884f76183d8f6b7977eab5",
+  "golden_seal_sha256": "f275cd3b59dfdd6bc45001153b06c55d350e134425d78edd7363facc95415173",
+  "independent_review_sha256": "0c525e4006ac850c93bfbb39bf2b3305cb682e739c2a71d13ac85dd21bf36821",
+  "locked_files_rehashed": 117,
+  "historical_manifest_anchors": {
+    "fedongas_phase35_20261105": "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514",
+    "fedongas_phase37_20261106": "a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732",
+    "fedongas_phase38_20261106": "70c6761e1e45c77f31a834f098f92bfcd52083ca6f60369df510d3970ca76f88",
+    "fedongas_phase38r_20261106": "a867fb5b376c45ad43d74f0ec644a357bbd471279505fadee0c2ee54cbc3d685"
+  },
+  "historical_authorization_consumption_rehashed": true,
+  "historical_full_payload_rehash": false,
+  "prior_attempts": [
+    {
+      "attempt": 1,
+      "status": "BLOCKED",
+      "calls": {},
+      "open_log_sha256": "6779d44d54c5c732bbca79355a7b78ded83a665f65ee226c0addb1cbb72e3de5",
+      "ledger_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "attempt": 2,
+      "status": "BLOCKED",
+      "calls": {},
+      "open_log_sha256": "ab8891a749a0c90b3b0398db8a3622a586ffd3244a240b7c0e012740530b3fa9",
+      "ledger_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "attempt": 3,
+      "status": "BLOCKED",
+      "calls": {
+        "feature": 252,
+        "svr": 360,
+        "classifier": 216
+      },
+      "open_log_sha256": "ca9ef8f0cc8ecfbbeada44c7e93182f49da95a11fb358b1a8270096d1e684335",
+      "ledger_sha256": "ba9360d47b89096af92ec5cee5500478c868580d8be6935bbf3a2fa6bd9d3fa5"
+    },
+    {
+      "attempt": 4,
+      "status": "BLOCKED",
+      "calls": {
+        "feature": 252,
+        "svr": 360,
+        "classifier": 216
+      },
+      "open_log_sha256": "4f109cc88a77c3ef0cc54b35f40edd8fa88ee4dd7c76d8c0cafb01496eac5a5e",
+      "ledger_sha256": "45116f773fddda1ba40a57232d5c0f1707d46c4a13534409faa24d97ca819827"
+    }
+  ],
+  "audit_scope": "Python open events and wrapped outcomes after hook installation",
+  "recorded_successful_attempt_calls": {
+    "golden": {
+      "feature": 252,
+      "svr": 360,
+      "classifier": 216
+    },
+    "verify": {
+      "feature": 758,
+      "svr": 1082,
+      "classifier": 650
+    }
+  }
+}

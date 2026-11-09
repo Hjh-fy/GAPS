@@ -1,0 +1,226 @@
+{
+  "status": "PASS_INDEPENDENT_REVIEW_PC_CALIBRATION_AND_SYNTHETIC_ONLY",
+  "reviewed_at": "2026-11-09T16:17:10.387030+08:00",
+  "contract_id": "PC-F32-CPU-SINGLE-v1",
+  "contract_sha256": "e2c2fe930ec1d7e45dd563aec50ba00f22ef1e7570ac7e201397e9b8e8d74774",
+  "gate_sha256": "d6f93d9e05c19ba4d7374f1b62af93e68d8b78ae3f884f76183d8f6b7977eab5",
+  "golden_seal_sha256": "f275cd3b59dfdd6bc45001153b06c55d350e134425d78edd7363facc95415173",
+  "golden_sealed_payload_hashes_verified": {
+    "OBSERVATIONS.json": "ff6c48be45931d541202a187a3e6e8a989eab0b29cf23db9ea05d19a2487a90d",
+    "RESULT.json": "68bdae96998dfd1824a60ed8dbe5378bf9e54da3d86a4b4307ca8ade25e593ab",
+    "FILE_OPEN.jsonl": "b655c957af32aaaf81105d8cc36e227b4f289c0493d1a887a849aee64151584a",
+    "MODEL_CALLS.jsonl": "86446e41228e66b2a3de9bf4a18cbaf4bec944934cca1545615c7a3ead5413b2"
+  },
+  "distinct_worker_pids": [
+    40324,
+    34920
+  ],
+  "verifier_golden_binding_before_first_numeric_request": true,
+  "reviewer_scope": {
+    "model_calls": 0,
+    "model_or_raw_signal_array_loads": 0,
+    "Day22_and_historical_Test_window_reads": 0,
+    "source_edits": 0,
+    "method": "Independent Python standard-library checks on saved evidence and registered metadata"
+  },
+  "windows": {
+    "calibration": 32,
+    "calibration_exposures": 16,
+    "synthetic": 4,
+    "synthetic_signal_digests_recomputed": 4
+  },
+  "numerical_checks": {
+    "signal_feature_digest": 144,
+    "direct_head_support_clip_version": 576,
+    "logits_digest_argmax_selected_head": 864,
+    "ppm_scalar_tolerance": 2160,
+    "logit_component_tolerance": 2592
+  },
+  "comparisons": {
+    "independent": {
+      "windows": 36,
+      "features": 36,
+      "all_head_pairs": 144,
+      "logits": 216,
+      "routed_pairs": 216,
+      "max_logit_abs": 0.0,
+      "max_ppm_abs": 0.0
+    },
+    "repeat": {
+      "windows": 36,
+      "features": 36,
+      "all_head_pairs": 144,
+      "logits": 216,
+      "routed_pairs": 216,
+      "max_logit_abs": 0.0,
+      "max_ppm_abs": 0.0
+    },
+    "reload": {
+      "windows": 36,
+      "features": 36,
+      "all_head_pairs": 144,
+      "logits": 216,
+      "routed_pairs": 216,
+      "max_logit_abs": 0.0,
+      "max_ppm_abs": 0.0
+    }
+  },
+  "golden_clipping_exercised": {
+    "direct_head": 5,
+    "routed": 12
+  },
+  "workers": {
+    "golden": {
+      "pid": 40324,
+      "open_attempts": 6094,
+      "allowed": 5732,
+      "denied": 362,
+      "scope_denials": 2,
+      "optional_denial_events": 360,
+      "optional_unique_paths": 360,
+      "unwrapped_denial_events": 5,
+      "api_outcome_count": 1256,
+      "api_errors": {
+        "PermissionError": 357,
+        "FileNotFoundError": 296
+      },
+      "injected_missing_open_events": 0,
+      "numeric_requests": 252,
+      "numeric_calls": {
+        "feature": 252,
+        "svr": 360,
+        "classifier": 216
+      },
+      "open_sha256": "b655c957af32aaaf81105d8cc36e227b4f289c0493d1a887a849aee64151584a",
+      "ledger_sha256": "86446e41228e66b2a3de9bf4a18cbaf4bec944934cca1545615c7a3ead5413b2",
+      "integrity_checkpoints": [
+        "final",
+        "first_after_inference",
+        "initial_loaded"
+      ]
+    },
+    "verify": {
+      "pid": 34920,
+      "open_attempts": 6662,
+      "allowed": 6285,
+      "denied": 377,
+      "scope_denials": 2,
+      "optional_denial_events": 375,
+      "optional_unique_paths": 360,
+      "unwrapped_denial_events": 20,
+      "api_outcome_count": 1793,
+      "api_errors": {
+        "PermissionError": 357,
+        "FileNotFoundError": 298
+      },
+      "injected_missing_open_events": 2,
+      "numeric_requests": 758,
+      "numeric_calls": {
+        "feature": 758,
+        "svr": 1082,
+        "classifier": 650
+      },
+      "open_sha256": "e5a8755a4b507e4144c9a238aeb6d6d4bdba1a02e8198ae11298e8ee69799cee",
+      "ledger_sha256": "76deac171aa34f39663f32b61c30eb37fbfb5760b259fd157e52bd54464a974f",
+      "integrity_checkpoints": [
+        "before_successful_reload",
+        "final",
+        "first_after_inference",
+        "initial_loaded",
+        "reloaded_before_inference"
+      ]
+    }
+  },
+  "recovery": {
+    "synthetic_boundary_probes": 15,
+    "scaler_candidate_rejected": true,
+    "active_and_cold_missing_checkpoint_outcomes_verified": true,
+    "cold_model_not_ready": true,
+    "health_requests_and_ledger_verified": 2,
+    "health_output_limit": "Byte-identical health outputs are worker assertions and receipts. Independent review links the two actual requests and validates final state/scaler hashes. The standalone health vectors are not persisted.",
+    "successful_reload_snapshot_verified": true
+  },
+  "scientific_lock": {
+    "revision_changes": {
+      "3": {
+        "fields": [
+          "files",
+          "optional_denial_evidence_sha256",
+          "optional_denials"
+        ],
+        "file_hashes": [
+          "register.py",
+          "run_acceptance.py"
+        ]
+      },
+      "4": {
+        "fields": [
+          "files"
+        ],
+        "file_hashes": [
+          "run_acceptance.py"
+        ]
+      }
+    },
+    "all_six_current_source_hashes_match": true,
+    "state_and_scaler_checkpoint_receipts_match": true,
+    "logits_tolerance": {
+      "atol": 0.0001,
+      "rtol": 1e-05
+    },
+    "ppm_tolerance": {
+      "atol": 1e-10,
+      "rtol": 1e-12
+    },
+    "environment_matches": true,
+    "pre_registered_environment_fields": "Contract keys compared exactly. Additional mkldnn_deterministic and thread_environment fields agree between workers."
+  },
+  "failed_attempts_preserved": [
+    {
+      "attempt": 1,
+      "status": "BLOCKED",
+      "classifier": 0,
+      "counts": {},
+      "reason": "golden worker exited 1"
+    },
+    {
+      "attempt": 2,
+      "status": "BLOCKED",
+      "classifier": 0,
+      "counts": {},
+      "reason": "golden worker exited 1"
+    },
+    {
+      "attempt": 3,
+      "status": "BLOCKED",
+      "classifier": 216,
+      "counts": {
+        "feature": 252,
+        "svr": 360,
+        "classifier": 216
+      },
+      "reason": "Unexpected denied open"
+    },
+    {
+      "attempt": 4,
+      "status": "BLOCKED",
+      "classifier": 216,
+      "counts": {
+        "feature": 252,
+        "svr": 360,
+        "classifier": 216
+      },
+      "reason": "Unexplained API open error"
+    }
+  ],
+  "calls": {
+    "attempt5_classifier": 866,
+    "earlier_blocked_classifier": 432,
+    "total_classifiers": 1298
+  },
+  "audit_boundary": "Per-worker Python audit open events after hook registration, with explicit outcomes for wrapped APIs. Five golden and twenty verify denied cache probes have no wrapper outcome and are represented by the Python deny decision. Interpreter startup, bootstrap imports, audit-file creation and OS-native operations are outside the recorded boundary.",
+  "legacy_phase38": "BLOCKED_INCOMPLETE_NO_SCORING",
+  "day22_attempt2_authorized": false,
+  "pi_authorized": false,
+  "material_findings": []
+}

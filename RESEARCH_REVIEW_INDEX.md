@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.8R数值差异定位](docs/research_reviews/20261106_phase38r/README.md) · [batch诊断](docs/research_reviews/20261106_phase38r/BATCH_DIAGNOSIS.md) · [后端/逐层](docs/research_reviews/20261106_phase38r/BACKEND_AND_LAYER_EVIDENCE.md) · [PC提案](docs/research_reviews/20261106_phase38r/PC_CONTRACT_PROPOSAL.md) · [继续/停止](docs/research_reviews/20261106_phase38r/NEXT_DECISION.md)。
+最新：[Phase3.9 PC 单窗验收](docs/research_reviews/20261107_phase39/README.md) · [决定矩阵](docs/research_reviews/20261107_phase39/DECISION.md)
+
+新 PC 单窗合同通过双进程验收，历史 Phase3.8 继续 BLOCKED。Day22 和 Pi 仍需各自授权。
+
+上阶段：[Phase3.8R数值差异定位](docs/research_reviews/20261106_phase38r/README.md) · [batch诊断](docs/research_reviews/20261106_phase38r/BATCH_DIAGNOSIS.md) · [后端/逐层](docs/research_reviews/20261106_phase38r/BACKEND_AND_LAYER_EVIDENCE.md) · [PC提案](docs/research_reviews/20261106_phase38r/PC_CONTRACT_PROPOSAL.md) · [继续/停止](docs/research_reviews/20261106_phase38r/NEXT_DECISION.md)。
 
 Calibration/合成主3020+上下文304次；原容差均通过，byte差异保留。定位TCN pointwise跨batch与Attention no_grad/inference路径差，未证明历史5次超容差完整根因。旧P38仍BLOCKED；新PC合同仅提案，Day22/Pi未授权。
 

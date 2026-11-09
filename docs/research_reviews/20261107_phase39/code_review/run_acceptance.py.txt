@@ -1,0 +1,157 @@
+"""Seal the golden worker before launching the independent acceptance worker."""
+import collections
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+from pc39_worker import HERE, GROUPS, key, read, require, sha, write
+
+
+def lines(path):
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def validate_worker(directory, mode, lock, contract_sha):
+    result = read(directory / "RESULT.json")
+    audit = lines(directory / "FILE_OPEN.jsonl")
+    ledger = lines(directory / "MODEL_CALLS.jsonl")
+    pid = result["pid"]
+    require(result["contract_sha256"] == contract_sha and result["mode"] == mode, "Result binding")
+    require([row["seq"] for row in audit] == list(range(1, len(audit) + 1))
+            and {row["pid"] for row in audit + ledger} == {pid}
+            and audit[0]["event"] == "start" and audit[-1]["event"] == "end"
+            and audit[-1]["status"] == "COMPLETE", "Complete PID-linked open log required")
+    attempts = [row for row in audit if row["event"] == "open_attempt"]
+    denied = [row for row in attempts if row["decision"] == "DENY"]
+    probes = [row for row in denied if row["stage"] == "scope_probe"]
+    optional = [row for row in denied if row["stage"] != "scope_probe"]
+    require(collections.Counter(row["path"] for row in probes)
+            == collections.Counter(key(p) for p in lock["denial_probes"]), "Scope probe mismatch")
+    require(all(row["path"] in lock["optional_denials"]
+                and row["stage"] in {"initial_load", "faults", "reload"}
+                for row in optional), "Unexpected denied open")
+    api = {row["seq"] for row in audit if row["event"] == "api_open"}
+    outcomes = {row["call"]: row for row in audit if row["event"] == "open_result"}
+    require(api == set(outcomes), "Incomplete API outcome log")
+    require(all(row["call"] in outcomes and outcomes[row["call"]]["error"] == "PermissionError"
+                for row in probes + [row for row in optional if row["call"] is not None]), "Denied open result")
+    missing = [row for row in attempts if row["path"].endswith("/injected_missing_checkpoint.pth")]
+    require(len(missing) == (2 if mode == "verify" else 0)
+            and all(row["stage"] == "faults" and row["decision"] == "ALLOW"
+                    and outcomes[row["call"]]["error"] == "FileNotFoundError" for row in missing),
+            "Reload open error evidence")
+    permitted_errors = {row["call"] for row in denied + missing if row["call"] is not None}
+    for row in attempts:
+        if outcomes.get(row["call"], {}).get("error") != "FileNotFoundError":
+            continue
+        path = row["path"]
+        optional_package = (row["rule"] == "python_installation"
+                            and (path.endswith("/python312.zip") or path.endswith((".dist-info/entry_points.txt",
+                                 ".egg-info/entry_points.txt"))
+                                 or path.endswith(".egg-info/metadata")))
+        optional_font_cache = (row["rule"] == "own_evidence"
+                               and re.fullmatch(r"fontlist-v\d+\.json", Path(path).name))
+        if row["stage"] in {"initial_load", "import"} and (optional_package or optional_font_cache):
+            permitted_errors.add(row["call"])
+    require({call for call, row in outcomes.items() if row["result"] == "ERROR"}
+            <= permitted_errors, "Unexplained API open error")
+    numeric = {row["path"] for row in attempts if row["decision"] == "ALLOW"
+               and Path(row["path"]).suffix in {".npy", ".npz"}}
+    require(numeric == {key(lock["calibration"]["signals"])}, "Numeric file input scope")
+    requests = {row["seq"]: row for row in audit if row["event"] == "numeric_request"}
+    grouped = collections.defaultdict(list)
+    for row in ledger:
+        request = requests[row["request_seq"]]
+        require((row["stage"], row["request"]) == (request["stage"], request["request"]),
+                "Numerical ledger/audit mismatch")
+        grouped[row["request_seq"]].append(row)
+    require(set(grouped) == set(requests), "Unmatched numerical request")
+    observations = read(directory / "OBSERVATIONS.json")
+    alternatives = read(directory / "PRIVATE_REPEAT_RELOAD.json") if mode == "verify" else {}
+    stages = {"golden" if mode == "golden" else "first": observations, **alternatives}
+    expected_requests = {(stage, f"{case}/{endpoint}") for stage, snapshot in stages.items()
+                         for case in snapshot for endpoint in ["all_heads", *GROUPS]}
+    if mode == "verify":
+        expected_requests.update(("faults", f"S_ramp/B0/{name}")
+                                 for name in ["after_scaler_failure", "after_reload_failure"])
+    actual_requests = [(row["stage"], row["request"]) for row in requests.values()]
+    require(len(actual_requests) == len(expected_requests) and set(actual_requests) == expected_requests,
+            "Registered request coverage")
+    for request_seq, calls in grouped.items():
+        row = requests[request_seq]
+        case, endpoint, *_ = row["request"].split("/")
+        sample = stages.get(row["stage"], observations)[case]
+        require(row["signal_sha256"] == sample["signal_sha256"], "Signal digest in request")
+        if endpoint == "all_heads":
+            expected = [("feature", "71D"), *(("svr", gas) for gas in sample["heads"])]
+        else:
+            gas = sample["groups"][endpoint]["route"]["predicted_gas_id"]
+            expected = [("classifier", endpoint), ("feature", "71D"), ("svr", str(gas))]
+        require([(call["kind"], call["identity"]) for call in calls] == expected, "Predicted-route ledger")
+        for call in calls:
+            if call["kind"] == "classifier":
+                require(call["layout"] == lock["classifier_layout"], "Recorded layout")
+            digest = (call["feature_sha256"] if call["kind"] == "svr"
+                      else call["signal_sha256"])
+            field = "feature_sha256" if call["kind"] == "svr" else "signal_sha256"
+            require(digest == sample[field], "Numerical ledger digest")
+    counts = dict(collections.Counter(row["kind"] for row in ledger))
+    require(counts == lock["budget"][mode] == result["counts"], "Numerical call count")
+    return dict(pid=pid, mode=mode, open_events=len(attempts), allowed=len(attempts) - len(denied),
+                denied=len(denied), scope_denials=len(probes), optional_library_denials=len(optional),
+                api_errors=dict(collections.Counter(row["error"] for row in outcomes.values()
+                                   if row["result"] == "ERROR")), expected_reload_errors=len(missing),
+                numeric_requests=len(requests), numeric_files=sorted(numeric), counts=counts,
+                file_open_sha256=sha(directory / "FILE_OPEN.jsonl"), ledger_sha256=sha(directory / "MODEL_CALLS.jsonl"),
+                comparisons=result["comparisons"])
+
+
+def main(attempt, lock_name="PC_CONTRACT.json"):
+    require(re.fullmatch(r"attempt[1-9][0-9]*", attempt) is not None, "Unique attempt name")
+    output = HERE / attempt
+    output.mkdir(exist_ok=False)
+    lock_path = HERE / lock_name
+    lock = read(lock_path)
+    contract_sha = sha(lock_path)
+    require(lock["id"] == "PC-F32-CPU-SINGLE-v1" and not lock["day22_authorized"], "Contract scope")
+    environment = os.environ.copy()
+    environment["MPLBACKEND"] = "Agg"
+    summaries = {}
+    try:
+        for mode in ["golden", "verify"]:
+            destination = output / mode
+            environment["MPLCONFIGDIR"] = str(destination / "matplotlib_cache")
+            for name in ("TMPDIR", "TEMP", "TMP"):
+                environment[name] = str(destination / "scratch")
+            command = [sys.executable, "-I", "-B", "-u", "-X",
+                       f"pycache_prefix={destination / 'isolated_pycache'}",
+                       str(HERE / "pc39_worker.py"), mode, str(destination), str(lock_path), contract_sha]
+            if mode == "verify":
+                command.append(str(output / "golden"))
+            write(output / f"{mode}_COMMAND.json", command)
+            print("Starting", mode, flush=True)
+            with (output / f"{mode}_CONSOLE.txt").open("xb") as stream:
+                process = subprocess.run(command, env=environment, stdout=stream, stderr=subprocess.STDOUT)
+            require(process.returncode == 0, f"{mode} worker exited {process.returncode}")
+            summaries[mode] = validate_worker(destination, mode, lock, contract_sha)
+            if mode == "golden":
+                files = {name: sha(destination / name) for name in
+                         ["OBSERVATIONS.json", "RESULT.json", "FILE_OPEN.jsonl", "MODEL_CALLS.jsonl"]}
+                write(destination / "GOLDEN_SEAL.json", dict(
+                    pid=summaries[mode]["pid"], contract_sha256=contract_sha, files=files,
+                    origin="Frozen P37 adapters and JointBridge on single windows"))
+                print("Golden sealed", files["OBSERVATIONS.json"], flush=True)
+        require(summaries["golden"]["pid"] != summaries["verify"]["pid"], "Worker PID independence")
+        write(output / "GATE.json", dict(status="PASS_AWAITING_INDEPENDENT_REVIEW", workers=summaries,
+              contract_sha256=contract_sha, legacy_phase38="BLOCKED_UNCHANGED"))
+        print("PC39 candidate gate passed", flush=True)
+    except Exception as error:
+        write(output / "BLOCKED.json", dict(status="BLOCKED", completed=summaries, error=str(error)))
+        raise
+
+
+if __name__ == "__main__":
+    main(*sys.argv[1:])

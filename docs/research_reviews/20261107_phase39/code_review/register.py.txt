@@ -1,0 +1,171 @@
+"""Build the PC contract from frozen records before numerical execution."""
+import csv
+import importlib.metadata
+import json
+from pathlib import Path
+import sys
+
+from pc39_worker import HERE, P37, read, require, sha, write
+
+RESEARCH = HERE.parent
+P38R = RESEARCH / "fedongas_phase38r_20261106"
+P38 = RESEARCH / "fedongas_phase38_20261106"
+P35 = RESEARCH / "fedongas_phase35_20261105"
+P31 = RESEARCH / "fedongas_phase31_20261105"
+P32 = RESEARCH / "fedongas_phase32_20261105"
+P33R = RESEARCH / "fedongas_phase33r_20261105"
+V5 = Path("ORIGINAL_PROJECT/research/fedongas_frozen_baseline_20261102_v5")
+
+
+def rows(path):
+    with Path(path).open(encoding="utf-8-sig", newline="") as stream:
+        return list(csv.DictReader(stream))
+
+
+def manifest(directory, digest):
+    path = directory / "ARTIFACT_SHA256.csv"
+    require(sha(path) == digest, f"Frozen manifest: {directory.name}")
+    return {item["path"]: item["sha256"] for item in rows(path)}
+
+
+def main(output):
+    m37 = manifest(P37, "a30fe4acb069b3456eff52d566e398d0fcb66b11ce4ab81ef5ed2dc7f41eb732")
+    m38r = manifest(P38R, "a867fb5b376c45ad43d74f0ec644a357bbd471279505fadee0c2ee54cbc3d685")
+    m38 = manifest(P38, "70c6761e1e45c77f31a834f098f92bfcd52083ca6f60369df510d3970ca76f88")
+    m35 = manifest(P35, "dde302aa3008cab9e7ddbdd99c7bd5c307f762941cededd8cf3beb4bfee6b514")
+    m31 = manifest(P31, "2562c5053478c36c7244f617321041a1cd5cff360b916259acd39bb68f99757b")
+    files = {}
+
+    def add(path, expected=None):
+        path = Path(path).resolve()
+        digest = sha(path)
+        require(expected is None or digest == expected, f"Frozen file: {path}")
+        files[str(path)] = digest
+
+    for name in ["assets.py", "bridge.py", "prepare.py", "MODEL_SOURCE_LOCK.json", "TOLERANCE_LOCK.json",
+                 "REGISTRATION.json", "calibration_final/CALIBRATION_IDENTITIES.csv",
+                 "calibration_final/CALIBRATION_ACCEPTANCE.json", "calibration_final/REGRESSOR_NUMERIC_QA.csv"]:
+        add(P37 / name, m37[name])
+    proposal = P38R / "PROPOSED_PC_CONTRACT.json"
+    for name in [proposal.name, "run1/ENVIRONMENT.json", "PROCESS_OBSERVATION.json", "FINAL_VERIFICATION.json"]:
+        add(P38R / name, m38r[name])
+    for name in ["FINAL_VERIFICATION.json", "AUTHORIZATION_CONSUMED.json"]:
+        add(P38 / name, m38[name])
+    add(P35 / "p35_common.py", m35["p35_common.py"])
+    add(P31 / "ARTIFACT_SHA256.csv", "2562c5053478c36c7244f617321041a1cd5cff360b916259acd39bb68f99757b")
+    for name in ["common.py", "evidence/DATA_EXPORT_MANIFEST.json", "evidence/TRAINING_WINDOW_IDENTITIES.csv",
+                 "binding/PROPOSED_TARGET_BATCH_SCHEDULE.csv"]:
+        add(P31 / name, m31[name])
+    add(RESEARCH / "fedongas_phase2a_20261103/audit_common.py")
+    add(RESEARCH / "fedongas_phase1_20261102/phase1_common.py")
+    old = read(P37 / "MODEL_SOURCE_LOCK.json")
+    for field in ["runtime", "contract", "feature_contract", "calibration_metadata"]:
+        add(old[field + "_path"], old[field + "_sha256"])
+    add(old["classification_calibration_pack"], old["classification_calibration_pack_sha256"])
+    for row in old["classifiers"].values():
+        add(row["endpoint"], row["endpoint_file_sha256"])
+    for row in old["regressors"]:
+        add(row["absolute_path"], row["sha256"])
+
+    source = P33R / "source_attempt2/server"
+    ancestry = read(source / "SSTAR_LOCKED.json")
+    add(source / "SSTAR_LOCKED.json")
+    add(source / "SSTAR.pth", ancestry["sha256"])
+    add(source / "effective_config.json")
+    for row in ancestry["round_receipts"]:
+        number = row["round"]
+        add(source / f"phase32_receipt_{number:03}.json")
+        add(source / f"server_round_{number:03}.pth", row["checkpoint_sha256"])
+    contracts = P32 / "contracts"
+    add(contracts / "SOURCE_WINDOW_IDENTITIES.csv", ancestry["source_identity_sha256"])
+    random_lock = contracts / "SOURCE_RANDOM_INITIAL_LOCK.json"
+    add(random_lock, "49bd47670e77b1c934940198183fdc1f0779b75e6ad9c00d3dc74d9cb896ba83")
+    add(contracts / "SOURCE_RANDOM_INITIAL.pth", read(random_lock)["sha256"])
+
+    inventory = V5 / "manifests/SOURCE_INVENTORY.csv"
+    index = {row["archive_relative_path"]: row["sha256"] for row in rows(inventory)}
+    add(inventory)
+    core = "source/workspace/"
+    explicit = ["config.py", "model.py", "utils.py", "client.py", "federated_dataset.py",
+                "gaps_flower/__init__.py", "gaps_flower/task.py", "gaps_flower/client_app.py",
+                "gaps_flower/strategy.py", "gaps_flower/domain_adaptation.py",
+                "gaps_flower/domain_adaptation_inputs.py",
+                "outputs/FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/frozen_target_numerics.py",
+                "outputs/FedOnGas_SVR71_C3C4C5_5pct_20261025/source_code/svr_core.py",
+                "outputs/FedOnGas_严格少标定与系统成本_20261020/code_snapshot/gaps_flower/fedongas_strict_data.py"]
+    for file in explicit:
+        add(V5 / (core + file), index[core + file])
+    features = old["feature_contract"]
+    for field in ["extractor_path", "rich_formula_path"]:
+        file = Path(features[field])
+        add(file, index[file.relative_to(V5).as_posix()])
+    for file in ["pc39_worker.py", "pc39_audit.py", "pc39_faults.py", "run_acceptance.py", "register.py", "PLAN.md"]:
+        add(HERE / file)
+
+    config = read(P38R / "run1/ENVIRONMENT.json")
+    proposed = read(proposal)
+    accepted = read(P37 / "calibration_final/CALIBRATION_ACCEPTANCE.json")
+    tolerances = read(P37 / "TOLERANCE_LOCK.json")
+    require(config["mkldnn_enabled"] == proposed["mkldnn_enabled"]
+            and config["mha_fastpath_enabled"] == proposed["mha_fastpath_enabled"], "Original backend")
+    require(read(P38 / "FINAL_VERIFICATION.json")["status"].startswith("BLOCKED"), "Legacy decision")
+    identities = rows(P37 / "calibration_final/CALIBRATION_IDENTITIES.csv")
+    require(len(identities) == 32 and len({x["filename"] for x in identities}) == 16
+            and {x["day"] for x in identities} == {"18"}, "Calibration scope")
+    calibration_meta = read(old["calibration_metadata_path"])
+    require(len(calibration_meta) == 32 and all(row["filename"] == ref["filename"]
+            and float(row["start_s"]) == float(ref["start_s"])
+            and row["raw_sha256"] == ref["raw_sha256"]
+            for row, ref in zip(calibration_meta, identities)), "Frozen Calibration ordering")
+    env = {name: config[name] for name in ["cpu", "machine", "platform", "python", "torch_config",
+           "parallel_info", "threads", "interop_threads", "mkldnn_available", "mkldnn_enabled",
+           "mha_fastpath_enabled", "deterministic_algorithms", "float32_matmul_precision", "packages"]}
+    env["packages"].update(old["packages"])
+    for name in ["joblib", "threadpoolctl", "matplotlib"]:
+        env["packages"][name] = importlib.metadata.version(name)
+    env["executable_sha256"] = sha(sys.executable)
+    logits = {k: tolerances["classifier_logits_single_vs_batch"][k] for k in ["atol", "rtol"]}
+    require(logits == {"atol": proposed["atol"], "rtol": proposed["rtol"]}, "Original logits tolerance")
+    prior_log = HERE / "attempt3/golden/FILE_OPEN.jsonl"
+    with prior_log.open(encoding="utf-8") as stream:
+        attempts = [row for row in map(json.loads, stream)
+                    if row["stage"] == "initial_load" and row.get("decision") == "DENY"]
+    optional_denials = sorted({row["path"] for row in attempts})
+    require(len(optional_denials) == 360 and all(
+        ((path.startswith(("HOST_PATH/windows/fonts/", "HOST_PATH/programdata/kingsoft/office6/"))
+          or (path.startswith("USER_HOME and "/appdata/local/microsoft/windows/fonts/" in path))
+         and Path(path).suffix in {".ttf", ".ttc", ".otf"})
+        or (path.startswith("d:a python learning/") and "fedongas_frozen_baseline_" in path
+            and path.endswith(".cpython-312.pyc")) for path in optional_denials), "Optional denied library probes")
+    write(HERE / output, dict(
+        id="PC-F32-CPU-SINGLE-v1", phase38r_commit="08db3e52e53657169660acd6dfb23fe5209fafa8",
+        scope="PC Calibration and synthetic acceptance", legacy_batch128_status="BLOCKED_UNCHANGED",
+        day22_authorized=False, pi_authorized=False, files=files,
+        classifiers=old["classifiers"], regressors=old["regressors"],
+        classifier_states={g: item["endpoint_state_sha256"] for g, item in old["classifiers"].items()},
+        scalers={row["gas_id"]: row["scaler_sha256"]
+                 for row in rows(P37 / "calibration_final/REGRESSOR_NUMERIC_QA.csv")},
+        feature_names=features["names"], feature_version=old["feature_contract_sha256"],
+        calibration=dict(signals=old["classification_calibration_pack"],
+                         signal_array_sha256=accepted["signal_array_sha256"], identities=identities),
+        synthetic_formulas={"S_zero": "0", "S_ramp": "(t-25)*(c+1)/512",
+                            "S_alternating": "(2*((t+c)%2)-1)*(c+1)/64",
+                            "S_pulse": "(12<=t<17)*(c+1)/16"},
+        environment=env, classifier_layout=dict(shape=[1, 50, 8], strides=[0, 8, 1],
+                                                  dtype="torch.float32", device="cpu", contiguous=True),
+        tolerances=dict(logits=logits, ppm=tolerances["SVR_ppm"],
+                        exact=["classifier_reload_float32", "argmax", "feature71_float64", "versions", "supports"]),
+        budget=dict(golden=dict(classifier=216, feature=252, svr=360),
+                    verify=dict(classifier=650, feature=758, svr=1082)),
+        denial_probes=[str(P35 / "evaluation/pc39_forbidden_probe.txt"),
+                       str(HERE.parent / "pc39_unregistered_numeric_probe.npy")],
+        optional_denials=optional_denials,
+        optional_denial_evidence_sha256=sha(prior_log),
+        faults=["15 synthetic bridge adapter probes", "detached scaler mean mismatch",
+                "actual B0 loader FileNotFoundError on active and cold reload", "healthy full reload"],
+        audit="Python open audit plus wrapped API outcomes, persistent per worker, OS-native opens outside scope"))
+    print("PC_CONTRACT_SHA256", sha(HERE / output))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1] if len(sys.argv) > 1 else "PC_CONTRACT.json")

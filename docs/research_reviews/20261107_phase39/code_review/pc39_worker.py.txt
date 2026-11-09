@@ -1,0 +1,371 @@
+"""Calibration and synthetic single-window acceptance worker."""
+import csv
+import hashlib
+import importlib.metadata
+import json
+import os
+from pathlib import Path
+import platform
+import sys
+import traceback
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+from pc39_audit import Audit, key
+
+P37 = HERE.parent / "fedongas_phase37_20261106"
+GROUPS = tuple(f"B{i}" for i in range(6))
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def read(path):
+    return json.loads(Path(path).read_text(encoding="utf-8-sig"))
+
+
+def write(path, value):
+    with path.open("x", encoding="utf-8") as stream:
+        json.dump(value, stream, ensure_ascii=False, indent=2, allow_nan=False)
+
+
+def require(condition, description):
+    if not condition:
+        raise ValueError(description)
+
+
+def array_sha(array):
+    data = str(array.dtype).encode() + str(array.shape).encode() + array.tobytes()
+    return hashlib.sha256(data).hexdigest()
+
+
+class Ledger:
+    def __init__(self, directory, audit, counts):
+        self.stream = (directory / "MODEL_CALLS.jsonl").open("x", encoding="utf-8")
+        self.audit = audit
+        self.counts = counts
+        self.seen = dict.fromkeys(counts, 0)
+        self.current = None
+
+    def record(self, kind, identity, **evidence):
+        require(self.current is not None, "Numerical operation outside registered request")
+        self.seen[kind] += 1
+        require(self.seen[kind] <= self.counts[kind], "Numerical call cap exceeded")
+        row = dict(pid=self.audit.pid, request_seq=self.request_seq, stage=self.audit.stage,
+                   request=self.current, kind=kind, identity=identity, **evidence)
+        self.stream.write(json.dumps(row, allow_nan=False) + "\n")
+        self.stream.flush()
+
+    def request(self, name, window):
+        self.current = name
+        self.audit.request = name
+        self.signal = array_sha(window)
+        self.request_seq = self.audit.emit("numeric_request", signal_sha256=self.signal)
+
+
+def inputs(np, lock):
+    data = np.load(lock["calibration"]["signals"], allow_pickle=False)
+    require(data.shape == (32, 50, 8) and data.dtype == np.float32
+            and data.flags.c_contiguous and np.isfinite(data).all(), "Calibration layout")
+    require(array_sha(data) == lock["calibration"]["signal_array_sha256"], "Calibration array SHA")
+    cases = {}
+    for index, item in enumerate(lock["calibration"]["identities"]):
+        require(array_sha(data[index]) == item["signal_sha256"], "Calibration window SHA")
+        cases[f"C{index:02}"] = data[index]
+    t, c = np.indices((50, 8), dtype=np.int32)
+    cases["S_zero"] = np.zeros((50, 8), dtype=np.float32)
+    cases["S_ramp"] = ((t - 25) * (c + 1)).astype(np.float32) / 512
+    cases["S_alternating"] = (((t + c) % 2 * 2 - 1) * (c + 1)).astype(np.float32) / 64
+    cases["S_pulse"] = (((t >= 12) & (t < 17)) * (c + 1)).astype(np.float32) / 16
+    return cases
+
+
+class Runtime:
+    def __init__(self, assets, np, lock, ledger):
+        self.assets = assets
+        self.np = np
+        self.lock = lock
+        self.ledger = ledger
+        self.active = None
+
+    def load(self, factory):
+        # Publish a complete validated snapshot only after successful loading.
+        try:
+            candidate = factory()
+            required = self.lock["scalers"]
+            actual = {str(g): h.scaler_sha() for g, h in candidate.heads.items()}
+            require(actual == required, "SCALER_IDENTITY_MISMATCH")
+            require(tuple(sorted(candidate.classifiers)) == GROUPS, "Classifier set")
+            self.instrument(candidate)
+        except Exception as error:
+            return dict(status="UNAVAILABLE", error=type(error).__name__,
+                        detail=str(error), previous_snapshot_retained=self.active is not None)
+        self.active = candidate
+        return dict(status="OK")
+
+    def instrument(self, candidate):
+        torch = candidate.r.torch
+        np = self.np
+        ledger = self.ledger
+
+        def before(model, args, group):
+            tensor = args[0]
+            layout = dict(shape=list(tensor.shape), strides=list(tensor.stride()),
+                          dtype=str(tensor.dtype), device=str(tensor.device),
+                          contiguous=tensor.is_contiguous())
+            require(layout == self.lock["classifier_layout"], "Classifier tensor layout")
+            require(all(not item.training for item in model.modules())
+                    and not torch.is_grad_enabled() and torch.is_inference_mode_enabled()
+                    and tensor.is_inference() and torch.get_num_threads() == 1
+                    and torch.backends.mkldnn.enabled == self.lock["environment"]["mkldnn_enabled"]
+                    and torch.backends.mha.get_fastpath_enabled() == self.lock["environment"]["mha_fastpath_enabled"],
+                    "Classifier execution context")
+            require(array_sha(tensor[0].cpu().numpy()) == ledger.signal, "Forward signal identity")
+            ledger.record("classifier", group, layout=layout, signal_sha256=ledger.signal)
+
+        for group, adapter in candidate.classifiers.items():
+            adapter.model.register_forward_pre_hook(lambda m, a, g=group: before(m, a, g))
+            original = adapter.classify
+
+            def classify(window, original=original):
+                result = original(window)
+                logits = result["logits"]
+                require(logits.dtype == np.float32 and logits.shape == (4,)
+                        and np.isfinite(logits).all(), "Classifier output schema")
+                self.classification = result
+                return result
+
+            adapter.classify = classify
+        extractor = candidate.extractor.extract
+
+        def extract(window):
+            require(array_sha(window) == ledger.signal, "Feature signal identity")
+            ledger.record("feature", "71D", signal_sha256=ledger.signal)
+            self.features = extractor(window)
+            return self.features
+
+        candidate.extractor.extract = extract
+        for gas, head in candidate.heads.items():
+            original = head.predict_raw
+
+            def predict(values, original=original, gas=gas):
+                require(values.shape == (1, 71) and values.dtype == np.float64
+                        and np.isfinite(values).all(), "Regressor input schema")
+                ledger.record("svr", str(gas), feature_sha256=array_sha(values[0]))
+                return original(values)
+
+            head.predict_raw = predict
+
+    def route(self, group, window):
+        if self.active is None:
+            return dict(status="UNAVAILABLE", reason="MODEL_NOT_READY")
+        return self.active.bridge(group).predict_window(window)
+
+    def integrity(self):
+        active = self.active
+        scalers = {str(g): head.scaler_sha() for g, head in active.heads.items()}
+        states = {g: active.previous.c.digest(active.r.arrays(c.model))
+                  for g, c in active.classifiers.items()}
+        require(scalers == self.lock["scalers"] and states == self.lock["classifier_states"],
+                "Snapshot state/scaler integrity")
+        return dict(classifier_state_sha256=states, scaler_sha256=scalers)
+
+    def observation(self, group, window, request, expected_features):
+        self.ledger.request(request, window)
+        self.classification = self.features = None
+        route = self.route(group, window)
+        require(route["status"] == "OK", f"{request}: {route}")
+        require(array_sha(self.features["values"]) == expected_features, "Routed feature identity")
+        logits = self.classification["logits"]
+        require(route["predicted_gas_id"] == int(logits.argmax()), "Predicted route identity")
+        return dict(logits=logits.tolist(), logits_sha256=array_sha(logits), route=route)
+
+    def snapshot(self, cases, phase):
+        np = self.np
+        self.ledger.audit.stage = phase
+        out = {}
+        for name, window in cases.items():
+            self.ledger.request(f"{name}/all_heads", window)
+            feature = self.active.extractor.extract(window)
+            values = feature["values"]
+            require(values.shape == (71,) and values.dtype == np.float64 and np.isfinite(values).all()
+                    and list(feature["names"]) == self.lock["feature_names"]
+                    and feature["version"] == self.lock["feature_version"], "Feature schema")
+            feature_hash = array_sha(values)
+            if name.startswith("C"):
+                require(feature_hash == self.lock["calibration"]["identities"][int(name[1:])]["feature71_sha256"],
+                        "Frozen Calibration feature SHA")
+            heads = {}
+            for gas, head in self.active.heads.items():
+                prediction = head.predict_raw(values[None, :])
+                require(prediction.shape == (1,) and np.isfinite(prediction).all(), "All-head output")
+                raw = float(prediction[0])
+                heads[str(gas)] = dict(raw=raw, clip=float(np.clip(raw, *head.support)),
+                                      support=list(head.support), version=head.version)
+            groups = {}
+            for group in GROUPS:
+                observation = self.observation(group, window, f"{name}/{group}", feature_hash)
+                route = observation["route"]
+                ref = heads[str(route["predicted_gas_id"])]
+                require(route["concentration_raw_ppm"] == ref["raw"]
+                        and route["concentration_clipped_ppm"] == ref["clip"]
+                        and route["support_ppm"] == ref["support"]
+                        and route["regressor_version"] == ref["version"], "Route and selected head disagree")
+                groups[group] = observation
+            out[name] = dict(signal_sha256=array_sha(window), feature_sha256=feature_hash,
+                             feature71=values.tolist(), heads=heads, groups=groups)
+        self.ledger.current = self.ledger.audit.request = None
+        return out
+
+
+def environment(torch, lock):
+    observed = dict(cpu=platform.processor(), machine=platform.machine(), platform=platform.platform(),
+                    python=sys.version, torch_config=torch.__config__.show(),
+                    parallel_info=torch.__config__.parallel_info(),
+                    threads=torch.get_num_threads(), interop_threads=torch.get_num_interop_threads(),
+                    mkldnn_available=torch.backends.mkldnn.is_available(),
+                    mkldnn_enabled=torch.backends.mkldnn.enabled,
+                    mha_fastpath_enabled=torch.backends.mha.get_fastpath_enabled(),
+                    deterministic_algorithms=torch.are_deterministic_algorithms_enabled(),
+                    float32_matmul_precision=torch.get_float32_matmul_precision(),
+                    packages={name: importlib.metadata.version(name) for name in lock["environment"]["packages"]},
+                    mkldnn_deterministic=torch.backends.mkldnn.deterministic,
+                    executable_sha256=sha(sys.executable),
+                    thread_environment={name: os.environ.get(name) for name in
+                                        ["OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"]})
+    for name, expected in lock["environment"].items():
+        require(observed[name] == expected, f"Environment mismatch: {name}")
+    return observed
+
+
+def compare(np, actual, expected, lock):
+    require(actual.keys() == expected.keys(), "Snapshot window set")
+    result = dict(windows=len(actual), logits=0, features=0, all_head_pairs=0,
+                  routed_pairs=0, max_logit_abs=0., max_ppm_abs=0.)
+    logit_tolerance = lock["tolerances"]["logits"]
+    ppm_tolerance = lock["tolerances"]["ppm"]
+    for name, sample in actual.items():
+        ref = expected[name]
+        require(sample["signal_sha256"] == ref["signal_sha256"]
+                and sample["feature_sha256"] == ref["feature_sha256"], f"{name} input/features SHA")
+        require(np.asarray(sample["feature71"], dtype="f8").tobytes()
+                == np.asarray(ref["feature71"], dtype="f8").tobytes(), f"{name} features byte equality")
+        result["features"] += 1
+        for gas, head in sample["heads"].items():
+            old = ref["heads"][gas]
+            require((head["version"], head["support"]) == (old["version"], old["support"]), "SVR version")
+            for field in ["raw", "clip"]:
+                require(np.isclose(head[field], old[field], **ppm_tolerance), f"{name}/{gas} ppm")
+                result["max_ppm_abs"] = max(result["max_ppm_abs"], abs(head[field] - old[field]))
+            result["all_head_pairs"] += 1
+        for group, observation in sample["groups"].items():
+            old = ref["groups"][group]
+            values = np.asarray(observation["logits"], dtype="f4")
+            reference = np.asarray(old["logits"], dtype="f4")
+            require(np.allclose(values.astype("f8"), reference.astype("f8"), **logit_tolerance)
+                    and values.tobytes() == reference.tobytes()
+                    and observation["logits_sha256"] == old["logits_sha256"]
+                    and int(values.argmax()) == int(reference.argmax()), f"{name}/{group} logits")
+            result["max_logit_abs"] = max(result["max_logit_abs"], float(abs(values - reference).max()))
+            actual_route, reference_route = observation["route"], old["route"]
+            ppm_fields = {"concentration_raw_ppm", "concentration_clipped_ppm"}
+            require({k: v for k, v in actual_route.items() if k not in ppm_fields}
+                    == {k: v for k, v in reference_route.items() if k not in ppm_fields}, "Route metadata")
+            for field in ppm_fields:
+                require(np.isclose(actual_route[field], reference_route[field], **ppm_tolerance), "Route ppm")
+                result["max_ppm_abs"] = max(result["max_ppm_abs"], abs(actual_route[field] - reference_route[field]))
+            result["logits"] += 1
+            result["routed_pairs"] += 1
+    return result
+
+
+def main(mode, directory, lock_path, lock_sha, golden_directory=None):
+    directory.mkdir(exist_ok=False)
+    audit = Audit(directory)
+    status = "BLOCKED"
+    try:
+        audit.allow([lock_path])
+        (directory / "scratch").mkdir(exist_ok=False)
+        require(sha(lock_path) == lock_sha, "Contract SHA")
+        lock = read(lock_path)
+        audit.allow(lock["files"])
+        audit.allow([sys.executable])
+        if golden_directory:
+            audit.allow(golden_directory / file for file in ["GOLDEN_SEAL.json", "OBSERVATIONS.json",
+                                                             "RESULT.json", "FILE_OPEN.jsonl", "MODEL_CALLS.jsonl"])
+        audit.stage = "identity"
+        for file, expected in lock["files"].items():
+            require(sha(file) == expected, f"Frozen SHA: {file}")
+        audit.stage = "import"
+        import numpy as np
+        sys.path.insert(0, str(P37))
+        import assets
+        import bridge
+        require(key(assets.__file__) == key(P37 / "assets.py")
+                and key(bridge.__file__) == key(P37 / "bridge.py"), "Frozen implementation identity")
+        from pc39_faults import faults
+
+        audit.stage = "scope_probe"
+        for path in lock["denial_probes"]:
+            try:
+                with open(path, "rb"):
+                    raise ValueError("Forbidden fixture was opened")
+            except PermissionError:
+                pass
+        ledger = Ledger(directory, audit, lock["budget"][mode])
+        runtime = Runtime(assets, np, lock, ledger)
+        audit.stage = "initial_load"
+        load = runtime.load(assets.FrozenAssets)
+        require(load["status"] == "OK", load)
+        integrity = {"initial_loaded": runtime.integrity()}
+        env = environment(runtime.active.r.torch, lock)
+        audit.stage = "inputs"
+        cases = inputs(np, lock)
+        comparisons = {}
+        recovery = None
+        if mode == "verify":
+            audit.stage = "golden_binding"
+            seal = read(golden_directory / "GOLDEN_SEAL.json")
+            require(seal["contract_sha256"] == lock_sha and seal["pid"] != audit.pid, "Independent golden PID/contract")
+            for name, expected in seal["files"].items():
+                require(sha(golden_directory / name) == expected, "Golden seal mismatch")
+            require(env == read(golden_directory / "RESULT.json")["environment"], "Independent environment")
+            golden = read(golden_directory / "OBSERVATIONS.json")
+        observations = runtime.snapshot(cases, "golden" if mode == "golden" else "first")
+        integrity["first_after_inference"] = runtime.integrity()
+        if mode == "verify":
+            comparisons["independent"] = compare(np, observations, golden, lock)
+            repeat = runtime.snapshot(cases, "repeat")
+            comparisons["repeat"] = compare(np, repeat, golden, lock)
+            audit.stage = "faults"
+            recovery = faults(runtime, cases, observations, bridge, directory)
+            integrity["before_successful_reload"] = runtime.integrity()
+            audit.stage = "reload"
+            load = runtime.load(assets.FrozenAssets)
+            require(load["status"] == "OK", load)
+            integrity["reloaded_before_inference"] = runtime.integrity()
+            reloaded = runtime.snapshot(cases, "reloaded")
+            comparisons["reload"] = compare(np, reloaded, golden, lock)
+            write(directory / "PRIVATE_REPEAT_RELOAD.json", dict(repeat=repeat, reloaded=reloaded))
+        audit.stage = "seal_outputs"
+        require(ledger.seen == ledger.counts, "Incomplete numerical call ledger")
+        ledger.stream.close()
+        integrity["final"] = runtime.integrity()
+        write(directory / "OBSERVATIONS.json", observations)
+        write(directory / "RESULT.json", dict(status="CANDIDATE", mode=mode, pid=audit.pid,
+              contract_sha256=lock_sha, counts=ledger.seen, environment=env,
+              integrity=integrity, comparisons=comparisons,
+              recovery=recovery, training=0, scaler_fit=0))
+        status = "COMPLETE"
+    except Exception:
+        write(directory / "FAILED.json", dict(stage=audit.stage, error=traceback.format_exc()))
+        raise
+    finally:
+        audit.finish(status)
+
+
+if __name__ == "__main__":
+    mode, output, contract, digest, *golden = sys.argv[1:]
+    require(mode in ["golden", "verify"] and len(golden) == int(mode == "verify"), "Worker command")
+    main(mode, Path(output), Path(contract), digest, Path(golden[0]) if golden else None)

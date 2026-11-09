@@ -1,0 +1,129 @@
+"""Pre-registered bridge, scaler, and reload fault probes."""
+from copy import copy
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from pc39_worker import key, require
+
+
+def bridge_faults(bridge, np, window):
+    records = []
+    probes = [
+        ("wrong_shape", "SIGNAL_INVALID", 0, 0),
+        ("wrong_dtype", "SIGNAL_INVALID", 0, 0),
+        ("signal_nan", "SIGNAL_INVALID", 0, 0),
+        ("signal_inf", "SIGNAL_INVALID", 0, 0),
+        ("classifier_error", "CLASSIFICATION_FAILED", 1, 0),
+        ("logits_nan", "CLASSIFICATION_INVALID", 1, 0),
+        ("illegal_class", "CLASSIFICATION_INVALID", 1, 0),
+        ("wrong_classifier_version", "MODEL_VERSION_MISMATCH", 0, 0),
+        ("missing_head", "REGRESSOR_MISSING", 1, 0),
+        ("wrong_head_version", "MODEL_VERSION_MISMATCH", 1, 0),
+        ("wrong_feature_names", "FEATURE_SCHEMA_MISMATCH", 1, 0),
+        ("feature64", "FEATURE_SCHEMA_MISMATCH", 1, 0),
+        ("feature_inf", "FEATURE_SCHEMA_MISMATCH", 1, 0),
+        ("raw_nan", "REGRESSION_NONFINITE", 1, 1),
+        ("raw_inf", "REGRESSION_NONFINITE", 1, 1),
+    ]
+    names = tuple(f"f{i}" for i in range(71))
+    for probe, reason, classifier_calls, head_calls in probes:
+        calls = dict(classifier=0, head=0)
+        window_probe = window
+
+        def classify(_):
+            calls["classifier"] += 1
+            if probe == "classifier_error":
+                raise RuntimeError("Injected classifier failure")
+            logits = np.array([0., 0., 1., 0.], dtype="f4")
+            if probe == "logits_nan":
+                logits[0] = np.nan
+            return dict(logits=logits, predicted_class=4 if probe == "illegal_class" else 2,
+                        version="classifier")
+
+        def extract(_):
+            features = np.zeros(64 if probe == "feature64" else 71, dtype="f8")
+            if probe == "feature_inf":
+                features[0] = np.inf
+            return dict(values=features, names=names[::-1] if probe == "wrong_feature_names" else names,
+                        version="feature")
+
+        def predict(_):
+            calls["head"] += 1
+            return np.array([np.nan if probe == "raw_nan" else np.inf])
+
+        classifier = SimpleNamespace(group="synthetic", version="bad" if probe == "wrong_classifier_version"
+                                     else "classifier", state_version="synthetic", classify=classify)
+        extractor = SimpleNamespace(names=names, version="feature", extract=extract)
+        head = SimpleNamespace(version="bad" if probe == "wrong_head_version" else "head",
+                               gas_id=2, support=(12.5, 125.), predict_raw=predict)
+        if probe == "wrong_shape":
+            window_probe = window[:49]
+        elif probe == "wrong_dtype":
+            window_probe = window.astype("f8")
+        elif probe in ["signal_nan", "signal_inf"]:
+            window_probe = window.copy()
+            window_probe[0, 0] = np.nan if probe == "signal_nan" else np.inf
+        pipeline = bridge.JointBridge(classifier, extractor,
+                    {} if probe == "missing_head" else {2: head},
+                    dict(classifier="classifier", feature="feature", regressors={2: "head"}))
+        result = pipeline.predict_window(window_probe)
+        require(result["status"] == "UNAVAILABLE" and result["reason"] == reason
+                and result["concentration_raw_ppm"] is None and result["concentration_clipped_ppm"] is None
+                and calls == dict(classifier=classifier_calls, head=head_calls), f"Fault failed: {probe}")
+        records.append(dict(probe=probe, status=result["status"], reason=reason,
+                            calls=calls, injected="synthetic adapter boundary"))
+    return records
+
+
+def faults(runtime, cases, initial, bridge, directory):
+    np = runtime.np
+    active = runtime.active
+    window = cases["S_ramp"]
+    expected = initial["S_ramp"]
+    records = bridge_faults(bridge, np, window)
+
+    def health(name):
+        require(runtime.active is active, "Failed reload replaced the active snapshot")
+        actual = runtime.observation("B0", window, f"S_ramp/B0/{name}", expected["feature_sha256"])
+        require(actual == expected["groups"]["B0"], "Active snapshot recovery drift")
+        return dict(request=f"S_ramp/B0/{name}", same_snapshot=True, byte_same_logits=True, route_same=True)
+
+    bad_head = copy(active.heads[0])
+    bad_head.h = dict(bad_head.h)
+    bad_head.h["numerical"] = dict(bad_head.h["numerical"])
+    bad_mean = bad_head.h["numerical"]["mean"].copy()
+    bad_mean[0] = np.nextafter(bad_mean[0], np.inf)
+    bad_head.h["numerical"]["mean"] = bad_mean
+    bad_candidate = SimpleNamespace(heads={**active.heads, 0: bad_head})
+    scaler = runtime.load(lambda: bad_candidate)
+    require(scaler["status"] == "UNAVAILABLE" and scaler["detail"] == "SCALER_IDENTITY_MISMATCH",
+            "Scaler mismatch did not block activation")
+    scaler_health = health("after_scaler_failure")
+
+    torch = active.r.torch
+    real_load = torch.load
+    b0 = key(active.lock["classifiers"]["B0"]["endpoint"])
+    missing = directory / "injected_missing_checkpoint.pth"
+    cold = type(runtime)(runtime.assets, np, runtime.lock, runtime.ledger)
+
+    def broken_checkpoint(path, *args, **kwargs):
+        if isinstance(path, (str, Path)) and key(path) == b0:
+            with open(missing, "rb"):
+                raise ValueError("The registered missing fixture unexpectedly exists")
+        return real_load(path, *args, **kwargs)
+
+    runtime.ledger.audit.request = None
+    with patch.object(torch, "load", broken_checkpoint):
+        failed = runtime.load(runtime.assets.FrozenAssets)
+        cold_failed = cold.load(runtime.assets.FrozenAssets)
+    require(failed["status"] == cold_failed["status"] == "UNAVAILABLE"
+            and failed["error"] == cold_failed["error"] == "FileNotFoundError"
+            and failed["previous_snapshot_retained"] and not cold_failed["previous_snapshot_retained"],
+            "Actual loader failure was not contained")
+    cold_route = cold.route("B0", window)
+    require(cold_route == dict(status="UNAVAILABLE", reason="MODEL_NOT_READY"), "Cold recovery policy")
+    reload_health = health("after_reload_failure")
+    return dict(bridge_faults=records, scaler=scaler, scaler_health=scaler_health,
+                failed_reload=failed, cold_failed_load=cold_failed, cold_route=cold_route,
+                reload_health=reload_health, injected_loader_missing_file=str(missing))

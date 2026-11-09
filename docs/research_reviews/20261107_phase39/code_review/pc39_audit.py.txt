@@ -1,0 +1,101 @@
+"""Persist Python open decisions and observed API outcomes in the worker."""
+import builtins
+import io
+import json
+import os
+import sys
+import threading
+
+
+def key(path):
+    value = os.fsdecode(path).removeprefix("\\\\?\\")
+    return os.path.normcase(os.path.realpath(value)).replace("\\", "/")
+
+
+class Audit:
+    def __init__(self, output):
+        self.output = key(output)
+        self.pid = os.getpid()
+        self.stage = "bootstrap"
+        self.request = None
+        self.files = set()
+        self.python = key(sys.base_prefix) + "/"
+        self.seq = 0
+        self.local = threading.local()
+        self.lock = threading.Lock()
+        self.fd = os.open(output / "FILE_OPEN.jsonl", os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_BINARY)
+        self.emit("start", output=self.output, audit_file_created_before_hook=True)
+        sys.addaudithook(self.hook)
+        builtins.open = self.wrap(builtins.open)
+        io.open = self.wrap(io.open)
+        os.open = self.wrap(os.open)
+
+    def emit(self, event, **fields):
+        with self.lock:
+            self.seq += 1
+            row = dict(seq=self.seq, pid=self.pid, stage=self.stage, request=self.request,
+                       event=event, **fields)
+            data = (json.dumps(row, ensure_ascii=True) + "\n").encode()
+            if os.write(self.fd, data) != len(data):
+                raise OSError("Incomplete audit record")
+            return self.seq
+
+    def allow(self, paths):
+        self.files.update(key(path) for path in paths)
+
+    def hook(self, event, args):
+        if event != "open":
+            return
+        path, mode, flags = args
+        call = getattr(self.local, "call", None)
+        if isinstance(path, int):
+            # An inherited or previously opened descriptor has no new path.
+            self.emit("open_attempt", path=f"fd:{path}", mode=mode, flags=flags,
+                      decision="ALLOW", rule="descriptor", call=call)
+            return
+        normalized = key(path)
+        own = normalized.startswith(self.output + "/")
+        writing = bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND))
+        if normalized == "//./nul" and os.name == "nt":
+            rule = "windows_null_device"
+        elif own:
+            rule = "own_evidence"
+        elif writing:
+            rule = "outside_worker_write"
+        elif normalized in self.files:
+            rule = "locked_file"
+        elif normalized.startswith(self.python):
+            rule = "python_installation"
+        else:
+            rule = "outside_read_allowlist"
+        allowed = rule in {"own_evidence", "locked_file", "python_installation", "windows_null_device"}
+        self.emit("open_attempt", path=normalized, mode=mode, flags=flags,
+                  decision="ALLOW" if allowed else "DENY", rule=rule, call=call)
+        if not allowed:
+            raise PermissionError("PC39 open denied: " + normalized)
+
+    def wrap(self, opener):
+        def tracked(file, *args, **kwargs):
+            prior = getattr(self.local, "call", None)
+            call = self.emit("api_open", api=opener.__module__ + "." + opener.__name__)
+            self.local.call = call
+            try:
+                result = opener(file, *args, **kwargs)
+            except OSError as error:
+                self.emit("open_result", call=call, result="ERROR",
+                          error=type(error).__name__, detail=str(error))
+                raise
+            except Exception as error:
+                self.emit("open_result", call=call, result="ERROR",
+                          error=type(error).__name__, detail=str(error))
+                raise
+            else:
+                self.emit("open_result", call=call, result="OK")
+                return result
+            finally:
+                self.local.call = prior
+        return tracked
+
+    def finish(self, status):
+        self.emit("end", status=status)
+        os.fsync(self.fd)

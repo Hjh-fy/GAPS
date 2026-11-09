@@ -1,0 +1,87 @@
+{
+  "status": "PASS_AWAITING_INDEPENDENT_REVIEW",
+  "workers": {
+    "golden": {
+      "pid": 40324,
+      "mode": "golden",
+      "open_events": 6094,
+      "allowed": 5732,
+      "denied": 362,
+      "scope_denials": 2,
+      "optional_library_denials": 360,
+      "api_errors": {
+        "PermissionError": 357,
+        "FileNotFoundError": 296
+      },
+      "expected_reload_errors": 0,
+      "numeric_requests": 252,
+      "numeric_files": [
+        "WORKTREE/research/fedongas_phase32_20261105/data/target/client_5/train_features.npy"
+      ],
+      "counts": {
+        "feature": 252,
+        "svr": 360,
+        "classifier": 216
+      },
+      "file_open_sha256": "b655c957af32aaaf81105d8cc36e227b4f289c0493d1a887a849aee64151584a",
+      "ledger_sha256": "86446e41228e66b2a3de9bf4a18cbaf4bec944934cca1545615c7a3ead5413b2",
+      "comparisons": {}
+    },
+    "verify": {
+      "pid": 34920,
+      "mode": "verify",
+      "open_events": 6662,
+      "allowed": 6285,
+      "denied": 377,
+      "scope_denials": 2,
+      "optional_library_denials": 375,
+      "api_errors": {
+        "PermissionError": 357,
+        "FileNotFoundError": 298
+      },
+      "expected_reload_errors": 2,
+      "numeric_requests": 758,
+      "numeric_files": [
+        "WORKTREE/research/fedongas_phase32_20261105/data/target/client_5/train_features.npy"
+      ],
+      "counts": {
+        "feature": 758,
+        "svr": 1082,
+        "classifier": 650
+      },
+      "file_open_sha256": "e5a8755a4b507e4144c9a238aeb6d6d4bdba1a02e8198ae11298e8ee69799cee",
+      "ledger_sha256": "76deac171aa34f39663f32b61c30eb37fbfb5760b259fd157e52bd54464a974f",
+      "comparisons": {
+        "independent": {
+          "windows": 36,
+          "logits": 216,
+          "features": 36,
+          "all_head_pairs": 144,
+          "routed_pairs": 216,
+          "max_logit_abs": 0.0,
+          "max_ppm_abs": 0.0
+        },
+        "repeat": {
+          "windows": 36,
+          "logits": 216,
+          "features": 36,
+          "all_head_pairs": 144,
+          "routed_pairs": 216,
+          "max_logit_abs": 0.0,
+          "max_ppm_abs": 0.0
+        },
+        "reload": {
+          "windows": 36,
+          "logits": 216,
+          "features": 36,
+          "all_head_pairs": 144,
+          "routed_pairs": 216,
+          "max_logit_abs": 0.0,
+          "max_ppm_abs": 0.0
+        }
+      }
+    }
+  },
+  "contract_sha256": "e2c2fe930ec1d7e45dd563aec50ba00f22ef1e7570ac7e201397e9b8e8d74774",
+  "legacy_phase38": "BLOCKED_UNCHANGED"
+}
