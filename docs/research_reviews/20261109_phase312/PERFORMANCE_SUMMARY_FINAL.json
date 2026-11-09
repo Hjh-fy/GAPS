@@ -1,0 +1,333 @@
+{
+  "models": {
+    "B0": {
+      "cold_first_ms": 8912.513007,
+      "load_ms": 138.079853,
+      "cold_peak_rss_mib": 316.15625,
+      "cold_sampled_rss_mib": 316.546875,
+      "cold_temperature_c": 52.9,
+      "timed_ms": {
+        "classifier": {
+          "p50": 2.785246,
+          "p95": 2.813968,
+          "p99": 2.846265
+        },
+        "feature71": {
+          "p50": 0.497334,
+          "p95": 0.52015,
+          "p99": 0.532427
+        },
+        "svr": {
+          "p50": 0.29563,
+          "p95": 0.316963,
+          "p99": 0.322278
+        },
+        "joint": {
+          "p50": 3.89286,
+          "p95": 3.926119,
+          "p99": 3.95086
+        }
+      },
+      "timed_reciprocal_joint_per_s": 256.6308684783159,
+      "sustained_completed": 2530,
+      "sustained_per_s": 42.16656550907598,
+      "sustained_joint_ms": {
+        "p50": 3.894248,
+        "p95": 3.931786,
+        "p99": 4.023341
+      },
+      "first10s_joint_ms": {
+        "p50": 3.899675,
+        "p95": 3.938304,
+        "p99": 4.044322
+      },
+      "last10s_joint_ms": {
+        "p50": 3.893304,
+        "p95": 3.927415,
+        "p99": 3.97023
+      }
+    },
+    "B1": {
+      "cold_first_ms": 8940.67759,
+      "load_ms": 143.750879,
+      "cold_peak_rss_mib": 316.09375,
+      "cold_sampled_rss_mib": 316.515625,
+      "cold_temperature_c": 52.9,
+      "timed_ms": {
+        "classifier": {
+          "p50": 2.792876,
+          "p95": 2.82595,
+          "p99": 2.851709
+        },
+        "feature71": {
+          "p50": 0.495853,
+          "p95": 0.516797,
+          "p99": 0.525205
+        },
+        "svr": {
+          "p50": 0.295445,
+          "p95": 0.310964,
+          "p99": 0.326111
+        },
+        "joint": {
+          "p50": 3.8971,
+          "p95": 3.938045,
+          "p99": 3.952248
+        }
+      },
+      "timed_reciprocal_joint_per_s": 256.36238829364635,
+      "sustained_completed": 2530,
+      "sustained_per_s": 42.16656550907598,
+      "sustained_joint_ms": {
+        "p50": 3.8966,
+        "p95": 3.932952,
+        "p99": 4.020026
+      },
+      "first10s_joint_ms": {
+        "p50": 3.900045,
+        "p95": 3.941804,
+        "p99": 3.994582
+      },
+      "last10s_joint_ms": {
+        "p50": 3.895729,
+        "p95": 3.928062,
+        "p99": 3.950451
+      }
+    },
+    "B2": {
+      "cold_first_ms": 8942.982628,
+      "load_ms": 135.42719,
+      "cold_peak_rss_mib": 316.109375,
+      "cold_sampled_rss_mib": 316.515625,
+      "cold_temperature_c": 51.25,
+      "timed_ms": {
+        "classifier": {
+          "p50": 2.78858,
+          "p95": 2.816543,
+          "p99": 2.847431
+        },
+        "feature71": {
+          "p50": 0.495057,
+          "p95": 0.521094,
+          "p99": 0.532982
+        },
+        "svr": {
+          "p50": 0.296112,
+          "p95": 0.315,
+          "p99": 0.326556
+        },
+        "joint": {
+          "p50": 3.895267,
+          "p95": 3.922378,
+          "p99": 3.983322
+        }
+      },
+      "timed_reciprocal_joint_per_s": 256.636818354694,
+      "sustained_completed": 2530,
+      "sustained_per_s": 42.16656550907598,
+      "sustained_joint_ms": {
+        "p50": 3.894045,
+        "p95": 3.932655,
+        "p99": 4.019934
+      },
+      "first10s_joint_ms": {
+        "p50": 3.897267,
+        "p95": 3.933156,
+        "p99": 4.01723
+      },
+      "last10s_joint_ms": {
+        "p50": 3.893526,
+        "p95": 3.929989,
+        "p99": 3.999767
+      }
+    },
+    "B3": {
+      "cold_first_ms": 8918.862027,
+      "load_ms": 139.902141,
+      "cold_peak_rss_mib": 316.09375,
+      "cold_sampled_rss_mib": 316.546875,
+      "cold_temperature_c": 53.45,
+      "timed_ms": {
+        "classifier": {
+          "p50": 2.78745,
+          "p95": 2.823358,
+          "p99": 2.881413
+        },
+        "feature71": {
+          "p50": 0.495427,
+          "p95": 0.520242,
+          "p99": 0.532075
+        },
+        "svr": {
+          "p50": 0.295723,
+          "p95": 0.31476,
+          "p99": 0.325501
+        },
+        "joint": {
+          "p50": 3.894915,
+          "p95": 3.930989,
+          "p99": 3.991731
+        }
+      },
+      "timed_reciprocal_joint_per_s": 256.6061011474918,
+      "sustained_completed": 2530,
+      "sustained_per_s": 42.16656550907598,
+      "sustained_joint_ms": {
+        "p50": 3.894026,
+        "p95": 3.931174,
+        "p99": 4.011729
+      },
+      "first10s_joint_ms": {
+        "p50": 3.896637,
+        "p95": 3.931804,
+        "p99": 3.966249
+      },
+      "last10s_joint_ms": {
+        "p50": 3.894304,
+        "p95": 3.929267,
+        "p99": 3.956767
+      }
+    },
+    "B4": {
+      "cold_first_ms": 8969.876072,
+      "load_ms": 145.514259,
+      "cold_peak_rss_mib": 316.125,
+      "cold_sampled_rss_mib": 316.53125,
+      "cold_temperature_c": 53.45,
+      "timed_ms": {
+        "classifier": {
+          "p50": 2.790135,
+          "p95": 2.815672,
+          "p99": 2.83582
+        },
+        "feature71": {
+          "p50": 0.495983,
+          "p95": 0.520705,
+          "p99": 0.529964
+        },
+        "svr": {
+          "p50": 0.296037,
+          "p95": 0.315352,
+          "p99": 0.321797
+        },
+        "joint": {
+          "p50": 3.894471,
+          "p95": 3.925823,
+          "p99": 3.941267
+        }
+      },
+      "timed_reciprocal_joint_per_s": 256.624010721977,
+      "sustained_completed": 2530,
+      "sustained_per_s": 42.16656550907598,
+      "sustained_joint_ms": {
+        "p50": 3.89347,
+        "p95": 3.931174,
+        "p99": 3.999452
+      },
+      "first10s_joint_ms": {
+        "p50": 3.897434,
+        "p95": 3.931933,
+        "p99": 3.954767
+      },
+      "last10s_joint_ms": {
+        "p50": 3.893933,
+        "p95": 3.933674,
+        "p99": 4.019859
+      }
+    },
+    "B5": {
+      "cold_first_ms": 8868.631429,
+      "load_ms": 136.212218,
+      "cold_peak_rss_mib": 316.09375,
+      "cold_sampled_rss_mib": 316.515625,
+      "cold_temperature_c": 53.45,
+      "timed_ms": {
+        "classifier": {
+          "p50": 2.790543,
+          "p95": 2.822932,
+          "p99": 2.830913
+        },
+        "feature71": {
+          "p50": 0.495964,
+          "p95": 0.51889,
+          "p99": 0.527557
+        },
+        "svr": {
+          "p50": 0.295334,
+          "p95": 0.31626,
+          "p99": 0.325982
+        },
+        "joint": {
+          "p50": 3.897341,
+          "p95": 3.928804,
+          "p99": 3.935619
+        }
+      },
+      "timed_reciprocal_joint_per_s": 256.5613249812018,
+      "sustained_completed": 2530,
+      "sustained_per_s": 42.16656550907598,
+      "sustained_joint_ms": {
+        "p50": 3.893286,
+        "p95": 3.92923,
+        "p99": 4.010286
+      },
+      "first10s_joint_ms": {
+        "p50": 3.898211,
+        "p95": 3.939878,
+        "p99": 4.010286
+      },
+      "last10s_joint_ms": {
+        "p50": 3.891341,
+        "p95": 3.928026,
+        "p99": 4.015045
+      }
+    }
+  },
+  "timed_requests": 1200,
+  "sustained_requests": 15180,
+  "sustained_seconds": 60.000143940000044,
+  "sustained_windows_per_s": 252.99939305445588,
+  "abnormal_requests": 0,
+  "telemetry_samples": 61,
+  "telemetry_sample_ms": {
+    "p50": 1.032576,
+    "p95": 1.05541,
+    "p99": 1.066761
+  },
+  "trace_and_wrapper_residual_ms": {
+    "p50": 0.309077,
+    "p95": 0.325686,
+    "p99": 0.336779
+  },
+  "peak_rss_mib": 317.265625,
+  "ru_maxrss_mib": 316.625,
+  "rss_mib": [
+    317.25,
+    317.265625
+  ],
+  "maximum_temp_c": 55.1,
+  "sustained_temp_c": [
+    52.35,
+    55.1
+  ],
+  "cpu0_mhz": [
+    2400.0,
+    2400.0
+  ],
+  "loadavg_1m": [
+    0.76,
+    0.91
+  ],
+  "process_cpu_one_core_percent": 99.96072884358368,
+  "aggregate_system_cpu_busy_percent": 25.01563477173233,
+  "max_timed_joint_p99_ms": 3.991731,
+  "max_cold_first_ms": 8969.876072,
+  "targets": {
+    "joint_p99": true,
+    "cold_first": true,
+    "peak_rss": true,
+    "temperature": true
+  },
+  "before": "throttled=0x0",
+  "after": "throttled=0x0"
+}

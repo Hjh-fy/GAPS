@@ -1,0 +1,16 @@
+{
+  "bundle_sha256": "61e23f0a8bd47bb1641fa60f5d18e80e530425418e191f97b7e97fe9232eaa5d",
+  "automatic_retry": false,
+  "input_scope": "DAY18_CAL32_SYN4_ONLY",
+  "anchor": "33dff2d8b34e033d6bd69458d4401719ad1fc577",
+  "protocol_sha256": "1e261e2cf8021111645ca491f4a5babce045ce1a92da7e7a5f8a663cee643c20",
+  "modes": [
+    "cold",
+    "perf"
+  ],
+  "day22_new_inference": 0,
+  "runner_sha256": "8088dcdc82712701d933e89f8763a0188288cdbe9a50fe28e370fdc2a763434e",
+  "authorization": "Phase3.12 explicit user authorization",
+  "plan": "B0-B5 once each in separate cold processes loading the shared six-model bundle. One warm process: 20 warmups and 200 timed windows/group cycling bundle order. 60s balanced round-robin sustained; telemetry 1s. Targets inherited without change.",
+  "experiment_id": "P312-PI5-FP32-PERF-v1"
+}

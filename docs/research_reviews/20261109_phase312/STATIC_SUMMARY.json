@@ -1,0 +1,203 @@
+{
+  "historical_files_verified": 141,
+  "unique_windows": 27,
+  "unique_exposures": 14,
+  "windows_per_exposure_histogram": {
+    "5": 2,
+    "4": 1,
+    "1": 9,
+    "2": 2
+  },
+  "models_out_per_window_histogram": {
+    "1": 24,
+    "2": 3
+  },
+  "by_model": {
+    "B0": {
+      "failed_rows": 3,
+      "components": [
+        1,
+        1,
+        2,
+        2
+      ],
+      "max_threshold_ratio": 6.555301099724351,
+      "median_failed_component_ratio": 2.106000105073111,
+      "min_pc_margin": 4.9377593994140625,
+      "min_pi_margin": 4.9389543533325195,
+      "argmax_changes": 0
+    },
+    "B1": {
+      "failed_rows": 3,
+      "components": [
+        0,
+        1,
+        2,
+        1
+      ],
+      "max_threshold_ratio": 1.2779794779316906,
+      "median_failed_component_ratio": 1.0971896362431326,
+      "min_pc_margin": 3.75425386428833,
+      "min_pi_margin": 3.753922939300537,
+      "argmax_changes": 0
+    },
+    "B2": {
+      "failed_rows": 1,
+      "components": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "max_threshold_ratio": 1.1132683096123772,
+      "median_failed_component_ratio": 1.1132683096123772,
+      "min_pc_margin": 6.465719699859619,
+      "min_pi_margin": 6.4659624099731445,
+      "argmax_changes": 0
+    },
+    "B3": {
+      "failed_rows": 1,
+      "components": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "max_threshold_ratio": 1.6428871399215306,
+      "median_failed_component_ratio": 1.4030330471597208,
+      "min_pc_margin": 3.3319649696350098,
+      "min_pi_margin": 3.3323707580566406,
+      "argmax_changes": 0
+    },
+    "B4": {
+      "failed_rows": 11,
+      "components": [
+        2,
+        4,
+        5,
+        7
+      ],
+      "max_threshold_ratio": 4.3360420800077755,
+      "median_failed_component_ratio": 1.907389242394713,
+      "min_pc_margin": 2.514352798461914,
+      "min_pi_margin": 2.5147156715393066,
+      "argmax_changes": 0
+    },
+    "B5": {
+      "failed_rows": 11,
+      "components": [
+        1,
+        3,
+        8,
+        6
+      ],
+      "max_threshold_ratio": 6.121546338541318,
+      "median_failed_component_ratio": 1.8836928054790523,
+      "min_pc_margin": 0.060101985931396484,
+      "min_pi_margin": 0.06068086624145508,
+      "argmax_changes": 0
+    }
+  },
+  "overlap_windows": {
+    "B0": {
+      "B0": 3,
+      "B1": 0,
+      "B2": 0,
+      "B3": 0,
+      "B4": 0,
+      "B5": 0
+    },
+    "B1": {
+      "B0": 0,
+      "B1": 3,
+      "B2": 0,
+      "B3": 0,
+      "B4": 0,
+      "B5": 0
+    },
+    "B2": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 1,
+      "B3": 0,
+      "B4": 0,
+      "B5": 0
+    },
+    "B3": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 0,
+      "B3": 1,
+      "B4": 0,
+      "B5": 0
+    },
+    "B4": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 0,
+      "B3": 0,
+      "B4": 11,
+      "B5": 3
+    },
+    "B5": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 0,
+      "B3": 0,
+      "B4": 3,
+      "B5": 11
+    }
+  },
+  "overlap_exposures": {
+    "B0": {
+      "B0": 3,
+      "B1": 1,
+      "B2": 0,
+      "B3": 0,
+      "B4": 0,
+      "B5": 0
+    },
+    "B1": {
+      "B0": 1,
+      "B1": 3,
+      "B2": 0,
+      "B3": 0,
+      "B4": 1,
+      "B5": 1
+    },
+    "B2": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 1,
+      "B3": 0,
+      "B4": 0,
+      "B5": 0
+    },
+    "B3": {
+      "B0": 0,
+      "B1": 0,
+      "B2": 0,
+      "B3": 1,
+      "B4": 0,
+      "B5": 1
+    },
+    "B4": {
+      "B0": 0,
+      "B1": 1,
+      "B2": 0,
+      "B3": 0,
+      "B4": 6,
+      "B5": 3
+    },
+    "B5": {
+      "B0": 0,
+      "B1": 1,
+      "B2": 0,
+      "B3": 1,
+      "B4": 3,
+      "B5": 6
+    }
+  },
+  "b4_b5_same_sign_components_when_both_out": 1,
+  "b4_b5_shared_out_components": 2
+}

@@ -1,0 +1,15 @@
+{
+  "bundle_sha256": "61e23f0a8bd47bb1641fa60f5d18e80e530425418e191f97b7e97fe9232eaa5d",
+  "automatic_retry": false,
+  "input_scope": "DAY18_CAL32_SYN4_ONLY",
+  "anchor": "33dff2d8b34e033d6bd69458d4401719ad1fc577",
+  "protocol_sha256": "1e261e2cf8021111645ca491f4a5babce045ce1a92da7e7a5f8a663cee643c20",
+  "modes": [
+    "layer"
+  ],
+  "day22_new_inference": 0,
+  "runner_sha256": "8088dcdc82712701d933e89f8763a0188288cdbe9a50fe28e370fdc2a763434e",
+  "authorization": "Phase3.12 explicit user authorization",
+  "plan": "Six models by 36 windows, one baseline plus one hooked prediction on each platform. Native PC interop 6 and Pi interop 1. No backend factors.",
+  "experiment_id": "P312-PC-PI-LAYER-BASELINES-v1"
+}

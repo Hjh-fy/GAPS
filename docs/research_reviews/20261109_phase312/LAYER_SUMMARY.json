@@ -1,0 +1,170 @@
+{
+  "pairs": 216,
+  "layers": {
+    "model.input": {
+      "records": 216,
+      "differing_records": 0,
+      "differing_strides": 0,
+      "max_abs": 0
+    },
+    "tcn1.input": {
+      "records": 216,
+      "differing_records": 0,
+      "differing_strides": 0,
+      "max_abs": 0
+    },
+    "tcn1.conv.depthwise.out": {
+      "records": 216,
+      "differing_records": 0,
+      "differing_strides": 0,
+      "max_abs": 0
+    },
+    "tcn1.conv.pointwise.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 1.9073486328125e-06
+    },
+    "tcn1.norm.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 1.5854835510253906e-05
+    },
+    "tcn1.downsample.out": {
+      "records": 216,
+      "differing_records": 209,
+      "differing_strides": 0,
+      "max_abs": 9.5367431640625e-07
+    },
+    "tcn1.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 5.4836273193359375e-06
+    },
+    "tcn2.input": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 5.4836273193359375e-06
+    },
+    "tcn2.conv.depthwise.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 1.0013580322265625e-05
+    },
+    "tcn2.conv.pointwise.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 5.841255187988281e-06
+    },
+    "tcn2.norm.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.00028972327709198
+    },
+    "tcn2.downsample.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 3.993511199951172e-06
+    },
+    "tcn2.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.0002040863037109375
+    },
+    "tcn3.input": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.0002040863037109375
+    },
+    "tcn3.conv.depthwise.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.00012993812561035156
+    },
+    "tcn3.conv.pointwise.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.00013116002082824707
+    },
+    "tcn3.norm.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.00026702880859375
+    },
+    "tcn3.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.0002810955047607422
+    },
+    "self_attn.input": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.0002810955047607422
+    },
+    "self_attn.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.00021564960479736328
+    },
+    "attn_linear.input": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.00021564960479736328
+    },
+    "attn_linear.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 0.000247955322265625
+    },
+    "cls_proj.input": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 2.574920654296875e-05
+    },
+    "cls_proj.out": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 2.6702880859375e-05
+    },
+    "classifier.input": {
+      "records": 216,
+      "differing_records": 216,
+      "differing_strides": 0,
+      "max_abs": 1.646578311920166e-06
+    },
+    "classifier.out": {
+      "records": 216,
+      "differing_records": 215,
+      "differing_strides": 0,
+      "max_abs": 4.011392593383789e-05
+    }
+  },
+  "first_difference": {
+    "tcn1.conv.pointwise.out": 216
+  },
+  "byte_identical_all_layers": 0,
+  "logits_max_abs": 4.011392593383789e-05,
+  "logits_exceed": 0,
+  "argmax_changes": 0,
+  "pc_exact_previous": 216,
+  "pi_exact_previous": 216
+}

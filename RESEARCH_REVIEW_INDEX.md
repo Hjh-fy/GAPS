@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.11 Pi 5 离线联合推理](docs/research_reviews/20261109_phase311/README.md) · [数值与恢复](docs/research_reviews/20261109_phase311/NUMERICAL_AND_RECOVERY.md)
+最新：[Phase3.12 Pi 5 数值诊断与性能表征](docs/research_reviews/20261109_phase312/README.md)
+
+标定与合成输入定位到首块 TCN pointwise 的首处字节差异。实机联合 P99 3.936–3.992 ms。Phase3.11 严格数值门禁仍 BLOCKED。
+
+上阶段：[Phase3.11 Pi 5 离线联合推理](docs/research_reviews/20261109_phase311/README.md) · [数值与恢复](docs/research_reviews/20261109_phase311/NUMERICAL_AND_RECOVERY.md)
 
 Pi 5 完成六视图 5,040 条推理，类别与选头一致。30 条 logits 超容差，完整数值门禁 BLOCKED，性能未运行。
 
