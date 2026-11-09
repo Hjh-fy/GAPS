@@ -1,0 +1,82 @@
+"""Register identities and code before opening Day22 numerical inputs."""
+from collections import Counter
+from pathlib import Path
+
+from common310 import HERE, P38, P39, PC, GOLDEN, GROUPS, PURPOSE, csvrows, identity, read, require, sha, table, write
+
+
+def main():
+    def checked(path, expected):
+        require(sha(path) == expected, f"Frozen SHA {path}")
+        return str(path)
+
+    checked(PC, "e2c2fe930ec1d7e45dd563aec50ba00f22ef1e7570ac7e201397e9b8e8d74774")
+    checked(P39 / "ARTIFACT_SHA256.csv", "47fbd6909d8fabb81f2460774645651298ef31e3e5ecc74f65bb208af81cdfe3")
+    checked(P38 / "ARTIFACT_SHA256.csv", "70c6761e1e45c77f31a834f098f92bfcd52083ca6f60369df510d3970ca76f88")
+    old = {r["path"]: r["sha256"] for r in csvrows(P38 / "ARTIFACT_SHA256.csv")}
+    previous = {r["path"]: r["sha256"] for r in csvrows(P39 / "ARTIFACT_SHA256.csv")}
+    for name in ["FINAL_VERIFICATION.json", "AUTHORIZATION_CONSUMED.json",
+                 "INPUT_CONTRACT_GATE_FINAL.json", "EXECUTION_REGISTRATION_FINAL.json",
+                 "run1/INPUT_WINDOW_IDENTITIES.csv", "run1/PREFLIGHT_PASS.json", "metrics.py"]:
+        checked(P38 / name, old[name])
+    for name in ["FINAL_VERIFICATION.json", "INDEPENDENT_REVIEW.json", "attempt5/golden/GOLDEN_SEAL.json"]:
+        checked(P39 / name, previous[name])
+    require(read(P38 / "FINAL_VERIFICATION.json")["status"].startswith("BLOCKED"), "Historical decision")
+    require(read(P39 / "FINAL_VERIFICATION.json")["status"].startswith("PASS_PC"), "PC provenance")
+    baseline = read(P38 / "EXECUTION_REGISTRATION_FINAL.json")
+    pc = read(PC)
+    for group in GROUPS:
+        actual = pc["classifiers"][group]
+        prior = baseline["model_sources"]["classifiers"][group]
+        require(all(actual[k] == prior[k] for k in ["endpoint", "endpoint_file_sha256", "endpoint_state_sha256"]),
+                f"Classifier endpoint {group}")
+    source = csvrows(P38 / "run1/INPUT_WINDOW_IDENTITIES.csv")
+    fields = ["filename", "client_id", "day", "start_s", "end_s", "physical_identity", "raw_sha256",
+              "row", "signal_sha256", "feature71_sha256"]
+    identities = [{field: item[field] for field in fields} for item in source]
+    names = Counter(row["filename"] for row in identities)
+    require(len(identities) == len({identity(r) for r in identities}) == 840
+            and len(names) == 40 and set(names.values()) == {21}
+            and all(row["client_id"] == "5" and row["day"] == "22" and int(row["row"]) == i
+                    for i, row in enumerate(identities)), "Identity structure")
+    raw = baseline["raw_day22_allowlist"]
+    require({Path(path).name for path in raw} == set(names)
+            and {Path(path).name: digest for path, digest in raw.items()}
+                == {r["filename"]: r["raw_sha256"] for r in identities}, "Raw identity manifest")
+    projection = HERE / "WINDOW_IDENTITIES.csv"
+    if projection.exists():
+        require(csvrows(projection) == identities, "Existing identity projection differs")
+    else:
+        table(projection, identities)
+    frozen = read(P38 / "run1/PREFLIGHT_PASS.json")
+    expected_inputs = {r["path"]: r["sha256"]
+                       for r in read(P38 / "INPUT_CONTRACT_GATE_FINAL.json")["frozen_reference_checks"]}
+    truth = next(p for p in expected_inputs if p.endswith("C5_test_metadata.json"))
+    legacy = next(p for p in expected_inputs if p.endswith("PRIVATE_WINDOW_PREDICTIONS.csv"))
+    files = [HERE / name for name in ["common310.py", "audit310.py", "execute310.py", "score310.py",
+             "register310.py", "run310.py", "test310.py", "PLAN.md", "WINDOW_IDENTITIES.csv"]]
+    files.extend([P38 / "metrics.py", P38 / "FINAL_VERIFICATION.json", P38 / "AUTHORIZATION_CONSUMED.json",
+                  P39 / "FINAL_VERIFICATION.json", P39 / "INDEPENDENT_REVIEW.json", GOLDEN / "GOLDEN_SEAL.json"])
+    write(HERE / "REGISTRATION.json", dict(
+        purpose=PURPOSE, phase39_commit="cb850dadfbef986702e3155372fef225a818f2b1",
+        pc_contract_sha256=sha(PC), original_phase38_status="BLOCKED_UNCHANGED", groups=GROUPS,
+        endpoint_paths={g: pc["classifiers"][g]["endpoint"] for g in GROUPS},
+        pc_environment_sha256=sha(GOLDEN / "RESULT.json"), local_files={str(p): sha(p) for p in files},
+        windows=840, records=5040, exposures=40, planned_view_files=[f"{g}/PRIVATE_WINDOWS.jsonl" for g in GROUPS],
+        signal_array_sha256=frozen["signal_array_sha256"], feature_array_sha256=frozen["feature71_array_sha256"],
+        budget=dict(pre=dict(classifier=216, feature=252, svr=360),
+                    attempt2=dict(classifier=5472, feature=6384, svr=5760)),
+        raw=raw, score_inputs={p: expected_inputs[p] for p in [truth, legacy]},
+        truth_path=truth, legacy_path=legacy,
+        probes=[str(HERE.parent / "unauthorized_numeric_probe.npz"), str(Path(legacy).parent / "phase310_scope_probe.csv")],
+        label_free_prediction=True, legacy_comparison_only=True, max_runs=1, auto_retry=False))
+    write(HERE / "AUTHORIZATION.json", dict(
+        authority="User Phase3.10 request explicitly approves one Day22 single-window attempt2 after independent gates",
+        purpose=PURPOSE, max_runs=1, registration_sha256=sha(HERE / "REGISTRATION.json"),
+        pc_contract_sha256=sha(PC), previous_consumption_sha256=old["AUTHORIZATION_CONSUMED.json"],
+        training=False, refit=False, pi=False, onnx=False, quantization=False))
+    print("Registered identity metadata only", sha(HERE / "REGISTRATION.json"))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,213 @@
+"""PC canonical prediction, with a fresh one-shot Day22 permission boundary."""
+import collections
+import inspect
+import json
+import os
+from pathlib import Path
+import sys
+import traceback
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common310 import (HERE, P39, P37, PC, GOLDEN, GROUPS, PURPOSE, VIEWS,
+                       csvrows, identity, read, require, sha, table, write)
+from audit310 import inspect_log
+
+sys.path.insert(0, str(P39))
+from pc39_audit import Audit, key
+from pc39_worker import Ledger, Runtime, array_sha, compare, environment, inputs
+
+MARKER = VIEWS / "AUTHORIZATION_CONSUMED.json"
+
+
+def load_runtime(reg, pc, directory, audit, mode):
+    audit.stage = "identity"
+    for path, expected in {**pc["files"], **reg["local_files"]}.items():
+        require(sha(path) == expected, f"Frozen file mismatch {Path(path).name}")
+    audit.stage = "initial_load"
+    import numpy as np
+    sys.path.insert(0, str(P37))
+    import assets
+    import bridge
+    require(Path(assets.__file__).resolve() == P37 / "assets.py"
+            and Path(bridge.__file__).resolve() == P37 / "bridge.py", "Frozen adapter import")
+    require(list(inspect.signature(bridge.JointBridge.predict_window).parameters) == ["self", "window"],
+            "Label-free bridge signature")
+    ledger = Ledger(directory, audit, reg["budget"][mode])
+    runtime = Runtime(assets, np, pc, ledger)
+    old_guard = assets.install_guard
+    try:
+        # The new process has an already active exact-file guard.
+        assets.install_guard = lambda source_lock: None
+        result = runtime.load(assets.FrozenAssets)
+    finally:
+        assets.install_guard = old_guard
+    require(result["status"] == "OK", result)
+    env = environment(runtime.active.r.torch, pc)
+    seal = read(GOLDEN / "GOLDEN_SEAL.json")
+    require(seal["pid"] != audit.pid and seal["contract_sha256"] == sha(PC), "Golden provenance")
+    for name, expected in seal["files"].items():
+        require(sha(GOLDEN / name) == expected, "Golden payload digest")
+    require(env == read(GOLDEN / "RESULT.json")["environment"], "PC environment")
+    return runtime, env, read(GOLDEN / "OBSERVATIONS.json")
+
+
+def restore_golden(runtime, pc, reference, phase):
+    windows = inputs(runtime.np, pc)
+    result = runtime.snapshot(windows, phase)
+    return compare(runtime.np, result, reference, pc)
+
+
+def rebuild(runtime, reg, audit):
+    np = runtime.np
+    audit.stage = "input_rebuild"
+    by_name = {Path(p).name: (Path(p), h) for p, h in reg["raw"].items()}
+    windows, features, cache, qc = [], [], {}, []
+    strict = runtime.active.v.strict
+    identities = csvrows(HERE / "WINDOW_IDENTITIES.csv")
+    for item in identities:
+        filename = item["filename"]
+        path, expected = by_name[filename]
+        if filename not in cache:
+            require(sha(path) == expected == item["raw_sha256"], "Day22 exposure SHA")
+            parsed = strict.parse_raw_name(filename)
+            require(parsed["client_id"] == 5 and parsed["day"] == 22, "Day22 exposure identity")
+            data = strict.process_raw(path)
+            valid = [i for i, m in enumerate(data["metadata"]) if m["valid"]]
+            require(len(valid) == 21, "Window quality mask")
+            cache[filename] = {(round(float(data["metadata"][i]["start_s"]), 6),
+                                round(float(data["metadata"][i]["end_s"]), 6)): data["x"][i] for i in valid}
+            require(len(cache[filename]) == 21, "Unique window times")
+            qc.append(dict(filename=filename, raw_sha256=expected, valid_windows=21, raw_rows=data["raw_rows"]))
+        window = cache[filename][identity(item)[1:]]
+        require(window.shape == (50, 8) and window.dtype == np.float32 and window.flags.c_contiguous
+                and np.isfinite(window).all() and array_sha(window) == item["signal_sha256"],
+                "Day22 frozen signal bytes")
+        runtime.ledger.request(f"identity/{item['row']}", window)
+        feature = runtime.active.extractor.extract(window)["values"]
+        require(feature.shape == (71,) and feature.dtype == np.float64 and np.isfinite(feature).all()
+                and array_sha(feature) == item["feature71_sha256"], "Day22 frozen feature bytes")
+        windows.append(window)
+        features.append(feature)
+    require(len(windows) == 840 and len(qc) == 40, "Day22 counts")
+    require(array_sha(np.asarray(windows)) == reg["signal_array_sha256"]
+            and array_sha(np.asarray(features)) == reg["feature_array_sha256"], "Day22 tensor array digests")
+    table(VIEWS / "RAW_QC.csv", qc)
+    return identities, windows
+
+
+def infer_one(runtime, group, item, window):
+    runtime.classification = runtime.features = None
+    ledger = runtime.ledger
+    ledger.request(f"{group}/{item['row']}", window)
+    before = ledger.seen.copy()
+    result = runtime.route(group, window)
+    calls = {name: ledger.seen[name] - before[name] for name in before}
+    logits = None if runtime.classification is None else runtime.classification["logits"]
+    feature = None if runtime.features is None else array_sha(runtime.features["values"])
+    called = result["predicted_gas_id"] if calls["svr"] == 1 else None
+    return dict(item, row=int(item["row"]), group=group, **result,
+                logits=None if logits is None else logits.tolist(),
+                logits_sha256=None if logits is None else array_sha(logits),
+                observed_feature_sha256=feature, called_head_gas=called,
+                regression_calls=calls["svr"], calls=calls, request_seq=ledger.request_seq)
+
+
+def evaluate(runtime, identities, windows, directory):
+    for group in GROUPS:
+        runtime.ledger.audit.stage = group
+        file = directory / group / "PRIVATE_WINDOWS.jsonl"
+        before = runtime.integrity()
+        with file.open("x", encoding="utf-8") as stream:
+            for item, window in zip(identities, windows):
+                record = infer_one(runtime, group, item, window)
+                stream.write(json.dumps(record, allow_nan=False) + "\n")
+                stream.flush()
+                require(record["status"] == "OK", f"{group}/{item['row']} {record['reason']}")
+                require(record["calls"] == dict(classifier=1, feature=1, svr=1)
+                        and record["logits"] is not None
+                        and record["observed_feature_sha256"] == item["feature71_sha256"],
+                        "Canonical call or feature mismatch")
+        require(runtime.integrity() == before, "View changed model or scaler")
+        write(directory / group / "VIEW_LOCK.json",
+              dict(status="PASS_COMPLETE", group=group, windows=len(windows), sha256=sha(file), integrity=before))
+        print(group, len(windows), "sealed", flush=True)
+
+
+def main(mode):
+    require(mode in {"pre", "attempt2"}, "Worker mode")
+    directory = HERE / mode
+    require(not MARKER.exists(), "One-shot authorization already consumed")
+    directory.mkdir(exist_ok=False)
+    (directory / "scratch").mkdir()
+    audit = Audit(directory)
+    status = "BLOCKED"
+    try:
+        files = [HERE / "REGISTRATION.json", HERE / "AUTHORIZATION.json", PC,
+                 HERE / "PRECHECK_PASS.json", HERE / "SYNTHETIC_TESTS.json",
+                 HERE / "CODE_REVIEW.json", HERE / "WINDOW_IDENTITIES.csv"]
+        audit.allow(files)
+        audit.allow([sys.executable, *[GOLDEN / n for n in
+                    ["GOLDEN_SEAL.json", "RESULT.json", "OBSERVATIONS.json", "MODEL_CALLS.jsonl", "FILE_OPEN.jsonl"]]])
+        reg = read(HERE / "REGISTRATION.json")
+        auth = read(HERE / "AUTHORIZATION.json")
+        pc = read(PC)
+        require(auth["purpose"] == PURPOSE and auth["max_runs"] == 1
+                and auth["registration_sha256"] == sha(HERE / "REGISTRATION.json")
+                and sha(PC) == reg["pc_contract_sha256"] == auth["pc_contract_sha256"]
+                and pc["id"] == "PC-F32-CPU-SINGLE-v1", "Authorization/PC version")
+        audit.allow([*pc["files"], *reg["local_files"]])
+        if mode == "attempt2":
+            gate = read(HERE / "PRECHECK_PASS.json")
+            require(gate["status"] == "PASS_NO_DAY22_NUMERIC"
+                    and gate["registration_sha256"] == auth["registration_sha256"]
+                    and gate["code_review_sha256"] == sha(HERE / "CODE_REVIEW.json")
+                    and gate["test_sha256"] == sha(HERE / "SYNTHETIC_TESTS.json"), "Independent precheck gate")
+        audit.stage = "scope_probe"
+        for path in reg["probes"]:
+            try:
+                with open(path, "rb"):
+                    raise ValueError("Scope violation")
+            except PermissionError:
+                pass
+        runtime, env, reference = load_runtime(reg, pc, directory, audit, mode)
+        initial = runtime.integrity()
+        before = restore_golden(runtime, pc, reference, "calibration_before")
+        audit.stage = "precheck"
+        audit.request = None
+        audit.emit("precheck_evidence")
+        # Reading the live log adds wrapped open events after the captured snapshot.
+        inspect_log(directory / "FILE_OPEN.jsonl", pc, [key(p) for p in reg["probes"]], complete=False)
+        after = None
+        if mode == "attempt2":
+            for group in GROUPS:
+                (directory / group).mkdir(exist_ok=False)
+            # The audit guard permits no writes outside the worker. Use its own exclusive
+            # marker as the irreversible token and recognize it at process entry.
+            write(MARKER, dict(
+                purpose=PURPOSE, pid=audit.pid, authorization_sha256=sha(HERE / "AUTHORIZATION.json"),
+                registration_sha256=sha(HERE / "REGISTRATION.json"), max_runs=1,
+                precheck_sha256=sha(HERE / "PRECHECK_PASS.json")))
+            start_seq = audit.emit("authorization_consumed", contract=pc["id"])
+            audit.allow(reg["raw"])
+            identities, windows = rebuild(runtime, reg, audit)
+            evaluate(runtime, identities, windows, directory)
+            after = restore_golden(runtime, pc, reference, "calibration_after")
+        else:
+            start_seq = None
+        require(runtime.ledger.seen == runtime.ledger.counts, "Exact call budget")
+        runtime.ledger.stream.close()
+        require(runtime.integrity() == initial, "Final model/scaler integrity")
+        audit.stage = "finish"
+        write(directory / "RESULT.json", dict(status="CANDIDATE", pid=audit.pid, mode=mode,
+              counts=runtime.ledger.seen, environment=env, integrity=initial, calibration_before=before,
+              calibration_after=after, authorization_seq=start_seq))
+        status = "COMPLETE"
+    except Exception:
+        write(directory / "FAILED.json", dict(stage=audit.stage, error=traceback.format_exc()))
+        raise
+    finally:
+        audit.finish(status)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])

@@ -1,0 +1,132 @@
+"""Seal reviewed evidence and write the compact Phase3.10 report."""
+from common310 import HERE, P38, P39, PC, VIEWS, csvrows, read, require, sha, table, validated_views, write
+
+
+def document(name, content):
+    with (HERE / name).open("x", encoding="utf-8", newline="\n") as stream:
+        stream.write(content.strip() + "\n")
+
+
+def main():
+    final = read(HERE / "INDEPENDENT_REVIEW.json")
+    require(final["status"].startswith("PASS"), "Independent result review required")
+    gate = read(HERE / "EXECUTION_GATE.json")
+    seal = read(VIEWS / "ALL_SIX_VIEWS_LOCKED.json")
+    scored = HERE / "evaluation"
+    score = read(scored / "RESULT.json")
+    reg = read(HERE / "REGISTRATION.json")
+    auth = read(HERE / "AUTHORIZATION.json")
+    require(sha(P38 / "AUTHORIZATION_CONSUMED.json") == auth["previous_consumption_sha256"]
+            and read(P38 / "FINAL_VERIFICATION.json")["status"].startswith("BLOCKED"),
+            "Historical BLOCKED and authorization")
+    require(sha(P39 / "ARTIFACT_SHA256.csv") == "47fbd6909d8fabb81f2460774645651298ef31e3e5ecc74f65bb208af81cdfe3",
+            "Phase3.9 archive anchor")
+    for path, expected in {**read(PC)["files"], **reg["local_files"]}.items():
+        require(sha(path) == expected, "Locked asset SHA")
+    require(gate["seal_sha256"] == score["view_seal_sha256"] == sha(VIEWS / "ALL_SIX_VIEWS_LOCKED.json")
+            and score["output_sha256"] == sha(scored / "PRIVATE_ALL5040_SCORED.jsonl")
+            and gate["score_sha256"] == sha(scored / "RESULT.json"), "Scoring seal")
+    require(sum(map(len, validated_views(VIEWS).values())) == score["windows"] == 5040, "Record count")
+    classes = csvrows(scored / "CLASSIFICATION.csv")
+    legacy = csvrows(scored / "LEGACY.csv")
+    cls_table = "\n".join(
+        f"| {r['group']} | {float(r['Accuracy']):.2%} | {float(r['MacroF1']):.4f} | "
+        + " | ".join(f"{float(r['recall_'+gas]):.2%}" for gas in ["Ethanol", "CO", "Ethylene", "Methane"])
+        + f" | {r['classification_unavailable']} | {r['regression_unavailable']} |" for r in classes)
+    old_table = "\n".join(
+        f"| {r['group']} | {r['old_logit_tolerance_exceeded']} | {r['argmax_changed']} | "
+        f"{float(r['maximum_abs_logit_delta']):.8g} | {float(r['old_accuracy']):.2%} | "
+        f"{float(r['canonical_accuracy']):.2%} |" for r in legacy)
+    all_exceeded = sum(int(r["old_logit_tolerance_exceeded"]) for r in legacy)
+    all_argmax = sum(int(r["argmax_changed"]) for r in legacy)
+    conditional = {(r["group"], r["true_gas"]): r for r in csvrows(scored / "CONDITIONAL_BY_GAS.csv")}
+    pair_rows = csvrows(scored / "PAIRED_ROUTING.csv")
+    route_counts = [int(r["route_disagreements"]) for r in pair_rows]
+    same_head_unequal = sum(int(r["same_head_raw_unequal"]) + int(r["same_head_clip_unequal"])
+                           for r in pair_rows)
+    methane = conditional[("B0", "Methane")]
+    wrong_rows = csvrows(scored / "WRONG_ROUTE_BY_CONCENTRATION.csv")
+    co_to_methane = {group: sum(int(r["windows"]) for r in wrong_rows if r["group"] == group
+                               and r["true_gas"] == "CO" and r["predicted_gas"] == "Methane")
+                     for group in ["B0", "B2"]}
+    require(all(conditional[(r["group"], "Methane")]["conditional_windows"] == "210"
+                and conditional[(r["group"], "Methane")]["clipped_exposure_equal_NRMSE_percent"]
+                    == methane["clipped_exposure_equal_NRMSE_percent"] for r in classes), "Methane coverage statement")
+    require(all(conditional[(g, "CO")]["conditional_windows"] == "0" for g in ["B0", "B2"]),
+            "Empty CO coverage statement")
+    document("README.md", f"""
+# Phase3.10 Day22 单窗联合评价 attempt2
+
+PC-F32-CPU-SINGLE-v1 下六个冻结视图全部通过。C5 Day22 的 40 次物理暴露各 21 窗，六视图各 840 条，共 5040 条。唯一一次授权在独立预检与本次进程 Calibration 恢复均通过后消费。[独立预检](PRECHECK_PASS.json) · [授权消费](attempt2/AUTHORIZATION_CONSUMED.json) · [六视图封存](attempt2/ALL_SIX_VIEWS_LOCKED.json)
+
+冻结 Phase3.9 的 float32 CPU 单窗路径，保留原 MKLDNN、MHA fastpath、分类和 ppm 容差。B3–B5 使用 adapted25，四个 C5 A4 F-SVR71 头与 scaler 来自原 PC 锁。B0 的 Source-only 口径限分类端，浓度端同样使用 C5 标定模型。[注册](REGISTRATION.json) · [PC 合同来源](https://github.com/Hjh-fy/GAPS/blob/cb850dadfbef986702e3155372fef225a818f2b1/docs/research_reviews/20261107_phase39/PC_CONTRACT_R5.json)
+
+Phase3.8 历史裁决继续 BLOCKED。5040 条 Legacy Comparison 中，{all_exceeded} 条超过旧 logits 容差，argmax 变化 {all_argmax} 条。旧比较在全部预测封存后由评分进程计算。本轮为既往已观察 Test 的回顾性评价。[分类与浓度报告](RESULTS.md)
+
+预检、推理和评分分别保留 Python open 审计。预检与推理调用账本按 PID、请求和 SHA 交叉核对。登记时检查了历史身份表，该表原有气体和浓度列。新清单只保留窗口身份和哈希。输入重建检查 840 窗信号和 71D 哈希，正式标签表及旧预测只在评分读取。原始文件名仍编码气体与档位，分类器及回归路由只接收窗口。审计范围是钩子安装后的 Python open 及包装 API 可见结果。
+
+本地封存包含六组 PRIVATE_WINDOWS.jsonl、合并评分 PRIVATE_ALL5040_SCORED.jsonl、文件访问日志与模型调用账本。公开包提供摘要、哈希、评分表和独立审阅。[独立审阅](INDEPENDENT_REVIEW.json) · [制品哈希](ARTIFACT_SHA256.csv) · [Pi 决定](DECISION.md)
+""")
+    document("RESULTS.md", f"""
+# 六组联合评价
+
+| 模型 | Accuracy | Macro-F1 | Ethanol Recall | CO Recall | Ethylene Recall | Methane Recall | 分类异常 | 回归不可用 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+{cls_table}
+
+Accuracy、Recall 与 Macro-F1 使用 840 条全流量。四类混淆矩阵和预测类别的回归调用分母另列。[分类全表](evaluation/CLASSIFICATION.csv) · [4×4 混淆矩阵](evaluation/CONFUSION.json) · [预测类别调用及有效率](evaluation/PREDICTED_GAS_AVAILABILITY.csv) · [状态](evaluation/STATUS.csv)
+
+浓度误差仅用分类正确且回归有效的窗口。各气体分别报告 raw/clipped MAE、RMSE、暴露等权 NRMSE 和分母。NRMSE 按对应回归支持跨度归一化，Ethanol/Ethylene 为 112.5 ppm，CO/Methane 为 225 ppm。暴露等权先对每个入选暴露的入选窗计算，再在入选暴露间等权。窗口覆盖使用该真实气体全部窗口作分母，暴露覆盖使用该气体全部独立暴露作分母。各组可比较的子集随分类而变。[逐气体误差与覆盖](evaluation/CONDITIONAL_BY_GAS.csv) · [浓度档位](evaluation/CONDITIONAL_BY_CONCENTRATION.csv) · [逐暴露](evaluation/CONDITIONAL_BY_EXPOSURE.csv)
+
+错路由按真实气体、预测气体及真实浓度汇总。15 个同窗配对给出分类差异、调用头差异及同头 ppm 差异。无跨气体整体 NRMSE、联合成功率或系统排名。[错路由分解](evaluation/WRONG_ROUTE_BY_CONCENTRATION.csv) · [同窗配对](evaluation/PAIRED_ROUTING.csv)
+
+六组均有 840 条数值有效的浓度输出。B0 和 B2 的 CO 正确路由覆盖为 0/210，条件浓度误差未定义。其中 CO→Methane 分别为 {co_to_methane['B0']} 和 {co_to_methane['B2']} 窗。六组 Methane 均覆盖 210 窗和 10 次暴露，其 clipped 暴露等权 NRMSE 为 {float(methane['clipped_exposure_equal_NRMSE_percent']):.2f}%。同窗配对的不同头调用为 {min(route_counts)}–{max(route_counts)} 窗。同头配对的 raw/clip 不一致数合计 {same_head_unequal}。
+
+| 模型 | 旧 logits 超容差窗 | argmax 变化窗 | 最大 logits 绝对差 | 旧批量 Accuracy | 新单窗 Accuracy |
+|---|---:|---:|---:|---:|---:|
+{old_table}
+
+旧参考仅用于 Legacy Comparison。旧容差超出保留为超出，Phase3.8 裁决继续 BLOCKED。旧分类参考来自 Phase3.5 C5 批量输出，其版本差异不影响单窗执行封存。[Legacy 全表](evaluation/LEGACY.csv)
+""")
+    document("DECISION.md", """
+# PC 与 Pi 5 决定
+
+| 项目 | 判定 |
+|---|---|
+| PC 单窗数值与 Day22 六视图评价 | PASS |
+| 历史 batch128 Phase3.8 | BLOCKED |
+| Pi 5 离线推理一致性验证 | PC 端前置条件齐备，可单独申请实机验证 |
+| 实际系统部署验证 | 待 Pi 5 实机证据 |
+
+Pi 5 应先登记 ARM 系统、依赖和执行后端，锁定窗口布局、版本和支持范围。离线验证需逐窗对照 PC golden 与选定封存样本的 logits、类别、71D、头路由和 raw/clip，覆盖冷启动、异常及重载，并持久化访问与调用日志。
+
+实际系统部署验证还需要真实传感器到推理的端到端时序、延迟和资源占用，以及持续运行与故障恢复证据。本次授权范围为一次 PC 离线 attempt2。
+""")
+    write(HERE / "FINAL_VERIFICATION.json", dict(
+        status="PASS_PC_SINGLE_ATTEMPT2_SIX_VIEWS", view_records=5040, physical_exposures=40,
+        phase38_legacy="BLOCKED_UNCHANGED", legacy_logit_exceeded=all_exceeded,
+        legacy_argmax_changes=all_argmax, registration_sha256=sha(HERE / "REGISTRATION.json"),
+        authorization_sha256=sha(HERE / "AUTHORIZATION.json"),
+        prior_authorization_consumption_sha256=auth["previous_consumption_sha256"],
+        new_consumption_sha256=sha(VIEWS / "AUTHORIZATION_CONSUMED.json"),
+        views_seal_sha256=sha(VIEWS / "ALL_SIX_VIEWS_LOCKED.json"),
+        scoring_output_sha256=score["output_sha256"], independent_review_sha256=sha(HERE / "INDEPENDENT_REVIEW.json"),
+        scored_after_all_locks=True, execution_gate_sha256=sha(HERE / "EXECUTION_GATE.json"),
+        pi_offline_pc_prerequisites="PASS", actual_system_deployment="PENDING_PI5_EVIDENCE",
+        training=0, scaler_refit=0, pi=0))
+    seal_archive()
+
+
+def seal_archive():
+    final = read(HERE / "FINAL_VERIFICATION.json")
+    require(final["status"] == "PASS_PC_SINGLE_ATTEMPT2_SIX_VIEWS"
+            and final["independent_review_sha256"] == sha(HERE / "INDEPENDENT_REVIEW.json"),
+            "Independent result seal required")
+    files = [p for p in sorted(HERE.rglob("*")) if p.is_file() and "__pycache__" not in p.parts]
+    table(HERE / "ARTIFACT_SHA256.csv", [dict(path=p.relative_to(HERE).as_posix(),
+          bytes=p.stat().st_size, sha256=sha(p)) for p in files])
+    print("Sealed", len(files), sha(HERE / "ARTIFACT_SHA256.csv"))
+
+
+if __name__ == "__main__":
+    main()

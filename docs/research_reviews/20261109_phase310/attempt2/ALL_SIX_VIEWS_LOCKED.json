@@ -1,0 +1,55 @@
+{
+  "status": "PASS_ALL_SIX_LOCKED_BEFORE_SCORING",
+  "view_locks": {
+    "B0": "5e0c6ea27119a6193f0b4e54a2ecd7a26e4acb9e9a02cac40f7589c20a157680",
+    "B1": "dc1b4abfdc35439d3c34f3a3ec14049b9d3a4ac501cfc99e47f06315fd2cde74",
+    "B2": "421809c09996787f0c0bdb685f9c1b0d5faec3ef417a769dd5bdef7c5380342f",
+    "B3": "7068c585c169106fab90639e80742e5ca0f16ebd17b2c78e043c985f9d0e79ae",
+    "B4": "1401376f2c74f6be489b43bb6b43bcca77bda483a253adb36ce413e9b4f7d069",
+    "B5": "640baed64023bfd118cc19b0b9a07efab0ff78da71384aae0ba09c99bdc85e67"
+  },
+  "records": 5040,
+  "independent_exposures": 40,
+  "worker": {
+    "pid": 16904,
+    "open_events": 6223,
+    "allowed": 5861,
+    "denied": 362,
+    "numeric_requests": 6384,
+    "api_errors": {
+      "PermissionError": 357,
+      "FileNotFoundError": 296
+    },
+    "sha256": "f62285f88d0bab7bcac6db387eb12877add1cfd7625eb9a13dbed46513646071",
+    "day22_raw_opens": 80,
+    "raw_exposures": 40,
+    "view_locks": {
+      "B0": "5e0c6ea27119a6193f0b4e54a2ecd7a26e4acb9e9a02cac40f7589c20a157680",
+      "B1": "dc1b4abfdc35439d3c34f3a3ec14049b9d3a4ac501cfc99e47f06315fd2cde74",
+      "B2": "421809c09996787f0c0bdb685f9c1b0d5faec3ef417a769dd5bdef7c5380342f",
+      "B3": "7068c585c169106fab90639e80742e5ca0f16ebd17b2c78e043c985f9d0e79ae",
+      "B4": "1401376f2c74f6be489b43bb6b43bcca77bda483a253adb36ce413e9b4f7d069",
+      "B5": "640baed64023bfd118cc19b0b9a07efab0ff78da71384aae0ba09c99bdc85e67"
+    },
+    "model_ledger_sha256": "bc3e37f0d6dc8bad32e81a375a7d2c89a61b4eee6d7031e47c6ed2dbfa397b20",
+    "calibration_before": {
+      "windows": 36,
+      "logits": 216,
+      "features": 36,
+      "all_head_pairs": 144,
+      "routed_pairs": 216,
+      "max_logit_abs": 0.0,
+      "max_ppm_abs": 0.0
+    },
+    "calibration_after": {
+      "windows": 36,
+      "logits": 216,
+      "features": 36,
+      "all_head_pairs": 144,
+      "routed_pairs": 216,
+      "max_logit_abs": 0.0,
+      "max_ppm_abs": 0.0
+    }
+  },
+  "authorization_consumed_sha256": "73f1b851e71cf418cc90b784a42aa675031e7c52d2a75146cfe46607e9557c34"
+}

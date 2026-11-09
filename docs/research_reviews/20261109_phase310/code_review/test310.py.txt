@@ -1,0 +1,75 @@
+"""Synthetic entry and scoring gate tests."""
+import json
+from pathlib import Path
+import tempfile
+from types import SimpleNamespace
+import unittest
+
+from common310 import HERE, GROUPS, sha, validated_views, write
+from execute310 import infer_one
+from score310 import legacy_delta, reports
+
+
+class Gates(unittest.TestCase):
+    def test_requires_complete_six_sealed_views_and_matching_bytes(self):
+        with tempfile.TemporaryDirectory(dir=HERE) as directory:
+            base = Path(directory)
+            for group in GROUPS:
+                (base / group).mkdir()
+                file = base / group / "PRIVATE_WINDOWS.jsonl"
+                file.write_text(json.dumps(dict(group=group, row=0, status="OK", physical_identity="same")) + "\n")
+                write(base / group / "VIEW_LOCK.json", dict(status="PASS_COMPLETE", sha256=sha(file)))
+            with self.assertRaises(FileNotFoundError):
+                validated_views(base, expected_windows=1)
+            write(base / "ALL_SIX_VIEWS_LOCKED.json", dict(status="PASS_ALL_SIX_LOCKED_BEFORE_SCORING",
+                  view_locks={group: sha(base / group / "VIEW_LOCK.json") for group in GROUPS}))
+            self.assertEqual(set(validated_views(base, expected_windows=1)), set(GROUPS))
+            (base / "B5/PRIVATE_WINDOWS.jsonl").write_text("tampered")
+            with self.assertRaisesRegex(ValueError, "data seal"):
+                validated_views(base, expected_windows=1)
+
+    def test_unavailable_entry_keeps_reason_and_no_oracle_call(self):
+        ledger = SimpleNamespace(seen=dict(classifier=0, feature=0, svr=0), request_seq=19,
+                                 request=lambda name, window: None)
+        calls = []
+
+        def route(group, window):
+            calls.append((group, window))
+            return dict(status="UNAVAILABLE", reason="SIGNAL_INVALID", predicted_gas_id=None)
+
+        runtime = SimpleNamespace(ledger=ledger, route=route)
+        result = infer_one(runtime, "B0", {"row": "0", "physical_identity": "fixture"}, "bad")
+        self.assertEqual(calls, [("B0", "bad")])
+        self.assertEqual((result["status"], result["reason"], result["called_head_gas"], result["regression_calls"]),
+                         ("UNAVAILABLE", "SIGNAL_INVALID", None, 0))
+
+    def test_legacy_delta_is_an_observation_not_acceptance(self):
+        value = legacy_delta([1., 0., 0., 0.], 0, [1.002, 0., 0., 0.], 0, dict(atol=1e-4, rtol=1e-5))
+        self.assertTrue(value["old_logit_tolerance_exceeded"])
+        self.assertFalse(value["argmax_changed"])
+        self.assertNotIn("status", value)
+
+    def test_route_conditional_subsets_and_paired_differences(self):
+        views = {}
+        for group in GROUPS:
+            rows = []
+            for gas in range(4):
+                pred = 1 if group == "B0" and gas == 0 else gas
+                rows.append(dict(filename=f"e{gas}", true_gas_id=gas, truth_ppm=25.,
+                                 predicted_gas_id=pred, called_head_gas=pred, regression_calls=1,
+                                 status="OK", reason=None, concentration_raw_ppm=30.,
+                                 concentration_clipped_ppm=30., old_batch_class=gas,
+                                 argmax_changed=pred != gas, old_logit_tolerance_exceeded=False,
+                                 max_abs_logit_delta=0.))
+            views[group] = rows
+        r = reports(views)
+        self.assertEqual(r["CLASSIFICATION"][0]["Accuracy"], .75)
+        self.assertEqual(r["CONDITIONAL_BY_GAS"][0]["conditional_windows"], 0)
+        self.assertIsNone(r["CONDITIONAL_BY_GAS"][0]["raw_window_RMSE_ppm"])
+        self.assertEqual(r["CONDITIONAL_BY_GAS"][1]["raw_window_RMSE_ppm"], 5.)
+        self.assertEqual(len(r["PAIRED_ROUTING"]), 15)
+        self.assertEqual(r["PAIRED_ROUTING"][0]["route_disagreements"], 1)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

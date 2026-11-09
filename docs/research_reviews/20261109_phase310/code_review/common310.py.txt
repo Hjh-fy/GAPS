@@ -1,0 +1,86 @@
+"""Phase3.10 paths, identities and frozen evidence helpers."""
+import csv
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+HERE = Path(__file__).resolve().parent
+RESEARCH = HERE.parent
+P39 = RESEARCH / "fedongas_phase39_20261107"
+P38 = RESEARCH / "fedongas_phase38_20261106"
+P37 = RESEARCH / "fedongas_phase37_20261106"
+P35 = RESEARCH / "fedongas_phase35_20261105"
+P1 = RESEARCH / "fedongas_phase1_20261102"
+ROOT = HERE.parents[1]
+GOLDEN = P39 / "attempt5/golden"
+PC = P39 / "PC_CONTRACT_R5.json"
+GROUPS = tuple(f"B{i}" for i in range(6))
+PURPOSE = "C5_DAY22_SIX_SINGLE_WINDOW_JOINT_ATTEMPT2_ONCE"
+VIEWS = HERE / "attempt2"
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def read(path):
+    return json.loads(Path(path).read_text(encoding="utf-8-sig"))
+
+
+def write(path, value):
+    with Path(path).open("x", encoding="utf-8") as stream:
+        json.dump(value, stream, ensure_ascii=False, indent=2, allow_nan=False)
+
+
+def csvrows(path):
+    with Path(path).open(encoding="utf-8-sig", newline="") as stream:
+        return list(csv.DictReader(stream))
+
+
+def table(path, rows):
+    require(bool(rows), "Empty report")
+    with Path(path).open("x", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def lines(path):
+    with Path(path).open(encoding="utf-8") as stream:
+        return [json.loads(line) for line in stream]
+
+
+def identity(row):
+    return (row["filename"], round(float(row["start_s"]), 6), round(float(row["end_s"]), 6))
+
+
+def validated_views(run, expected_windows=840):
+    """All-or-nothing score input. Check seals, views and identical identities."""
+    seal = read(run / "ALL_SIX_VIEWS_LOCKED.json")
+    require(seal["status"] == "PASS_ALL_SIX_LOCKED_BEFORE_SCORING"
+            and set(seal["view_locks"]) == set(GROUPS), "Six-view seal required")
+    all_views = {}
+    reference = None
+    for group in GROUPS:
+        lock = run / group / "VIEW_LOCK.json"
+        require(sha(lock) == seal["view_locks"][group], f"{group} view lock SHA")
+        receipt = read(lock)
+        data = run / group / "PRIVATE_WINDOWS.jsonl"
+        require(receipt["status"] == "PASS_COMPLETE" and sha(data) == receipt["sha256"],
+                f"{group} data seal")
+        rows = lines(data)
+        identities = [row["physical_identity"] for row in rows]
+        require(len(rows) == len(set(identities)) == expected_windows
+                and all(row["group"] == group and row["row"] == index and row["status"] == "OK"
+                        for index, row in enumerate(rows)), f"{group} complete fixed view")
+        if reference is None:
+            reference = identities
+        require(identities == reference, "Cross-view identity/order mismatch")
+        all_views[group] = rows
+    return all_views

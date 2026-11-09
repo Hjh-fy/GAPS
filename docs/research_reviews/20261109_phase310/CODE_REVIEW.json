@@ -1,0 +1,66 @@
+{
+  "status": "PASS_BEFORE_EXECUTION",
+  "reviewed_at": "2026-11-09T16:41:53.088839+08:00",
+  "registration_sha256": "28d546c2cde2c0065c0e2664d0a8723ec7d3d3414401ff0f6e387a21f749ba26",
+  "authorization_sha256": "e0665514c3363e659508918d6b0773849100442f9fc74cecd2aff88ac4d05a92",
+  "previous_authorization_consumption_sha256": "ca568a572d2b7b04c34e57df1e8485f05201c5de2dcf58570531e556cadfb1a0",
+  "pc_contract_sha256": "e2c2fe930ec1d7e45dd563aec50ba00f22ef1e7570ac7e201397e9b8e8d74774",
+  "phase39_golden_seal_sha256": "f275cd3b59dfdd6bc45001153b06c55d350e134425d78edd7363facc95415173",
+  "phase39_golden_payload_hashes_verified": {
+    "OBSERVATIONS.json": "ff6c48be45931d541202a187a3e6e8a989eab0b29cf23db9ea05d19a2487a90d",
+    "RESULT.json": "68bdae96998dfd1824a60ed8dbe5378bf9e54da3d86a4b4307ca8ade25e593ab",
+    "FILE_OPEN.jsonl": "b655c957af32aaaf81105d8cc36e227b4f289c0493d1a887a849aee64151584a",
+    "MODEL_CALLS.jsonl": "86446e41228e66b2a3de9bf4a18cbaf4bec944934cca1545615c7a3ead5413b2"
+  },
+  "registration_file_hashes_verified": 15,
+  "material_findings": [],
+  "scope": {
+    "model_calls": 0,
+    "Day22_signal_cache_or_truth_file_reads": 0,
+    "historical_batch_prediction_reads": 0,
+    "source_edits": 0,
+    "identity_manifest_bytes_hashed": true,
+    "metadata_only_prior_authorization_status_checks": true
+  },
+  "synthetic_tests": {
+    "independently_rerun": 4,
+    "passed": 4,
+    "command": "PYTHON_ENV/python.exe -B research/fedongas_phase310_20261109/test310.py",
+    "registry_bound_receipt_sha256": "6e224e56a27b2dd5c7a02f959e2cc00812ab367b9cedd411abe2acfa81432855"
+  },
+  "one_shot": {
+    "exclusive_attempt_directory": true,
+    "exclusive_marker_before_raw_allowlist": true,
+    "requires_independent_precheck": true,
+    "parent_no_automatic_retry": true,
+    "historical_marker_preserved": true,
+    "consumption_present_at_review": false
+  },
+  "contract_review": {
+    "golden_restoration": "Separate preflight executes 36 registered Calibration and synthetic windows against sealed Phase3.9 golden. Attempt worker repeats golden before consumption and after the six views. This review verified the saved Phase3.9 seal without running inference.",
+    "fixed_endpoints": 6,
+    "truth_isolation": "Truth table and legacy prediction file are absent from execution allowlists. The scorer adds both paths only after successful validation of all six pre-existing seals. The bridge accepts the signal window alone.",
+    "rebuild": "Only the 40 registered raw paths are authorized after exclusive consumption. Registered signal and feature byte digests are checked per window and across the complete arrays. Numeric cache files are not opened by this implementation.",
+    "view_gate": "Each of six views has 840 ordered registered windows, a call-linked output file, and a SHA seal. Failure preserves partial receipts and blocks scoring. The parent validates all views, then writes the combined seal before starting the separate scoring process.",
+    "legacy": "Observed differences against the fixed historical batch prediction enter the Legacy Comparison. Excess under the original tolerance has no role in canonical inference acceptance. The original Phase3.8 BLOCKED record remains separate.",
+    "budget": {
+      "pre": {
+        "classifier": 216,
+        "feature": 252,
+        "svr": 360
+      },
+      "attempt2": {
+        "classifier": 5472,
+        "feature": 6384,
+        "svr": 5760
+      }
+    },
+    "python_open_audit": "The inherited Phase3.9 hook records Python open attempts and wrapped API outcomes. The recorded boundary starts when the worker installs its hook. OS-native operations and interpreter startup are outside that record."
+  },
+  "evidence_limits": [
+    "An independent no-Day22 golden preflight remains required before a possible one-time authorized attempt. No runtime success is claimed by this code review.",
+    "Raw filenames encode gas and concentration. The frozen parser returns those fields but prediction code uses only client and day for identity and passes the window alone to the bridge. This is truth-file isolation and label-free model input, not anonymized filenames.",
+    "Canonical predictions use same-contract Phase3.9 comparison. Prior cache equality is demonstrated via the registered byte digests rather than by opening the numeric caches."
+  ],
+  "legacy_phase38_status": "BLOCKED_UNCHANGED"
+}

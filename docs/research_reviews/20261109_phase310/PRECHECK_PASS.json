@@ -1,0 +1,40 @@
+{
+  "status": "PASS_NO_DAY22_NUMERIC",
+  "windows": 840,
+  "exposures": 40,
+  "view_paths": [
+    "B0/PRIVATE_WINDOWS.jsonl",
+    "B1/PRIVATE_WINDOWS.jsonl",
+    "B2/PRIVATE_WINDOWS.jsonl",
+    "B3/PRIVATE_WINDOWS.jsonl",
+    "B4/PRIVATE_WINDOWS.jsonl",
+    "B5/PRIVATE_WINDOWS.jsonl"
+  ],
+  "records": 5040,
+  "worker": {
+    "pid": 35560,
+    "open_events": 6115,
+    "allowed": 5753,
+    "denied": 362,
+    "numeric_requests": 252,
+    "api_errors": {
+      "PermissionError": 357,
+      "FileNotFoundError": 296
+    },
+    "sha256": "509f595f0294cb4952e74ad958a12cdceee1ecabc42206b80cc22234b90b733f",
+    "model_ledger_sha256": "38d62148ad75e0128a61c5a3c9d8b5d1f2aa507d043b9a98eae38718ce7b75aa",
+    "calibration": {
+      "windows": 36,
+      "logits": 216,
+      "features": 36,
+      "all_head_pairs": 144,
+      "routed_pairs": 216,
+      "max_logit_abs": 0.0,
+      "max_ppm_abs": 0.0
+    },
+    "day22_numeric_opens": 0
+  },
+  "registration_sha256": "28d546c2cde2c0065c0e2664d0a8723ec7d3d3414401ff0f6e387a21f749ba26",
+  "code_review_sha256": "6360ca2566a001793bd90279c2f2886fd1eeb40b4bcdb8e5005a1ea1e669adf7",
+  "test_sha256": "6e224e56a27b2dd5c7a02f959e2cc00812ab367b9cedd411abe2acfa81432855"
+}

@@ -1,0 +1,152 @@
+"""Evaluate only sealed views, then attach scoring truth and legacy comparisons."""
+from collections import Counter
+import itertools
+import json
+import math
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common310 import (HERE, P38, P39, PC, GROUPS, VIEWS, csvrows, identity,
+                       read, require, sha, table, validated_views, write)
+sys.path.insert(0, str(P38))
+from metrics import GASES, classification, conditional, availability
+sys.path.insert(0, str(P39))
+from pc39_audit import Audit
+
+OUT = HERE / "evaluation"
+
+
+def legacy_delta(values, predicted, ref, old_class, tolerance):
+    require(len(values) == len(ref) == 4 and all(math.isfinite(v) for v in [*values, *ref]),
+            "Legacy logits schema")
+    difference = [float(a) - float(b) for a, b in zip(values, ref)]
+    exceeded = any(abs(d) > tolerance["atol"] + tolerance["rtol"] * abs(ref[i])
+                   for i, d in enumerate(difference))
+    return dict(old_batch_logits=ref, old_batch_class=old_class, logit_delta=difference,
+                max_abs_logit_delta=max(map(abs, difference)), old_logit_tolerance_exceeded=exceeded,
+                argmax_changed=predicted != old_class)
+
+
+def attach(views, reg, pc):
+    for path, expected in reg["score_inputs"].items():
+        require(sha(path) == expected, "Scoring source SHA")
+    truth = {identity(r): r for r in read(reg["truth_path"])}
+    require(len(truth) == 840, "Scoring truth count")
+    references = {}
+    for row in csvrows(reg["legacy_path"]):
+        if row["domain"] != "C5":
+            continue
+        k = (row["group"], identity(row))
+        require(k not in references, "Duplicate legacy row")
+        references[k] = row
+    require(len(references) == 5040, "Legacy identity coverage")
+    for group, rows in views.items():
+        for item in rows:
+            k = identity(item)
+            target = truth[k]
+            require(target["raw_sha256"] == item["raw_sha256"] and int(target["day"]) == 22,
+                    "Truth identity")
+            label, ppm = int(target["gas_id"]), float(target["truth_ppm"])
+            require(label in range(4) and math.isfinite(ppm), "Scoring target")
+            ref = references[(group, k)]
+            logits = json.loads(ref["logits"])
+            old_class = int(ref["prediction"])
+            require(old_class == max(range(4), key=lambda i: logits[i]), "Legacy argmax")
+            item.update(true_gas_id=label, truth_ppm=ppm, concentration_code=int(target["concentration_code"]),
+                        **legacy_delta(item["logits"], item["predicted_gas_id"], logits, old_class,
+                                       pc["tolerances"]["logits"]))
+
+
+def reports(views):
+    classes, confusions, by_gas, calls, wrong, legacy, statuses = [], [], [], [], [], [], []
+    concentrations, exposures, pairs = [], [], []
+    for group, rows in views.items():
+        summary = classification(rows)
+        matrix = summary.pop("confusion_true_rows_pred_columns")
+        unavailable = summary.pop("class_unavailable_by_truegas")
+        recall = summary.pop("recall")
+        classes.append(dict(group=group, **summary, **{f"recall_{g}": recall[i] for i, g in enumerate(GASES)},
+                            regression_unavailable=sum(r["status"] != "OK" for r in rows)))
+        confusions.append(dict(group=group, labels=GASES, matrix=matrix, classification_unavailable=unavailable))
+        for (status, reason), count in Counter((r["status"], r["reason"]) for r in rows).items():
+            statuses.append(dict(group=group, status=status, reason=reason, windows=count))
+        calls.extend(dict(group=group, predicted_gas=GASES[g], **availability(rows, g)) for g in range(4))
+        old_rows = [dict(r, predicted_gas_id=r["old_batch_class"]) for r in rows]
+        old = classification(old_rows)
+        legacy.append(dict(group=group, windows=len(rows), old_accuracy=old["Accuracy"],
+                           canonical_accuracy=summary["Accuracy"], old_macro_f1=old["MacroF1"],
+                           canonical_macro_f1=summary["MacroF1"], argmax_changed=sum(r["argmax_changed"] for r in rows),
+                           old_logit_tolerance_exceeded=sum(r["old_logit_tolerance_exceeded"] for r in rows),
+                           maximum_abs_logit_delta=max(r["max_abs_logit_delta"] for r in rows),
+                           verdict="LEGACY_COMPARISON_ONLY"))
+        for gas in range(4):
+            by_gas.append(dict(group=group, true_gas=GASES[gas], **conditional(rows, gas)))
+            subset = [r for r in rows if r["true_gas_id"] == gas]
+            for ppm in sorted({r["truth_ppm"] for r in subset}):
+                sample = [r for r in subset if r["truth_ppm"] == ppm]
+                concentrations.append(dict(group=group, true_gas=GASES[gas], truth_ppm=ppm, **conditional(sample, gas)))
+            for exposure in sorted({r["filename"] for r in subset}):
+                sample = [r for r in subset if r["filename"] == exposure]
+                exposures.append(dict(group=group, true_gas=GASES[gas], exposure=exposure,
+                                      truth_ppm=sample[0]["truth_ppm"], **conditional(sample, gas)))
+            for predicted in range(4):
+                if gas == predicted:
+                    continue
+                selected = [r for r in subset if r["predicted_gas_id"] == predicted]
+                for ppm in sorted({r["truth_ppm"] for r in subset}):
+                    sample = [r for r in selected if r["truth_ppm"] == ppm]
+                    wrong.append(dict(group=group, true_gas=GASES[gas], predicted_gas=GASES[predicted],
+                                      truth_ppm=ppm, windows=len(sample), exposures=len({r["filename"] for r in sample})))
+    for left, right in itertools.combinations(GROUPS, 2):
+        a, b = views[left], views[right]
+        disagreements = [x for x, y in zip(a, b) if x["predicted_gas_id"] != y["predicted_gas_id"]]
+        routing = [x for x, y in zip(a, b) if x["called_head_gas"] != y["called_head_gas"]]
+        same = [(x, y) for x, y in zip(a, b) if x["called_head_gas"] == y["called_head_gas"]]
+        pairs.append(dict(left=left, right=right, matched_windows=len(a), classification_disagreements=len(disagreements),
+                          route_disagreements=len(routing), route_disagreement_exposures=len({x["filename"] for x in routing}),
+                          same_head_windows=len(same),
+                          same_head_raw_unequal=sum(x["concentration_raw_ppm"] != y["concentration_raw_ppm"] for x,y in same),
+                          same_head_clip_unequal=sum(x["concentration_clipped_ppm"] != y["concentration_clipped_ppm"] for x,y in same)))
+    return dict(CLASSIFICATION=classes, CONFUSION=confusions, CONDITIONAL_BY_GAS=by_gas,
+                PREDICTED_GAS_AVAILABILITY=calls, WRONG_ROUTE_BY_CONCENTRATION=wrong, LEGACY=legacy,
+                STATUS= statuses, CONDITIONAL_BY_CONCENTRATION=concentrations,
+                CONDITIONAL_BY_EXPOSURE=exposures, PAIRED_ROUTING=pairs)
+
+
+def main():
+    OUT.mkdir(exist_ok=False)
+    audit = Audit(OUT)
+    state = "BLOCKED"
+    try:
+        audit.allow([HERE / "REGISTRATION.json", PC, VIEWS / "ALL_SIX_VIEWS_LOCKED.json"])
+        reg = read(HERE / "REGISTRATION.json")
+        pc = read(PC)
+        audit.allow([p for group in GROUPS for p in
+                     [VIEWS / group / "VIEW_LOCK.json", VIEWS / group / "PRIVATE_WINDOWS.jsonl"]])
+        audit.stage = "verify_seals"
+        views = validated_views(VIEWS)
+        audit.stage = "scoring_after_seals"
+        audit.allow(reg["score_inputs"])
+        attach(views, reg, pc)
+        bundle = reports(views)
+        for name, rows in bundle.items():
+            if name == "CONFUSION":
+                write(OUT / (name + ".json"), rows)
+            else:
+                table(OUT / (name + ".csv"), rows)
+        with (OUT / "PRIVATE_ALL5040_SCORED.jsonl").open("x", encoding="utf-8") as stream:
+            for group in GROUPS:
+                for row in views[group]:
+                    stream.write(json.dumps(row, allow_nan=False) + "\n")
+        write(OUT / "RESULT.json", dict(status="SCORED_SIX_LOCKED_VIEWS", windows=5040, independent_exposures=40,
+              view_seal_sha256=sha(VIEWS / "ALL_SIX_VIEWS_LOCKED.json"), pid=audit.pid,
+              scoring_scope="retrospective historical observed Test",
+              output_sha256=sha(OUT / "PRIVATE_ALL5040_SCORED.jsonl")))
+        state = "COMPLETE"
+    finally:
+        audit.finish(state)
+
+
+if __name__ == "__main__":
+    main()

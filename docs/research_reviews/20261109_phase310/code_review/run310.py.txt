@@ -1,0 +1,136 @@
+"""Orchestrate the independent preflight, one consumption, sealing, then scoring."""
+from collections import Counter, defaultdict
+import os
+import subprocess
+import sys
+
+from common310 import (HERE, PC, GROUPS, VIEWS, csvrows, lines, read,
+                       require, sha, validated_views, write)
+from audit310 import inspect_log, ledger_check
+from execute310 import key
+
+
+def child(script, log, directory, *args):
+    env = os.environ.copy()
+    env["MPLBACKEND"] = "Agg"
+    env["MPLCONFIGDIR"] = str(directory / "matplotlib_cache")
+    for name in ["TMP", "TEMP", "TMPDIR"]:
+        env[name] = str(directory / "scratch")
+    argv = [sys.executable, "-I", "-B", "-u", "-X",
+            f"pycache_prefix={directory / 'isolated_pycache'}", str(HERE / script), *args]
+    write(HERE / (log + "_COMMAND.json"), argv)
+    with (HERE / (log + "_CONSOLE.txt")).open("xb") as stream:
+        result = subprocess.run(argv, env=env, stdout=stream, stderr=subprocess.STDOUT)
+    require(result.returncode == 0, f"{log} worker exit {result.returncode}")
+
+
+def gate_worker(directory, mode, reg, pc):
+    result = read(directory / "RESULT.json")
+    summary, events, requests = inspect_log(directory / "FILE_OPEN.jsonl", pc, [key(p) for p in reg["probes"]])
+    require(result["pid"] == summary["pid"], "Worker PID")
+    calls = ledger_check(directory / "MODEL_CALLS.jsonl", requests, reg["budget"][mode])
+    allowed = [e for e in events if e["event"] == "open_attempt" and e["decision"] == "ALLOW"]
+    raw = {key(p) for p in reg["raw"]}
+    opened = [e for e in allowed if e["path"] in raw]
+    require(not any(e["path"] in {key(p) for p in reg["score_inputs"]} for e in allowed), "Scoring data in worker")
+    if mode == "pre":
+        require(not opened and not any(e["event"] == "authorization_consumed" for e in events), "Precheck data scope")
+        require(Counter(r["stage"] for r in calls) == {"calibration_before": 828}, "Calibration budget")
+        return dict(summary, model_ledger_sha256=sha(directory / "MODEL_CALLS.jsonl"),
+                    calibration=result["calibration_before"], day22_numeric_opens=0)
+    consumed = read(directory / "AUTHORIZATION_CONSUMED.json")
+    require(consumed["pid"] == result["pid"] and consumed["authorization_sha256"] == sha(HERE / "AUTHORIZATION.json")
+            and consumed["registration_sha256"] == sha(HERE / "REGISTRATION.json")
+            and consumed["precheck_sha256"] == sha(HERE / "PRECHECK_PASS.json"), "Consumed token identity")
+    marks = [e["seq"] for e in events if e["event"] == "authorization_consumed"]
+    require(marks == [result["authorization_seq"]] and all(e["seq"] > marks[0] for e in opened)
+            and {e["path"] for e in opened} == raw, "Raw allowlist after one consumption")
+    require(Counter(r["stage"] for r in calls) == {
+        "calibration_before": 828, "calibration_after": 828, "input_rebuild": 840,
+        **{group: 2520 for group in GROUPS}}, "Model call stage counts")
+    by_request = defaultdict(list)
+    for row in calls:
+        by_request[row["request_seq"]].append(row)
+    locks = {}
+    expected = csvrows(HERE / "WINDOW_IDENTITIES.csv")
+    for group in GROUPS:
+        base = directory / group
+        data = lines(base / "PRIVATE_WINDOWS.jsonl")
+        lock = read(base / "VIEW_LOCK.json")
+        require(lock["status"] == "PASS_COMPLETE" and lock["windows"] == len(data) == 840
+                and lock["sha256"] == sha(base / "PRIVATE_WINDOWS.jsonl"), f"{group} file seal")
+        for index, (item, source) in enumerate(zip(data, expected)):
+            require(item["row"] == index and item["group"] == group and item["status"] == "OK"
+                    and all(item[k] == source[k] for k in source if k != "row"), "Row identity")
+            q = item["request_seq"]
+            ledger = by_request[q]
+            g = item["predicted_gas_id"]
+            require(g == item["called_head_gas"] and requests[q]["request"] == f"{group}/{index}"
+                    and [(r["kind"], r["identity"]) for r in ledger] ==
+                    [("classifier", group), ("feature", "71D"), ("svr", str(g))]
+                    and ledger[0]["signal_sha256"] == source["signal_sha256"]
+                    and ledger[2]["feature_sha256"] == source["feature71_sha256"], "Call/route identity")
+        locks[group] = sha(base / "VIEW_LOCK.json")
+    return dict(summary, day22_raw_opens=len(opened), raw_exposures=len(raw), view_locks=locks,
+                model_ledger_sha256=sha(directory / "MODEL_CALLS.jsonl"),
+                calibration_before=result["calibration_before"], calibration_after=result["calibration_after"])
+
+
+def precheck(reg, pc):
+    tests = read(HERE / "SYNTHETIC_TESTS.json")
+    review = read(HERE / "CODE_REVIEW.json")
+    require(tests["status"] == "PASS" and review["status"] == "PASS_BEFORE_EXECUTION"
+            and tests["registration_sha256"] == review["registration_sha256"] == sha(HERE / "REGISTRATION.json"),
+            "Independent entry and score tests")
+    child("execute310.py", "PRECHECK", HERE / "pre", "pre")
+    audit = gate_worker(HERE / "pre", "pre", reg, pc)
+    write(HERE / "PRECHECK_PASS.json", dict(status="PASS_NO_DAY22_NUMERIC", windows=840, exposures=40,
+          view_paths=reg["planned_view_files"], records=5040, worker=audit,
+          registration_sha256=sha(HERE / "REGISTRATION.json"),
+          code_review_sha256=sha(HERE / "CODE_REVIEW.json"), test_sha256=sha(HERE / "SYNTHETIC_TESTS.json")))
+    print("Independent precheck passed without Day22 numerical access", flush=True)
+
+
+def main(mode):
+    reg = read(HERE / "REGISTRATION.json")
+    pc = read(PC)
+    require(mode in {"pre", "once"}, "Orchestration mode")
+    require(sha(PC) == reg["pc_contract_sha256"], "PC source lock")
+    for path, expected in reg["local_files"].items():
+        require(sha(path) == expected, f"Registered code/identity {path}")
+    if mode == "pre":
+        precheck(reg, pc)
+        return
+    require(not VIEWS.exists() and not (HERE / "evaluation").exists(), "No automatic retry")
+    gate = read(HERE / "PRECHECK_PASS.json")
+    require(gate["status"] == "PASS_NO_DAY22_NUMERIC"
+            and gate["registration_sha256"] == sha(HERE / "REGISTRATION.json"), "Precheck required")
+    require(gate_worker(HERE / "pre", "pre", reg, pc) == gate["worker"], "Saved precheck audit")
+    try:
+        child("execute310.py", "EXECUTION", VIEWS, "attempt2")
+        audit = gate_worker(VIEWS, "attempt2", reg, pc)
+        require(audit["pid"] != gate["worker"]["pid"], "Independent preflight PID")
+        write(VIEWS / "ALL_SIX_VIEWS_LOCKED.json", dict(status="PASS_ALL_SIX_LOCKED_BEFORE_SCORING",
+              view_locks=audit["view_locks"], records=5040, independent_exposures=40, worker=audit,
+              authorization_consumed_sha256=sha(VIEWS / "AUTHORIZATION_CONSUMED.json")))
+        validated_views(VIEWS)
+        print("All six predictions locked. Starting separate scoring process", flush=True)
+        child("score310.py", "SCORE", HERE / "evaluation")
+        summary, events, requests = inspect_log(HERE / "evaluation/FILE_OPEN.jsonl", pc)
+        require(not requests and summary["pid"] != audit["pid"], "Separate numerical-free scoring")
+        source = {key(p) for p in reg["score_inputs"]}
+        reads = [e for e in events if e["event"] == "open_attempt" and e["path"] in source]
+        require({e["path"] for e in reads} == source
+                and all(e["stage"] == "scoring_after_seals" and e["decision"] == "ALLOW" for e in reads),
+                "Scoring source opened only after seals")
+        write(HERE / "EXECUTION_GATE.json", dict(status="PASS_SIX_VIEWS_AND_SCORING_AWAITING_REVIEW",
+              precheck_sha256=sha(HERE / "PRECHECK_PASS.json"), seal_sha256=sha(VIEWS / "ALL_SIX_VIEWS_LOCKED.json"),
+              score_sha256=sha(HERE / "evaluation/RESULT.json"), scorer=summary))
+    except Exception as error:
+        write(HERE / "BLOCKED_NO_RETRY.json", dict(status="BLOCKED", error=str(error),
+              authorization_consumed=(VIEWS / "AUTHORIZATION_CONSUMED.json").exists()))
+        raise
+
+
+if __name__ == "__main__":
+    main(sys.argv[1])

@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.9 PC 单窗验收](docs/research_reviews/20261107_phase39/README.md) · [决定矩阵](docs/research_reviews/20261107_phase39/DECISION.md)
+最新：[Phase3.10 单窗联合评价](docs/research_reviews/20261109_phase310/README.md) · [实机决定](docs/research_reviews/20261109_phase310/DECISION.md)
+
+六视图 5040 条预测完成封存与评分。旧 Phase3.8 BLOCKED 单独保留。
+
+上阶段：[Phase3.9 PC 单窗验收](docs/research_reviews/20261107_phase39/README.md) · [决定矩阵](docs/research_reviews/20261107_phase39/DECISION.md)
 
 新 PC 单窗合同通过双进程验收，历史 Phase3.8 继续 BLOCKED。Day22 和 Pi 仍需各自授权。
 

@@ -1,0 +1,255 @@
+{
+  "status": "PASS_INDEPENDENT_REVIEW_SIX_LOCKED_VIEWS_AND_SCORING",
+  "reviewed_at": "2026-11-09 08:53:10 UTC",
+  "material_findings": [],
+  "scope": {
+    "reviewer_model_calls": 0,
+    "reviewer_raw_Day22_opens": 0,
+    "reviewer_numeric_cache_opens": 0,
+    "reviewer_separate_truth_source_opens": 0,
+    "reviewer_old_batch_source_opens": 0,
+    "method": "Independent standard-library calculations on saved Phase3.10 rows, metrics, logs and registered metadata. Previous Phase3.8 consumption and decision metadata checked by SHA."
+  },
+  "execution": {
+    "registration_sha256": "28d546c2cde2c0065c0e2664d0a8723ec7d3d3414401ff0f6e387a21f749ba26",
+    "precheck_sha256": "ee6a0d047a81cb7da646397f33597df092d43b795558aa852f2d020d4231f632",
+    "execution_gate_sha256": "2e8612d7a5c3288bdc7e31dd657340587beb23126ae43766003b43cc215a0a1d",
+    "all_six_view_seal_sha256": "235ac92b9279b7b19c53fbf04f97980deca14ae4b6feebfbc37c9af2c28c93a4",
+    "score_result_sha256": "c24bf9da587c1d4983e1dff1c4cc51add6a6c84b8193104dcba3598dbbfe48c7",
+    "old_consumption_sha256": "ca568a572d2b7b04c34e57df1e8485f05201c5de2dcf58570531e556cadfb1a0",
+    "new_consumption_sha256": "73f1b851e71cf418cc90b784a42aa675031e7c52d2a75146cfe46607e9557c34",
+    "historical_status": "BLOCKED_INCOMPLETE_NO_SCORING",
+    "workers": {
+      "pre": {
+        "pid": 35560,
+        "open_events": 6115,
+        "allowed": 5753,
+        "denied": 362,
+        "api_errors": {
+          "PermissionError": 357,
+          "FileNotFoundError": 296
+        },
+        "unwrapped_denials": 5,
+        "raw_open_events": 0,
+        "score_source_open_events": 0,
+        "authorization_seq": null,
+        "numeric_requests": 252,
+        "open_sha256": "509f595f0294cb4952e74ad958a12cdceee1ecabc42206b80cc22234b90b733f",
+        "ledger_sha256": "38d62148ad75e0128a61c5a3c9d8b5d1f2aa507d043b9a98eae38718ce7b75aa"
+      },
+      "attempt2": {
+        "pid": 16904,
+        "open_events": 6223,
+        "allowed": 5861,
+        "denied": 362,
+        "api_errors": {
+          "PermissionError": 357,
+          "FileNotFoundError": 296
+        },
+        "unwrapped_denials": 5,
+        "raw_open_events": 80,
+        "score_source_open_events": 0,
+        "authorization_seq": 8948,
+        "numeric_requests": 6384,
+        "open_sha256": "f62285f88d0bab7bcac6db387eb12877add1cfd7625eb9a13dbed46513646071",
+        "ledger_sha256": "bc3e37f0d6dc8bad32e81a375a7d2c89a61b4eee6d7031e47c6ed2dbfa397b20"
+      },
+      "evaluation": {
+        "pid": 39348,
+        "open_events": 45,
+        "allowed": 45,
+        "denied": 0,
+        "api_errors": {},
+        "unwrapped_denials": 0,
+        "raw_open_events": 0,
+        "score_source_open_events": 4,
+        "authorization_seq": null,
+        "numeric_requests": 0,
+        "open_sha256": "8cb877a3d859d46916688ca190c3533117dcf2b342e7ff6a4211916c4170f5e3",
+        "ledger_sha256": null
+      }
+    },
+    "stage_call_counts": {
+      "pre": {
+        "calibration_before": 828
+      },
+      "attempt2": {
+        "calibration_before": 828,
+        "input_rebuild": 840,
+        "B0": 2520,
+        "B1": 2520,
+        "B2": 2520,
+        "B3": 2520,
+        "B4": 2520,
+        "B5": 2520,
+        "calibration_after": 828
+      }
+    },
+    "budgets": {
+      "pre": {
+        "classifier": 216,
+        "feature": 252,
+        "svr": 360
+      },
+      "attempt2": {
+        "classifier": 5472,
+        "feature": 6384,
+        "svr": 5760
+      }
+    },
+    "source_sha_matches": 15,
+    "raw_qc_sha256": "563740daf06d9dde9829d19214f20c00b961b66d827f569e868032d61bfb300b",
+    "truth_and_legacy_open_after_25_seal_verification_events": true,
+    "raw_opens_per_exposure": 2
+  },
+  "scoring": {
+    "checks": {
+      "csv_cells": 17145,
+      "CLASSIFICATION": 6,
+      "CONDITIONAL_BY_GAS": 24,
+      "CONDITIONAL_BY_CONCENTRATION": 240,
+      "CONDITIONAL_BY_EXPOSURE": 240,
+      "WRONG_ROUTE_BY_CONCENTRATION": 720,
+      "LEGACY": 6,
+      "PAIRED_ROUTING": 15,
+      "PREDICTED_GAS_AVAILABILITY": 24,
+      "STATUS": 6,
+      "CONFUSION": 6
+    },
+    "artifacts": {
+      "CLASSIFICATION.csv": "3ccf54bd705962263d12ddaa670ba8ebc5c66d884ee5933b9bfa5c71df463a3a",
+      "CONDITIONAL_BY_GAS.csv": "9290e876b6e8bb429bb7a5e14e5d2f0b754c2719249cf7263fb6cd01cb3b9c59",
+      "CONDITIONAL_BY_CONCENTRATION.csv": "29911fd9d74e938f672ba17f4180e4256a0a48dfd3cb8bb5440f34f52758d721",
+      "CONDITIONAL_BY_EXPOSURE.csv": "adb2e706775bbc8449ead5a0f15ba6bc371f5f55a52c36eeae56249ddd2545f4",
+      "WRONG_ROUTE_BY_CONCENTRATION.csv": "7f05efb3a0746cb480881954686060583bd112bb73b3baf1ad1ad71515bb0c52",
+      "LEGACY.csv": "9a38a84c7360e7e6400a0f3f09eaa1dc3c860b80aec4bdf831e87d5f51c0d245",
+      "PAIRED_ROUTING.csv": "9a848bed3d4b3071e5f1812a968b8b13e103c247162ad6e63c3eaf7a165b8852",
+      "PREDICTED_GAS_AVAILABILITY.csv": "69c161b1948bd76399c88ae83fe701e4de80f8fb54a601aa79ae1c98fc90dad5",
+      "STATUS.csv": "54c1885307a9b30ed54d04f7af566b362095c26422238189b5e785351edeeb1b",
+      "CONFUSION.json": "04db90d55d403d474d7bd42a91c762d75a50c06cd9ce43ee13e8b665f9dba918"
+    },
+    "digests": {
+      "B0": {
+        "view": "901a42cc116b712a81d54875b8f338f2dcb23d927cc716cd63f44dbe83e5b93a",
+        "receipt": "5e0c6ea27119a6193f0b4e54a2ecd7a26e4acb9e9a02cac40f7589c20a157680"
+      },
+      "B1": {
+        "view": "d0bdad1d64fc5b75324db1032b49684273491f295e81c35a259c7bd416e46119",
+        "receipt": "dc1b4abfdc35439d3c34f3a3ec14049b9d3a4ac501cfc99e47f06315fd2cde74"
+      },
+      "B2": {
+        "view": "dc2a7316bea699a462996e8145407bc5cf6d3564dbffeb077aa4e621c1f7050a",
+        "receipt": "421809c09996787f0c0bdb685f9c1b0d5faec3ef417a769dd5bdef7c5380342f"
+      },
+      "B3": {
+        "view": "e132bd421e6dbea953b06ca03fadd93ba109ff0eea2de97a786f89b522174514",
+        "receipt": "7068c585c169106fab90639e80742e5ca0f16ebd17b2c78e043c985f9d0e79ae"
+      },
+      "B4": {
+        "view": "1723b13ace94ece68a951a4809a252f03b58f37ff37888d3c1342080cb71ca73",
+        "receipt": "1401376f2c74f6be489b43bb6b43bcca77bda483a253adb36ce413e9b4f7d069"
+      },
+      "B5": {
+        "view": "c6fa5989596bfc9b838d4426830db3c34707020dc2f73b98bf88c7faa4132986",
+        "receipt": "640baed64023bfd118cc19b0b9a07efab0ff78da71384aae0ba09c99bdc85e67"
+      }
+    },
+    "scored_output_sha256": "4d389ca671d525c4adbd036da91e33868426f0298d76b916e08a81cf630feec4",
+    "classification": {
+      "B0": {
+        "Accuracy": 0.3416666666666667,
+        "MacroF1": 0.2519139447495561,
+        "classification_unavailable": 0,
+        "regression_unavailable": 0
+      },
+      "B1": {
+        "Accuracy": 0.8380952380952381,
+        "MacroF1": 0.8332128397700362,
+        "classification_unavailable": 0,
+        "regression_unavailable": 0
+      },
+      "B2": {
+        "Accuracy": 0.32261904761904764,
+        "MacroF1": 0.23526361086887493,
+        "classification_unavailable": 0,
+        "regression_unavailable": 0
+      },
+      "B3": {
+        "Accuracy": 0.819047619047619,
+        "MacroF1": 0.815874580384641,
+        "classification_unavailable": 0,
+        "regression_unavailable": 0
+      },
+      "B4": {
+        "Accuracy": 0.8035714285714286,
+        "MacroF1": 0.7838889266907842,
+        "classification_unavailable": 0,
+        "regression_unavailable": 0
+      },
+      "B5": {
+        "Accuracy": 0.7988095238095239,
+        "MacroF1": 0.7774176569548621,
+        "classification_unavailable": 0,
+        "regression_unavailable": 0
+      }
+    },
+    "legacy": {
+      "B0": {
+        "argmax_changed": 0,
+        "old_logit_tolerance_exceeded": 5,
+        "maximum_abs_logit_delta": 0.00043582916259765625
+      },
+      "B1": {
+        "argmax_changed": 0,
+        "old_logit_tolerance_exceeded": 9,
+        "maximum_abs_logit_delta": 0.000423431396484375
+      },
+      "B2": {
+        "argmax_changed": 0,
+        "old_logit_tolerance_exceeded": 0,
+        "maximum_abs_logit_delta": 0.000164031982421875
+      },
+      "B3": {
+        "argmax_changed": 0,
+        "old_logit_tolerance_exceeded": 3,
+        "maximum_abs_logit_delta": 0.0001437664031982422
+      },
+      "B4": {
+        "argmax_changed": 0,
+        "old_logit_tolerance_exceeded": 22,
+        "maximum_abs_logit_delta": 0.0006561279296875
+      },
+      "B5": {
+        "argmax_changed": 0,
+        "old_logit_tolerance_exceeded": 22,
+        "maximum_abs_logit_delta": 0.0013928413391113281
+      }
+    },
+    "total_legacy_exceedances": 61,
+    "total_legacy_argmax_changes": 0,
+    "same_head_numeric_disagreements": 0,
+    "clipped_window_counts": {
+      "B0": 3,
+      "B1": 56,
+      "B2": 9,
+      "B3": 48,
+      "B4": 78,
+      "B5": 74
+    },
+    "matched_prediction_rows": 5040,
+    "independent_exposures": 40
+  },
+  "readout": {
+    "day22_prediction_records": 5040,
+    "independent_exposures": 40,
+    "windows_per_view": 840,
+    "predicted_head_calls": 5040,
+    "classification_unavailable": 0,
+    "regression_unavailable": 0,
+    "one_consumed_attempt": true,
+    "calibration_golden_receipts": "Preflight and both attempt2 Calibration snapshots report 36 windows and zero maximum logits and ppm discrepancy. Their numerical ledgers and PC environment/integrity metadata were checked. The snapshots are worker receipts, with no saved standalone logits for independent numerical replay in this review.",
+    "open_audit_boundary": "Per-process Python open events after hook installation, with explicit API outcomes for wrapped calls. Five cache denials in each numerical worker have an audit decision without a wrapper outcome. Interpreter bootstrap and OS-native operations are outside this trace.",
+    "score_truth_boundary": "Scoring independently recomputed from the saved, sealed-output-linked scored rows. The source truth table and previous batch file were verified by the scorer under the registered SHA and were not reopened by the reviewer.",
+    "interpretation": "Retrospective evaluation on the previously observed C5 Day22 set. Conditional ppm subsets differ by model. Legacy discrepancies are a separate comparison and leave the original Phase3.8 BLOCKED decision intact."
+  }
+}

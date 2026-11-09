@@ -1,0 +1,121 @@
+{
+  "purpose": "C5_DAY22_SIX_SINGLE_WINDOW_JOINT_ATTEMPT2_ONCE",
+  "phase39_commit": "cb850dadfbef986702e3155372fef225a818f2b1",
+  "pc_contract_sha256": "e2c2fe930ec1d7e45dd563aec50ba00f22ef1e7570ac7e201397e9b8e8d74774",
+  "original_phase38_status": "BLOCKED_UNCHANGED",
+  "groups": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "endpoint_paths": {
+    "B0": "WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B0\\server\\server_round_025.pth",
+    "B1": "WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B1\\target\\target_update_2500.pth",
+    "B2": "WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B2\\server\\server_round_025.pth",
+    "B3": "WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B3\\server\\server_round_025_adapted.pth",
+    "B4": "WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B4\\server\\server_round_025_adapted.pth",
+    "B5": "WORKTREE\\research\\fedongas_phase35_20261105\\runs\\B5\\server\\server_round_025_adapted.pth"
+  },
+  "pc_environment_sha256": "68bdae96998dfd1824a60ed8dbe5378bf9e54da3d86a4b4307ca8ade25e593ab",
+  "local_files": {
+    "WORKTREE\\research\\fedongas_phase310_20261109\\common310.py": "566eb9394aa58c58350dbcb72c82105c68bd6ebd490b58e1a466a07bb8094ade",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\audit310.py": "8b1330acc6f5e25807608be09016c766ae79a78e9158aaa6809b4431ebae3bb7",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\execute310.py": "5c1660128e18350d8d82c70bbd6ecfcd886b7f2ec0184fb22cbc7012023fa4cf",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\score310.py": "c8025c84ab67d466c663af77049463a113d6a6d1edb1f255b58beb1a83e93889",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\register310.py": "93eba3bacf5a00643b3fa55da4295b9bc0413f3e5c8f2dfcce9a6e6186b05f3c",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\run310.py": "46f27ccfc8e15d88a1741abd803a827b686667115856651a605e138d7bd5cc74",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\test310.py": "569994f8f1b6cffaaff056834451a486a9b1d1343c09e3a89b0dec3fcfbbbbab",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\PLAN.md": "b7ade873284da258ae450aaf1c1e9fb5520311a718ab0ac8cf64c45f3aac3662",
+    "WORKTREE\\research\\fedongas_phase310_20261109\\WINDOW_IDENTITIES.csv": "11de04df5719e8cd9763708b0cdf5664ee95b6ecf427f8d173801de7a190a1d1",
+    "WORKTREE\\research\\fedongas_phase38_20261106\\metrics.py": "31b4fe74ec62752b71f3d9a6fec90f915dd74142605045fb6879b792a8c297d3",
+    "WORKTREE\\research\\fedongas_phase38_20261106\\FINAL_VERIFICATION.json": "eebad671aa8aed8028a7ad6e7ba65eee2346595fbdebfed1fe12c9a196aba9d2",
+    "WORKTREE\\research\\fedongas_phase38_20261106\\AUTHORIZATION_CONSUMED.json": "ca568a572d2b7b04c34e57df1e8485f05201c5de2dcf58570531e556cadfb1a0",
+    "WORKTREE\\research\\fedongas_phase39_20261107\\FINAL_VERIFICATION.json": "5b71438ff36138acb4f7a7a5422bc558f7b9ff3add926487e951b7bba84c1acd",
+    "WORKTREE\\research\\fedongas_phase39_20261107\\INDEPENDENT_REVIEW.json": "0c525e4006ac850c93bfbb39bf2b3305cb682e739c2a71d13ac85dd21bf36821",
+    "WORKTREE\\research\\fedongas_phase39_20261107\\attempt5\\golden\\GOLDEN_SEAL.json": "f275cd3b59dfdd6bc45001153b06c55d350e134425d78edd7363facc95415173"
+  },
+  "windows": 840,
+  "records": 5040,
+  "exposures": 40,
+  "planned_view_files": [
+    "B0/PRIVATE_WINDOWS.jsonl",
+    "B1/PRIVATE_WINDOWS.jsonl",
+    "B2/PRIVATE_WINDOWS.jsonl",
+    "B3/PRIVATE_WINDOWS.jsonl",
+    "B4/PRIVATE_WINDOWS.jsonl",
+    "B5/PRIVATE_WINDOWS.jsonl"
+  ],
+  "signal_array_sha256": "48b6bddce26dac036b3ef0b881249cbc294b98e413f2637bbbfd48ace0ed5eed",
+  "feature_array_sha256": "7c6777d66a254024619489fb73f68e0b43ed3dad59045ab01f472fa022ffbee0",
+  "budget": {
+    "pre": {
+      "classifier": 216,
+      "feature": 252,
+      "svr": 360
+    },
+    "attempt2": {
+      "classifier": 5472,
+      "feature": 6384,
+      "svr": 5760
+    }
+  },
+  "raw": {
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F010_R2.txt": "5f3dcf66670050abd9ae7e4601120ec321c1f50d3cf8e6f763aa130219594779",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F020_R2.txt": "902bde7c670de617c141d93be7c7bdfa768c0bd7742159a76c8cd70a7750d0f5",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F030_R2.txt": "6c311b77edc702410fae4328434e361b9d41f5fd974ed9e7d064d8f662cd6a28",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F040_R2.txt": "4354808e4614f5e7a221e7e25d4e750104d048b91b5fc925d010eae2b4b1f8ac",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F050_R2.txt": "a4cf091be5aa787052dbe77c5cca628048c518636e4cddddad972b70eceb2676",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F060_R2.txt": "4e2bbeedab35b509d586f97be1ac0c214c2e1e3ba4a4fd31b452175f741799e4",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F070_R2.txt": "2914c7de1fb236b1071b17d059d3c9d2f4530131dc68872743bea85ac15cca8b",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F080_R2.txt": "a21674a6bc1e5877107634eadbea845656a77de2da29ff945a7fb8caedae88fe",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F090_R2.txt": "bf2378305194f6ef5daa4510e597a73ebd60913dd5ddb050d066f316248c948c",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GCO_F100_R2.txt": "035b940d117f0854d023d574b9ef7a9c37f545bd3b28042e3104088e36c34089",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F010_R2.txt": "926445bb39bdef53d713f4eeb3189581ad9b7d316178b2530599853b419f8c6d",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F020_R2.txt": "9e5091c84cb28b0eea366721fd1c39b2f01ca8e15cdfb06c04ffcc2a09a76503",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F030_R2.txt": "e49adb53d24305921f022223642681b256d043d248c50f38e88d3ceec238f46e",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F040_R2.txt": "035566b37176de75b5799c26b9044b58f62f3df39cc46b157c6ba8d60d5a58f0",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F050_R2.txt": "1f2f8afb6cb1b5fd2b2335c5838437acd4ea0b631bdfb6e14e4ed66d462a55c2",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F060_R2.txt": "6806e61ea083e6423fee85b3a2551a68b50dec4b453d3d85761cb8084b213aa7",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F070_R2.txt": "97e5dea3912012633f9e3c6cc63b32afeb4fcc33081f08f585c145afe38d7502",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F080_R2.txt": "b219645c6723685130f800fe25a0b49e015541690c01ddbd9a6457f4a16d7840",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F090_R2.txt": "8a9ab4fbf18436cfddbcc9ac1f48dedbdb16c469e40f8818209003fcbbf31718",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEa_F100_R2.txt": "bc4e62c50c7b4f57f8b6d9645df69859adfb9fa997865ccb019d12477c5c78f3",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F010_R2.txt": "590684e6ca52322d39bd713ecef39254297f9732966a9750b87aeac2613c8d28",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F020_R2.txt": "95b237d32e99191f2deb3c0a8e1a79edf081bf0bae14dc8e1b87e079fa03da14",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F030_R2.txt": "d83340cbd65c460b8ce6696b2ea285b931a22ee90b240f66f1d1b08012db9b47",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F040_R2.txt": "319bd7fc125a9bf7e7f3cc474f0f310522ac4468ebdf379cdf9abb591a5b19fa",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F050_R2.txt": "1415d39280b421973545cc85be582bba636cb9af589c2fe45af44e9e09dddcb8",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F060_R2.txt": "9a7439efca3fc36d2ba3624a43be73fec1824a3f240237af736b7fe7b299b4e9",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F070_R2.txt": "46bf9373dd7678b0f2152f0aec5b69589278c35b949ca87cb8e57a1c266f8978",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F080_R2.txt": "eb9bc57f5851c9b7454bafbc46b1b3f1e38f10b99becfeea3244586953d5da80",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F090_R2.txt": "3847f2637c5502764dd2f86e255c3aed49cc9f183a7c98d1c05ca183ebdcdeb9",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GEy_F100_R2.txt": "52d1a4eab3437975ec0a3978eaacf9b16a407658676070c37d512136e4344568",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F010_R2.txt": "5b7f860a864531a4f723d34f85700a736c72b83a765fc3702889ea08198943cd",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F020_R2.txt": "7fca0cc6d8bbde5c962ff3791e734896ebdc8502ff0b1571f21bbf0f13f4461b",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F030_R2.txt": "2359086303f5957792a4b989c0a2e4ebb453c7429a06f5877cde6e681de88d04",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F040_R2.txt": "a9252fefb1d8738bca93015cb19e6d4e0921f59713f409e55fc772b13c2bd48f",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F050_R2.txt": "70bd60c08630e2b4cf446054a157afa5e4793b34cf45436cae3cf14d27c7dc68",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F060_R2.txt": "8d79040b756298eff10c3e05d26f1bd78a6a6fd0c3afd343b7203e6fb71a6479",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F070_R2.txt": "0029c6056058600f2b40dab8e538e64c021f566ac261da5c543f9179a930e608",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F080_R2.txt": "84202e55c3a643d62d04fd6d70913398cd57a652792dc3aeef39828d9d356a95",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F090_R2.txt": "415f13e68a87530e74a2b5363f65afc1cee87f8608653f72636d20b4310792e6",
+    "ORIGINAL_PROJECT\\dataset\\data1\\B5_GMe_F100_R2.txt": "cd2ff0b79d894019d01a41c7a14db54fec1fbb4285f5c9d0da1273d160b8e88d"
+  },
+  "score_inputs": {
+    "WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_test_metadata.json": "9525e76fb81671aeb9b3ed8bdaa88c47106a489088c7c3243bfe19b175de6a1a",
+    "WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\PRIVATE_WINDOW_PREDICTIONS.csv": "07f0f130d09e33ab2c96d459811a6543e087baa61894fbabd90f5a08f9cc385b"
+  },
+  "truth_path": "WORKTREE\\research\\fedongas_phase1_20261102\\run_v2\\data\\C5_test_metadata.json",
+  "legacy_path": "WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\PRIVATE_WINDOW_PREDICTIONS.csv",
+  "probes": [
+    "WORKTREE\\research\\unauthorized_numeric_probe.npz",
+    "WORKTREE\\research\\fedongas_phase35_20261105\\evaluation\\phase310_scope_probe.csv"
+  ],
+  "label_free_prediction": true,
+  "legacy_comparison_only": true,
+  "max_runs": 1,
+  "auto_retry": false
+}
