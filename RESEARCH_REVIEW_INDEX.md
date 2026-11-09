@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.10 单窗联合评价](docs/research_reviews/20261109_phase310/README.md) · [实机决定](docs/research_reviews/20261109_phase310/DECISION.md)
+最新：[Phase3.11 Pi 5 离线联合推理](docs/research_reviews/20261109_phase311/README.md) · [数值与恢复](docs/research_reviews/20261109_phase311/NUMERICAL_AND_RECOVERY.md)
+
+Pi 5 完成六视图 5,040 条推理，类别与选头一致。30 条 logits 超容差，完整数值门禁 BLOCKED，性能未运行。
+
+上阶段：[Phase3.10 单窗联合评价](docs/research_reviews/20261109_phase310/README.md) · [实机决定](docs/research_reviews/20261109_phase310/DECISION.md)
 
 六视图 5040 条预测完成封存与评分。旧 Phase3.8 BLOCKED 单独保留。
 

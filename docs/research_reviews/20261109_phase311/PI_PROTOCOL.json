@@ -1,0 +1,40 @@
+{
+  "id": "PI5-ARM64-FP32-SINGLE-v1",
+  "pc_contract": "PC-F32-CPU-SINGLE-v1",
+  "source_phase310": "ae2a614249443edaeae78d421851a3bdc57a92d6",
+  "hardware": "Raspberry Pi 5, Linux aarch64, 64-bit little endian",
+  "python_major_minor": "3.12",
+  "packages": {
+    "torch": "2.5.1",
+    "numpy": "1.26.4",
+    "scipy": "1.13.1",
+    "scikit-learn": "1.8.0",
+    "joblib": "1.4.2",
+    "threadpoolctl": "3.6.0",
+    "matplotlib": "3.8.4"
+  },
+  "threads": 1,
+  "interop_threads": 1,
+  "mha_fastpath": true,
+  "mkldnn": "retain installed build default; record enabled and available before any inference",
+  "tolerances": {
+    "logits": {"atol": 0.0001, "rtol": 0.00001},
+    "feature71": {"atol": 0.00000001, "rtol": 0.0000001},
+    "ppm": {"atol": 0.0001, "rtol": 0.000001}
+  },
+  "same_pi_repetition": "identical serialized output, excluding request metadata",
+  "classification_and_routes": "exact argmax, route, support, version, status and reason",
+  "performance": {
+    "warmup_windows_per_group": 20,
+    "timed_windows_per_group": 200,
+    "sustained_seconds": 60,
+    "telemetry_interval_seconds": 1,
+    "quantile_method": "nearest rank",
+    "joint_p99_ms_max": 100,
+    "process_cold_first_joint_ms_max": 60000,
+    "process_peak_rss_mib_max": 1024,
+    "temperature_c_max_exclusive": 80
+  },
+  "first_phase": {"calibration": 32, "synthetic": 4, "groups": 6},
+  "day22": {"windows": 840, "groups": 6, "records": 5040, "exposures": 40}
+}
