@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Phase3.12 Pi 5 数值诊断与性能表征](docs/research_reviews/20261109_phase312/README.md)
+最新：[反馈冲突与 A/B 门禁](docs/research_reviews/20261110_feedback_gates/README.md)
+
+冻结链路与 QP 数值验证通过。有限步结果不支持直接进入硬约束训练，研究决定 REDESIGN。
+
+上阶段：[Phase3.12 Pi 5 数值诊断与性能表征](docs/research_reviews/20261109_phase312/README.md)
 
 标定与合成输入定位到首块 TCN pointwise 的首处字节差异。实机联合 P99 3.936–3.992 ms。Phase3.11 严格数值门禁仍 BLOCKED。
 

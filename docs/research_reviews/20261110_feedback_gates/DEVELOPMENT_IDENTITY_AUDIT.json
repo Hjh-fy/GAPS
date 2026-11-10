@@ -1,0 +1,47 @@
+{
+  "phase05_role_file_sha256": "e4dbaccfb1503752c87eff2716f5e4781dfdf3995ffe3f348b18a048af993e5a",
+  "devices": {
+    "3": {
+      "calibration": {
+        "exposures": 16,
+        "days": [
+          "8"
+        ]
+      },
+      "development": {
+        "exposures": 40,
+        "days": [
+          "14"
+        ]
+      },
+      "test": {
+        "exposures": 40,
+        "days": [
+          "17"
+        ]
+      }
+    },
+    "5": {
+      "calibration": {
+        "exposures": 16,
+        "days": [
+          "18"
+        ]
+      },
+      "development": {
+        "exposures": 24,
+        "days": [
+          "18"
+        ]
+      },
+      "test": {
+        "exposures": 40,
+        "days": [
+          "22"
+        ]
+      }
+    }
+  },
+  "development_disjoint_from_phase35_inputs": true,
+  "data_access": "metadata only; no signal tensors or evaluations"
+}

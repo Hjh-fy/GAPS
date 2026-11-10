@@ -1,0 +1,41 @@
+{
+  "id": "FONG-20261110-FEEDBACK-GATES-v2",
+  "phase35": "df2e61878a8902cb1fae95431013bbf3514798f7",
+  "phase36": "4bf929fbbaa456e0a21599ad39fd01e8145a0406",
+  "phases": [
+    "0A",
+    "0B",
+    "1",
+    "2"
+  ],
+  "approved_inputs": "C1Day4/C2Day1,7 source and C5Day18 A4 only",
+  "no_test": true,
+  "no_optimizer": true,
+  "seed": 42,
+  "rounds": [
+    1,
+    5,
+    13,
+    25
+  ],
+  "ce": "float64 CPU eval stable CE; sources window-mean C1/C2 weighted 1:2; target exposure-equal",
+  "constraints": "8 class gradients; g.u <= 0, no deletion or tuning",
+  "qp_objective": "0.5 Euclidean distance squared from Delta",
+  "qp_tolerance": 1E-08,
+  "restore_tolerance": 1E-06,
+  "risk_rule": "normalized cosine absolute at most 1e-8 is indeterminate; any full/leave-one-out sign disagreement or indeterminate gives UNRELIABLE; sensitivity only",
+  "alphas": [
+    0,
+    0.25,
+    0.5,
+    1
+  ],
+  "gate0a_sha": "364f5af0496ecdcd7fda342bdce10b7d0aa1e402bb133a3ee81fc4fe53feffd9",
+  "files": {
+    "diagnose.py": "68662d429c4289776a55a637ed8f5408d05a4a8950eb06f1bc996d5b3514ca11",
+    "audit.py": "ada575c566d27e62d53d1ff2a4e0a20ccf55e08457771e9e3ee3964def1f9542",
+    "projections.py": "a74ec4c0d1865183db25754ae1da39cb6f72068d2e0a685328c8415efa891d01",
+    "test_projections.py": "91b30266a3dea4ffbbce588886ef71083550eab7f7b1874410adfb4fda6c66ec"
+  },
+  "change": "Resolve tied state_dict aliases using actual parameter identity; verify stored aliases exactly match canonical tensors. Prior startup stopped before all gradient or forward calls."
+}
