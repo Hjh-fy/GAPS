@@ -1,0 +1,28 @@
+{
+  "decision": "REDESIGN_REQUIRED",
+  "metadata": "PASS",
+  "scoring": "COMPLETE_ONCE",
+  "independent_arithmetic": "PASS",
+  "prior_files_verified": 28,
+  "calibration_exposures": 16,
+  "development_exposures": 24,
+  "development_windows": 504,
+  "sealed_candidates": 32,
+  "optimizer_steps": 0,
+  "day22_model_calls": 0,
+  "scoring_receipt": {
+    "status": "PASS_COMPLETE",
+    "calls": 768,
+    "window_forwards": 16128,
+    "raw_reads": 24,
+    "day22_reads": 0,
+    "torch": "2.5.1",
+    "numpy": "1.26.4",
+    "exposure_scores_sha256": "92ed8289744a2f1471f7d9a951a1c4e233b0e98aa8f62461341026b625788217",
+    "window_scores_sha256": "03e6f4d7007098310f48438431e4288e893c4eba99b35e69e11cf995bd7d1174",
+    "seal_sha256": "9f2443b57bac4f61d33dcf93d21bbf8e2cb46040ae8f556086eed68fada3749b",
+    "preflight_sha256": "53f3a80b6e6ca91c08b6c37b11953938f58a9f9d1a517c614d8c2db402bd4406"
+  },
+  "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:03:56) [MSC v.1929 64 bit (AMD64)]",
+  "external_review_sha256": "a96859bfd27433affaf502b981a5e9e25feeeabffa957fd9f97fe7c16751a6d5"
+}

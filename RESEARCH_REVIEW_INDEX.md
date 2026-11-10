@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[反馈冲突与 A/B 门禁](docs/research_reviews/20261110_feedback_gates/README.md)
+最新：[Gate 3 类别反馈风险预测](docs/research_reviews/20261110_gate3/README.md)
+
+完成一次 C5 同日开发评分。第 5 轮出现稳定标定方向的漏报，决定 REDESIGN_REQUIRED。
+
+上阶段：[反馈冲突与 A/B 门禁](docs/research_reviews/20261110_feedback_gates/README.md)
 
 冻结链路与 QP 数值验证通过。有限步结果不支持直接进入硬约束训练，研究决定 REDESIGN。
 

@@ -1,0 +1,124 @@
+{
+  "status": "INDEPENDENT_RECOMPUTATION_PASS",
+  "exposures": 24,
+  "forward_rows": 16128,
+  "class_rows": 128,
+  "outcomes": {
+    "DECREASE_MATCH": 28,
+    "ALERT_MATCH": 5,
+    "INDETERMINATE": 76,
+    "MISSED_HARM": 19
+  },
+  "by_round": {
+    "1": {
+      "DECREASE_MATCH": 21,
+      "ALERT_MATCH": 5,
+      "INDETERMINATE": 6
+    },
+    "5": {
+      "MISSED_HARM": 19,
+      "DECREASE_MATCH": 7,
+      "INDETERMINATE": 6
+    },
+    "13": {
+      "INDETERMINATE": 32
+    },
+    "25": {
+      "INDETERMINATE": 32
+    }
+  },
+  "by_gas": {
+    "0": {
+      "DECREASE_MATCH": 7,
+      "INDETERMINATE": 18,
+      "MISSED_HARM": 7
+    },
+    "1": {
+      "DECREASE_MATCH": 14,
+      "INDETERMINATE": 18
+    },
+    "2": {
+      "DECREASE_MATCH": 7,
+      "INDETERMINATE": 20,
+      "MISSED_HARM": 5
+    },
+    "3": {
+      "ALERT_MATCH": 5,
+      "INDETERMINATE": 20,
+      "MISSED_HARM": 7
+    }
+  },
+  "by_reliability": {
+    "SIGN_STABLE_LOCAL": {
+      "DECREASE_MATCH": 28,
+      "ALERT_MATCH": 5,
+      "MISSED_HARM": 19,
+      "INDETERMINATE": 58
+    },
+    "UNRELIABLE": {
+      "INDETERMINATE": 18
+    }
+  },
+  "by_method": {
+    "1.0": {
+      "DECREASE_MATCH": 4,
+      "ALERT_MATCH": 1,
+      "MISSED_HARM": 3,
+      "INDETERMINATE": 8
+    },
+    "0.0": {
+      "INDETERMINATE": 16
+    },
+    "0.25": {
+      "DECREASE_MATCH": 4,
+      "ALERT_MATCH": 1,
+      "MISSED_HARM": 2,
+      "INDETERMINATE": 9
+    },
+    "0.5": {
+      "DECREASE_MATCH": 4,
+      "ALERT_MATCH": 1,
+      "MISSED_HARM": 2,
+      "INDETERMINATE": 9
+    },
+    "A": {
+      "DECREASE_MATCH": 4,
+      "INDETERMINATE": 9,
+      "MISSED_HARM": 3
+    },
+    "B": {
+      "DECREASE_MATCH": 4,
+      "INDETERMINATE": 9,
+      "MISSED_HARM": 3
+    },
+    "norm_match_A": {
+      "DECREASE_MATCH": 4,
+      "ALERT_MATCH": 1,
+      "MISSED_HARM": 3,
+      "INDETERMINATE": 8
+    },
+    "norm_match_B": {
+      "DECREASE_MATCH": 4,
+      "ALERT_MATCH": 1,
+      "MISSED_HARM": 3,
+      "INDETERMINATE": 8
+    }
+  },
+  "paired": {
+    "A": {
+      "INCREASE": 4,
+      "DECREASE": 4,
+      "ZERO_BAND": 8
+    },
+    "B": {
+      "INCREASE": 5,
+      "DECREASE": 3,
+      "ZERO_BAND": 8
+    }
+  },
+  "hashes": {
+    "CALIBRATION_RISK_VS_DEVELOPMENT.csv": "0751d11dab86d4ca65ffc49da635dc7e5c429f8764edb451c16bfe1a41f5dbe8",
+    "RISK_DIRECTION_ERRORS.csv": "c6acfe7f0dd088c34e95017a819c7a80836dfe93c2ff49bb872f63027bc763a4",
+    "MATCHED_NORM_DEVELOPMENT.csv": "c913adb413ebdd59c1f52e4902540e6d4427ecc6ea47dd177f2250a6ef502eff"
+  }
+}
