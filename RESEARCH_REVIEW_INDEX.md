@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Gate 3 失效机制复盘](docs/research_reviews/20261111_gate3_postmortem/README.md)
+最新：[贡献重评与论文主线收敛](docs/research_reviews/20261111_contribution_review/README.md)
+
+27条协议/版本映射；保留Source-only强基线、联邦负结果和系统版本边界。六个证据包，0项已充分确立原创算法创新。建议停止新增联邦算法研发，优先硕士论文写作；IoT-J另评估风险可迁移性问题。静态审阅，无新训练/推理/评分。
+
+上阶段：[Gate 3 失效机制复盘](docs/research_reviews/20261111_gate3_postmortem/README.md)
 
 封存曲线支持非线性与代表性问题并存，开发起点梯度缺失。决定 INSUFFICIENT_EVIDENCE_STOP。另澄清后期预测不确定不等于开发 CE 变化为零。
 

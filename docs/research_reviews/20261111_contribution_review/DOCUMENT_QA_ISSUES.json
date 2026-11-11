@@ -1,0 +1,7 @@
+{
+  "initial_document_link_check": "FAILED_PARSER_ONLY",
+  "reason": "raw table URLs joined by HTML br tags were parsed as one URL",
+  "correction": "exclude table delimiters and angle brackets; rerun passed all78 local link paths",
+  "historical_files_modified": 0,
+  "scientific_results_modified": 0
+}

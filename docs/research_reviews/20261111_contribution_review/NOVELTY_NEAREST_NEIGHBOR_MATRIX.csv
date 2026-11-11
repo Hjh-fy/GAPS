@@ -1,0 +1,9 @@
+﻿paper_id,method,publication,primary_url,source_access,prior_mechanism,specific_difference,novelty_limit
+L1,FedProto,AAAI 2022,https://arxiv.org/abs/2105.00243,author primary abstract; AAAI publisher access challenge; AAAI2022 status from primary metadata,以类别原型沟通并约束本地表示,原型上传/语义对齐属既有机制；本项目后适配反馈时序不同,单独原型使用不能称首创
+L2,FedPAC,ICLR 2023,https://arxiv.org/abs/2306.11867,author primary paper,特征对齐与分类器协作优化,本项目统一全局分类器与适配反馈不同，仍与原型协作重叠,完整组合是否新颖未充分证明
+L3,FedGP,ICLR 2024,https://proceedings.iclr.cc/paper_files/paper/2024/file/d649dd586dba64672a96beff24178125-Paper-Conference.pdf,peer-reviewed full paper,目标梯度向源梯度的正向投影及加权聚合,A约束服务器适配位移，八个源目标类别风险，干预点不同,投影本身不是新算法；现无开发保护优势
+L4,FedLAG,arXiv 2024,https://arxiv.org/abs/2410.02845,author preprint; no peer-review status inferred,识别层级梯度冲突并个性化/排除冲突层全局聚合,"B为固定六参数组[0,1]缩放、适配位移QP，不是本地层个性化",分层/冲突概念重叠；结构独立收益未证实
+L5,STP-FCL,Sensors 2026;10.3390/s26196273,https://pmc.ncbi.nlm.nih.gov/articles/PMC13667711/,peer-reviewed full primary article,原型语义保护、服务器域投影与自适应融合,本项目物理暴露等权类CE约束和独立开发风险验证不同,保护/投影/融合组合已有先行，不得笼统首创
+L6,One-Shot Federated Ridge Regression: Exact Recovery via Sufficient Statistic Aggregation,arXiv 2026,https://arxiv.org/abs/2601.08216,author preprint; not journal evidence,充分统计量恢复集中Ridge,本项目加合法源时间合同、缩放一致性与故障回退,精确Ridge汇总为成熟实现，不是本项目算法创新
+L7,FedGSSU,IEICE Trans. Electronics 2025;10.1587/transele.2024ECP5007,https://globals.ieice.org/en_transactions/electronics/10.1587/transele.2024ECP5007/_f,publisher primary article,气体传感阵列更新中的联邦学习,本项目极少独立标定暴露、任务分离及反馈证据审计范围不同,气体FL/阵列更新已有先行，不能泛称首创
+L8,Feature disentanglement and adaptive collaboration for multi-source domain adaptation in gas recognition,Sensors and Actuators B 464 (2026) 140100;10.1016/j.snb.2026.140100,https://www.sciencedirect.com/science/article/abs/pii/S0925400526006787,publisher primary abstract; full details not independently checked,DAFD及PGAC，设备特征解耦、类别原型与自适应协作,集中式多源域适应与本项目联邦时序不同，原型语义/权重明显邻近,不能称气体原型自适应加权首创；实现级差异仍需全文比较
