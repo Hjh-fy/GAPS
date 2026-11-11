@@ -1,0 +1,30 @@
+{
+  "status": "STATIC_AUDIT_PASS",
+  "decision": "INSUFFICIENT_EVIDENCE_STOP",
+  "anchor": "93c2f9fe445b0c8079cba8d52bae8f6279dd089e",
+  "prior_input_files_verified": 53,
+  "exposed_identity_rows": 768,
+  "class_rows": 128,
+  "curves": 16,
+  "correlation_pairs": 448,
+  "absolute_ce_zero_band": 9.5367431640625e-07,
+  "late_development_rows_exceed_band": 55,
+  "model_loads": 0,
+  "model_forward_calls": 0,
+  "new_gradients": 0,
+  "optimizer_steps": 0,
+  "raw_signal_reads": 0,
+  "day22_scoring": 0,
+  "access_audits": {
+    "STATIC_FILE_ACCESS.jsonl": {
+      "events": 78,
+      "sha256": "9fa5a409d0591ec9f8d4bed2691ebf2ed335d5696c6db65e3c458673e874de0d"
+    },
+    "ASSET_FILE_ACCESS_FINAL.jsonl": {
+      "events": 32,
+      "sha256": "cdd3dd17be6ebf805c80496172fd098fdd0db678d37c11344882d933fb41c4a4"
+    }
+  },
+  "independent_assets": "metadata and archived usage only; raw SHA not rehashed",
+  "python": "3.12.4 | packaged by Anaconda, Inc. | (main, Jun 18 2024, 15:03:56) [MSC v.1929 64 bit (AMD64)]"
+}

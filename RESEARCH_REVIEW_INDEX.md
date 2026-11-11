@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[Gate 3 类别反馈风险预测](docs/research_reviews/20261110_gate3/README.md)
+最新：[Gate 3 失效机制复盘](docs/research_reviews/20261111_gate3_postmortem/README.md)
+
+封存曲线支持非线性与代表性问题并存，开发起点梯度缺失。决定 INSUFFICIENT_EVIDENCE_STOP。另澄清后期预测不确定不等于开发 CE 变化为零。
+
+上阶段：[Gate 3 类别反馈风险预测](docs/research_reviews/20261110_gate3/README.md)
 
 完成一次 C5 同日开发评分。第 5 轮出现稳定标定方向的漏报，决定 REDESIGN_REQUIRED。
 
