@@ -2,7 +2,11 @@
 
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
-最新：[贡献重评与论文主线收敛](docs/research_reviews/20261111_contribution_review/README.md)
+最新：[外部技术与场景复用调研](docs/research_reviews/20261116_reuse_survey/README.md)
+
+核验11个仓库固定版本与官网/社区，静态检查3个源模块。优先借鉴Calibration选窗、低自由度校准和任务维护的成熟参照。无安装、训练、推理、评分或Pi操作；不改变既有停止决定。
+
+上阶段：[贡献重评与论文主线收敛](docs/research_reviews/20261111_contribution_review/README.md)
 
 27条协议/版本映射；保留Source-only强基线、联邦负结果和系统版本边界。六个证据包，0项已充分确立原创算法创新。建议停止新增联邦算法研发，优先硕士论文写作；IoT-J另评估风险可迁移性问题。静态审阅，无新训练/推理/评分。
 
