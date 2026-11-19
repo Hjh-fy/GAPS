@@ -1,5 +1,13 @@
 # GAPS 研究审阅入口
 
+最新：[2026-11-19 核心创新与论文证据收敛审计](docs/research_reviews/20261119_research_consolidation/GAPS_RESEARCH_STATUS.md)。本次为静态审计：27条主张、最多3项候选贡献；无新增训练/推理/评分。Per-gas LOEO为回顾性强基线，外部复现仍阻塞，原型/反馈普遍优势未建立。
+
+[核心贡献](docs/research_reviews/20261119_research_consolidation/CORE_CONTRIBUTION_AUDIT.md) · [证据矩阵](docs/research_reviews/20261119_research_consolidation/CLAIM_EVIDENCE_MATRIX.csv) · [任务优先级](docs/research_reviews/20261119_research_consolidation/EXPERIMENT_GAP_PRIORITIES.md) · [论文主线](docs/research_reviews/20261119_research_consolidation/THESIS_MAINLINE_RECOMMENDATION.md)。摘要来源副本及SHA一并公开，模型/原始数据仍仅本地。此审阅分支不合并main。
+
+---
+
+# GAPS 研究审阅入口
+
 审阅分支`codex/research-reviews`，各阶段另附固定commit。
 
 最新：[外部技术与场景复用调研](docs/research_reviews/20261116_reuse_survey/README.md)
